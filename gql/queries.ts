@@ -404,6 +404,17 @@ export const CREATE_PURCHASE_ORDER = gql`
   }
 `
 
+export const UPDATE_PURCHASE_ORDER = gql`
+  mutation UpdatePurchaseOrder($id: ID!, $input: UpdatePurchaseOrderInput!) {
+    updatePurchaseOrder(id: $id, input: $input) {
+      id
+      seqNo
+      status
+      totalAmount
+    }
+  }
+`
+
 // Sales Orders
 export const GET_SALES_ORDERS = gql`
   query GetSalesOrders($organizationId: ID!, $page: Int, $limit: Int, $status: String) {
