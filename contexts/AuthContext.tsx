@@ -9,6 +9,7 @@ interface User {
   firstName: string
   lastName: string
   roles: string[]
+  organizationId: string
 }
 
 interface AuthContextType {
