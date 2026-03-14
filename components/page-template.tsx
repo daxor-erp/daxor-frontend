@@ -1,29 +1,14 @@
 'use client'
 
-import { useQuery } from '@apollo/client'
-import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { ReactNode } from 'react'
 
 interface PageTemplateProps {
   title: string
   description: string
-  query: any
-  queryName: string
-  columns: { key: string; label: string; render?: (value: any, row: any) => React.ReactNode }[]
+  children?: ReactNode
 }
 
-export default function PageTemplate({ title, description, query, queryName, columns }: PageTemplateProps) {
-  const { user } = useAuth()
-  
-  const { data, loading } = useQuery(query, {
-    variables: { organizationId: user?.organizationId },
-    skip: !user?.organizationId,
-  })
-
-  const items = data?.[queryName] || []
-
+export function PageTemplate({ title, description, children }: PageTemplateProps) {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -31,45 +16,10 @@ export default function PageTemplate({ title, description, query, queryName, col
           <h1 className="text-3xl font-bold">{title}</h1>
           <p className="text-gray-500">{description}</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New {title}
-        </Button>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Records: {items.length}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p>Loading...</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    {columns.map((col) => (
-                      <th key={col.key} className="text-left p-2">{col.label}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item: any) => (
-                    <tr key={item.id} className="border-b hover:bg-gray-50">
-                      {columns.map((col) => (
-                        <td key={col.key} className="p-2">
-                          {col.render ? col.render(item[col.key], item) : item[col.key]}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {children}
     </div>
   )
 }
+
+export default PageTemplate

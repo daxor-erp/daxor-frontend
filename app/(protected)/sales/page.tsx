@@ -2,9 +2,9 @@
 
 export default function SalesPage() {
   return (
-    <PageTemplate 
-      title="Sales" 
-      description="Manage all sales operations"
-    />
+    <div className="p-6">
+      <h1 className="text-3xl font-bold">Sales</h1>
+      <p className="text-gray-500">Manage all sales operations</p>
+    </div>
   )
 }
