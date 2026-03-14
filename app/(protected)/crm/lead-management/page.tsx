@@ -1,4 +1,4 @@
-import { PageTemplate } from '@/components/page-template'
+
 
 export default function LeadManagementPage() {
   return (
