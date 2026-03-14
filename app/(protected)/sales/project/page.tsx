@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { GET_PROJECTS, CREATE_PROJECT } from '@/gql/queries'
-import { PageTemplate } from '@/components/page-template'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -59,7 +59,14 @@ export default function SalesProjectPage() {
   }
 
   return (
-    <PageTemplate title="Projects" description="Manage and track all sales projects">
+    
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center mb-5">
+        <div>
+          <h1 className="text-3xl font-bold">Projects</h1>
+          <p className="text-gray-500">Manage and track all sales projects</p>
+        </div>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-5">
@@ -194,6 +201,6 @@ export default function SalesProjectPage() {
           })
         )}
       </div>
-    </PageTemplate>
+    </div>
   )
 }

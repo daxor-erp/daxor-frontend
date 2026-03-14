@@ -1,39 +1,32 @@
 'use client'
 
 import { useQuery } from '@apollo/client'
+import { GET_WAREHOUSES } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 
-interface PageTemplateProps {
-  title: string
-  description: string
-  query: any
-  queryName: string
-  columns: { key: string; label: string; render?: (value: any, row: any) => React.ReactNode }[]
-}
-
-export default function PageTemplate({ title, description, query, queryName, columns }: PageTemplateProps) {
+export default function WarehousesPage() {
   const { user } = useAuth()
   
-  const { data, loading } = useQuery(query, {
+  const { data, loading } = useQuery(GET_WAREHOUSES, {
     variables: { organizationId: user?.organizationId },
     skip: !user?.organizationId,
   })
 
-  const items = data?.[queryName] || []
+  const items = data?.warehouses || []
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">{title}</h1>
-          <p className="text-gray-500">{description}</p>
+          <h1 className="text-3xl font-bold">Warehouses</h1>
+          <p className="text-gray-500">Manage warehouses</p>
         </div>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          New {title}
+          New Record
         </Button>
       </div>
 
@@ -44,24 +37,30 @@ export default function PageTemplate({ title, description, query, queryName, col
         <CardContent>
           {loading ? (
             <p>Loading...</p>
+          ) : items.length === 0 ? (
+            <p className="text-gray-500">No records found</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    {columns.map((col) => (
-                      <th key={col.key} className="text-left p-2">{col.label}</th>
-                    ))}
+                    <th className="text-left p-2">Document #</th>
+                    <th className="text-left p-2">Date</th>
+                    <th className="text-left p-2">Status</th>
+                    <th className="text-left p-2">Created</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item: any) => (
                     <tr key={item.id} className="border-b hover:bg-gray-50">
-                      {columns.map((col) => (
-                        <td key={col.key} className="p-2">
-                          {col.render ? col.render(item[col.key], item) : item[col.key]}
-                        </td>
-                      ))}
+                      <td className="p-2">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
+                      <td className="p-2">{item.docDate ? new Date(item.docDate).toLocaleDateString() : 'N/A'}</td>
+                      <td className="p-2">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                          {item.status || 'Active'}
+                        </span>
+                      </td>
+                      <td className="p-2">{new Date(item.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>

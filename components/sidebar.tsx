@@ -13,6 +13,48 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { 
+    name: 'Extraction', 
+    icon: Factory,
+    subItems: [
+      { name: 'Extraction', href: '/extraction' },
+      { name: 'Raw Material Requisition', href: '/extraction' },
+    ]
+  },
+  { 
+    name: 'Production Management', 
+    icon: Factory,
+    subItems: [
+      { name: 'Production Planning', href: '/production-planning' },
+      { name: 'Work Orders', href: '/work-orders' },
+      { 
+        name: 'Dashboards',
+        subItems: [
+          { name: 'MEP Overall Dashboard', href: '/production/dashboards/mep-overall' },
+          { name: 'Workshop Dashboard', href: '/production/dashboards/workshop' },
+          { name: 'Plant Modules Dashboard', href: '/production/dashboards/plant-modules' },
+        ]
+      },
+      { 
+        name: 'Drawings Documents',
+        subItems: [
+          { name: 'Upload Drawings', href: '/production/drawings/upload' },
+          { name: 'Project Documents', href: '/production/drawings/project-documents' },
+        ]
+      },
+      { 
+        name: 'Master Tables',
+        subItems: [
+          { name: 'Project Masters', href: '/production/masters/project-masters' },
+          { name: 'Site Locations', href: '/production/masters/site-locations' },
+          { name: 'Contractors', href: '/production/masters/contractors' },
+        ]
+      },
+      { name: 'Module Wise Time Tracking', href: '/production/module-time-tracking' },
+      { name: 'Scan QR Code', href: '/production/scan-qr-code' },
+      { name: 'Status All Modules', href: '/production/status-all-modules' },
+    ]
+  },
+  { 
     name: 'CRM', 
     icon: Users,
     subItems: [
@@ -24,6 +66,8 @@ const navigation = [
     name: 'Sales', 
     icon: ShoppingCart,
     subItems: [
+      { name: 'Sales Returns', href: '/sales-returns' },
+      { name: 'Delivery Challan', href: '/delivery-challan' },
       { name: 'Create Invoices', href: '/sales/create-invoices' },
       { name: 'Delivery Order', href: '/sales/delivery-order' },
       { name: 'Enter Cash Sales', href: '/sales/enter-cash-sales' },
@@ -39,6 +83,8 @@ const navigation = [
     name: 'Purchases', 
     icon: Package,
     subItems: [
+      { name: 'Vendor Payments', href: '/vendor-payments' },
+      { name: 'Material Receipt', href: '/material-receipt' },
       { name: 'Debit Note', href: '/purchases/debit-note' },
       { name: 'Delivery Order', href: '/purchases/delivery-order' },
       { name: 'Enter Purchase Orders', href: '/purchases/enter-purchase-orders' },
@@ -73,6 +119,12 @@ const navigation = [
     name: 'Inventory', 
     icon: Warehouse,
     subItems: [
+      { name: 'Inventory Control', href: '/inventory-control' },
+      { name: 'Warehouses', href: '/warehouse' },
+      { name: 'Stock Adjustments', href: '/stock-adjustments' },
+      { name: 'Stock Transfers', href: '/stock-transfers' },
+      { name: 'Goods Receipt', href: '/goods-receipt' },
+      { name: 'GRN', href: '/grn' },
       { name: 'Adjust Inventory', href: '/inventory/adjust-inventory' },
       { name: 'Adjust Inventory Worksheet', href: '/inventory/adjust-inventory-worksheet' },
       { name: 'Enter Transfer Orders', href: '/inventory/enter-transfer-orders' },
@@ -88,6 +140,8 @@ const navigation = [
     name: 'Financial', 
     icon: TrendingUp,
     subItems: [
+      { name: 'General Ledger', href: '/general-ledger' },
+      { name: 'Cash & Bank', href: '/cash-bank' },
       { name: 'Chart of Accounts', href: '/financial/chart-of-accounts' },
       { name: 'Create Allocation Schedules', href: '/financial/create-allocation-schedules' },
       { name: 'Create Intercompany Allocation Schedules', href: '/financial/create-intercompany-allocation' },
@@ -102,6 +156,8 @@ const navigation = [
     name: 'Payroll', 
     icon: Briefcase,
     subItems: [
+      { name: 'Payroll Management', href: '/payroll-management' },
+      { name: 'Salary Processing', href: '/salary-processing' },
       { 
         name: 'Data Preparation',
         subItems: [
@@ -248,6 +304,7 @@ const navigation = [
     name: 'Customers', 
     icon: Users,
     subItems: [
+      { name: 'Customer Registration', href: '/customers' },
       { name: 'Accept Customer Payments', href: '/customers/accept-payments' },
       { name: 'Approve Return Authorizations', href: '/customers/approve-returns' },
       { name: 'Assess Finance Charges', href: '/customers/assess-finance-charges' },

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { GET_CUSTOMER_INVOICES, CREATE_CUSTOMER_INVOICE, GET_ORGANIZATIONS, GET_SALES_ORDERS } from '@/gql/queries'
-import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
 import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -75,7 +74,13 @@ export default function CreateInvoicesPage() {
   const getSO = (id: string) => salesOrders.find((s: any) => s.id === id)?.seqNo ?? id
 
   return (
-    <PageTemplate title="Create Invoices" description="Create and manage customer invoices">
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center mb-5">
+        <div>
+          <h1 className="text-3xl font-bold">Create Invoices</h1>
+          <p className="text-gray-500">Create and manage customer invoices</p>
+        </div>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-5">
@@ -247,6 +252,6 @@ export default function CreateInvoicesPage() {
           })
         )}
       </div>
-    </PageTemplate>
+    </div>
   )
 }
