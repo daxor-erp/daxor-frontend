@@ -426,9 +426,35 @@ export const GET_SALES_ORDERS = gql`
   }
 `
 
+export const GET_SALES_ORDER = gql`
+  query GetSalesOrder($id: ID!) {
+    salesorder(id: $id) {
+      id
+      seqNo
+      customerId
+      projectId
+      totalAmount
+      status
+      orderDate
+      organizationId
+      createdAt
+    }
+  }
+`
+
 export const CREATE_SALES_ORDER = gql`
   mutation CreateSalesOrder($input: CreateSalesOrderInput!) {
     createSalesOrder(input: $input) {
+      id
+      seqNo
+      status
+    }
+  }
+`
+
+export const UPDATE_SALES_ORDER = gql`
+  mutation UpdateSalesOrder($id: ID!, $input: UpdateSalesOrderInput!) {
+    updateSalesOrder(id: $id, input: $input) {
       id
       seqNo
       status
@@ -466,6 +492,32 @@ export const CREATE_CUSTOMER_INVOICE = gql`
       id
       seqNo
       status
+    }
+  }
+`
+
+// Cash Sales (alias for sales order with immediate payment)
+export const CREATE_CASH_SALE = gql`
+  mutation CreateCashSale($input: CreateSalesOrderInput!) {
+    createSalesOrder(input: $input) {
+      id
+      seqNo
+      status
+      totalAmount
+      orderDate
+    }
+  }
+`
+
+// Credit Memos (update invoice status to cancelled + record credit)
+export const UPDATE_CUSTOMER_INVOICE = gql`
+  mutation UpdateCustomerInvoice($id: ID!, $input: UpdateCustomerInvoiceInput!) {
+    updateCustomerInvoice(id: $id, input: $input) {
+      id
+      seqNo
+      status
+      paidAmount
+      totalAmount
     }
   }
 `
