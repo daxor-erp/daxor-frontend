@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { GET_CUSTOMER_INVOICES, UPDATE_CUSTOMER_INVOICE, GET_ORGANIZATIONS } from '@/gql/queries'
-import { PageTemplate } from '@/components/page-template'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -161,7 +161,14 @@ export default function IssueCreditMemosPage() {
   )
 
   return (
-    <PageTemplate title="Issue Credit Memos" description="Issue credit memos against customer invoices">
+    
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center mb-5">
+        <div>
+          <h1 className="text-3xl font-bold">Issue Credit Memos</h1>
+          <p className="text-gray-500">Issue credit memos against customer invoices</p>
+        </div>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -380,6 +387,6 @@ export default function IssueCreditMemosPage() {
           )}
         </DialogContent>
       </Dialog>
-    </PageTemplate>
+    </div>
   )
 }

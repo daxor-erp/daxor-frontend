@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { GET_SALES_ORDERS, CREATE_CASH_SALE, GET_ORGANIZATIONS, GET_ITEMS, GET_PROJECTS } from '@/gql/queries'
-import { PageTemplate } from '@/components/page-template'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -115,7 +115,14 @@ export default function EnterCashSalesPage() {
   }
 
   return (
-    <PageTemplate title="Enter Cash Sales" description="Record immediate cash sale transactions">
+    
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center mb-5">
+        <div>
+          <h1 className="text-3xl font-bold">Enter Cash Sales</h1>
+          <p className="text-gray-500">Record immediate cash sale transactions</p>
+        </div>
+      </div>
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
         {[
@@ -316,6 +323,6 @@ export default function EnterCashSalesPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </PageTemplate>
+    </div>
   )
 }

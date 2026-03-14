@@ -562,3 +562,562 @@ export const CREATE_ATTENDANCE = gql`
     }
   }
 `
+
+// General Ledger
+export const GET_GENERAL_LEDGERS = gql`
+  query GetGeneralLedgers($organizationId: String!, $fiscalYear: String, $status: String) {
+    generalLedgers(organizationId: $organizationId, fiscalYear: $fiscalYear, status: $status) {
+      id
+      transactionNumber
+      transactionDate
+      transactionType
+      referenceModule
+      referenceId
+      debitAccount
+      creditAccount
+      amount
+      currency
+      description
+      fiscalYear
+      fiscalPeriod
+      status
+      createdAt
+    }
+  }
+`
+
+export const GET_CHART_OF_ACCOUNTS = gql`
+  query GetChartOfAccounts($organizationId: String!, $accountType: String) {
+    chartOfAccounts(organizationId: $organizationId, accountType: $accountType) {
+      id
+      accountCode
+      accountName
+      accountType
+      parentAccount
+      level
+      isActive
+      createdAt
+    }
+  }
+`
+
+export const CREATE_GENERAL_LEDGER = gql`
+  mutation CreateGeneralLedger($input: GeneralLedgerInput!) {
+    createGeneralLedger(input: $input) {
+      id
+      transactionNumber
+      status
+    }
+  }
+`
+
+export const CREATE_CHART_OF_ACCOUNT = gql`
+  mutation CreateChartOfAccount($input: ChartOfAccountsInput!) {
+    createChartOfAccount(input: $input) {
+      id
+      accountCode
+      accountName
+    }
+  }
+`
+
+// Cash Bank
+export const GET_CASH_BANKS = gql`
+  query GetCashBanks($organizationId: String!, $reconciliationStatus: String) {
+    cashBanks(organizationId: $organizationId, reconciliationStatus: $reconciliationStatus) {
+      id
+      transactionNumber
+      transactionDate
+      transactionType
+      bankAccount
+      amount
+      paymentMethod
+      reconciliationStatus
+      createdAt
+    }
+  }
+`
+
+export const GET_BANK_ACCOUNTS = gql`
+  query GetBankAccounts($organizationId: String!) {
+    bankAccounts(organizationId: $organizationId) {
+      id
+      accountNumber
+      accountName
+      bankName
+      branchName
+      currentBalance
+      isActive
+      createdAt
+    }
+  }
+`
+
+export const CREATE_CASH_BANK = gql`
+  mutation CreateCashBank($input: CashBankInput!) {
+    createCashBank(input: $input) {
+      id
+      transactionNumber
+    }
+  }
+`
+
+export const CREATE_BANK_ACCOUNT = gql`
+  mutation CreateBankAccount($input: BankAccountInput!) {
+    createBankAccount(input: $input) {
+      id
+      accountNumber
+      accountName
+    }
+  }
+`
+
+// Inventory Control
+export const GET_INVENTORY_CONTROLS = gql`
+  query GetInventoryControls($organizationId: String!, $warehouseId: String, $stockStatus: String) {
+    inventoryControls(organizationId: $organizationId, warehouseId: $warehouseId, stockStatus: $stockStatus) {
+      id
+      itemId
+      itemName
+      binLocation
+      quantity
+      unit
+      minStockLevel
+      maxStockLevel
+      reorderPoint
+      warehouseId
+      stockStatus
+      createdAt
+    }
+  }
+`
+
+export const GET_LOW_STOCK_ITEMS = gql`
+  query GetLowStockItems($organizationId: String!) {
+    lowStockItems(organizationId: $organizationId) {
+      id
+      itemId
+      itemName
+      quantity
+      reorderPoint
+      stockStatus
+    }
+  }
+`
+
+export const CREATE_INVENTORY_CONTROL = gql`
+  mutation CreateInventoryControl($input: InventoryControlInput!) {
+    createInventoryControl(input: $input) {
+      id
+      itemName
+      quantity
+    }
+  }
+`
+
+export const ADJUST_STOCK = gql`
+  mutation AdjustStock($itemId: String!, $binLocation: String!, $quantity: Float!, $reason: String!) {
+    adjustStock(itemId: $itemId, binLocation: $binLocation, quantity: $quantity, reason: $reason) {
+      id
+      quantity
+      stockStatus
+    }
+  }
+`
+
+// Warehouse
+export const GET_WAREHOUSES = gql`
+  query GetWarehouses($organizationId: String!, $isActive: Boolean) {
+    warehouses(organizationId: $organizationId, isActive: $isActive) {
+      id
+      warehouseCode
+      warehouseName
+      location
+      address
+      capacity
+      currentUtilization
+      managerName
+      contactNumber
+      warehouseType
+      isActive
+      createdAt
+    }
+  }
+`
+
+export const GET_WAREHOUSE_BINS = gql`
+  query GetWarehouseBins($organizationId: String!, $warehouseId: String) {
+    warehouseBins(organizationId: $organizationId, warehouseId: $warehouseId) {
+      id
+      warehouseId
+      binCode
+      binLocation
+      binType
+      capacity
+      currentStock
+      isAvailable
+      createdAt
+    }
+  }
+`
+
+export const CREATE_WAREHOUSE = gql`
+  mutation CreateWarehouse($input: WarehouseInput!) {
+    createWarehouse(input: $input) {
+      id
+      warehouseCode
+      warehouseName
+    }
+  }
+`
+
+export const CREATE_WAREHOUSE_BIN = gql`
+  mutation CreateWarehouseBin($input: WarehouseBinInput!) {
+    createWarehouseBin(input: $input) {
+      id
+      binCode
+      binLocation
+    }
+  }
+`
+
+// Customer
+export const GET_CUSTOMERS = gql`
+  query GetCustomers($organizationId: String!) {
+    customers(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_CUSTOMER = gql`
+  mutation CreateCustomer($input: CustomerInput!) {
+    createCustomer(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Production Planning
+export const GET_PRODUCTION_PLANNINGS = gql`
+  query GetProductionPlannings($organizationId: String!) {
+    productionplannings(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_PRODUCTION_PLANNING = gql`
+  mutation CreateProductionPlanning($input: ProductionPlanningInput!) {
+    createProductionPlanning(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Work Order
+export const GET_WORK_ORDERS = gql`
+  query GetWorkOrders($organizationId: String!) {
+    workorders(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_WORK_ORDER = gql`
+  mutation CreateWorkOrder($input: WorkOrderInput!) {
+    createWorkOrder(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Vendor Payment
+export const GET_VENDOR_PAYMENTS = gql`
+  query GetVendorPayments($organizationId: String!) {
+    vendorpayments(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_VENDOR_PAYMENT = gql`
+  mutation CreateVendorPayment($input: VendorPaymentInput!) {
+    createVendorPayment(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Material Receipt
+export const GET_MATERIAL_RECEIPTS = gql`
+  query GetMaterialReceipts($organizationId: String!) {
+    materialreceipts(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_MATERIAL_RECEIPT = gql`
+  mutation CreateMaterialReceipt($input: MaterialReceiptInput!) {
+    createMaterialReceipt(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Goods Receipt
+export const GET_GOODS_RECEIPTS = gql`
+  query GetGoodsReceipts($organizationId: String!) {
+    goodsreceipts(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_GOODS_RECEIPT = gql`
+  mutation CreateGoodsReceipt($input: GoodsReceiptInput!) {
+    createGoodsReceipt(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// GRN
+export const GET_GRNS = gql`
+  query GetGRNs($organizationId: String!) {
+    grns(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_GRN = gql`
+  mutation CreateGRN($input: GRNInput!) {
+    createGRN(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Delivery Challan
+export const GET_DELIVERY_CHALLANS = gql`
+  query GetDeliveryChallans($organizationId: String!) {
+    deliverychallans(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_DELIVERY_CHALLAN = gql`
+  mutation CreateDeliveryChallan($input: DeliveryChallanInput!) {
+    createDeliveryChallan(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Sales Return
+export const GET_SALES_RETURNS = gql`
+  query GetSalesReturns($organizationId: String!) {
+    salesreturns(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_SALES_RETURN = gql`
+  mutation CreateSalesReturn($input: SalesReturnInput!) {
+    createSalesReturn(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Stock Adjustment
+export const GET_STOCK_ADJUSTMENTS = gql`
+  query GetStockAdjustments($organizationId: String!) {
+    stockadjustments(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_STOCK_ADJUSTMENT = gql`
+  mutation CreateStockAdjustment($input: StockAdjustmentInput!) {
+    createStockAdjustment(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Stock Transfer
+export const GET_STOCK_TRANSFERS = gql`
+  query GetStockTransfers($organizationId: String!) {
+    stocktransfers(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_STOCK_TRANSFER = gql`
+  mutation CreateStockTransfer($input: StockTransferInput!) {
+    createStockTransfer(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Payroll Management
+export const GET_PAYROLL_MANAGEMENTS = gql`
+  query GetPayrollManagements($organizationId: String!) {
+    payrollmanagements(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_PAYROLL_MANAGEMENT = gql`
+  mutation CreatePayrollManagement($input: PayrollManagementInput!) {
+    createPayrollManagement(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Salary Processing
+export const GET_SALARY_PROCESSINGS = gql`
+  query GetSalaryProcessings($organizationId: String!) {
+    salaryprocessings(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_SALARY_PROCESSING = gql`
+  mutation CreateSalaryProcessing($input: SalaryProcessingInput!) {
+    createSalaryProcessing(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+// Extraction
+export const GET_EXTRACTIONS = gql`
+  query GetExtractions($organizationId: String!, $status: String) {
+    extractions(organizationId: $organizationId, status: $status) {
+      id
+      extractionNumber
+      extractionDate
+      rawMaterialId
+      rawMaterialName
+      quantity
+      unit
+      sourceLocation
+      extractionType
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_EXTRACTION = gql`
+  mutation CreateExtraction($input: ExtractionInput!) {
+    createExtraction(input: $input) {
+      id
+      extractionNumber
+    }
+  }
+`
+
+// Raw Material Requisition
+export const GET_RAW_MATERIAL_REQUISITIONS = gql`
+  query GetRawMaterialRequisitions($organizationId: String!, $status: String) {
+    rawMaterialRequisitions(organizationId: $organizationId, status: $status) {
+      id
+      requisitionNumber
+      requisitionDate
+      requiredDate
+      rawMaterialId
+      requestedQuantity
+      unit
+      purpose
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_RAW_MATERIAL_REQUISITION = gql`
+  mutation CreateRawMaterialRequisition($input: RawMaterialRequisitionInput!) {
+    createRawMaterialRequisition(input: $input) {
+      id
+      requisitionNumber
+    }
+  }
+`
