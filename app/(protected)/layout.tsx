@@ -2,18 +2,21 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/sidebar'
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => { setHydrated(true) }, [])
 
   useEffect(() => {
-    if (!isAuthenticated) router.push('/login')
-  }, [isAuthenticated, router])
+    if (hydrated && !isAuthenticated) router.replace('/login')
+  }, [hydrated, isAuthenticated, router])
 
-  if (!isAuthenticated) return null
+  if (!hydrated || !isAuthenticated) return null
 
   return (
     <div className="flex h-screen bg-gray-50">
