@@ -58,8 +58,17 @@ const navigation = [
     name: 'CRM', 
     icon: Users,
     subItems: [
+      { name: 'Clients', href: '/clients' },
       { name: 'Lead Management', href: '/crm/lead-management' },
       { name: 'Opportunity Management', href: '/crm/opportunity-management' },
+    ]
+  },
+  { 
+    name: 'Quotations', 
+    icon: FileText,
+    subItems: [
+      { name: 'Create Quotations', href: '/quotations' },
+      { name: 'Send Quotations', href: '/quotations/send' },
     ]
   },
   { 
@@ -136,6 +145,7 @@ const navigation = [
       { name: 'Stock Ledger', href: '/inventory/stock-ledger' },
     ]
   },
+  { name: 'Products', href: '/products', icon: Package },
   { 
     name: 'Financial', 
     icon: TrendingUp,

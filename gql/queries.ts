@@ -1137,3 +1137,344 @@ export const CREATE_RAW_MATERIAL_REQUISITION = gql`
     }
   }
 `
+
+// Clients
+export const GET_CLIENTS = gql`
+  query GetClients {
+    clients {
+      id
+      seqNo
+      name
+      email
+      phone
+      company
+      address
+      city
+      state
+      country
+      zipCode
+      website
+      industry
+      notes
+      status
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const GET_CLIENT = gql`
+  query GetClient($id: ID!) {
+    client(id: $id) {
+      id
+      seqNo
+      name
+      email
+      phone
+      company
+      address
+      city
+      state
+      country
+      zipCode
+      website
+      industry
+      notes
+      status
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const GET_CLIENTS_BY_ORGANIZATION = gql`
+  query GetClientsByOrganization($organizationId: ID!) {
+    clientsByOrganization(organizationId: $organizationId) {
+      id
+      name
+      email
+      phone
+      company
+      status
+    }
+  }
+`
+
+export const CREATE_CLIENT = gql`
+  mutation CreateClient($input: CreateClientInput!) {
+    createClient(input: $input) {
+      id
+      name
+      email
+      status
+    }
+  }
+`
+
+export const UPDATE_CLIENT = gql`
+  mutation UpdateClient($id: ID!, $input: UpdateClientInput!) {
+    updateClient(id: $id, input: $input) {
+      id
+      name
+      email
+      status
+    }
+  }
+`
+
+export const DELETE_CLIENT = gql`
+  mutation DeleteClient($id: ID!) {
+    deleteClient(id: $id)
+  }
+`
+
+// Quotations
+export const GET_QUOTATIONS = gql`
+  query GetQuotations {
+    quotations {
+      id
+      seqNo
+      quotationNumber
+      clientId {
+        id
+        name
+        email
+      }
+      subject
+      quotationDate
+      validUntil
+      lineItems {
+        itemId
+        description
+        quantity
+        unitPrice
+        discount
+        tax
+        total
+      }
+      subtotal
+      taxAmount
+      discountAmount
+      totalAmount
+      terms
+      notes
+      status
+      sentAt
+      sentBy {
+        id
+        firstName
+        lastName
+      }
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const GET_QUOTATION = gql`
+  query GetQuotation($id: ID!) {
+    quotation(id: $id) {
+      id
+      seqNo
+      quotationNumber
+      clientId {
+        id
+        name
+        email
+      }
+      subject
+      quotationDate
+      validUntil
+      lineItems {
+        itemId
+        description
+        quantity
+        unitPrice
+        discount
+        tax
+        total
+      }
+      subtotal
+      taxAmount
+      discountAmount
+      totalAmount
+      terms
+      notes
+      status
+      sentAt
+      sentBy {
+        id
+        firstName
+        lastName
+      }
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const GET_QUOTATIONS_BY_ORGANIZATION = gql`
+  query GetQuotationsByOrganization($organizationId: ID!) {
+    quotationsByOrganization(organizationId: $organizationId) {
+      id
+      quotationNumber
+      clientId {
+        id
+        name
+        email
+      }
+      subject
+      quotationDate
+      validUntil
+      totalAmount
+      status
+      sentAt
+    }
+  }
+`
+
+export const GET_QUOTATIONS_BY_CLIENT = gql`
+  query GetQuotationsByClient($clientId: ID!) {
+    quotationsByClient(clientId: $clientId) {
+      id
+      quotationNumber
+      subject
+      quotationDate
+      validUntil
+      totalAmount
+      status
+      sentAt
+    }
+  }
+`
+
+export const CREATE_QUOTATION = gql`
+  mutation CreateQuotation($input: CreateQuotationInput!) {
+    createQuotation(input: $input) {
+      id
+      quotationNumber
+      status
+    }
+  }
+`
+
+export const UPDATE_QUOTATION = gql`
+  mutation UpdateQuotation($id: ID!, $input: UpdateQuotationInput!) {
+    updateQuotation(id: $id, input: $input) {
+      id
+      quotationNumber
+      status
+    }
+  }
+`
+
+export const DELETE_QUOTATION = gql`
+  mutation DeleteQuotation($id: ID!) {
+    deleteQuotation(id: $id)
+  }
+`
+
+export const SEND_QUOTATION = gql`
+  mutation SendQuotation($id: ID!) {
+    sendQuotation(id: $id) {
+      id
+      quotationNumber
+      status
+      sentAt
+      sentBy {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+`
+
+// Products
+export const GET_PRODUCTS = gql`
+  query GetProducts {
+    products {
+      id
+      seqNo
+      name
+      sku
+      description
+      category
+      brand
+      unit
+      price
+      costPrice
+      taxRate
+      minStockLevel
+      maxStockLevel
+      reorderPoint
+      barcode
+      status
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const GET_PRODUCT = gql`
+  query GetProduct($id: ID!) {
+    product(id: $id) {
+      id
+      seqNo
+      name
+      sku
+      description
+      category
+      brand
+      unit
+      price
+      costPrice
+      taxRate
+      minStockLevel
+      maxStockLevel
+      reorderPoint
+      barcode
+      status
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const GET_PRODUCTS_BY_ORGANIZATION = gql`
+  query GetProductsByOrganization($organizationId: ID!) {
+    productsByOrganization(organizationId: $organizationId) {
+      id
+      name
+      sku
+      price
+      status
+    }
+  }
+`
+
+export const CREATE_PRODUCT = gql`
+  mutation CreateProduct($input: CreateProductInput!) {
+    createProduct(input: $input) {
+      id
+      name
+      sku
+    }
+  }
+`
+
+export const UPDATE_PRODUCT = gql`
+  mutation UpdateProduct($id: ID!, $input: UpdateProductInput!) {
+    updateProduct(id: $id, input: $input) {
+      id
+      name
+      sku
+    }
+  }
+`
+
+export const DELETE_PRODUCT = gql`
+  mutation DeleteProduct($id: ID!) {
+    deleteProduct(id: $id)
+  }
+`

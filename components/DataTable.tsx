@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { InputFloating } from '@/components/ui/input-floating'
+import { SelectFloating } from '@/components/ui/select-floating'
 import { Plus, Search, Filter, Download, Trash2, Edit, Eye } from 'lucide-react'
 
 export interface Column<T = any> {
@@ -106,156 +108,132 @@ export function DataTable<T extends Record<string, any>>({
       })
     : filteredData
 
-  const cellPadding = compact ? 'px-2 py-1.5' : 'px-3 py-2.5'
-
   return (
-    <div className={`bg-white rounded-lg shadow-sm ${bordered ? 'border border-gray-300' : ''} ${className}`}>
+    <div className={`bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm ${className}`}>
       {/* Header */}
-      {(title || description || onAdd || searchable || exportable) && (
-        <div className="px-4 py-3 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              {title && <h2 className="text-lg font-semibold text-gray-800">{title}</h2>}
-              {description && <p className="text-sm text-gray-500 mt-0.5">{description}</p>}
-            </div>
-            <div className="flex items-center gap-2">
-              {searchable && (
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder={searchPlaceholder}
-                    value={searchQuery}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
-                  />
-                </div>
-              )}
-              {exportable && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onExport}
-                  className="h-9"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              )}
-              {onAdd && (
-                <Button
-                  size="sm"
-                  onClick={onAdd}
-                  className="h-9 bg-blue-600 hover:bg-blue-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {addLabel}
-                </Button>
-              )}
-            </div>
-          </div>
+      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
+        <div className="flex items-center gap-3">
+          {title && <span className="text-sm font-semibold text-gray-700">{title}</span>}
+          {description && <span className="text-xs text-gray-500">{description}</span>}
         </div>
-      )}
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {columns.map((column, idx) => (
-                <th
-                  key={column.key}
-                  className={`${cellPadding} text-xs font-semibold text-gray-600 uppercase tracking-wide ${
-                    column.align === 'center' ? 'text-center' : column.align === 'right' ? 'text-right' : 'text-left'
-                  } ${column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''} ${
-                    idx === 0 ? 'rounded-tl-lg' : idx === columns.length - 1 ? 'rounded-tr-lg' : ''
-                  }`}
-                  style={{ width: column.width }}
-                  onClick={() => column.sortable && handleSort(column.key)}
-                >
-                  <div className="flex items-center gap-2">
-                    {column.label}
-                    {column.sortable && sortConfig?.key === column.key && (
-                      <span className="text-blue-600">
-                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                      </span>
-                    )}
-                  </div>
-                </th>
-              ))}
-              {actions.length > 0 && (
-                <th className={`${cellPadding} text-xs font-semibold text-gray-600 uppercase tracking-wide text-right`}>
-                  Actions
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={columns.length + (actions.length > 0 ? 1 : 0)} className="text-center py-12">
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-                    <span className="ml-3 text-gray-500">Loading...</span>
-                  </div>
-                </td>
-              </tr>
-            ) : sortedData.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length + (actions.length > 0 ? 1 : 0)} className="text-center py-12">
-                  <div className="flex flex-col items-center justify-center text-gray-400">
-                    {emptyIcon || <Filter className="h-12 w-12 mb-3 opacity-30" />}
-                    <p className="text-sm">{emptyMessage}</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              sortedData.map((row, rowIdx) => (
-                <tr
-                  key={row[rowKey] || rowIdx}
-                  className={`border-b border-gray-200 last:border-b-0 ${
-                    striped && rowIdx % 2 === 1 ? 'bg-gray-50/50' : ''
-                  } ${hoverable ? 'hover:bg-blue-50/30 transition-colors' : ''}`}
-                >
-                  {columns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={`${cellPadding} text-sm ${
-                        column.align === 'center' ? 'text-center' : column.align === 'right' ? 'text-right' : 'text-left'
-                      }`}
-                    >
-                      {column.render ? column.render(row[column.key], row) : row[column.key]}
-                    </td>
-                  ))}
-                  {actions.length > 0 && (
-                    <td className={`${cellPadding} text-right`}>
-                      <div className="flex items-center justify-end gap-1">
-                        {actions.map((action, actionIdx) => {
-                          if (action.show && !action.show(row)) return null
-                          return (
-                            <Button
-                              key={actionIdx}
-                              variant={action.variant || 'ghost'}
-                              size="sm"
-                              onClick={() => action.onClick(row)}
-                              className="h-7 px-2"
-                            >
-                              {action.icon}
-                              <span className="ml-1 text-xs">{action.label}</span>
-                            </Button>
-                          )
-                        })}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <div className="flex items-center gap-2">
+          {searchable && (
+            <InputFloating
+              type="text"
+              label={searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              icon={<Search className="h-3.5 w-3.5" />}
+              className="h-7 text-xs w-48"
+            />
+          )}
+          {exportable && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExport}
+              className="h-7 text-xs"
+            >
+              <Download className="h-3.5 w-3.5 mr-1" />
+              Export
+            </Button>
+          )}
+          {onAdd && (
+            <Button
+              size="sm"
+              onClick={onAdd}
+              className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              {addLabel}
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Footer with pagination can be added here */}
+      {/* Table */}
+      <div>
+        {/* Header Row */}
+        <div className="flex bg-[#f0f0f0] border-b border-gray-300">
+          <div className="w-8 border-r border-gray-300 py-2 flex items-center justify-center text-xs text-gray-400">#</div>
+          {columns.map((column, idx) => (
+            <div
+              key={column.key}
+              className={`border-r border-gray-300 last:border-r-0 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide ${
+                column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
+              }`}
+              style={{ width: column.width, flex: column.width ? undefined : 1 }}
+              onClick={() => column.sortable && handleSort(column.key)}
+            >
+              <div className="flex items-center gap-1">
+                {column.label}
+                {column.sortable && sortConfig?.key === column.key && (
+                  <span className="text-blue-600 text-xs">
+                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+          {actions.length > 0 && (
+            <div className="w-24 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide text-right">
+              Actions
+            </div>
+          )}
+        </div>
+
+        {/* Body */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-gray-400 text-sm">Loading…</div>
+        ) : sortedData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+            {emptyIcon || <Filter className="h-8 w-8 mb-2 opacity-30" />}
+            <p className="text-xs">{emptyMessage}</p>
+          </div>
+        ) : (
+          sortedData.map((row, rowIdx) => (
+            <div
+              key={row[rowKey] || rowIdx}
+              className={`flex border-b border-gray-200 last:border-b-0 ${
+                striped && rowIdx % 2 === 1 ? 'bg-gray-50/50' : 'bg-white'
+              } ${hoverable ? 'hover:bg-blue-50/30 transition-colors' : ''}`}
+            >
+              <div className="w-8 border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-2">
+                {rowIdx + 1}
+              </div>
+              {columns.map((column) => (
+                <div
+                  key={column.key}
+                  className={`border-r border-gray-200 last:border-r-0 px-2 py-2 text-xs ${
+                    column.align === 'center' ? 'text-center' : column.align === 'right' ? 'text-right' : 'text-left'
+                  }`}
+                  style={{ width: column.width, flex: column.width ? undefined : 1 }}
+                >
+                  {column.render ? column.render(row[column.key], row) : row[column.key]}
+                </div>
+              ))}
+              {actions.length > 0 && (
+                <div className="w-24 px-2 py-2 flex items-center justify-end gap-1">
+                  {actions.map((action, actionIdx) => {
+                    if (action.show && !action.show(row)) return null
+                    return (
+                      <Button
+                        key={actionIdx}
+                        variant={action.variant || 'ghost'}
+                        size="sm"
+                        onClick={() => action.onClick(row)}
+                        className="h-6 px-2 text-xs"
+                      >
+                        {action.icon}
+                      </Button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }
