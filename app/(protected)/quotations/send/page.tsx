@@ -1,18 +1,18 @@
 'use client'
 
-import { useQuery, useMutation } from '@apollo/client'
-import { gql } from '@apollo/client'
+import { useQuery, useMutation, gql } from '@apollo/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Send, Eye } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Send, Eye, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 
 const GET_QUOTATIONS = gql`
-  query GetQuotations {
-    quotations {
+  query GetQuotationsForSend($organizationId: ID) {
+    quotations(organizationId: $organizationId) {
       id
       quotationNumber
       clientId {
@@ -46,70 +46,134 @@ const GET_QUOTATIONS = gql`
 const SEND_QUOTATION = gql`
   mutation SendQuotation($id: ID!) {
     sendQuotation(id: $id) {
-      id
-      status
-      sentAt
+      emailSent
+      quotation {
+        id
+        status
+        sentAt
+      }
     }
   }
 `
 
-export default function SendQuotationsPage() {
-  const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
-  const [previewOpen, setPreviewOpen] = useState(false)
+type QuotationRow = {
+  id: string
+  quotationNumber: string
+  clientId: { id: string; name: string; email?: string | null }
+  subject: string
+  quotationDate: string
+  validUntil: string
+  lineItems: Array<{
+    description: string
+    quantity: number
+    unitPrice: number
+    discount?: number
+    tax?: number
+    total: number
+  }>
+  subtotal: number
+  taxAmount: number
+  discountAmount: number
+  totalAmount: number
+  terms?: string | null
+  notes?: string | null
+  status: string
+  sentAt?: string | null
+}
 
-  const { data, loading, refetch } = useQuery(GET_QUOTATIONS)
+export default function SendQuotationsPage() {
+  const { user } = useAuth()
+  const orgId = user?.organizationId
+
+  const [selectedQuotation, setSelectedQuotation] = useState<QuotationRow | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [banner, setBanner] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [sendConfirmId, setSendConfirmId] = useState<string | null>(null)
+
+  const { data, loading, refetch } = useQuery(GET_QUOTATIONS, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+    fetchPolicy: 'network-only',
+  })
+
   const [sendQuotation, { loading: sending }] = useMutation(SEND_QUOTATION, {
     onCompleted: () => {
       refetch()
-      alert('Quotation sent successfully via email!')
+      setSendConfirmId(null)
+      setBanner({
+        type: 'ok',
+        text: 'Quotation was emailed to the client via SMTP and marked as sent.',
+      })
+      setTimeout(() => setBanner(null), 8000)
     },
     onError: (error) => {
-      alert(`Error sending quotation: ${error.message}`)
+      setSendConfirmId(null)
+      setBanner({ type: 'err', text: error.message })
+      setTimeout(() => setBanner(null), 10000)
     },
   })
 
-  const handleSend = (id: string, clientEmail: string) => {
-    if (confirm(`Send this quotation to ${clientEmail}?`)) {
-      sendQuotation({ variables: { id } })
-    }
+  const handleSend = (id: string) => {
+    sendQuotation({ variables: { id } })
   }
 
-  const handlePreview = (quotation: any) => {
+  const handlePreview = (quotation: QuotationRow) => {
     setSelectedQuotation(quotation)
     setPreviewOpen(true)
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusStyle = (status: string) => {
     const colors: Record<string, string> = {
-      draft: 'bg-gray-500',
-      sent: 'bg-blue-500',
-      accepted: 'bg-green-500',
-      rejected: 'bg-red-500',
-      expired: 'bg-orange-500',
+      draft: 'bg-gray-500 text-white border-transparent',
+      sent: 'bg-blue-600 text-white border-transparent',
+      accepted: 'bg-emerald-600 text-white border-transparent',
+      rejected: 'bg-red-600 text-white border-transparent',
+      expired: 'bg-orange-600 text-white border-transparent',
     }
-    return colors[status] || 'bg-gray-500'
+    return colors[status] || 'bg-gray-500 text-white border-transparent'
   }
 
-  if (loading) return <div className="p-6">Loading...</div>
+  if (!orgId) {
+    return (
+      <div className="p-6">
+        <p className="text-gray-500 text-sm">Select an organization to send quotations.</p>
+      </div>
+    )
+  }
 
-  const draftQuotations = data?.quotations?.filter((q: any) => q.status === 'draft') || []
-  const sentQuotations = data?.quotations?.filter((q: any) => q.status !== 'draft') || []
+  if (loading) return <div className="p-6">Loading…</div>
+
+  const rows: QuotationRow[] = data?.quotations ?? []
+  const draftQuotations = rows.filter((q) => q.status === 'draft')
+  const sentQuotations = rows.filter((q) => q.status !== 'draft')
 
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Send Quotations</h1>
-        <p className="text-gray-500 mt-2">Review and send quotations to clients via email</p>
+        <h1 className="text-3xl font-bold">Send quotations</h1>
+        <p className="text-gray-500 mt-2">Review draft quotations, send them to clients by email, and browse history.</p>
       </div>
 
-      {/* Draft Quotations - Ready to Send */}
+      {banner?.type === 'ok' && (
+        <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm">
+          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>{banner.text}</span>
+        </div>
+      )}
+      {banner?.type === 'err' && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>{banner.text}</span>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle>Draft Quotations - Ready to Send</CardTitle>
+          <CardTitle>Draft quotations — ready to send</CardTitle>
         </CardHeader>
         <CardContent>
           {draftQuotations.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No draft quotations available</p>
+            <p className="text-gray-500 text-center py-8">No draft quotations. Create one under Quotations, then return here to send it.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -119,61 +183,59 @@ export default function SendQuotationsPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Subject</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Valid Until</TableHead>
+                  <TableHead>Valid until</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {draftQuotations.map((quotation: any) => (
-                  <TableRow key={quotation.id}>
-                    <TableCell className="font-medium">{quotation.quotationNumber}</TableCell>
-                    <TableCell>{quotation.clientId.name}</TableCell>
-                    <TableCell>{quotation.clientId.email}</TableCell>
-                    <TableCell>{quotation.subject}</TableCell>
-                    <TableCell>{new Date(quotation.quotationDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(quotation.validUntil).toLocaleDateString()}</TableCell>
-                    <TableCell className="font-semibold">${quotation.totalAmount.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(quotation.status)}>
-                        {quotation.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handlePreview(quotation)}
-                        >
-                          <Eye className="w-4 h-4 mr-1" /> Preview
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleSend(quotation.id, quotation.clientId.email)}
-                          disabled={sending}
-                        >
-                          <Send className="w-4 h-4 mr-1" /> Send Email
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {draftQuotations.map((quotation) => {
+                  const clientEmail = quotation.clientId?.email?.trim()
+                  const canSend = Boolean(clientEmail)
+                  return (
+                    <TableRow key={quotation.id}>
+                      <TableCell className="font-medium font-mono text-xs">{quotation.quotationNumber}</TableCell>
+                      <TableCell>{quotation.clientId.name}</TableCell>
+                      <TableCell className="text-sm text-gray-600">{clientEmail || '—'}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{quotation.subject}</TableCell>
+                      <TableCell>{new Date(quotation.quotationDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(quotation.validUntil).toLocaleDateString()}</TableCell>
+                      <TableCell className="font-semibold">${Number(quotation.totalAmount).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusStyle(quotation.status)}>{quotation.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2 flex-wrap">
+                          <Button size="sm" variant="outline" onClick={() => handlePreview(quotation)}>
+                            <Eye className="w-4 h-4 mr-1" /> Preview
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => setSendConfirmId(quotation.id)}
+                            disabled={sending || !canSend}
+                            title={!canSend ? 'Add an email on the client record first' : 'Send to client'}
+                          >
+                            <Send className="w-4 h-4 mr-1" /> Send to client
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
 
-      {/* Sent Quotations - History */}
       <Card>
         <CardHeader>
-          <CardTitle>Sent Quotations - History</CardTitle>
+          <CardTitle>Sent quotations — history</CardTitle>
         </CardHeader>
         <CardContent>
           {sentQuotations.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No sent quotations yet</p>
+            <p className="text-gray-500 text-center py-8">No sent or closed quotations yet. Sent items appear here after you send a draft.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -183,31 +245,25 @@ export default function SendQuotationsPage() {
                   <TableHead>Subject</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Sent At</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Sent at</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sentQuotations.map((quotation: any) => (
+                {sentQuotations.map((quotation) => (
                   <TableRow key={quotation.id}>
-                    <TableCell className="font-medium">{quotation.quotationNumber}</TableCell>
+                    <TableCell className="font-medium font-mono text-xs">{quotation.quotationNumber}</TableCell>
                     <TableCell>{quotation.clientId.name}</TableCell>
-                    <TableCell>{quotation.subject}</TableCell>
-                    <TableCell className="font-semibold">${quotation.totalAmount.toFixed(2)}</TableCell>
+                    <TableCell className="max-w-[220px] truncate">{quotation.subject}</TableCell>
+                    <TableCell className="font-semibold">${Number(quotation.totalAmount).toFixed(2)}</TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(quotation.status)}>
-                        {quotation.status}
-                      </Badge>
+                      <Badge className={getStatusStyle(quotation.status)}>{quotation.status}</Badge>
                     </TableCell>
-                    <TableCell>
-                      {quotation.sentAt ? new Date(quotation.sentAt).toLocaleString() : '-'}
+                    <TableCell className="text-sm text-gray-600">
+                      {quotation.sentAt ? new Date(quotation.sentAt).toLocaleString() : '—'}
                     </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handlePreview(quotation)}
-                      >
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" onClick={() => handlePreview(quotation)}>
                         <Eye className="w-4 h-4 mr-1" /> View
                       </Button>
                     </TableCell>
@@ -219,29 +275,48 @@ export default function SendQuotationsPage() {
         </CardContent>
       </Card>
 
-      {/* Preview Dialog */}
+      <Dialog open={!!sendConfirmId} onOpenChange={(open) => !open && setSendConfirmId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send quotation to client?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600">
+            Sends the full quotation (lines, totals, terms) to the client using SMTP (Nodemailer). The API must have
+            EMAIL_USER and EMAIL_PASSWORD set. The quotation is only marked sent after the email succeeds.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setSendConfirmId(null)} disabled={sending}>
+              Cancel
+            </Button>
+            <Button size="sm" disabled={sending} onClick={() => sendConfirmId && handleSend(sendConfirmId)}>
+              {sending ? 'Sending…' : 'Confirm send'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Quotation Preview</DialogTitle>
+            <DialogTitle>Quotation preview</DialogTitle>
           </DialogHeader>
           {selectedQuotation && (
             <div className="space-y-4">
               <div className="bg-blue-600 text-white p-6 rounded-t-lg text-center">
                 <h2 className="text-2xl font-bold">Quotation {selectedQuotation.quotationNumber}</h2>
               </div>
-              
+
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Client</p>
                     <p className="font-semibold">{selectedQuotation.clientId.name}</p>
-                    <p className="text-sm">{selectedQuotation.clientId.email}</p>
+                    <p className="text-sm">{selectedQuotation.clientId.email || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Quotation Date</p>
+                    <p className="text-sm text-gray-500">Quotation date</p>
                     <p className="font-semibold">{new Date(selectedQuotation.quotationDate).toLocaleDateString()}</p>
-                    <p className="text-sm text-gray-500 mt-2">Valid Until</p>
+                    <p className="text-sm text-gray-500 mt-2">Valid until</p>
                     <p className="font-semibold">{new Date(selectedQuotation.validUntil).toLocaleDateString()}</p>
                   </div>
                 </div>
@@ -251,25 +326,25 @@ export default function SendQuotationsPage() {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold mb-2">Line Items</h4>
+                  <h4 className="font-semibold mb-2">Line items</h4>
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Description</TableHead>
-                        <TableHead className="text-center">Quantity</TableHead>
-                        <TableHead className="text-right">Unit Price</TableHead>
-                        <TableHead className="text-right">Discount</TableHead>
+                        <TableHead className="text-center">Qty</TableHead>
+                        <TableHead className="text-right">Unit price</TableHead>
+                        <TableHead className="text-right">Disc %</TableHead>
                         <TableHead className="text-right">Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {selectedQuotation.lineItems.map((item: any, index: number) => (
+                      {(selectedQuotation.lineItems ?? []).map((item, index) => (
                         <TableRow key={index}>
                           <TableCell>{item.description}</TableCell>
                           <TableCell className="text-center">{item.quantity}</TableCell>
-                          <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">{item.discount}%</TableCell>
-                          <TableCell className="text-right font-semibold">${item.total.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">${Number(item.unitPrice).toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{item.discount ?? 0}%</TableCell>
+                          <TableCell className="text-right font-semibold">${Number(item.total).toFixed(2)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -279,25 +354,25 @@ export default function SendQuotationsPage() {
                 <div className="bg-gray-50 p-4 rounded space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span className="font-semibold">${selectedQuotation.subtotal.toFixed(2)}</span>
+                    <span className="font-semibold">${Number(selectedQuotation.subtotal).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Discount:</span>
-                    <span className="font-semibold">-${selectedQuotation.discountAmount.toFixed(2)}</span>
+                    <span className="font-semibold">-${Number(selectedQuotation.discountAmount).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tax:</span>
-                    <span className="font-semibold">${selectedQuotation.taxAmount.toFixed(2)}</span>
+                    <span className="font-semibold">${Number(selectedQuotation.taxAmount).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
-                    <span>Total Amount:</span>
-                    <span className="text-blue-600">${selectedQuotation.totalAmount.toFixed(2)}</span>
+                    <span>Total amount:</span>
+                    <span className="text-blue-600">${Number(selectedQuotation.totalAmount).toFixed(2)}</span>
                   </div>
                 </div>
 
                 {selectedQuotation.terms && (
                   <div>
-                    <h4 className="font-semibold mb-2">Terms & Conditions</h4>
+                    <h4 className="font-semibold mb-2">Terms & conditions</h4>
                     <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedQuotation.terms}</p>
                   </div>
                 )}
