@@ -85,7 +85,6 @@ const navigation = [
       { name: 'Issue Credit Memos', href: '/sales/issue-credit-memos' },
       { name: 'Project', href: '/sales/project' },
       { name: 'Sales Enquiry', href: '/sales/sales-enquiry' },
-      { name: 'Sales Quotation', href: '/sales/sales-quotation' },
     ]
   },
   { 
