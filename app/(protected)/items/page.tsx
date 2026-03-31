@@ -11,8 +11,8 @@ import { useAuth } from '@/contexts/AuthContext'
 export default function ItemsPage() {
   const { user } = useAuth()
   const { data, loading } = useQuery(GET_ITEMS, {
-    variables: { organizationId: user?.id || '', page: 1, limit: 50 },
-    skip: !user,
+    variables: { organizationId: user?.organizationId || '', page: 1, limit: 50 },
+    skip: !user?.organizationId,
   })
 
   return (

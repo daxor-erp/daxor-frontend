@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_PURCHASE_ORDERS, GET_VENDORS, GET_PROJECTS, UPDATE_PURCHASE_ORDER } from '@/gql/queries'
+import { GET_PURCHASE_ORDERS, GET_VENDORS, GET_PROJECTS, RECEIVE_PURCHASE_ORDER, APPROVE_PURCHASE_ORDER } from '@/gql/queries'
 import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
 import { PackageCheck, Clock, CheckCircle2, X, Inbox } from 'lucide-react'
@@ -13,6 +13,7 @@ const cellErr = 'border border-red-400 bg-red-50 outline-none focus:ring-1 focus
 const today = () => new Date().toISOString().split('T')[0]
 
 const STATUS_BADGE: Record<string, string> = {
+  submitted: 'bg-amber-50 text-amber-700 border-amber-200',
   approved: 'bg-blue-50 text-blue-700 border-blue-200',
   sent:     'bg-indigo-50 text-indigo-700 border-indigo-200',
   received: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -34,9 +35,10 @@ export default function ReceiveOrdersPage() {
     variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
   })
-  const [update, { loading: confirming }] = useMutation(UPDATE_PURCHASE_ORDER, {
+  const [update, { loading: confirming }] = useMutation(RECEIVE_PURCHASE_ORDER, {
     onCompleted: () => { setSelected(null); setReceiveDate(''); setDateErr(''); refetch() },
   })
+  const [approvePO] = useMutation(APPROVE_PURCHASE_ORDER, { onCompleted: () => refetch() })
 
   const [tab, setTab] = useState<'pending' | 'received'>('pending')
   const [selected, setSelected] = useState<any>(null)
@@ -47,15 +49,15 @@ export default function ReceiveOrdersPage() {
   const vendors: any[] = vendorData?.vendors ?? []
   const projects: any[] = projectData?.projects ?? []
 
-  const getVendor  = (id: string) => vendors.find(v => v.id === id)?.name ?? '—'
-  const getProject = (id: string) => projects.find(p => p.id === id)?.name ?? '—'
+  const getVendor  = (id: string) => vendors.find(v => v.id === id || String(v._id) === id)?.name ?? '—'
+  const getProject = (id: string) => projects.find(p => p.id === id || String(p._id) === id)?.name ?? '—'
 
-  const pending  = orders.filter(o => o.status === 'approved' || o.status === 'sent')
+  const pending  = orders.filter(o => ['submitted', 'approved', 'sent'].includes(o.status))
   const received = orders.filter(o => o.status === 'received')
 
   const handleConfirm = () => {
     if (!receiveDate) { setDateErr('Required'); return }
-    update({ variables: { id: selected.id, input: { status: 'received' } } })
+    update({ variables: { id: selected.id } })
   }
 
   const rows = tab === 'pending' ? pending : received
@@ -91,9 +93,9 @@ export default function ReceiveOrdersPage() {
             <div className="p-4 space-y-3">
               <div className="bg-gray-50 border border-gray-200 rounded p-3 text-xs space-y-1">
                 <div className="flex justify-between"><span className="text-gray-500">PO #</span><span className="font-mono text-gray-700">{selected.seqNo || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Vendor</span><span className="font-medium text-gray-800">{getVendor(selected.vendorId)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Vendor</span><span className="font-medium text-gray-800">{selected.vendorName || getVendor(selected.vendorId)}</span></div>
                 {selected.projectId && (
-                  <div className="flex justify-between"><span className="text-gray-500">Project</span><span className="text-gray-700">{getProject(selected.projectId)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Project</span><span className="text-gray-700">{selected.projectName || getProject(selected.projectId)}</span></div>
                 )}
                 <div className="flex justify-between"><span className="text-gray-500">PO Total</span><span className="font-semibold text-gray-800">${Number(selected.totalAmount).toFixed(2)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Order Date</span><span className="text-gray-600">{selected.orderDate ? new Date(selected.orderDate).toLocaleDateString() : '—'}</span></div>
@@ -130,7 +132,7 @@ export default function ReceiveOrdersPage() {
         </div>
 
         <div className="flex bg-[#f0f0f0] border-b border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-          {[['w-8','#'],['w-24','PO #'],['flex-1','Vendor'],['w-32','Project'],['w-28','Order Date'],['w-24','Amount'],['w-24','Status'],['w-28','']].map(([w,h]) => (
+          {[['w-8','#'],['w-24','PO #'],['flex-1','Project'],['w-28','Order Date'],['w-24','Amount'],['w-24','Status'],['w-28','']].map(([w,h]) => (
             <div key={h} className={`${w} border-r border-gray-300 last:border-r-0 px-2 py-2`}>{h}</div>
           ))}
         </div>
@@ -146,8 +148,7 @@ export default function ReceiveOrdersPage() {
           <div key={o.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 text-xs ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
             <div className="w-8 border-r border-gray-200 flex items-center justify-center text-gray-300 py-2">{idx + 1}</div>
             <div className="w-24 border-r border-gray-200 px-2 py-2 font-mono text-gray-400">{o.seqNo || '—'}</div>
-            <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800 truncate">{getVendor(o.vendorId)}</div>
-            <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-500 truncate">{o.projectId ? getProject(o.projectId) : '—'}</div>
+            <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800 truncate">{o.projectName || (o.projectId ? getProject(o.projectId) : '—')}</div>
             <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{o.orderDate ? new Date(o.orderDate).toLocaleDateString() : '—'}</div>
             <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">${Number(o.totalAmount).toFixed(2)}</div>
             <div className="w-24 border-r border-gray-200 px-2 py-2">
@@ -155,8 +156,14 @@ export default function ReceiveOrdersPage() {
                 {o.status}
               </span>
             </div>
-            <div className="w-28 px-2 py-1.5 flex items-center">
-              {tab === 'pending' && (
+            <div className="w-28 px-2 py-1.5 flex items-center gap-1">
+              {tab === 'pending' && o.status === 'submitted' && (
+                <Button size="sm" onClick={() => approvePO({ variables: { id: o.id } })}
+                  className="h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2">
+                  Approve
+                </Button>
+              )}
+              {tab === 'pending' && (o.status === 'approved' || o.status === 'sent') && (
                 <Button size="sm" onClick={() => { setSelected(o); setReceiveDate(today()) }}
                   className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2">
                   <PackageCheck className="h-3 w-3 mr-1" /> Receive

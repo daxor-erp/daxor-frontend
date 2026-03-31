@@ -316,9 +316,7 @@ export const UPDATE_VENDOR = gql`
 
 export const DELETE_VENDOR = gql`
   mutation DeleteVendor($id: ID!) {
-    deleteVendor(id: $id) {
-      id
-    }
+    deleteVendor(id: $id)
   }
 `
 
@@ -400,10 +398,21 @@ export const GET_PURCHASE_ORDERS = gql`
       id
       seqNo
       vendorId
+      vendorName
       projectId
+      projectName
+      deliveryDate      subtotal
+      taxAmount
       totalAmount
       status
       orderDate
+      items {
+        itemDescription
+        quantity
+        unitPrice
+        lineTotal
+      }
+      notes
       organizationId
       createdAt
     }
@@ -416,6 +425,7 @@ export const CREATE_PURCHASE_ORDER = gql`
       id
       seqNo
       status
+      totalAmount
     }
   }
 `
@@ -425,6 +435,44 @@ export const UPDATE_PURCHASE_ORDER = gql`
     updatePurchaseOrder(id: $id, input: $input) {
       id
       seqNo
+      status
+      totalAmount
+    }
+  }
+`
+
+export const SUBMIT_PURCHASE_ORDER = gql`
+  mutation SubmitPurchaseOrder($id: ID!) {
+    submitPurchaseOrder(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const APPROVE_PURCHASE_ORDER = gql`
+  mutation ApprovePurchaseOrder($id: ID!) {
+    approvePurchaseOrder(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const RECEIVE_PURCHASE_ORDER = gql`
+  mutation ReceivePurchaseOrder($id: ID!) {
+    receivePurchaseOrder(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const BILL_PURCHASE_ORDER = gql`
+  mutation BillPurchaseOrder($id: ID!, $billDate: String!, $dueDate: String!) {
+    billPurchaseOrder(id: $id, billDate: $billDate, dueDate: $dueDate) {
+      id
+      billNumber
       status
       totalAmount
     }
@@ -646,9 +694,16 @@ export const GET_CASH_BANKS = gql`
       transactionDate
       transactionType
       bankAccount
+      referenceModule
+      referenceId
       amount
+      currency
       paymentMethod
+      chequeNumber
+      description
       reconciliationStatus
+      reconciliationDate
+      organizationId
       createdAt
     }
   }
@@ -662,8 +717,11 @@ export const GET_BANK_ACCOUNTS = gql`
       accountName
       bankName
       branchName
+      accountType
+      currency
       currentBalance
       isActive
+      organizationId
       createdAt
     }
   }
@@ -787,6 +845,23 @@ export const CREATE_WAREHOUSE = gql`
   }
 `
 
+export const UPDATE_WAREHOUSE = gql`
+  mutation UpdateWarehouse($id: ID!, $input: WarehouseInput!) {
+    updateWarehouse(id: $id, input: $input) {
+      id
+      warehouseCode
+      warehouseName
+      location
+      address
+      capacity
+      managerName
+      contactNumber
+      warehouseType
+      isActive
+    }
+  }
+`
+
 export const CREATE_WAREHOUSE_BIN = gql`
   mutation CreateWarehouseBin($input: WarehouseBinInput!) {
     createWarehouseBin(input: $input) {
@@ -865,45 +940,309 @@ export const CREATE_WORK_ORDER = gql`
 
 // Vendor Payment
 export const GET_VENDOR_PAYMENTS = gql`
-  query GetVendorPayments($organizationId: String!) {
-    vendorpayments(organizationId: $organizationId) {
+  query GetVendorPayments($organizationId: ID!, $vendorId: ID, $page: Int, $limit: Int) {
+    vendorPayments(organizationId: $organizationId, vendorId: $vendorId, page: $page, limit: $limit) {
       id
-      docNumber
-      docDate
+      paymentNumber
+      vendorId
+      vendor {
+        id
+        name
+      }
+      paymentDate
+      paymentMethod
+      referenceNumber
+      totalAmount
+      allocations {
+        billId
+        amount
+      }
+      notes
       status
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const GET_VENDOR_PAYMENT = gql`
+  query GetVendorPayment($id: ID!) {
+    vendorPayment(id: $id) {
+      id
+      paymentNumber
+      vendorId
+      vendor {
+        id
+        name
+      }
+      paymentDate
+      paymentMethod
+      referenceNumber
+      totalAmount
+      allocations {
+        billId
+        billNumber
+        amount
+      }
+      notes
+      status
+      organizationId
       createdAt
     }
   }
 `
 
 export const CREATE_VENDOR_PAYMENT = gql`
-  mutation CreateVendorPayment($input: VendorPaymentInput!) {
+  mutation CreateVendorPayment($input: CreateVendorPaymentInput!) {
     createVendorPayment(input: $input) {
       id
-      docNumber
+      paymentNumber
+      status
     }
   }
 `
 
-// Material Receipt
-export const GET_MATERIAL_RECEIPTS = gql`
-  query GetMaterialReceipts($organizationId: String!) {
-    materialreceipts(organizationId: $organizationId) {
+export const UPDATE_VENDOR_PAYMENT = gql`
+  mutation UpdateVendorPayment($id: ID!, $input: UpdateVendorPaymentInput!) {
+    updateVendorPayment(id: $id, input: $input) {
       id
-      docNumber
-      docDate
+      paymentNumber
       status
+    }
+  }
+`
+
+export const DELETE_VENDOR_PAYMENT = gql`
+  mutation DeleteVendorPayment($id: ID!) {
+    deleteVendorPayment(id: $id)
+  }
+`
+
+// Vendor Bills
+export const GET_VENDOR_BILLS = gql`
+  query GetVendorBills($organizationId: ID!, $vendorId: ID, $status: String, $page: Int, $limit: Int) {
+    vendorBills(organizationId: $organizationId, vendorId: $vendorId, status: $status, page: $page, limit: $limit) {
+      id
+      billNumber
+      vendorId
+      vendor {
+        id
+        name
+      }
+      billDate
+      dueDate
+      subtotal
+      discountAmount
+      taxAmount
+      totalAmount
+      paidAmount
+      outstandingAmount
+      notes
+      status
+      organizationId
       createdAt
     }
   }
 `
 
+export const GET_VENDOR_BILL = gql`
+  query GetVendorBill($id: ID!) {
+    vendorBill(id: $id) {
+      id
+      billNumber
+      vendorId
+      vendor {
+        id
+        name
+        email
+      }
+      purchaseOrderId
+      billDate
+      dueDate
+      lineItems {
+        description
+        quantity
+        unitPrice
+        discount
+        tax
+        total
+      }
+      subtotal
+      discountAmount
+      taxAmount
+      totalAmount
+      paidAmount
+      outstandingAmount
+      notes
+      status
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const GET_OUTSTANDING_VENDOR_BILLS = gql`
+  query GetOutstandingVendorBills($organizationId: ID!) {
+    outstandingVendorBills(organizationId: $organizationId) {
+      id
+      billNumber
+      vendorId
+      vendor {
+        id
+        name
+      }
+      dueDate
+      totalAmount
+      paidAmount
+      outstandingAmount
+      status
+    }
+  }
+`
+
+export const CREATE_VENDOR_BILL = gql`
+  mutation CreateVendorBill($input: CreateVendorBillInput!) {
+    createVendorBill(input: $input) {
+      id
+      billNumber
+      status
+    }
+  }
+`
+
+export const UPDATE_VENDOR_BILL = gql`
+  mutation UpdateVendorBill($id: ID!, $input: UpdateVendorBillInput!) {
+    updateVendorBill(id: $id, input: $input) {
+      id
+      billNumber
+      status
+    }
+  }
+`
+
+export const APPROVE_VENDOR_BILL = gql`
+  mutation ApproveVendorBill($id: ID!) {
+    approveVendorBill(id: $id) {
+      id
+      billNumber
+      status
+    }
+  }
+`
+
+export const DELETE_VENDOR_BILL = gql`
+  mutation DeleteVendorBill($id: ID!) {
+    deleteVendorBill(id: $id)
+  }
+`
+
+// Material Receipt
+export const GET_MATERIAL_RECEIPTS = gql`
+  query GetMaterialReceipts($organizationId: ID!, $page: Int, $limit: Int, $status: String) {
+    materialreceipts(organizationId: $organizationId, page: $page, limit: $limit, status: $status) {
+      id
+      mrnNumber
+      purchaseOrderId
+      purchaseOrderNumber
+      vendorId
+      vendorName
+      receiptDate
+      warehouseId
+      warehouseName
+      lineItems {
+        itemDescription
+        orderedQty
+        receivedQty
+        rejectedQty
+        unit
+        unitPrice
+        lineTotal
+      }
+      totalAmount
+      status
+      notes
+      organizationId
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const GET_MATERIAL_RECEIPT = gql`
+  query GetMaterialReceipt($id: ID!) {
+    materialreceipt(id: $id) {
+      id
+      mrnNumber
+      purchaseOrderId
+      purchaseOrderNumber
+      vendorId
+      vendorName
+      receiptDate
+      warehouseId
+      warehouseName
+      lineItems {
+        itemId
+        itemDescription
+        orderedQty
+        receivedQty
+        rejectedQty
+        unit
+        unitPrice
+        lineTotal
+      }
+      totalAmount
+      status
+      notes
+      organizationId
+      createdAt
+      updatedAt
+    }
+  }
+`
+
 export const CREATE_MATERIAL_RECEIPT = gql`
-  mutation CreateMaterialReceipt($input: MaterialReceiptInput!) {
+  mutation CreateMaterialReceipt($input: CreateMaterialReceiptInput!) {
     createMaterialReceipt(input: $input) {
       id
-      docNumber
+      mrnNumber
+      status
     }
+  }
+`
+
+export const UPDATE_MATERIAL_RECEIPT = gql`
+  mutation UpdateMaterialReceipt($id: ID!, $input: UpdateMaterialReceiptInput!) {
+    updateMaterialReceipt(id: $id, input: $input) {
+      id
+      mrnNumber
+      status
+    }
+  }
+`
+
+export const CONFIRM_MATERIAL_RECEIPT = gql`
+  mutation ConfirmMaterialReceipt($id: ID!) {
+    confirmMaterialReceipt(id: $id) {
+      id
+      mrnNumber
+      status
+    }
+  }
+`
+
+export const CANCEL_MATERIAL_RECEIPT = gql`
+  mutation CancelMaterialReceipt($id: ID!) {
+    cancelMaterialReceipt(id: $id) {
+      id
+      mrnNumber
+      status
+    }
+  }
+`
+
+export const DELETE_MATERIAL_RECEIPT = gql`
+  mutation DeleteMaterialReceipt($id: ID!) {
+    deleteMaterialReceipt(id: $id)
   }
 `
 
@@ -931,22 +1270,33 @@ export const CREATE_GOODS_RECEIPT = gql`
 
 // GRN
 export const GET_GRNS = gql`
-  query GetGRNs($organizationId: String!) {
-    grns(organizationId: $organizationId) {
+  query GetGRNs($organizationId: ID!, $page: Int, $limit: Int) {
+    grns(organizationId: $organizationId, page: $page, limit: $limit) {
       id
-      docNumber
-      docDate
+      grnNumber
+      purchaseOrderId
+      vendorId
+      vendorName
+      receivedDate
+      lineItems {
+        itemDescription
+        orderedQty
+        receivedQty
+        unitPrice
+      }
+      notes
       status
+      organizationId
       createdAt
     }
   }
 `
 
 export const CREATE_GRN = gql`
-  mutation CreateGRN($input: GRNInput!) {
+  mutation CreateGRN($input: CreateGRNInput!) {
     createGRN(input: $input) {
       id
-      docNumber
+      grnNumber
     }
   }
 `
@@ -997,45 +1347,143 @@ export const CREATE_SALES_RETURN = gql`
 
 // Stock Adjustment
 export const GET_STOCK_ADJUSTMENTS = gql`
-  query GetStockAdjustments($organizationId: String!) {
-    stockadjustments(organizationId: $organizationId) {
+  query GetStockAdjustments($organizationId: ID!, $page: Int, $limit: Int) {
+    stockadjustments(organizationId: $organizationId, page: $page, limit: $limit) {
       id
-      docNumber
-      docDate
+      adjNumber
+      adjDate
+      warehouseId
+      warehouseName
+      adjustmentType
+      lineItems {
+        itemDescription
+        currentQty
+        adjustedQty
+        difference
+        unit
+      }
+      reason
       status
+      notes
+      organizationId
       createdAt
     }
   }
 `
 
 export const CREATE_STOCK_ADJUSTMENT = gql`
-  mutation CreateStockAdjustment($input: StockAdjustmentInput!) {
+  mutation CreateStockAdjustment($input: CreateStockAdjustmentInput!) {
     createStockAdjustment(input: $input) {
       id
-      docNumber
+      adjNumber
+      status
     }
+  }
+`
+
+export const UPDATE_STOCK_ADJUSTMENT = gql`
+  mutation UpdateStockAdjustment($id: ID!, $input: UpdateStockAdjustmentInput!) {
+    updateStockAdjustment(id: $id, input: $input) {
+      id
+      adjNumber
+      status
+    }
+  }
+`
+
+export const CONFIRM_STOCK_ADJUSTMENT = gql`
+  mutation ConfirmStockAdjustment($id: ID!) {
+    confirmStockAdjustment(id: $id) {
+      id
+      adjNumber
+      status
+    }
+  }
+`
+
+export const CANCEL_STOCK_ADJUSTMENT = gql`
+  mutation CancelStockAdjustment($id: ID!) {
+    cancelStockAdjustment(id: $id) {
+      id
+      adjNumber
+      status
+    }
+  }
+`
+
+export const DELETE_STOCK_ADJUSTMENT = gql`
+  mutation DeleteStockAdjustment($id: ID!) {
+    deleteStockAdjustment(id: $id)
   }
 `
 
 // Stock Transfer
 export const GET_STOCK_TRANSFERS = gql`
-  query GetStockTransfers($organizationId: String!) {
-    stocktransfers(organizationId: $organizationId) {
+  query GetStockTransfers($organizationId: ID!, $page: Int, $limit: Int) {
+    stocktransfers(organizationId: $organizationId, page: $page, limit: $limit) {
       id
-      docNumber
-      docDate
+      transferNumber
+      transferDate
+      fromWarehouseId
+      fromWarehouseName
+      toWarehouseId
+      toWarehouseName
+      lineItems {
+        itemDescription
+        qty
+        unit
+      }
       status
+      notes
+      organizationId
       createdAt
     }
   }
 `
 
 export const CREATE_STOCK_TRANSFER = gql`
-  mutation CreateStockTransfer($input: StockTransferInput!) {
+  mutation CreateStockTransfer($input: CreateStockTransferInput!) {
     createStockTransfer(input: $input) {
       id
-      docNumber
+      transferNumber
+      status
     }
+  }
+`
+
+export const UPDATE_STOCK_TRANSFER = gql`
+  mutation UpdateStockTransfer($id: ID!, $input: UpdateStockTransferInput!) {
+    updateStockTransfer(id: $id, input: $input) {
+      id
+      transferNumber
+      status
+    }
+  }
+`
+
+export const CONFIRM_STOCK_TRANSFER = gql`
+  mutation ConfirmStockTransfer($id: ID!) {
+    confirmStockTransfer(id: $id) {
+      id
+      transferNumber
+      status
+    }
+  }
+`
+
+export const CANCEL_STOCK_TRANSFER = gql`
+  mutation CancelStockTransfer($id: ID!) {
+    cancelStockTransfer(id: $id) {
+      id
+      transferNumber
+      status
+    }
+  }
+`
+
+export const DELETE_STOCK_TRANSFER = gql`
+  mutation DeleteStockTransfer($id: ID!) {
+    deleteStockTransfer(id: $id)
   }
 `
 
@@ -1140,8 +1588,8 @@ export const CREATE_RAW_MATERIAL_REQUISITION = gql`
 
 // Clients
 export const GET_CLIENTS = gql`
-  query GetClients {
-    clients {
+  query GetClients($organizationId: ID, $page: Int, $limit: Int, $status: String, $search: String) {
+    clients(organizationId: $organizationId, page: $page, limit: $limit, status: $status, search: $search) {
       id
       seqNo
       name
@@ -1260,11 +1708,7 @@ export const GET_QUOTATIONS = gql`
       notes
       status
       sentAt
-      sentBy {
-        id
-        firstName
-        lastName
-      }
+      sentBy
       organizationId
       createdAt
     }
@@ -1302,11 +1746,7 @@ export const GET_QUOTATION = gql`
       notes
       status
       sentAt
-      sentBy {
-        id
-        firstName
-        lastName
-      }
+      sentBy
       organizationId
       createdAt
     }
@@ -1377,15 +1817,14 @@ export const DELETE_QUOTATION = gql`
 export const SEND_QUOTATION = gql`
   mutation SendQuotation($id: ID!) {
     sendQuotation(id: $id) {
-      id
-      quotationNumber
-      status
-      sentAt
-      sentBy {
+      quotation {
         id
-        firstName
-        lastName
+        quotationNumber
+        status
+        sentAt
+        sentBy
       }
+      emailSent
     }
   }
 `
@@ -1476,5 +1915,97 @@ export const UPDATE_PRODUCT = gql`
 export const DELETE_PRODUCT = gql`
   mutation DeleteProduct($id: ID!) {
     deleteProduct(id: $id)
+  }
+`
+
+// Vendor Credits
+export const GET_VENDOR_CREDITS = gql`
+  query GetVendorCredits($organizationId: ID!, $vendorId: ID) {
+    vendorCredits(organizationId: $organizationId, vendorId: $vendorId) {
+      id
+      creditNumber
+      vendorId
+      vendor { id name }
+      creditDate
+      totalAmount
+      appliedAmount
+      remainingAmount
+      reason
+      notes
+      status
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const CREATE_VENDOR_CREDIT = gql`
+  mutation CreateVendorCredit($input: CreateVendorCreditInput!) {
+    createVendorCredit(input: $input) {
+      id
+      creditNumber
+      status
+    }
+  }
+`
+export const DELETE_VENDOR_CREDIT = gql`
+  mutation DeleteVendorCredit($id: ID!) {
+    deleteVendorCredit(id: $id)
+  }
+`
+
+// Vendor Prepayments
+export const GET_VENDOR_PREPAYMENTS = gql`
+  query GetVendorPrepayments($organizationId: ID!, $vendorId: ID) {
+    vendorPrepayments(organizationId: $organizationId, vendorId: $vendorId) {
+      id
+      prepaymentNumber
+      vendorId
+      vendor { id name }
+      prepaymentDate
+      amount
+      appliedAmount
+      remainingAmount
+      paymentMethod
+      referenceNumber
+      notes
+      status
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const CREATE_VENDOR_PREPAYMENT = gql`
+  mutation CreateVendorPrepayment($input: CreateVendorPrepaymentInput!) {
+    createVendorPrepayment(input: $input) {
+      id
+      prepaymentNumber
+      status
+    }
+  }
+`
+
+export const DELETE_VENDOR_PREPAYMENT = gql`
+  mutation DeleteVendorPrepayment($id: ID!) {
+    deleteVendorPrepayment(id: $id)
+  }
+`
+
+// Purchase Orders (extended for Bill PO)
+export const GET_PURCHASE_ORDERS_FOR_BILLING = gql`
+  query GetPurchaseOrdersForBilling($organizationId: ID!) {
+    purchaseorders(organizationId: $organizationId, page: 1, limit: 200) {
+      id
+      seqNo
+      vendorId
+      vendorName
+      projectId
+      projectName
+      totalAmount
+      status
+      orderDate
+      organizationId
+    }
   }
 `

@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
 
 interface User {
   id: string
@@ -25,7 +24,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
-  const router = useRouter()
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token')
@@ -41,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('user', JSON.stringify(newUser))
     setToken(newToken)
     setUser(newUser)
-    router.push('/dashboard')
+    window.location.href = '/dashboard'
   }
 
   const logout = () => {
@@ -49,7 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('user')
     setToken(null)
     setUser(null)
-    router.push('/login')
+    // Hard redirect to fully reset Apollo cache and all React state
+    window.location.href = '/login'
   }
 
   return (
