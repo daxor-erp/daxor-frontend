@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery, useMutation } from '@apollo/client'
-import { GET_CUSTOMER_INVOICES, CREATE_CUSTOMER_INVOICE, GET_ORGANIZATIONS, GET_SALES_ORDERS } from '@/gql/queries'
+import { useQuery, useMutation, gql } from '@apollo/client'
+import { GET_CUSTOMER_INVOICES, CREATE_CUSTOMER_INVOICE, GET_SALES_ORDERS } from '@/gql/queries'
 import { Button } from '@/components/ui/button'
 import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -24,12 +24,22 @@ const today = () => new Date().toISOString().split('T')[0]
 const cell = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 text-xs px-2 h-7 w-full rounded-sm'
 const cellErr = 'border border-red-400 bg-red-50 outline-none focus:ring-1 focus:ring-red-400 text-xs px-2 h-7 w-full rounded-sm'
 
+const GET_CLIENTS = gql`
+  query GetClientsForCreateInvoices($organizationId: ID) {
+    clients(organizationId: $organizationId) {
+      id
+      name
+      company
+    }
+  }
+`
+
 export default function CreateInvoicesPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
   const { data: invData, loading, refetch } = useQuery(GET_CUSTOMER_INVOICES, { variables: { organizationId: orgId, page: 1, limit: 100 }, skip: !orgId })
-  const { data: orgsData } = useQuery(GET_ORGANIZATIONS, { variables: { page: 1, limit: 200 } })
+  const { data: clientsData } = useQuery(GET_CLIENTS, { variables: { organizationId: orgId }, skip: !orgId })
   const { data: soData } = useQuery(GET_SALES_ORDERS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
 
   const [create, { loading: saving, error: saveError }] = useMutation(CREATE_CUSTOMER_INVOICE, {
@@ -41,13 +51,39 @@ export default function CreateInvoicesPage() {
   const [lines, setLines] = useState<Line[]>([emptyLine()])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const orgs = orgsData?.organizations ?? []
+  const clients = clientsData?.clients ?? []
   const salesOrders = soData?.salesorders ?? []
   const invoices = invData?.customerinvoices ?? []
+  const invoicedSOIds = new Set(invoices.map((i: any) => i.salesOrderId).filter(Boolean))
+  const availableSalesOrders = salesOrders.filter((s: any) => !invoicedSOIds.has(s.id))
 
   const reset = () => { setForm({ customerId: '', salesOrderId: '', invoiceDate: today(), dueDate: '' }); setLines([emptyLine()]); setErrors({}) }
   const setF = (k: string, v: string) => { setForm(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: '' })) }
   const setL = (i: number, k: keyof Line, v: string) => setLines(p => p.map((l, idx) => idx === i ? { ...l, [k]: v } : l))
+  const onSalesOrderSelect = (salesOrderId: string) => {
+    const so = availableSalesOrders.find((s: any) => s.id === salesOrderId)
+    if (!so) {
+      setF('salesOrderId', salesOrderId)
+      return
+    }
+    setForm(p => ({
+      ...p,
+      salesOrderId: so.id,
+      customerId: so.customerId || so.clientId || p.customerId,
+    }))
+    setLines([{ desc: `Sales Order ${so.seqNo || so.id}`, qty: '1', price: String(so.totalAmount || 0) }])
+  }
+  const startFromSalesOrder = (so: any) => {
+    setAdding(true)
+    setForm({
+      customerId: so.customerId || so.clientId || '',
+      salesOrderId: so.id,
+      invoiceDate: today(),
+      dueDate: '',
+    })
+    setLines([{ desc: `Sales Order ${so.seqNo || so.id}`, qty: '1', price: String(so.totalAmount || 0) }])
+    setErrors({})
+  }
 
   const subtotal = lines.reduce((s, l) => s + (parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0), 0)
 
@@ -70,7 +106,10 @@ export default function CreateInvoicesPage() {
   }
 
   const stats = { total: invoices.length, draft: invoices.filter((i: any) => i.status === 'draft').length, paid: invoices.filter((i: any) => i.status === 'paid').length, overdue: invoices.filter((i: any) => i.status === 'overdue').length }
-  const getOrg = (id: string) => orgs.find((o: any) => o.id === id)?.name ?? id
+  const getClient = (id: string) => {
+    const c = clients.find((x: any) => x.id === id)
+    return c ? `${c.name} (${c.id})` : id
+  }
   const getSO = (id: string) => salesOrders.find((s: any) => s.id === id)?.seqNo ?? id
 
   return (
@@ -109,15 +148,15 @@ export default function CreateInvoicesPage() {
           {/* Header fields grid */}
           <div className="grid grid-cols-4 border-b border-gray-200">
             {[
-              { label: 'Client *', key: 'customerId', type: 'select', opts: orgs, err: errors.customerId },
-              { label: 'Sales Order', key: 'salesOrderId', type: 'select', opts: salesOrders.map((s: any) => ({ id: s.id, name: s.seqNo || s.id })), err: '' },
+              { label: 'Client *', key: 'customerId', type: 'select', opts: clients.map((c: any) => ({ id: c.id, name: `${c.name} (${c.id})` })), err: errors.customerId },
+              { label: 'Sales Order', key: 'salesOrderId', type: 'select', opts: availableSalesOrders.map((s: any) => ({ id: s.id, name: `${s.seqNo || s.id} - $${Number(s.totalAmount || 0).toFixed(2)}` })), err: '' },
               { label: 'Invoice Date *', key: 'invoiceDate', type: 'date', err: errors.invoiceDate },
               { label: 'Due Date', key: 'dueDate', type: 'date', err: '' },
             ].map(({ label, key, type, opts, err }: any) => (
               <div key={key} className="border-r border-gray-200 last:border-r-0 p-2">
                 <p className={`text-xs mb-1 font-medium ${err ? 'text-red-500' : 'text-gray-500'}`}>{label}{err ? ` — ${err}` : ''}</p>
                 {type === 'select' ? (
-                  <select value={(form as any)[key]} onChange={e => setF(key, e.target.value)}
+                  <select value={(form as any)[key]} onChange={e => (key === 'salesOrderId' ? onSalesOrderSelect(e.target.value) : setF(key, e.target.value))}
                     className={err ? cellErr : cell}>
                     <option value="">— select —</option>
                     {opts.map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
@@ -205,6 +244,49 @@ export default function CreateInvoicesPage() {
         </div>
       )}
 
+      {/* Available sales orders for invoicing */}
+      {!adding && (
+        <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
+            <span className="text-sm font-semibold text-gray-700">Available Sales Orders</span>
+            <span className="text-xs text-gray-500">{availableSalesOrders.length} available</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-[950px] w-full text-xs">
+              <thead>
+                <tr className="bg-[#f0f0f0] border-b border-gray-300">
+                  {['Order #', 'Client', 'Order Date', 'Amount', 'Status', 'Action'].map((h) => (
+                    <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {availableSalesOrders.length === 0 ? (
+                  <tr>
+                    <td className="px-3 py-3 text-gray-500" colSpan={6}>No sales orders available for invoice generation.</td>
+                  </tr>
+                ) : (
+                  availableSalesOrders.map((so: any, idx: number) => (
+                    <tr key={so.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                      <td className="px-3 py-2 border-r border-gray-200 font-mono">{so.seqNo || '—'}</td>
+                      <td className="px-3 py-2 border-r border-gray-200">{getClient(so.customerId || so.clientId || '—')}</td>
+                      <td className="px-3 py-2 border-r border-gray-200">{so.orderDate ? new Date(so.orderDate).toLocaleDateString() : '—'}</td>
+                      <td className="px-3 py-2 border-r border-gray-200 font-semibold">${Number(so.totalAmount || 0).toFixed(2)}</td>
+                      <td className="px-3 py-2 border-r border-gray-200">{so.status || '—'}</td>
+                      <td className="px-3 py-2">
+                        <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => startFromSalesOrder(so)}>
+                          <Plus className="h-3.5 w-3.5 mr-1" /> Generate Invoice
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Invoices grid */}
       <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
         <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
@@ -238,7 +320,7 @@ export default function CreateInvoicesPage() {
               <div key={inv.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                 <div className="w-8 border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-2">{idx + 1}</div>
                 <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-400">{inv.seqNo || '—'}</div>
-                <div className="flex-1 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{getOrg(inv.customerId)}</div>
+                <div className="flex-1 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{getClient(inv.customerId || inv.clientId)}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-500">{inv.salesOrderId ? getSO(inv.salesOrderId) : '—'}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : '—'}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}</div>

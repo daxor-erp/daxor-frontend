@@ -1,12 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery, useMutation } from '@apollo/client'
-import { GET_SALES_ORDERS, UPDATE_SALES_ORDER, GET_ORGANIZATIONS, GET_PROJECTS } from '@/gql/queries'
+import { useQuery, useMutation, gql } from '@apollo/client'
+import { GET_SALES_ORDERS, UPDATE_SALES_ORDER, GET_PROJECTS } from '@/gql/queries'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,6 +22,16 @@ const SO_STATUS: Record<string, { label: string; cls: string }> = {
   cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
 }
 
+const GET_CLIENTS = gql`
+  query GetClientsForDeliveryOrder($organizationId: ID) {
+    clients(organizationId: $organizationId) {
+      id
+      name
+      company
+    }
+  }
+`
+
 export default function DeliveryOrderPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
@@ -31,7 +40,10 @@ export default function DeliveryOrderPage() {
     variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
   })
-  const { data: orgsData } = useQuery(GET_ORGANIZATIONS, { variables: { page: 1, limit: 200 } })
+  const { data: clientsData } = useQuery(GET_CLIENTS, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+  })
   const { data: projectsData } = useQuery(GET_PROJECTS, {
     variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
@@ -45,14 +57,23 @@ export default function DeliveryOrderPage() {
   const [deliveryDate, setDeliveryDate] = useState(new Date().toISOString().split('T')[0])
   const [activeTab, setActiveTab] = useState<'pending' | 'delivered'>('pending')
 
-  const orgs: any[] = orgsData?.organizations ?? []
+  const clients: any[] = clientsData?.clients ?? []
   const projects: any[] = projectsData?.projects ?? []
   const allOrders: any[] = soData?.salesorders ?? []
 
-  const pending = allOrders.filter(o => ['approved', 'active'].includes(o.status))
+  const pending = allOrders.filter(o => ['draft', 'submitted', 'approved', 'active'].includes(o.status))
   const delivered = allOrders.filter(o => o.status === 'completed')
 
-  const getName = (id: string, list: any[]) => list.find(x => x.id === id)?.name ?? '—'
+  const getProjectName = (id: string) => projects.find((x) => x.id === id)?.name ?? '—'
+  const getClientDisplay = (id: string) => {
+    const c = clients.find((x) => x.id === id)
+    return c ? `${c.name} (${c.id})` : id
+  }
+  const formatDate = (value: string | null | undefined) => {
+    if (!value) return '—'
+    const d = new Date(value)
+    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString()
+  }
 
   const stats = {
     pending: pending.length,
@@ -72,40 +93,41 @@ export default function DeliveryOrderPage() {
   }
 
   const OrderTable = ({ orders, showAction }: { orders: any[]; showAction: boolean }) => (
-    <Table>
-      <TableHeader>
-        <TableRow className="bg-gray-50 hover:bg-gray-50">
-          {['Order #', 'Customer', 'Project', 'Order Date', 'Amount', 'Status', showAction ? 'Action' : ''].filter(Boolean).map(h => (
-            <TableHead key={h} className="text-xs font-semibold text-gray-500 uppercase tracking-wide first:pl-6">{h}</TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {orders.map(o => {
-          const s = SO_STATUS[o.status] ?? SO_STATUS.draft
-          return (
-            <TableRow key={o.id} className="hover:bg-gray-50 transition-colors">
-              <TableCell className="pl-6 font-mono text-xs text-gray-400">{o.seqNo || '—'}</TableCell>
-              <TableCell className="text-sm font-medium text-gray-800">{getName(o.customerId, orgs)}</TableCell>
-              <TableCell className="text-sm text-gray-500">{o.projectId ? getName(o.projectId, projects) : '—'}</TableCell>
-              <TableCell className="text-sm text-gray-600">{o.orderDate ? new Date(o.orderDate).toLocaleDateString() : '—'}</TableCell>
-              <TableCell className="text-sm font-semibold text-gray-800">${Number(o.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
-              <TableCell>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.cls}`}>{s.label}</span>
-              </TableCell>
-              {showAction && (
-                <TableCell>
-                  <Button size="sm" onClick={() => setSelected(o)}
-                    className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
-                    <Truck className="h-3 w-3 mr-1" /> Deliver
-                  </Button>
-                </TableCell>
-              )}
-            </TableRow>
-          )
-        })}
-      </TableBody>
-    </Table>
+    <div className="overflow-x-auto">
+      <table className="min-w-[1150px] w-full text-xs">
+        <thead>
+          <tr className="bg-[#f0f0f0] border-b border-gray-300">
+            {['Order #', 'Customer (Name + ID)', 'Project', 'Order Date', 'Amount', 'Status', showAction ? 'Action' : ''].filter(Boolean).map((h) => (
+              <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((o, idx) => {
+            const s = SO_STATUS[o.status] ?? SO_STATUS.draft
+            return (
+              <tr key={o.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                <td className="px-3 py-2 border-r border-gray-200 font-mono">{o.seqNo || '—'}</td>
+                <td className="px-3 py-2 border-r border-gray-200">{getClientDisplay(o.customerId || o.clientId || '—')}</td>
+                <td className="px-3 py-2 border-r border-gray-200">{o.projectId ? getProjectName(o.projectId) : '—'}</td>
+                <td className="px-3 py-2 border-r border-gray-200">{formatDate(o.orderDate)}</td>
+                <td className="px-3 py-2 border-r border-gray-200 font-semibold">${Number(o.totalAmount || 0).toFixed(2)}</td>
+                <td className="px-3 py-2 border-r border-gray-200">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
+                </td>
+                {showAction && (
+                  <td className="px-3 py-2">
+                    <Button size="sm" onClick={() => setSelected(o)} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
+                      <Truck className="h-3 w-3 mr-1" /> Deliver
+                    </Button>
+                  </td>
+                )}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 
   return (
@@ -192,7 +214,7 @@ export default function DeliveryOrderPage() {
                     <Building2 className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-xs text-gray-400">Customer</p>
-                      <p className="text-sm font-medium text-gray-800">{getName(selected.customerId, orgs)}</p>
+                      <p className="text-sm font-medium text-gray-800">{getClientDisplay(selected.customerId || selected.clientId)}</p>
                     </div>
                   </div>
                   {selected.projectId && (
@@ -200,7 +222,7 @@ export default function DeliveryOrderPage() {
                       <FolderKanban className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                       <div>
                         <p className="text-xs text-gray-400">Project</p>
-                        <p className="text-sm font-medium text-gray-800">{getName(selected.projectId, projects)}</p>
+                        <p className="text-sm font-medium text-gray-800">{getProjectName(selected.projectId)}</p>
                       </div>
                     </div>
                   )}
