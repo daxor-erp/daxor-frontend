@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_PURCHASE_ORDERS, CREATE_PURCHASE_ORDER, GET_VENDORS, GET_PROJECTS, GET_ITEMS } from '@/gql/queries'
+import { GET_PURCHASE_ORDERS, CREATE_PURCHASE_ORDER, GET_VENDORS, GET_PROJECTS, GET_ITEMS, SUBMIT_PURCHASE_ORDER, APPROVE_PURCHASE_ORDER, RECEIVE_PURCHASE_ORDER } from '@/gql/queries'
 import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
 import { Plus, X, Save, Trash2, ShoppingCart, Clock, CheckCircle2, Send, PackageCheck } from 'lucide-react'
@@ -36,8 +36,21 @@ export default function EnterPurchaseOrdersPage() {
     onCompleted: () => { setAdding(false); reset(); refetch() },
   })
 
+  const [submitPO] = useMutation(SUBMIT_PURCHASE_ORDER, { 
+    onCompleted: () => refetch(),
+    onError: (err) => alert(`Submit failed: ${err.message}`)
+  })
+  const [approvePO] = useMutation(APPROVE_PURCHASE_ORDER, { 
+    onCompleted: () => refetch(),
+    onError: (err) => alert(`Approve failed: ${err.message}`)
+  })
+  const [receivePO] = useMutation(RECEIVE_PURCHASE_ORDER, { 
+    onCompleted: () => refetch(),
+    onError: (err) => alert(`Receive failed: ${err.message}`)
+  })
+
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ vendorId: '', projectId: '', orderDate: today(), deliveryDate: '' })
+  const [form, setForm] = useState({ vendorId: '', projectId: '', orderDate: today(), deliveryDate: '', notes: '' })
   const [lines, setLines] = useState<Line[]>([emptyLine()])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -46,7 +59,7 @@ export default function EnterPurchaseOrdersPage() {
   const items = itemData?.items ?? []
   const orders = poData?.purchaseorders ?? []
 
-  const reset = () => { setForm({ vendorId: '', projectId: '', orderDate: today(), deliveryDate: '' }); setLines([emptyLine()]); setErrors({}) }
+  const reset = () => { setForm({ vendorId: '', projectId: '', orderDate: today(), deliveryDate: '', notes: '' }); setLines([emptyLine()]); setErrors({}) }
   const setF = (k: string, v: string) => { setForm(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: '' })) }
   const setL = (i: number, k: keyof Line, v: string) => setLines(p => p.map((l, idx) => idx === i ? { ...l, [k]: v } : l))
   const pickItem = (i: number, id: string) => {
@@ -70,11 +83,17 @@ export default function EnterPurchaseOrdersPage() {
 
   const handleSave = () => {
     if (!validate()) return
-    create({ variables: { input: { vendorId: form.vendorId, projectId: form.projectId || undefined, orderDate: form.orderDate, totalAmount: subtotal, organizationId: orgId } } })
+    const items = lines.map(l => ({
+      itemDescription: l.desc,
+      quantity: parseFloat(l.qty) || 0,
+      unitPrice: parseFloat(l.price) || 0,
+      lineTotal: (parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0),
+    }))
+    create({ variables: { input: { vendorId: form.vendorId, projectId: form.projectId || undefined, orderDate: form.orderDate, deliveryDate: form.deliveryDate || undefined, notes: form.notes || undefined, items, subtotal, totalAmount: subtotal, organizationId: orgId } } })
   }
 
-  const getVendor = (id: string) => vendors.find((v: any) => v.id === id)?.name ?? id
-  const getProject = (id: string) => projects.find((p: any) => p.id === id)?.name ?? '—'
+  const getVendor = (id: string) => vendors.find((v: any) => v.id === id || String(v._id) === id)?.name ?? '—'
+  const getProject = (id: string) => projects.find((p: any) => p.id === id || String(p._id) === id)?.name ?? '—'
 
   const stats = {
     total: orders.length,
@@ -109,12 +128,13 @@ export default function EnterPurchaseOrdersPage() {
           </div>
 
           {/* Header fields */}
-          <div className="grid grid-cols-4 border-b border-gray-200">
+          <div className="grid grid-cols-5 border-b border-gray-200">
             {[
               { label: 'Vendor *', key: 'vendorId', type: 'select', opts: vendors, err: errors.vendorId },
               { label: 'Project', key: 'projectId', type: 'select', opts: projects, err: '' },
               { label: 'Order Date *', key: 'orderDate', type: 'date', err: errors.orderDate },
               { label: 'Expected Delivery', key: 'deliveryDate', type: 'date', err: '' },
+              { label: 'Notes', key: 'notes', type: 'text', err: '' },
             ].map(({ label, key, type, opts, err }: any) => (
               <div key={key} className="border-r border-gray-200 last:border-r-0 p-2">
                 <p className={`text-xs mb-1 font-medium ${err ? 'text-red-500' : 'text-gray-500'}`}>{label}{err ? ` — ${err}` : ''}</p>
@@ -123,6 +143,8 @@ export default function EnterPurchaseOrdersPage() {
                     <option value="">— select —</option>
                     {opts.map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
                   </select>
+                ) : type === 'text' ? (
+                  <input type="text" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} placeholder="Optional notes…" className={cell} />
                 ) : (
                   <input type="date" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} className={err ? cellErr : cell} />
                 )}
@@ -205,7 +227,7 @@ export default function EnterPurchaseOrdersPage() {
           )}
         </div>
         <div className="flex bg-[#f0f0f0] border-b border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-          {[['w-8','#'],['w-24','PO #'],['flex-1','Vendor'],['w-32','Project'],['w-28','Order Date'],['w-28','Delivery Date'],['w-24','Amount'],['w-24','Status']].map(([w,h]) => (
+          {[['w-8','#'],['w-24','PO #'],['flex-1','Project'],['w-28','Order Date'],['w-28','Delivery'],['w-24','Amount'],['w-36','Notes'],['w-24','Status'],['w-32','Actions']].map(([w,h]) => (
             <div key={h} className={`${w} border-r border-gray-300 last:border-r-0 px-2 py-2`}>{h}</div>
           ))}
         </div>
@@ -222,12 +244,28 @@ export default function EnterPurchaseOrdersPage() {
             <div key={o.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors text-xs ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
               <div className="w-8 border-r border-gray-200 flex items-center justify-center text-gray-300 py-2">{idx + 1}</div>
               <div className="w-24 border-r border-gray-200 px-2 py-2 font-mono text-gray-400">{o.seqNo || '—'}</div>
-              <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800 truncate">{getVendor(o.vendorId)}</div>
-              <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-500 truncate">{o.projectId ? getProject(o.projectId) : '—'}</div>
+              <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800 truncate">{o.projectName || (o.projectId ? getProject(o.projectId) : '—')}</div>
               <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{o.orderDate ? new Date(o.orderDate).toLocaleDateString() : '—'}</div>
-              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">—</div>
-              <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">${Number(o.totalAmount).toFixed(2)}</div>
-              <div className="w-24 px-2 py-2"><span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span></div>
+              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{o.deliveryDate ? new Date(o.deliveryDate).toLocaleDateString() : '—'}</div>
+              <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">
+                {(() => {
+                  const calc = o.totalAmount || o.items?.reduce((s: number, i: any) => s + ((i.quantity || 0) * (i.unitPrice || 0)), 0) || 0
+                  return calc > 0 ? `$${Number(calc).toFixed(2)}` : `${o.items?.length || 0} item(s)`
+                })()}
+              </div>
+              <div className="w-36 border-r border-gray-200 px-2 py-2 text-gray-500 truncate">{o.notes || '—'}</div>
+              <div className="w-24 border-r border-gray-200 px-2 py-2"><span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span></div>
+              <div className="w-32 px-2 py-1.5 flex items-center gap-1">
+                {o.status === 'draft' && (
+                  <Button size="sm" onClick={() => submitPO({ variables: { id: o.id } })} className="h-6 text-xs bg-amber-500 hover:bg-amber-600 text-white px-2">Submit</Button>
+                )}
+                {o.status === 'submitted' && (
+                  <Button size="sm" onClick={() => approvePO({ variables: { id: o.id } })} className="h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2">Approve</Button>
+                )}
+                {(o.status === 'approved' || o.status === 'sent') && (
+                  <Button size="sm" onClick={() => receivePO({ variables: { id: o.id } })} className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2">Receive</Button>
+                )}
+              </div>
             </div>
           )
         })}

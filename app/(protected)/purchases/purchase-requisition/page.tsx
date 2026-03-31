@@ -16,8 +16,8 @@ const STATUS_CFG: Record<string, { label: string; cls: string }> = {
 }
 
 const PRIORITY = ['Low', 'Normal', 'High', 'Urgent']
-interface Line { desc: string; qty: string; unit: string; reason: string }
-const emptyLine = (): Line => ({ desc: '', qty: '', unit: 'pcs', reason: '' })
+interface Line { desc: string; qty: string; unit: string; reason: string; price: string }
+const emptyLine = (): Line => ({ desc: '', qty: '', unit: 'pcs', reason: '', price: '0' })
 const today = () => new Date().toISOString().split('T')[0]
 const cell = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 h-7 w-full rounded-sm'
 const cellErr = 'border border-red-400 bg-red-50 outline-none text-xs px-2 h-7 w-full rounded-sm'
@@ -26,32 +26,31 @@ export default function PurchaseRequisitionPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
-  const { data: poData, loading, refetch } = useQuery(GET_PURCHASE_ORDERS, { variables: { organizationId: orgId, page: 1, limit: 100 }, skip: !orgId })
+  const { data: poData, loading, error: poError, refetch } = useQuery(GET_PURCHASE_ORDERS, { variables: { organizationId: orgId, page: 1, limit: 100 }, skip: !orgId })
   const { data: projectData } = useQuery(GET_PROJECTS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
   const { data: itemData } = useQuery(GET_ITEMS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
   const { data: vendorData } = useQuery(GET_VENDORS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
-
   const [create, { loading: saving, error: saveError }] = useMutation(CREATE_PURCHASE_ORDER, {
     onCompleted: () => { setAdding(false); reset(); refetch() },
   })
 
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ projectId: '', requiredDate: '', priority: 'Normal', notes: '' })
+  const [form, setForm] = useState({ vendorId: '', projectId: '', requiredDate: '', priority: 'Normal', notes: '' })
   const [lines, setLines] = useState<Line[]>([emptyLine()])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const projects = projectData?.projects ?? []
   const items = itemData?.items ?? []
   const vendors = vendorData?.vendors ?? []
-  // PRs = submitted POs (no vendor yet assigned)
-  const requisitions = (poData?.purchaseorders ?? []).filter((o: any) => o.status === 'submitted')
+  // PRs = draft POs (internal requests not yet converted to real POs)
+  const requisitions = (poData?.purchaseorders ?? []).filter((o: any) => o.status === 'draft' || o.status === 'submitted')
 
-  const reset = () => { setForm({ projectId: '', requiredDate: '', priority: 'Normal', notes: '' }); setLines([emptyLine()]); setErrors({}) }
+  const reset = () => { setForm({ vendorId: '', projectId: '', requiredDate: '', priority: 'Normal', notes: '' }); setLines([emptyLine()]); setErrors({}) }
   const setF = (k: string, v: string) => { setForm(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: '' })) }
   const setL = (i: number, k: keyof Line, v: string) => setLines(p => p.map((l, idx) => idx === i ? { ...l, [k]: v } : l))
   const pickItem = (i: number, id: string) => {
     const it = items.find((x: any) => x.id === id)
-    if (it) setLines(p => p.map((l, idx) => idx === i ? { ...l, desc: it.name, unit: it.unit || 'pcs' } : l))
+    if (it) setLines(p => p.map((l, idx) => idx === i ? { ...l, desc: it.name, unit: it.unit || 'pcs', price: String(it.rate || 0) } : l))
   }
 
   const validate = () => {
@@ -66,11 +65,29 @@ export default function PurchaseRequisitionPage() {
 
   const handleSave = () => {
     if (!validate()) return
-    // Use first vendor as placeholder; PR doesn't require vendor
-    create({ variables: { input: { vendorId: vendors[0]?.id || orgId, projectId: form.projectId || undefined, orderDate: today(), totalAmount: 0, organizationId: orgId } } })
+    const items = lines.map(l => ({
+      itemDescription: l.desc,
+      quantity: parseFloat(l.qty) || 1,
+      unitPrice: parseFloat(l.price) || 0,
+      lineTotal: (parseFloat(l.qty) || 1) * (parseFloat(l.price) || 0),
+    }))
+    const subtotal = items.reduce((s, i) => s + i.lineTotal, 0)
+    create({ variables: { input: {
+      vendorId: form.vendorId || undefined,
+      projectId: form.projectId || undefined,
+      orderDate: today(),
+      items,
+      subtotal,
+      totalAmount: subtotal,
+      organizationId: orgId,
+    } } })
   }
 
-  const getProject = (id: string) => projects.find((p: any) => p.id === id)?.name ?? '—'
+  const getProject = (id: string) => {
+    if (!id) return '—'
+    const found = projects.find((p: any) => p.id === id || String(p._id) === id)
+    return found?.name ?? `(ID: ${id.slice(-6)})`
+  }
 
   const stats = {
     total: requisitions.length,
@@ -102,8 +119,9 @@ export default function PurchaseRequisitionPage() {
             <button onClick={() => { setAdding(false); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
 
-          <div className="grid grid-cols-4 border-b border-gray-200">
+          <div className="grid grid-cols-5 border-b border-gray-200">
             {[
+              { label: 'Vendor', key: 'vendorId', type: 'select', opts: vendors },
               { label: 'Project', key: 'projectId', type: 'select', opts: projects },
               { label: 'Required By *', key: 'requiredDate', type: 'date' },
               { label: 'Priority', key: 'priority', type: 'priority' },
@@ -132,13 +150,13 @@ export default function PurchaseRequisitionPage() {
           {/* Line items */}
           <div className="p-3">
             <div className="border border-gray-300 rounded overflow-hidden">
-              <div className="grid bg-[#f0f0f0] border-b border-gray-300" style={{ gridTemplateColumns: '2rem 3rem 1fr 5rem 5rem 1fr 2rem' }}>
-                {['#', 'Item', 'Description', 'Qty', 'Unit', 'Reason / Justification', ''].map((h, i) => (
+              <div className="grid bg-[#f0f0f0] border-b border-gray-300" style={{ gridTemplateColumns: '2rem 3rem 1fr 5rem 5rem 6rem 1fr 2rem' }}>
+                {['#', 'Item', 'Description', 'Qty', 'Unit', 'Unit Price', 'Reason / Justification', ''].map((h, i) => (
                   <div key={i} className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</div>
                 ))}
               </div>
               {lines.map((l, i) => (
-                <div key={i} className="grid border-b border-gray-200 last:border-b-0 hover:bg-blue-50/20" style={{ gridTemplateColumns: '2rem 3rem 1fr 5rem 5rem 1fr 2rem' }}>
+                <div key={i} className="grid border-b border-gray-200 last:border-b-0 hover:bg-blue-50/20" style={{ gridTemplateColumns: '2rem 3rem 1fr 5rem 5rem 6rem 1fr 2rem' }}>
                   <div className="border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-1">{i + 1}</div>
                   <div className="border-r border-gray-200 px-1 py-1">
                     <select onChange={e => pickItem(i, e.target.value)} className={`${cell} px-1`}>
@@ -154,6 +172,9 @@ export default function PurchaseRequisitionPage() {
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
                     <input value={l.unit} onChange={e => setL(i, 'unit', e.target.value)} placeholder="pcs" className={cell} />
+                  </div>
+                  <div className="border-r border-gray-200 px-1 py-1">
+                    <input type="number" min="0" step="0.01" value={l.price} onChange={e => setL(i, 'price', e.target.value)} placeholder="0.00" className={cell} />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
                     <input value={l.reason} onChange={e => setL(i, 'reason', e.target.value)} placeholder="Why is this needed?" className={cell} />
@@ -201,7 +222,7 @@ export default function PurchaseRequisitionPage() {
           )}
         </div>
         <div className="flex bg-[#f0f0f0] border-b border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-          {[['w-8','#'],['w-24','PR #'],['flex-1','Project'],['w-28','Required By'],['w-24','Amount'],['w-24','Status']].map(([w,h]) => (
+          {[['w-8','#'],['w-24','PR #'],['flex-1','Project'],['w-32','Vendor'],['w-28','Required By'],['w-32','Items'],['w-24','Amount'],['w-24','Status']].map(([w,h]) => (
             <div key={h} className={`${w} border-r border-gray-300 last:border-r-0 px-2 py-2`}>{h}</div>
           ))}
         </div>
@@ -210,17 +231,26 @@ export default function PurchaseRequisitionPage() {
         ) : requisitions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
             <ClipboardList className="h-8 w-8 mb-2 opacity-30" />
-            <p className="text-xs">No requisitions yet. Click "New Requisition" to raise one.</p>
+            <p className="text-xs">{poError ? `Error: ${poError.message}` : 'No requisitions yet. Click "New Requisition" to raise one.'}</p>
           </div>
         ) : requisitions.map((r: any, idx: number) => {
           const s = STATUS_CFG[r.status] ?? STATUS_CFG.draft
+          const projectName = r.projectId ? getProject(r.projectId) : '—'
+          const itemCount = r.items?.length ?? 0
           return (
             <div key={r.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors text-xs ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
               <div className="w-8 border-r border-gray-200 flex items-center justify-center text-gray-300 py-2">{idx + 1}</div>
               <div className="w-24 border-r border-gray-200 px-2 py-2 font-mono text-gray-400">{r.seqNo || '—'}</div>
-              <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800">{r.projectId ? getProject(r.projectId) : '—'}</div>
+              <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800">{projectName}</div>
+              <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-600">{r.vendorName || '—'}</div>
               <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{r.orderDate ? new Date(r.orderDate).toLocaleDateString() : '—'}</div>
-              <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">${Number(r.totalAmount).toFixed(2)}</div>
+              <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-600">{itemCount > 0 ? `${itemCount} item${itemCount > 1 ? 's' : ''}` : '—'}</div>
+              <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">
+                {(() => {
+                  const total = r.totalAmount || r.items?.reduce((s: number, i: any) => s + ((i.quantity || 0) * (i.unitPrice || 0)), 0) || 0
+                  return total > 0 ? `$${Number(total).toFixed(2)}` : '—'
+                })()}
+              </div>
               <div className="w-24 px-2 py-2"><span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span></div>
             </div>
           )

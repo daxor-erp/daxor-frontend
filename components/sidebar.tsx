@@ -91,36 +91,25 @@ const navigation = [
     name: 'Purchases', 
     icon: Package,
     subItems: [
-      { name: 'Vendor Payments', href: '/vendor-payments' },
-      { name: 'Material Receipt', href: '/material-receipt' },
-      { name: 'Debit Note', href: '/purchases/debit-note' },
-      { name: 'Delivery Order', href: '/purchases/delivery-order' },
-      { name: 'Enter Purchase Orders', href: '/purchases/enter-purchase-orders' },
-      { name: 'Order Requisition', href: '/purchases/order-requisition' },
+      { name: 'Vendors', href: '/vendors' },
+      { name: 'Projects', href: '/projects' },
       { name: 'Purchase Requisition', href: '/purchases/purchase-requisition' },
+      { name: 'Enter Purchase Orders', href: '/purchases/enter-purchase-orders' },
       { name: 'Receive Orders', href: '/purchases/receive-orders' },
-      { 
-        name: 'Vendor Returns',
-        subItems: [
-          { name: 'Enter Vendor Return Authorizations', href: '/purchases/vendor-returns/enter-authorizations' },
-          { name: 'Approve Vendor Returns', href: '/purchases/vendor-returns/approve-returns' },
-          { name: 'Ship Vendor Returns', href: '/purchases/vendor-returns/ship-returns' },
-        ]
-      },
+      { name: 'Material Receipt', href: '/material-receipt' },
+      { name: 'GRN', href: '/grn' },
     ]
   },
   { 
     name: 'Payables', 
     icon: DollarSign,
     subItems: [
+      { name: 'Enter Bills', href: '/payables/enter-bills' },
+      { name: 'Pay Bills', href: '/payables/pay-bills' },
       { name: 'Approve Vendor Payments', href: '/payables/approve-vendor-payments' },
       { name: 'Bill Purchase Orders', href: '/payables/bill-purchase-orders' },
-      { name: 'Credit Vendor Returns', href: '/payables/credit-vendor-returns' },
-      { name: 'Enter Bills', href: '/payables/enter-bills' },
       { name: 'Enter Vendor Credits', href: '/payables/enter-vendor-credits' },
       { name: 'Enter Vendor Prepayment', href: '/payables/enter-vendor-prepayment' },
-      { name: 'Pay Bills', href: '/payables/pay-bills' },
-      { name: 'Post Vendor Bill Variances', href: '/payables/post-vendor-bill-variances' },
     ]
   },
   { 
@@ -497,20 +486,20 @@ export function Sidebar() {
         {navigation.map((item) => renderMenuItem(item))}
       </nav>
 
-      <div className="p-4" style={{ borderTop: '1px solid rgba(203, 213, 225, 0.1)' }}>
+      <div className="shrink-0 p-4" style={{ borderTop: '1px solid rgba(203, 213, 225, 0.1)' }}>
         <button
-          onClick={logout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors w-full"
-          style={{ color: '#CBD5E1' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#1E293B'
+          onClick={() => {
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            window.location.href = '/login'
           }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-          }}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors w-full cursor-pointer"
+          style={{ color: '#CBD5E1', backgroundColor: 'transparent' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1E293B' }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
         >
-          <LogOut className="h-4 w-4" />
-          Logout
+          <LogOut className="h-4 w-4 shrink-0" />
+          <span>Logout</span>
         </button>
       </div>
     </aside>

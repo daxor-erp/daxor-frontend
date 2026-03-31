@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
@@ -11,6 +12,9 @@ import { X, Save, Edit } from 'lucide-react'
 import { GET_ITEMS, CREATE_ITEM, UPDATE_ITEM, DELETE_ITEM } from '@/gql/queries'
 
 export default function ItemsPage() {
+  const { user } = useAuth()
+  const orgId = user?.organizationId || ''
+
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -20,12 +24,12 @@ export default function ItemsPage() {
     unit: 'pcs',
     rate: '',
     status: 'active',
-    organizationId: '507f1f77bcf86cd799439011',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const { data, loading, refetch } = useQuery(GET_ITEMS, {
-    variables: { organizationId: '507f1f77bcf86cd799439011', page: 1, limit: 100 }
+    variables: { organizationId: orgId, page: 1, limit: 100 },
+    skip: !orgId,
   })
   
   const [createItem, { loading: saving }] = useMutation(CREATE_ITEM, {
@@ -58,10 +62,9 @@ export default function ItemsPage() {
       unit: 'pcs',
       rate: '',
       status: 'active',
-      organizationId: '507f1f77bcf86cd799439011',
     })
-    setErrors({})}
-
+    setErrors({})
+  }
   const setF = (k: string, v: string) => {
     setFormData(p => ({ ...p, [k]: v }))
     setErrors(p => ({ ...p, [k]: '' }))
@@ -85,7 +88,7 @@ export default function ItemsPage() {
       category: formData.category,
       unit: formData.unit,
       rate: parseFloat(formData.rate) || 0,
-      organizationId: formData.organizationId,
+      organizationId: orgId,
     }
 
     if (editing) {
@@ -105,7 +108,6 @@ export default function ItemsPage() {
       unit: item.unit,
       rate: item.rate?.toString() || '',
       status: item.status,
-      organizationId: item.organizationId,
     })
     setEditing(item.id)
     setAdding(true)
