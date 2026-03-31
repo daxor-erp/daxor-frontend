@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "codegen": "graphql-codegen --config codegen.ts && node -e \"const fs=require('fs');const f='gql/gql.ts';fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace('const documents = [];','const documents: any[] = [];'))\""
+    "codegen": "graphql-codegen --config codegen.ts && node scripts/fix-codegen.js && node -e \"const fs=require('fs');const f='gql/gql.ts';fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace('const documents = [];','const documents: any[] = [];'))\""
   },
   "dependencies": {
     "@apollo/client": "^3.11.0",
