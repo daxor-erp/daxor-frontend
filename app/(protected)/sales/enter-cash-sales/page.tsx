@@ -33,7 +33,7 @@ export default function EnterCashSalesPage() {
   const orgId = user?.organizationId || ''
 
   const { data: soData, loading: soLoading, refetch } = useQuery(GET_SALES_ORDERS, {
-    variables: { organizationId: orgId, page: 1, limit: 100 },
+    variables: { organizationId: orgId, page: 1, limit: 100, cashSale: true, status: 'active' },
     skip: !orgId,
   })
   const { data: orgsData } = useQuery(GET_ORGANIZATIONS, { variables: { page: 1, limit: 200 } })
@@ -103,6 +103,7 @@ export default function EnterCashSalesPage() {
           orderDate: form.saleDate,
           totalAmount: subtotal,
           organizationId: orgId,
+          cashSale: true,
         },
       },
     })

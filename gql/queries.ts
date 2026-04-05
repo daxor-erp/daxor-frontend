@@ -481,12 +481,19 @@ export const BILL_PURCHASE_ORDER = gql`
 
 // Sales Orders
 export const GET_SALES_ORDERS = gql`
-  query GetSalesOrders($organizationId: ID!, $page: Int, $limit: Int, $status: String) {
+  query GetSalesOrders(
+    $organizationId: ID!
+    $page: Int
+    $limit: Int
+    $status: String
+    $cashSale: Boolean
+  ) {
     salesorders(
       organizationId: $organizationId
       page: $page
       limit: $limit
       status: $status
+      cashSale: $cashSale
     ) {
       id
       seqNo
@@ -496,6 +503,9 @@ export const GET_SALES_ORDERS = gql`
       status
       orderDate
       organizationId
+      cashSale
+      refundedAt
+      refundAmount
       createdAt
     }
   }
@@ -539,12 +549,13 @@ export const UPDATE_SALES_ORDER = gql`
 
 // Customer Invoices
 export const GET_CUSTOMER_INVOICES = gql`
-  query GetCustomerInvoices($organizationId: ID!, $page: Int, $limit: Int, $status: String) {
+  query GetCustomerInvoices($organizationId: ID!, $page: Int, $limit: Int, $status: String, $customerId: ID) {
     customerinvoices(
       organizationId: $organizationId
       page: $page
       limit: $limit
       status: $status
+      customerId: $customerId
     ) {
       id
       seqNo
@@ -554,9 +565,40 @@ export const GET_CUSTOMER_INVOICES = gql`
       dueDate
       totalAmount
       paidAmount
+      outstandingAmount
       status
       organizationId
       createdAt
+    }
+  }
+`
+
+export const GET_CUSTOMER_PAYMENTS = gql`
+  query GetCustomerPayments($organizationId: ID!, $customerId: ID, $page: Int, $limit: Int) {
+    customerPayments(organizationId: $organizationId, customerId: $customerId, page: $page, limit: $limit) {
+      id
+      paymentNumber
+      paymentDate
+      paymentMethod
+      referenceNumber
+      totalAmount
+      status
+      createdAt
+      customer {
+        id
+        name
+        docNumber
+      }
+    }
+  }
+`
+
+export const CREATE_CUSTOMER_PAYMENT = gql`
+  mutation CreateCustomerPayment($input: CreateCustomerPaymentInput!) {
+    createCustomerPayment(input: $input) {
+      id
+      paymentNumber
+      totalAmount
     }
   }
 `
@@ -580,6 +622,35 @@ export const CREATE_CASH_SALE = gql`
       status
       totalAmount
       orderDate
+      cashSale
+    }
+  }
+`
+
+export const GET_CASH_SALES_REFUND_CANDIDATES = gql`
+  query GetCashSalesRefundCandidates($organizationId: ID!) {
+    cashSalesRefundCandidates(organizationId: $organizationId) {
+      id
+      seqNo
+      customerId
+      totalAmount
+      status
+      orderDate
+      cashSale
+    }
+  }
+`
+
+export const REFUND_CASH_SALE = gql`
+  mutation RefundCashSale($input: RefundCashSaleInput!) {
+    refundCashSale(input: $input) {
+      id
+      seqNo
+      status
+      totalAmount
+      refundedAt
+      refundAmount
+      refundMethod
     }
   }
 `
@@ -878,18 +949,473 @@ export const GET_CUSTOMERS = gql`
     customers(organizationId: $organizationId) {
       id
       docNumber
-      docDate
+      name
+      contactPerson
+      email
+      phone
+      address
+      city
+      state
+      country
+      zipCode
+      taxNumber
+      paymentTerms
+      notes
       status
+      invoiceBillable
       createdAt
     }
   }
 `
 
 export const CREATE_CUSTOMER = gql`
-  mutation CreateCustomer($input: CustomerInput!) {
+  mutation CreateCustomer($input: CreateCustomerInput!) {
     createCustomer(input: $input) {
       id
       docNumber
+      name
+      status
+    }
+  }
+`
+
+export const UPDATE_CUSTOMER = gql`
+  mutation UpdateCustomer($id: ID!, $input: UpdateCustomerInput!) {
+    updateCustomer(id: $id, input: $input) {
+      id
+      name
+      status
+      invoiceBillable
+    }
+  }
+`
+
+export const DELETE_CUSTOMER = gql`
+  mutation DeleteCustomer($id: ID!) {
+    deleteCustomer(id: $id)
+  }
+`
+
+// Return authorizations (RMA) — approve / reject workflow
+export const GET_RETURN_AUTHORIZATIONS = gql`
+  query GetReturnAuthorizations(
+    $organizationId: String!
+    $status: String
+    $customerId: ID
+    $receiptComplete: Boolean
+    $page: Int
+    $limit: Int
+  ) {
+    returnAuthorizations(
+      organizationId: $organizationId
+      status: $status
+      customerId: $customerId
+      receiptComplete: $receiptComplete
+      page: $page
+      limit: $limit
+    ) {
+      id
+      raNumber
+      customerId
+      customer {
+        id
+        name
+        docNumber
+      }
+      reason
+      notes
+      status
+      requestedDate
+      lines {
+        id
+        itemId
+        description
+        quantity
+        quantityReceived
+      }
+      rejectionReason
+      approvedAt
+      goodsReceivedAt
+      receiptComplete
+      receiptNotes
+      createdAt
+    }
+  }
+`
+
+export const APPROVE_RETURN_AUTHORIZATION = gql`
+  mutation ApproveReturnAuthorization($id: ID!) {
+    approveReturnAuthorization(id: $id) {
+      id
+      raNumber
+      status
+    }
+  }
+`
+
+export const REJECT_RETURN_AUTHORIZATION = gql`
+  mutation RejectReturnAuthorization($id: ID!, $reason: String) {
+    rejectReturnAuthorization(id: $id, reason: $reason) {
+      id
+      raNumber
+      status
+    }
+  }
+`
+
+export const CANCEL_RETURN_AUTHORIZATION = gql`
+  mutation CancelReturnAuthorization($id: ID!) {
+    cancelReturnAuthorization(id: $id) {
+      id
+      raNumber
+      status
+    }
+  }
+`
+
+export const CREATE_RETURN_AUTHORIZATION = gql`
+  mutation CreateReturnAuthorization($input: CreateReturnAuthorizationInput!) {
+    createReturnAuthorization(input: $input) {
+      id
+      raNumber
+      customerId
+      salesOrderId
+      reason
+      notes
+      status
+      requestedDate
+      lines {
+        id
+        itemId
+        description
+        quantity
+        quantityReceived
+      }
+      createdAt
+    }
+  }
+`
+
+export const RECEIVE_RETURN_AUTHORIZATION_GOODS = gql`
+  mutation ReceiveReturnAuthorizationGoods($input: ReceiveReturnAuthorizationGoodsInput!) {
+    receiveReturnAuthorizationGoods(input: $input) {
+      id
+      raNumber
+      status
+      receiptComplete
+      goodsReceivedAt
+      receiptNotes
+      lines {
+        id
+        description
+        quantity
+        quantityReceived
+      }
+    }
+  }
+`
+
+// Customer refunds (disbursements; optional link to invoice adjusts paid amount)
+export const GET_CUSTOMER_REFUNDS = gql`
+  query GetCustomerRefunds($organizationId: ID!, $customerId: ID, $page: Int, $limit: Int) {
+    customerRefunds(organizationId: $organizationId, customerId: $customerId, page: $page, limit: $limit) {
+      id
+      refundNumber
+      customerId
+      customer {
+        id
+        name
+        docNumber
+      }
+      refundDate
+      refundMethod
+      referenceNumber
+      amount
+      customerInvoiceId
+      invoice {
+        id
+        seqNo
+      }
+      notes
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_CUSTOMER_REFUND = gql`
+  mutation CreateCustomerRefund($input: CreateCustomerRefundInput!) {
+    createCustomerRefund(input: $input) {
+      id
+      refundNumber
+      refundDate
+      refundMethod
+      amount
+      status
+      createdAt
+    }
+  }
+`
+
+export const CANCEL_CUSTOMER_REFUND = gql`
+  mutation CancelCustomerRefund($id: ID!) {
+    cancelCustomerRefund(id: $id) {
+      id
+      refundNumber
+      status
+    }
+  }
+`
+
+// Customer deposits (prepayments / on-account — not applied to invoices here)
+export const GET_CUSTOMER_DEPOSITS = gql`
+  query GetCustomerDeposits($organizationId: ID!, $customerId: ID, $page: Int, $limit: Int) {
+    customerDeposits(organizationId: $organizationId, customerId: $customerId, page: $page, limit: $limit) {
+      id
+      depositNumber
+      customerId
+      customer {
+        id
+        name
+        docNumber
+      }
+      depositDate
+      depositMethod
+      referenceNumber
+      amount
+      notes
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_CUSTOMER_DEPOSIT = gql`
+  mutation CreateCustomerDeposit($input: CreateCustomerDepositInput!) {
+    createCustomerDeposit(input: $input) {
+      id
+      depositNumber
+      depositDate
+      amount
+      status
+      createdAt
+    }
+  }
+`
+
+export const CANCEL_CUSTOMER_DEPOSIT = gql`
+  mutation CancelCustomerDeposit($id: ID!) {
+    cancelCustomerDeposit(id: $id) {
+      id
+      depositNumber
+      status
+    }
+  }
+`
+
+// Finance charge assessments (overdue AR — simple annual rate × days / 365)
+export const GET_FINANCE_CHARGE_ASSESSMENTS = gql`
+  query GetFinanceChargeAssessments($organizationId: String!, $status: String, $page: Int, $limit: Int) {
+    financeChargeAssessments(organizationId: $organizationId, status: $status, page: $page, limit: $limit) {
+      id
+      assessmentNumber
+      asOfDate
+      annualRatePercent
+      status
+      totalChargeAmount
+      postedAt
+      createdAt
+    }
+  }
+`
+
+export const DRAFT_FINANCE_CHARGE_ASSESSMENT = gql`
+  mutation DraftFinanceChargeAssessment($input: DraftFinanceChargeAssessmentInput!) {
+    draftFinanceChargeAssessment(input: $input) {
+      id
+      assessmentNumber
+      asOfDate
+      annualRatePercent
+      status
+      totalChargeAmount
+      lines {
+        invoiceId
+        invoiceNumber
+        customerId
+        customer {
+          id
+          name
+          docNumber
+        }
+        daysOverdue
+        outstandingBefore
+        chargeAmount
+      }
+    }
+  }
+`
+
+export const POST_FINANCE_CHARGE_ASSESSMENT = gql`
+  mutation PostFinanceChargeAssessment($id: ID!) {
+    postFinanceChargeAssessment(id: $id) {
+      id
+      assessmentNumber
+      status
+      postedAt
+      totalChargeAmount
+    }
+  }
+`
+
+export const CANCEL_FINANCE_CHARGE_ASSESSMENT = gql`
+  mutation CancelFinanceChargeAssessment($id: ID!) {
+    cancelFinanceChargeAssessment(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+// Price lists (generated from active items)
+export const GET_PRICE_LISTS = gql`
+  query GetPriceLists($organizationId: String!, $page: Int, $limit: Int) {
+    priceLists(organizationId: $organizationId, page: $page, limit: $limit) {
+      id
+      listNumber
+      title
+      categoryFilter
+      lines {
+        itemId
+        seqNo
+        name
+        unit
+        rate
+        category
+      }
+      generatedAt
+      createdAt
+    }
+  }
+`
+
+export const GENERATE_PRICE_LIST = gql`
+  mutation GeneratePriceList($input: GeneratePriceListInput!) {
+    generatePriceList(input: $input) {
+      id
+      listNumber
+      title
+      categoryFilter
+      lines {
+        itemId
+        seqNo
+        name
+        unit
+        rate
+        category
+      }
+      generatedAt
+      createdAt
+    }
+  }
+`
+
+// Per-customer negotiated rates (catalog lines + editable customer rate)
+export const GET_INDIVIDUAL_PRICE_LIST_BY_CUSTOMER = gql`
+  query GetIndividualPriceListByCustomer($organizationId: String!, $customerId: ID!) {
+    individualPriceListByCustomer(organizationId: $organizationId, customerId: $customerId) {
+      id
+      listNumber
+      title
+      notes
+      lines {
+        itemId
+        seqNo
+        name
+        unit
+        category
+        standardRate
+        customerRate
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const UPSERT_INDIVIDUAL_PRICE_LIST = gql`
+  mutation UpsertIndividualPriceList($input: UpsertIndividualPriceListInput!) {
+    upsertIndividualPriceList(input: $input) {
+      id
+      listNumber
+      title
+      notes
+      lines {
+        itemId
+        seqNo
+        name
+        unit
+        category
+        standardRate
+        customerRate
+      }
+      updatedAt
+    }
+  }
+`
+
+export const SEED_INDIVIDUAL_PRICE_LIST_FROM_CATALOG = gql`
+  mutation SeedIndividualPriceListFromCatalog($organizationId: String!, $customerId: ID!) {
+    seedIndividualPriceListFromCatalog(organizationId: $organizationId, customerId: $customerId) {
+      id
+      listNumber
+      title
+      lines {
+        itemId
+        seqNo
+        name
+        unit
+        category
+        standardRate
+        customerRate
+      }
+      updatedAt
+    }
+  }
+`
+
+// Customer AR statements (period activity + current balance)
+export const GENERATE_CUSTOMER_STATEMENT = gql`
+  query GenerateCustomerStatement(
+    $organizationId: String!
+    $customerId: ID!
+    $dateFrom: String!
+    $dateTo: String!
+  ) {
+    generateCustomerStatement(
+      organizationId: $organizationId
+      customerId: $customerId
+      dateFrom: $dateFrom
+      dateTo: $dateTo
+    ) {
+      customerId
+      customer {
+        id
+        name
+        docNumber
+      }
+      dateFrom
+      dateTo
+      periodInvoicesTotal
+      periodPaymentsTotal
+      currentBalance
+      lines {
+        date
+        kind
+        reference
+        description
+        debit
+        credit
+      }
     }
   }
 `
