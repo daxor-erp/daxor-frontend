@@ -758,8 +758,16 @@ export const CREATE_CHART_OF_ACCOUNT = gql`
 
 // Cash Bank
 export const GET_CASH_BANKS = gql`
-  query GetCashBanks($organizationId: String!, $reconciliationStatus: String) {
-    cashBanks(organizationId: $organizationId, reconciliationStatus: $reconciliationStatus) {
+  query GetCashBanks(
+    $organizationId: String!
+    $reconciliationStatus: String
+    $bankAccount: String
+  ) {
+    cashBanks(
+      organizationId: $organizationId
+      reconciliationStatus: $reconciliationStatus
+      bankAccount: $bankAccount
+    ) {
       id
       transactionNumber
       transactionDate
@@ -786,6 +794,7 @@ export const GET_BANK_ACCOUNTS = gql`
       id
       accountNumber
       accountName
+      accountHolder
       bankName
       branchName
       accountType
@@ -813,6 +822,125 @@ export const CREATE_BANK_ACCOUNT = gql`
       id
       accountNumber
       accountName
+      accountHolder
+    }
+  }
+`
+
+export const RECONCILE_CASH_BANK = gql`
+  mutation ReconcileCashBank($id: ID!) {
+    reconcileCashBank(id: $id) {
+      id
+      transactionNumber
+      reconciliationStatus
+      reconciliationDate
+    }
+  }
+`
+
+export const GET_BANK_STATEMENT_LINES = gql`
+  query GetBankStatementLines(
+    $organizationId: String!
+    $bankAccount: String!
+    $onlyUnmatched: Boolean
+  ) {
+    bankStatementLines(organizationId: $organizationId, bankAccount: $bankAccount, onlyUnmatched: $onlyUnmatched) {
+      id
+      lineDate
+      amount
+      lineKind
+      description
+      bankReference
+      bankAccount
+      organizationId
+      isMatched
+      matchedCashBankId
+      createdAt
+    }
+  }
+`
+
+export const CREATE_BANK_STATEMENT_LINE = gql`
+  mutation CreateBankStatementLine($input: BankStatementLineInput!) {
+    createBankStatementLine(input: $input) {
+      id
+      lineDate
+      amount
+      lineKind
+    }
+  }
+`
+
+export const DELETE_BANK_STATEMENT_LINE = gql`
+  mutation DeleteBankStatementLine($id: ID!) {
+    deleteBankStatementLine(id: $id)
+  }
+`
+
+export const MATCH_BANK_STATEMENT_LINE = gql`
+  mutation MatchBankStatementLineToBook($bankStatementLineId: ID!, $cashBankId: ID!) {
+    matchBankStatementLineToBook(bankStatementLineId: $bankStatementLineId, cashBankId: $cashBankId) {
+      id
+      isMatched
+      matchedCashBankId
+    }
+  }
+`
+
+export const GET_RECONCILIATION_RULES = gql`
+  query GetReconciliationRules($organizationId: String!) {
+    reconciliationRules(organizationId: $organizationId) {
+      id
+      name
+      organizationId
+      bankAccount
+      priority
+      isActive
+      bankLineTextContains
+      bookLineTextContains
+      amountTolerance
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const CREATE_RECONCILIATION_RULE = gql`
+  mutation CreateReconciliationRule($input: ReconciliationRuleInput!) {
+    createReconciliationRule(input: $input) {
+      id
+      name
+      priority
+    }
+  }
+`
+
+export const UPDATE_RECONCILIATION_RULE = gql`
+  mutation UpdateReconciliationRule($id: ID!, $input: ReconciliationRulePatch!) {
+    updateReconciliationRule(id: $id, input: $input) {
+      id
+      name
+      priority
+      isActive
+    }
+  }
+`
+
+export const DELETE_RECONCILIATION_RULE = gql`
+  mutation DeleteReconciliationRule($id: ID!) {
+    deleteReconciliationRule(id: $id)
+  }
+`
+
+export const TRANSFER_BANK_FUNDS = gql`
+  mutation TransferBankFunds($input: BankTransferInput!) {
+    transferBankFunds(input: $input) {
+      transferId
+      fromCashBankId
+      toCashBankId
+      fromTransactionNumber
+      toTransactionNumber
     }
   }
 `
