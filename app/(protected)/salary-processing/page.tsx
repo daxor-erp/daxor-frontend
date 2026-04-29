@@ -1,74 +1,400 @@
 'use client'
 
-import { useQuery } from '@apollo/client'
-import { GET_SALARY_PROCESSINGS } from '@/gql/queries'
-import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState } from 'react'
+import { useQuery, useMutation } from '@apollo/client'
+import { format, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { InputFloating } from '@/components/ui/input-floating'
+import { SelectFloating } from '@/components/ui/select-floating'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Plus, Pencil, Trash2, Banknote, CheckCircle2, X, Save } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import {
+  GET_SALARY_PROCESSINGS,
+  CREATE_SALARY_PROCESSING,
+  UPDATE_SALARY_PROCESSING,
+  DELETE_SALARY_PROCESSING,
+} from '@/gql/queries'
+
+const STATUS_OPTIONS = [
+  { value: 'DRAFT', label: 'Draft' },
+  { value: 'PENDING_REVIEW', label: 'Pending review' },
+  { value: 'APPROVED', label: 'Approved' },
+  { value: 'PROCESSED', label: 'Processed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+] as const
+
+const STATUS_SELECT_OPTIONS = STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))
+
+function toYmd(iso?: string | null) {
+  if (!iso) return ''
+  try {
+    return format(parseISO(iso), 'yyyy-MM-dd')
+  } catch {
+    return ''
+  }
+}
+
+function ymdToIso(ymd: string) {
+  if (!ymd) return undefined
+  return new Date(ymd + 'T00:00:00').toISOString()
+}
+
+function statusBadgeClass(status: string) {
+  const s = (status || '').toUpperCase()
+  if (s === 'DRAFT') return 'bg-slate-100 text-slate-800 border-slate-200'
+  if (s === 'PENDING_REVIEW') return 'bg-amber-50 text-amber-800 border-amber-200'
+  if (s === 'APPROVED') return 'bg-sky-50 text-sky-800 border-sky-200'
+  if (s === 'PROCESSED') return 'bg-emerald-50 text-emerald-800 border-emerald-200'
+  if (s === 'CANCELLED') return 'bg-red-50 text-red-800 border-red-200'
+  return 'bg-gray-100 text-gray-800'
+}
+
+type Row = {
+  id: string
+  docNumber: string
+  docDate: string
+  status: string
+  createdAt: string
+  title?: string | null
+  remarks?: string | null
+  payPeriodStart?: string | null
+  payPeriodEnd?: string | null
+}
 
 export default function SalaryProcessingPage() {
   const { user } = useAuth()
-  
-  const { data, loading } = useQuery(GET_SALARY_PROCESSINGS, {
-    variables: { organizationId: user?.organizationId },
-    skip: !user?.organizationId,
+  const orgId = user?.organizationId ?? ''
+
+  const [open, setOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [banner, setBanner] = useState<{ ok: boolean; text: string } | null>(null)
+  const [form, setForm] = useState({
+    title: '',
+    docDateYmd: format(new Date(), 'yyyy-MM-dd'),
+    status: 'DRAFT' as (typeof STATUS_OPTIONS)[number]['value'],
+    payPeriodStartYmd: '',
+    payPeriodEndYmd: '',
+    remarks: '',
   })
 
-  const items = data?.salaryprocessings || []
+  const { data, loading, refetch } = useQuery(GET_SALARY_PROCESSINGS, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+    fetchPolicy: 'network-only',
+  })
+
+  const [createSp, { loading: creating }] = useMutation(CREATE_SALARY_PROCESSING, {
+    onCompleted: () => {
+      refetch()
+      closeDialog()
+      setBanner({ ok: true, text: 'Salary batch created.' })
+      setTimeout(() => setBanner(null), 4000)
+    },
+    onError: (e) => setBanner({ ok: false, text: e.message }),
+  })
+  const [updateSp, { loading: updating }] = useMutation(UPDATE_SALARY_PROCESSING, {
+    onCompleted: () => {
+      refetch()
+      closeDialog()
+      setBanner({ ok: true, text: 'Salary batch updated.' })
+      setTimeout(() => setBanner(null), 4000)
+    },
+    onError: (e) => setBanner({ ok: false, text: e.message }),
+  })
+  const [deleteSp] = useMutation(DELETE_SALARY_PROCESSING, {
+    onCompleted: () => {
+      refetch()
+      setBanner({ ok: true, text: 'Salary batch removed.' })
+      setTimeout(() => setBanner(null), 4000)
+    },
+    onError: (e) => setBanner({ ok: false, text: e.message }),
+  })
+
+  const rows: Row[] = (data?.salaryprocessings as Row[] | undefined) ?? []
+  const busy = creating || updating
+
+  const closeDialog = () => {
+    setOpen(false)
+    setEditingId(null)
+    setForm({
+      title: '',
+      docDateYmd: format(new Date(), 'yyyy-MM-dd'),
+      status: 'DRAFT',
+      payPeriodStartYmd: '',
+      payPeriodEndYmd: '',
+      remarks: '',
+    })
+  }
+
+  const buildInput = () => {
+    if (!orgId) return null
+    const payStart = ymdToIso(form.payPeriodStartYmd)
+    const payEnd = ymdToIso(form.payPeriodEndYmd)
+    return {
+      organizationId: orgId,
+      docDate: ymdToIso(form.docDateYmd) || new Date().toISOString(),
+      status: form.status,
+      title: form.title.trim() || undefined,
+      remarks: form.remarks.trim() || undefined,
+      payPeriodStart: payStart,
+      payPeriodEnd: payEnd,
+    }
+  }
+
+  const submit = () => {
+    const input = buildInput()
+    if (!input) return
+    if (editingId) {
+      updateSp({ variables: { id: editingId, input } })
+    } else {
+      createSp({ variables: { input } })
+    }
+  }
+
+  const openCreate = () => {
+    setEditingId(null)
+    setForm({
+      title: '',
+      docDateYmd: format(new Date(), 'yyyy-MM-dd'),
+      status: 'DRAFT',
+      payPeriodStartYmd: '',
+      payPeriodEndYmd: '',
+      remarks: '',
+    })
+    setOpen(true)
+  }
+
+  const openEdit = (r: Row) => {
+    setEditingId(r.id)
+    setForm({
+      title: r.title || '',
+      docDateYmd: toYmd(r.docDate) || format(new Date(), 'yyyy-MM-dd'),
+      status: (STATUS_OPTIONS.find((o) => o.value === (r.status || '').toUpperCase())?.value ||
+        'DRAFT') as (typeof STATUS_OPTIONS)[number]['value'],
+      payPeriodStartYmd: toYmd(r.payPeriodStart),
+      payPeriodEndYmd: toYmd(r.payPeriodEnd),
+      remarks: r.remarks || '',
+    })
+    setOpen(true)
+  }
+
+  if (!orgId) {
+    return <p className="p-6 text-sm text-gray-500">Select an organization to manage salary processing.</p>
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-6 space-y-6 max-w-6xl">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Salary Processing</h1>
-          <p className="text-gray-500">Manage salary processing</p>
+          <div className="flex items-center gap-2 text-emerald-700 mb-1">
+            <Banknote className="h-6 w-6" />
+            <span className="text-xs font-semibold uppercase tracking-wide">Payroll</span>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Salary processing</h1>
+          <p className="text-gray-500 mt-1">
+            Track salary batches: document date, pay period, and status through approval and processing.
+          </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Record
+        <Button onClick={openCreate} className="bg-emerald-700 hover:bg-emerald-800 text-white shrink-0">
+          <Plus className="h-4 w-4 mr-2" /> New salary batch
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Records: {items.length}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p>Loading...</p>
-          ) : items.length === 0 ? (
-            <p className="text-gray-500">No records found</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Document #</th>
-                    <th className="text-left p-2">Date</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item: any) => (
-                    <tr key={item.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
-                      <td className="p-2">{item.docDate ? new Date(item.docDate).toLocaleDateString() : 'N/A'}</td>
-                      <td className="p-2">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                          {item.status || 'Active'}
-                        </span>
-                      </td>
-                      <td className="p-2">{new Date(item.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {banner && (
+        <div
+          className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm border ${
+            banner.ok
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}
+        >
+          {banner.ok && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+          {banner.text}
+        </div>
+      )}
+
+      {open && (
+        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+            <span className="text-xs font-semibold text-white">
+              {editingId ? 'Edit salary batch' : 'New salary batch'}
+            </span>
+            <button
+              type="button"
+              onClick={closeDialog}
+              className="text-blue-200 hover:text-white"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="p-4 space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-3">
+                <InputFloating
+                  id="sp-title"
+                  label="Title"
+                  value={form.title}
+                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  className="h-7 text-xs"
+                />
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="grid grid-cols-3 gap-3">
+              <InputFloating
+                id="sp-docdate"
+                label="Document date"
+                type="date"
+                value={form.docDateYmd}
+                onChange={(e) => setForm((f) => ({ ...f, docDateYmd: e.target.value }))}
+                className="h-7 text-xs"
+              />
+              <SelectFloating
+                label="Status"
+                name="sp-status"
+                value={form.status}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    status: (e as React.ChangeEvent<HTMLSelectElement>).target
+                      .value as (typeof f)['status'],
+                  }))
+                }
+                options={STATUS_SELECT_OPTIONS}
+                className="h-7 text-xs"
+                placeholder="Select…"
+              />
+              <div className="hidden min-[600px]:block" aria-hidden />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <InputFloating
+                id="sp-pstart"
+                label="Pay period start"
+                type="date"
+                value={form.payPeriodStartYmd}
+                onChange={(e) => setForm((f) => ({ ...f, payPeriodStartYmd: e.target.value }))}
+                className="h-7 text-xs"
+              />
+              <InputFloating
+                id="sp-pend"
+                label="Pay period end"
+                type="date"
+                value={form.payPeriodEndYmd}
+                onChange={(e) => setForm((f) => ({ ...f, payPeriodEndYmd: e.target.value }))}
+                className="h-7 text-xs"
+              />
+              <div className="hidden min-[600px]:block" aria-hidden />
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              <InputFloating
+                id="sp-remarks"
+                label="Remarks"
+                multiline
+                rows={3}
+                value={form.remarks}
+                onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+                className="text-xs min-h-[72px]"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" size="sm" onClick={closeDialog} className="h-8 text-xs">
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={submit}
+                disabled={busy}
+                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
+              >
+                <Save className="h-3.5 w-3.5 mr-1" />
+                {busy ? 'Saving…' : editingId ? 'Update' : 'Save salary batch'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 bg-gradient-to-r from-emerald-700 to-emerald-800 text-white text-sm font-semibold">
+          Salary batches
+        </div>
+        {loading ? (
+          <div className="p-12 text-center text-gray-400 text-sm">Loading…</div>
+        ) : rows.length === 0 ? (
+          <div className="p-12 text-center text-gray-500 text-sm">
+            No salary batches yet. Create one to record a run over a pay period.
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50 hover:bg-gray-50">
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Document</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Title</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Doc date</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Pay period</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Status</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[100px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.id} className="hover:bg-emerald-50/40">
+                  <TableCell className="font-mono text-sm font-medium">{r.docNumber}</TableCell>
+                  <TableCell className="text-sm text-gray-800">{r.title || '—'}</TableCell>
+                  <TableCell className="text-sm">{toYmd(r.docDate) || '—'}</TableCell>
+                  <TableCell className="text-sm text-gray-600">
+                    {r.payPeriodStart && r.payPeriodEnd
+                      ? `${toYmd(r.payPeriodStart)} – ${toYmd(r.payPeriodEnd)}`
+                      : r.payPeriodStart || r.payPeriodEnd
+                        ? `${toYmd(r.payPeriodStart) || '…'} – ${toYmd(r.payPeriodEnd) || '…'}`
+                        : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={statusBadgeClass(r.status)}>
+                      {STATUS_OPTIONS.find((o) => o.value === (r.status || '').toUpperCase())?.label ||
+                        r.status ||
+                        '—'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="space-x-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openEdit(r)}
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-700"
+                      onClick={() => {
+                        if (confirm(`Remove salary batch “${r.docNumber}”?`)) {
+                          deleteSp({ variables: { id: r.id } })
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </div>
   )
 }

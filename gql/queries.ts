@@ -2149,7 +2149,12 @@ export const GET_PAYROLL_MANAGEMENTS = gql`
       docNumber
       docDate
       status
+      organizationId
       createdAt
+      title
+      remarks
+      payPeriodStart
+      payPeriodEnd
     }
   }
 `
@@ -2163,6 +2168,21 @@ export const CREATE_PAYROLL_MANAGEMENT = gql`
   }
 `
 
+export const UPDATE_PAYROLL_MANAGEMENT = gql`
+  mutation UpdatePayrollManagement($id: ID!, $input: PayrollManagementInput!) {
+    updatePayrollManagement(id: $id, input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+export const DELETE_PAYROLL_MANAGEMENT = gql`
+  mutation DeletePayrollManagement($id: ID!) {
+    deletePayrollManagement(id: $id)
+  }
+`
+
 // Salary Processing
 export const GET_SALARY_PROCESSINGS = gql`
   query GetSalaryProcessings($organizationId: String!) {
@@ -2171,7 +2191,12 @@ export const GET_SALARY_PROCESSINGS = gql`
       docNumber
       docDate
       status
+      organizationId
       createdAt
+      title
+      remarks
+      payPeriodStart
+      payPeriodEnd
     }
   }
 `
@@ -2182,6 +2207,67 @@ export const CREATE_SALARY_PROCESSING = gql`
       id
       docNumber
     }
+  }
+`
+
+export const UPDATE_SALARY_PROCESSING = gql`
+  mutation UpdateSalaryProcessing($id: ID!, $input: SalaryProcessingInput!) {
+    updateSalaryProcessing(id: $id, input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+export const DELETE_SALARY_PROCESSING = gql`
+  mutation DeleteSalaryProcessing($id: ID!) {
+    deleteSalaryProcessing(id: $id)
+  }
+`
+
+// Loan repayment (payroll — others)
+export const GET_LOAN_REPAYMENTS = gql`
+  query GetLoanRepayments($organizationId: String!) {
+    loanrepayments(organizationId: $organizationId) {
+      id
+      docNumber
+      docDate
+      status
+      organizationId
+      createdAt
+      title
+      remarks
+      payPeriodStart
+      payPeriodEnd
+      employeeNo
+      employeeName
+      loanReference
+      repaymentAmount
+    }
+  }
+`
+
+export const CREATE_LOAN_REPAYMENT = gql`
+  mutation CreateLoanRepayment($input: LoanRepaymentInput!) {
+    createLoanRepayment(input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+export const UPDATE_LOAN_REPAYMENT = gql`
+  mutation UpdateLoanRepayment($id: ID!, $input: LoanRepaymentInput!) {
+    updateLoanRepayment(id: $id, input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+export const DELETE_LOAN_REPAYMENT = gql`
+  mutation DeleteLoanRepayment($id: ID!) {
+    deleteLoanRepayment(id: $id)
   }
 `
 

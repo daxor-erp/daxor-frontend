@@ -216,6 +216,7 @@ export const canAccessRoute = (userRoles: string[] | undefined, route: string): 
     '/payslips': RESOURCES.PAYSLIP,
     '/payroll-management': RESOURCES.PAYROLL_MANAGEMENT,
     '/salary-processing': RESOURCES.SALARY_PROCESSING,
+    '/payroll/others/loan-repayment': RESOURCES.PAYROLL_MANAGEMENT,
     '/sales-pipeline': RESOURCES.SALES_PIPELINE,
     '/warehouse': RESOURCES.WAREHOUSE,
     '/sales-orders': RESOURCES.SALES_ORDER,

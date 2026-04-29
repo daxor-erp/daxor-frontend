@@ -1,4 +1,5 @@
-/* eslint-disable */
+import { gql } from '@apollo/client';
+import * as Apollo from '@apollo/client';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -6,6 +7,7 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: 
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string; output: string; }
@@ -1355,6 +1357,38 @@ export type LeaveType = {
   updatedAt: Scalars['String']['output'];
 };
 
+export type LoanRepayment = {
+  __typename?: 'LoanRepayment';
+  createdAt: Scalars['String']['output'];
+  docDate: Scalars['String']['output'];
+  docNumber: Scalars['String']['output'];
+  employeeName?: Maybe<Scalars['String']['output']>;
+  employeeNo?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  loanReference?: Maybe<Scalars['String']['output']>;
+  organizationId: Scalars['String']['output'];
+  payPeriodEnd?: Maybe<Scalars['String']['output']>;
+  payPeriodStart?: Maybe<Scalars['String']['output']>;
+  remarks?: Maybe<Scalars['String']['output']>;
+  repaymentAmount: Scalars['Float']['output'];
+  status: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
+};
+
+export type LoanRepaymentInput = {
+  docDate: Scalars['String']['input'];
+  employeeName?: InputMaybe<Scalars['String']['input']>;
+  employeeNo?: InputMaybe<Scalars['String']['input']>;
+  loanReference?: InputMaybe<Scalars['String']['input']>;
+  organizationId: Scalars['String']['input'];
+  payPeriodEnd?: InputMaybe<Scalars['String']['input']>;
+  payPeriodStart?: InputMaybe<Scalars['String']['input']>;
+  remarks?: InputMaybe<Scalars['String']['input']>;
+  repaymentAmount?: InputMaybe<Scalars['Float']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type LoginInput = {
   email: Scalars['String']['input'];
   password: Scalars['String']['input'];
@@ -1454,6 +1488,7 @@ export type Mutation = {
   createLeaveEnrollment: LeaveEnrollment;
   createLeaveReinstatement: LeaveReinstatement;
   createLeaveType: LeaveType;
+  createLoanRepayment: LoanRepayment;
   createMaterialReceipt: MaterialReceipt;
   createOrganization: Organization;
   createPayrollManagement: PayrollManagement;
@@ -1511,6 +1546,7 @@ export type Mutation = {
   deleteLeaveEnrollment: LeaveEnrollment;
   deleteLeaveReinstatement: LeaveReinstatement;
   deleteLeaveType: LeaveType;
+  deleteLoanRepayment: Scalars['Boolean']['output'];
   deleteMaterialReceipt: Scalars['Boolean']['output'];
   deleteOrganization: Organization;
   deletePayrollManagement: Scalars['Boolean']['output'];
@@ -1579,6 +1615,7 @@ export type Mutation = {
   updateLeaveEnrollment: LeaveEnrollment;
   updateLeaveReinstatement: LeaveReinstatement;
   updateLeaveType: LeaveType;
+  updateLoanRepayment: LoanRepayment;
   updateMaterialReceipt: MaterialReceipt;
   updateOrganization: Organization;
   updatePayrollManagement: PayrollManagement;
@@ -1853,6 +1890,11 @@ export type MutationCreateLeaveReinstatementArgs = {
 
 export type MutationCreateLeaveTypeArgs = {
   input: CreateLeaveTypeInput;
+};
+
+
+export type MutationCreateLoanRepaymentArgs = {
+  input: LoanRepaymentInput;
 };
 
 
@@ -2137,6 +2179,11 @@ export type MutationDeleteLeaveReinstatementArgs = {
 
 
 export type MutationDeleteLeaveTypeArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteLoanRepaymentArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -2506,6 +2553,12 @@ export type MutationUpdateLeaveTypeArgs = {
 };
 
 
+export type MutationUpdateLoanRepaymentArgs = {
+  id: Scalars['ID']['input'];
+  input: LoanRepaymentInput;
+};
+
+
 export type MutationUpdateMaterialReceiptArgs = {
   id: Scalars['ID']['input'];
   input: UpdateMaterialReceiptInput;
@@ -2715,13 +2768,21 @@ export type PayrollManagement = {
   docNumber: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   organizationId: Scalars['String']['output'];
+  payPeriodEnd?: Maybe<Scalars['String']['output']>;
+  payPeriodStart?: Maybe<Scalars['String']['output']>;
+  remarks?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
 };
 
 export type PayrollManagementInput = {
   docDate: Scalars['String']['input'];
   organizationId: Scalars['String']['input'];
+  payPeriodEnd?: InputMaybe<Scalars['String']['input']>;
+  payPeriodStart?: InputMaybe<Scalars['String']['input']>;
+  remarks?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Permission = {
@@ -2911,6 +2972,8 @@ export type Query = {
   leaveReinstatements: Array<LeaveReinstatement>;
   leaveType?: Maybe<LeaveType>;
   leaveTypes: Array<LeaveType>;
+  loanrepayment?: Maybe<LoanRepayment>;
+  loanrepayments: Array<LoanRepayment>;
   lowStockItems: Array<InventoryControl>;
   materialreceipt?: Maybe<MaterialReceipt>;
   materialreceipts: Array<MaterialReceipt>;
@@ -3465,6 +3528,16 @@ export type QueryLeaveTypeArgs = {
 export type QueryLeaveTypesArgs = {
   activeOnly?: InputMaybe<Scalars['Boolean']['input']>;
   organizationId: Scalars['ID']['input'];
+};
+
+
+export type QueryLoanrepaymentArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryLoanrepaymentsArgs = {
+  organizationId: Scalars['String']['input'];
 };
 
 
@@ -4235,13 +4308,21 @@ export type SalaryProcessing = {
   docNumber: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   organizationId: Scalars['String']['output'];
+  payPeriodEnd?: Maybe<Scalars['String']['output']>;
+  payPeriodStart?: Maybe<Scalars['String']['output']>;
+  remarks?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
+  title?: Maybe<Scalars['String']['output']>;
 };
 
 export type SalaryProcessingInput = {
   docDate: Scalars['String']['input'];
   organizationId: Scalars['String']['input'];
+  payPeriodEnd?: InputMaybe<Scalars['String']['input']>;
+  payPeriodStart?: InputMaybe<Scalars['String']['input']>;
+  remarks?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type SalaryRange = {
@@ -6199,7 +6280,7 @@ export type GetPayrollManagementsQueryVariables = Exact<{
 }>;
 
 
-export type GetPayrollManagementsQuery = { __typename?: 'Query', payrollmanagements: Array<{ __typename?: 'PayrollManagement', id: string, docNumber: string, docDate: string, status: string, createdAt: string }> };
+export type GetPayrollManagementsQuery = { __typename?: 'Query', payrollmanagements: Array<{ __typename?: 'PayrollManagement', id: string, docNumber: string, docDate: string, status: string, organizationId: string, createdAt: string, title?: string | null, remarks?: string | null, payPeriodStart?: string | null, payPeriodEnd?: string | null }> };
 
 export type CreatePayrollManagementMutationVariables = Exact<{
   input: PayrollManagementInput;
@@ -6208,12 +6289,27 @@ export type CreatePayrollManagementMutationVariables = Exact<{
 
 export type CreatePayrollManagementMutation = { __typename?: 'Mutation', createPayrollManagement: { __typename?: 'PayrollManagement', id: string, docNumber: string } };
 
+export type UpdatePayrollManagementMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: PayrollManagementInput;
+}>;
+
+
+export type UpdatePayrollManagementMutation = { __typename?: 'Mutation', updatePayrollManagement: { __typename?: 'PayrollManagement', id: string, docNumber: string } };
+
+export type DeletePayrollManagementMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeletePayrollManagementMutation = { __typename?: 'Mutation', deletePayrollManagement: boolean };
+
 export type GetSalaryProcessingsQueryVariables = Exact<{
   organizationId: Scalars['String']['input'];
 }>;
 
 
-export type GetSalaryProcessingsQuery = { __typename?: 'Query', salaryprocessings: Array<{ __typename?: 'SalaryProcessing', id: string, docNumber: string, docDate: string, status: string, createdAt: string }> };
+export type GetSalaryProcessingsQuery = { __typename?: 'Query', salaryprocessings: Array<{ __typename?: 'SalaryProcessing', id: string, docNumber: string, docDate: string, status: string, organizationId: string, createdAt: string, title?: string | null, remarks?: string | null, payPeriodStart?: string | null, payPeriodEnd?: string | null }> };
 
 export type CreateSalaryProcessingMutationVariables = Exact<{
   input: SalaryProcessingInput;
@@ -6221,6 +6317,50 @@ export type CreateSalaryProcessingMutationVariables = Exact<{
 
 
 export type CreateSalaryProcessingMutation = { __typename?: 'Mutation', createSalaryProcessing: { __typename?: 'SalaryProcessing', id: string, docNumber: string } };
+
+export type UpdateSalaryProcessingMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: SalaryProcessingInput;
+}>;
+
+
+export type UpdateSalaryProcessingMutation = { __typename?: 'Mutation', updateSalaryProcessing: { __typename?: 'SalaryProcessing', id: string, docNumber: string } };
+
+export type DeleteSalaryProcessingMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteSalaryProcessingMutation = { __typename?: 'Mutation', deleteSalaryProcessing: boolean };
+
+export type GetLoanRepaymentsQueryVariables = Exact<{
+  organizationId: Scalars['String']['input'];
+}>;
+
+
+export type GetLoanRepaymentsQuery = { __typename?: 'Query', loanrepayments: Array<{ __typename?: 'LoanRepayment', id: string, docNumber: string, docDate: string, status: string, organizationId: string, createdAt: string, title?: string | null, remarks?: string | null, payPeriodStart?: string | null, payPeriodEnd?: string | null, employeeNo?: string | null, employeeName?: string | null, loanReference?: string | null, repaymentAmount: number }> };
+
+export type CreateLoanRepaymentMutationVariables = Exact<{
+  input: LoanRepaymentInput;
+}>;
+
+
+export type CreateLoanRepaymentMutation = { __typename?: 'Mutation', createLoanRepayment: { __typename?: 'LoanRepayment', id: string, docNumber: string } };
+
+export type UpdateLoanRepaymentMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: LoanRepaymentInput;
+}>;
+
+
+export type UpdateLoanRepaymentMutation = { __typename?: 'Mutation', updateLoanRepayment: { __typename?: 'LoanRepayment', id: string, docNumber: string } };
+
+export type DeleteLoanRepaymentMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteLoanRepaymentMutation = { __typename?: 'Mutation', deleteLoanRepayment: boolean };
 
 export type GetExtractionsQueryVariables = Exact<{
   organizationId: Scalars['String']['input'];
@@ -13597,7 +13737,12 @@ export const GetPayrollManagementsDocument = gql`
     docNumber
     docDate
     status
+    organizationId
     createdAt
+    title
+    remarks
+    payPeriodStart
+    payPeriodEnd
   }
 }
     `;
@@ -13671,6 +13816,72 @@ export function useCreatePayrollManagementMutation(baseOptions?: Apollo.Mutation
 export type CreatePayrollManagementMutationHookResult = ReturnType<typeof useCreatePayrollManagementMutation>;
 export type CreatePayrollManagementMutationResult = Apollo.MutationResult<CreatePayrollManagementMutation>;
 export type CreatePayrollManagementMutationOptions = Apollo.BaseMutationOptions<CreatePayrollManagementMutation, CreatePayrollManagementMutationVariables>;
+export const UpdatePayrollManagementDocument = gql`
+    mutation UpdatePayrollManagement($id: ID!, $input: PayrollManagementInput!) {
+  updatePayrollManagement(id: $id, input: $input) {
+    id
+    docNumber
+  }
+}
+    `;
+export type UpdatePayrollManagementMutationFn = Apollo.MutationFunction<UpdatePayrollManagementMutation, UpdatePayrollManagementMutationVariables>;
+
+/**
+ * __useUpdatePayrollManagementMutation__
+ *
+ * To run a mutation, you first call `useUpdatePayrollManagementMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdatePayrollManagementMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updatePayrollManagementMutation, { data, loading, error }] = useUpdatePayrollManagementMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdatePayrollManagementMutation(baseOptions?: Apollo.MutationHookOptions<UpdatePayrollManagementMutation, UpdatePayrollManagementMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdatePayrollManagementMutation, UpdatePayrollManagementMutationVariables>(UpdatePayrollManagementDocument, options);
+      }
+export type UpdatePayrollManagementMutationHookResult = ReturnType<typeof useUpdatePayrollManagementMutation>;
+export type UpdatePayrollManagementMutationResult = Apollo.MutationResult<UpdatePayrollManagementMutation>;
+export type UpdatePayrollManagementMutationOptions = Apollo.BaseMutationOptions<UpdatePayrollManagementMutation, UpdatePayrollManagementMutationVariables>;
+export const DeletePayrollManagementDocument = gql`
+    mutation DeletePayrollManagement($id: ID!) {
+  deletePayrollManagement(id: $id)
+}
+    `;
+export type DeletePayrollManagementMutationFn = Apollo.MutationFunction<DeletePayrollManagementMutation, DeletePayrollManagementMutationVariables>;
+
+/**
+ * __useDeletePayrollManagementMutation__
+ *
+ * To run a mutation, you first call `useDeletePayrollManagementMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeletePayrollManagementMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deletePayrollManagementMutation, { data, loading, error }] = useDeletePayrollManagementMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeletePayrollManagementMutation(baseOptions?: Apollo.MutationHookOptions<DeletePayrollManagementMutation, DeletePayrollManagementMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeletePayrollManagementMutation, DeletePayrollManagementMutationVariables>(DeletePayrollManagementDocument, options);
+      }
+export type DeletePayrollManagementMutationHookResult = ReturnType<typeof useDeletePayrollManagementMutation>;
+export type DeletePayrollManagementMutationResult = Apollo.MutationResult<DeletePayrollManagementMutation>;
+export type DeletePayrollManagementMutationOptions = Apollo.BaseMutationOptions<DeletePayrollManagementMutation, DeletePayrollManagementMutationVariables>;
 export const GetSalaryProcessingsDocument = gql`
     query GetSalaryProcessings($organizationId: String!) {
   salaryprocessings(organizationId: $organizationId) {
@@ -13678,7 +13889,12 @@ export const GetSalaryProcessingsDocument = gql`
     docNumber
     docDate
     status
+    organizationId
     createdAt
+    title
+    remarks
+    payPeriodStart
+    payPeriodEnd
   }
 }
     `;
@@ -13752,6 +13968,228 @@ export function useCreateSalaryProcessingMutation(baseOptions?: Apollo.MutationH
 export type CreateSalaryProcessingMutationHookResult = ReturnType<typeof useCreateSalaryProcessingMutation>;
 export type CreateSalaryProcessingMutationResult = Apollo.MutationResult<CreateSalaryProcessingMutation>;
 export type CreateSalaryProcessingMutationOptions = Apollo.BaseMutationOptions<CreateSalaryProcessingMutation, CreateSalaryProcessingMutationVariables>;
+export const UpdateSalaryProcessingDocument = gql`
+    mutation UpdateSalaryProcessing($id: ID!, $input: SalaryProcessingInput!) {
+  updateSalaryProcessing(id: $id, input: $input) {
+    id
+    docNumber
+  }
+}
+    `;
+export type UpdateSalaryProcessingMutationFn = Apollo.MutationFunction<UpdateSalaryProcessingMutation, UpdateSalaryProcessingMutationVariables>;
+
+/**
+ * __useUpdateSalaryProcessingMutation__
+ *
+ * To run a mutation, you first call `useUpdateSalaryProcessingMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateSalaryProcessingMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateSalaryProcessingMutation, { data, loading, error }] = useUpdateSalaryProcessingMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateSalaryProcessingMutation(baseOptions?: Apollo.MutationHookOptions<UpdateSalaryProcessingMutation, UpdateSalaryProcessingMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateSalaryProcessingMutation, UpdateSalaryProcessingMutationVariables>(UpdateSalaryProcessingDocument, options);
+      }
+export type UpdateSalaryProcessingMutationHookResult = ReturnType<typeof useUpdateSalaryProcessingMutation>;
+export type UpdateSalaryProcessingMutationResult = Apollo.MutationResult<UpdateSalaryProcessingMutation>;
+export type UpdateSalaryProcessingMutationOptions = Apollo.BaseMutationOptions<UpdateSalaryProcessingMutation, UpdateSalaryProcessingMutationVariables>;
+export const DeleteSalaryProcessingDocument = gql`
+    mutation DeleteSalaryProcessing($id: ID!) {
+  deleteSalaryProcessing(id: $id)
+}
+    `;
+export type DeleteSalaryProcessingMutationFn = Apollo.MutationFunction<DeleteSalaryProcessingMutation, DeleteSalaryProcessingMutationVariables>;
+
+/**
+ * __useDeleteSalaryProcessingMutation__
+ *
+ * To run a mutation, you first call `useDeleteSalaryProcessingMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteSalaryProcessingMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteSalaryProcessingMutation, { data, loading, error }] = useDeleteSalaryProcessingMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteSalaryProcessingMutation(baseOptions?: Apollo.MutationHookOptions<DeleteSalaryProcessingMutation, DeleteSalaryProcessingMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteSalaryProcessingMutation, DeleteSalaryProcessingMutationVariables>(DeleteSalaryProcessingDocument, options);
+      }
+export type DeleteSalaryProcessingMutationHookResult = ReturnType<typeof useDeleteSalaryProcessingMutation>;
+export type DeleteSalaryProcessingMutationResult = Apollo.MutationResult<DeleteSalaryProcessingMutation>;
+export type DeleteSalaryProcessingMutationOptions = Apollo.BaseMutationOptions<DeleteSalaryProcessingMutation, DeleteSalaryProcessingMutationVariables>;
+export const GetLoanRepaymentsDocument = gql`
+    query GetLoanRepayments($organizationId: String!) {
+  loanrepayments(organizationId: $organizationId) {
+    id
+    docNumber
+    docDate
+    status
+    organizationId
+    createdAt
+    title
+    remarks
+    payPeriodStart
+    payPeriodEnd
+    employeeNo
+    employeeName
+    loanReference
+    repaymentAmount
+  }
+}
+    `;
+
+/**
+ * __useGetLoanRepaymentsQuery__
+ *
+ * To run a query within a React component, call `useGetLoanRepaymentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetLoanRepaymentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetLoanRepaymentsQuery({
+ *   variables: {
+ *      organizationId: // value for 'organizationId'
+ *   },
+ * });
+ */
+export function useGetLoanRepaymentsQuery(baseOptions: Apollo.QueryHookOptions<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables> & ({ variables: GetLoanRepaymentsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables>(GetLoanRepaymentsDocument, options);
+      }
+export function useGetLoanRepaymentsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables>(GetLoanRepaymentsDocument, options);
+        }
+// @ts-ignore
+export function useGetLoanRepaymentsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables>): Apollo.UseSuspenseQueryResult<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables>;
+export function useGetLoanRepaymentsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables>): Apollo.UseSuspenseQueryResult<GetLoanRepaymentsQuery | undefined, GetLoanRepaymentsQueryVariables>;
+export function useGetLoanRepaymentsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables>(GetLoanRepaymentsDocument, options);
+        }
+export type GetLoanRepaymentsQueryHookResult = ReturnType<typeof useGetLoanRepaymentsQuery>;
+export type GetLoanRepaymentsLazyQueryHookResult = ReturnType<typeof useGetLoanRepaymentsLazyQuery>;
+export type GetLoanRepaymentsSuspenseQueryHookResult = ReturnType<typeof useGetLoanRepaymentsSuspenseQuery>;
+export type GetLoanRepaymentsQueryResult = Apollo.QueryResult<GetLoanRepaymentsQuery, GetLoanRepaymentsQueryVariables>;
+export const CreateLoanRepaymentDocument = gql`
+    mutation CreateLoanRepayment($input: LoanRepaymentInput!) {
+  createLoanRepayment(input: $input) {
+    id
+    docNumber
+  }
+}
+    `;
+export type CreateLoanRepaymentMutationFn = Apollo.MutationFunction<CreateLoanRepaymentMutation, CreateLoanRepaymentMutationVariables>;
+
+/**
+ * __useCreateLoanRepaymentMutation__
+ *
+ * To run a mutation, you first call `useCreateLoanRepaymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateLoanRepaymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createLoanRepaymentMutation, { data, loading, error }] = useCreateLoanRepaymentMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateLoanRepaymentMutation(baseOptions?: Apollo.MutationHookOptions<CreateLoanRepaymentMutation, CreateLoanRepaymentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateLoanRepaymentMutation, CreateLoanRepaymentMutationVariables>(CreateLoanRepaymentDocument, options);
+      }
+export type CreateLoanRepaymentMutationHookResult = ReturnType<typeof useCreateLoanRepaymentMutation>;
+export type CreateLoanRepaymentMutationResult = Apollo.MutationResult<CreateLoanRepaymentMutation>;
+export type CreateLoanRepaymentMutationOptions = Apollo.BaseMutationOptions<CreateLoanRepaymentMutation, CreateLoanRepaymentMutationVariables>;
+export const UpdateLoanRepaymentDocument = gql`
+    mutation UpdateLoanRepayment($id: ID!, $input: LoanRepaymentInput!) {
+  updateLoanRepayment(id: $id, input: $input) {
+    id
+    docNumber
+  }
+}
+    `;
+export type UpdateLoanRepaymentMutationFn = Apollo.MutationFunction<UpdateLoanRepaymentMutation, UpdateLoanRepaymentMutationVariables>;
+
+/**
+ * __useUpdateLoanRepaymentMutation__
+ *
+ * To run a mutation, you first call `useUpdateLoanRepaymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateLoanRepaymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateLoanRepaymentMutation, { data, loading, error }] = useUpdateLoanRepaymentMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateLoanRepaymentMutation(baseOptions?: Apollo.MutationHookOptions<UpdateLoanRepaymentMutation, UpdateLoanRepaymentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateLoanRepaymentMutation, UpdateLoanRepaymentMutationVariables>(UpdateLoanRepaymentDocument, options);
+      }
+export type UpdateLoanRepaymentMutationHookResult = ReturnType<typeof useUpdateLoanRepaymentMutation>;
+export type UpdateLoanRepaymentMutationResult = Apollo.MutationResult<UpdateLoanRepaymentMutation>;
+export type UpdateLoanRepaymentMutationOptions = Apollo.BaseMutationOptions<UpdateLoanRepaymentMutation, UpdateLoanRepaymentMutationVariables>;
+export const DeleteLoanRepaymentDocument = gql`
+    mutation DeleteLoanRepayment($id: ID!) {
+  deleteLoanRepayment(id: $id)
+}
+    `;
+export type DeleteLoanRepaymentMutationFn = Apollo.MutationFunction<DeleteLoanRepaymentMutation, DeleteLoanRepaymentMutationVariables>;
+
+/**
+ * __useDeleteLoanRepaymentMutation__
+ *
+ * To run a mutation, you first call `useDeleteLoanRepaymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteLoanRepaymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteLoanRepaymentMutation, { data, loading, error }] = useDeleteLoanRepaymentMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteLoanRepaymentMutation(baseOptions?: Apollo.MutationHookOptions<DeleteLoanRepaymentMutation, DeleteLoanRepaymentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteLoanRepaymentMutation, DeleteLoanRepaymentMutationVariables>(DeleteLoanRepaymentDocument, options);
+      }
+export type DeleteLoanRepaymentMutationHookResult = ReturnType<typeof useDeleteLoanRepaymentMutation>;
+export type DeleteLoanRepaymentMutationResult = Apollo.MutationResult<DeleteLoanRepaymentMutation>;
+export type DeleteLoanRepaymentMutationOptions = Apollo.BaseMutationOptions<DeleteLoanRepaymentMutation, DeleteLoanRepaymentMutationVariables>;
 export const GetExtractionsDocument = gql`
     query GetExtractions($organizationId: String!, $status: String) {
   extractions(organizationId: $organizationId, status: $status) {
