@@ -159,6 +159,7 @@ const navigation = [
       { 
         name: 'Data Preparation',
         subItems: [
+          { name: 'Overview', href: '/payroll/data-preparation' },
           { name: 'Yard Data', href: '/payroll/data-preparation/yard-data' },
           { name: 'Biometric Data', href: '/payroll/data-preparation/biometric-data' },
           { name: 'Manual Entry', href: '/payroll/data-preparation/manual-entry' },
