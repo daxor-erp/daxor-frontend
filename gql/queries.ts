@@ -167,6 +167,17 @@ export const CREATE_ORGANIZATION = gql`
   }
 `
 
+export const CREATE_ORGANIZATION_WITH_ORG_ADMIN = gql`
+  mutation CreateOrganizationWithOrgAdmin($input: CreateOrganizationWithOrgAdminInput!) {
+    createOrganizationWithOrgAdmin(input: $input) {
+      id
+      name
+      code
+      status
+    }
+  }
+`
+
 export const UPDATE_ORGANIZATION = gql`
   mutation UpdateOrganization($id: ID!, $input: UpdateOrganizationInput!) {
     updateOrganization(id: $id, input: $input) {

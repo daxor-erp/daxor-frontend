@@ -1,6 +1,7 @@
 export const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ERP_ADMIN: 'ERP_ADMIN',
+  ORG_ADMIN: 'ORG_ADMIN',
   EXTRACTION_MANAGER: 'EXTRACTION_MANAGER',
   PRODUCTION_MANAGER: 'PRODUCTION_MANAGER',
   PURCHASE_MANAGER: 'PURCHASE_MANAGER',
@@ -81,7 +82,12 @@ export const ROLE_PERMISSIONS: Record<string, { resource: string; actions: strin
     { resource: RESOURCES.AUDIT_LOG, actions: READ_ONLY },
     { resource: RESOURCES.ORGANIZATION, actions: [ACTIONS.READ, ACTIONS.UPDATE] },
   ],
-  
+
+  [ROLES.ORG_ADMIN]: [
+    { resource: RESOURCES.USER, actions: ALL_ACTIONS },
+    { resource: RESOURCES.ORGANIZATION, actions: READ_ONLY },
+  ],
+
   [ROLES.EXTRACTION_MANAGER]: [
     { resource: RESOURCES.EXTRACTION, actions: ALL_ACTIONS },
     { resource: RESOURCES.STOCK, actions: READ_ONLY },
@@ -184,8 +190,21 @@ export const hasPermission = (
   return false
 }
 
+/** Business roles an organization admin may assign (not tenant/platform privileged roles). */
+export const ORG_ADMIN_ASSIGNABLE_ROLES = Object.values(ROLES).filter(
+  (r) => r !== ROLES.SUPER_ADMIN && r !== ROLES.ERP_ADMIN && r !== ROLES.ORG_ADMIN,
+) as string[]
+
 export const canAccessRoute = (userRoles: string[] | undefined, route: string): boolean => {
   if (!userRoles || userRoles.length === 0) return false
+
+  if (route.startsWith('/admin')) {
+    return userRoles.some((r) => r === ROLES.SUPER_ADMIN || r === ROLES.ERP_ADMIN)
+  }
+  if (route.startsWith('/org-admin')) {
+    return userRoles.includes(ROLES.ORG_ADMIN)
+  }
+
   if (userRoles.includes(ROLES.SUPER_ADMIN)) return true
   
   const routeResourceMap: Record<string, string> = {

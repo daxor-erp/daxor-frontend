@@ -8,7 +8,7 @@ interface User {
   firstName: string
   lastName: string
   roles: string[]
-  organizationId: string
+  organizationId?: string | null
 }
 
 interface AuthContextType {
@@ -20,6 +20,13 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+function postLoginPath(roles: string[] | undefined): string {
+  const r = roles ?? []
+  if (r.includes('SUPER_ADMIN') || r.includes('ERP_ADMIN')) return '/admin/dashboard'
+  if (r.includes('ORG_ADMIN')) return '/org-admin/dashboard'
+  return '/dashboard'
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -39,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('user', JSON.stringify(newUser))
     setToken(newToken)
     setUser(newUser)
-    window.location.href = '/dashboard'
+    window.location.href = postLoginPath(newUser.roles)
   }
 
   const logout = () => {

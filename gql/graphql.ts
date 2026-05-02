@@ -508,12 +508,27 @@ export type CreateMaterialReceiptInput = {
   warehouseName?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Create a tenant organization and its first ORG_ADMIN user (platform admins only). */
+export type CreateOrgAdminUserInput = {
+  email: Scalars['String']['input'];
+  firstName: Scalars['String']['input'];
+  lastName: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+};
+
 export type CreateOrganizationInput = {
   address?: InputMaybe<Scalars['String']['input']>;
   code?: InputMaybe<Scalars['String']['input']>;
+  contactPerson?: InputMaybe<Scalars['String']['input']>;
   email?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   phone?: InputMaybe<Scalars['String']['input']>;
+  type?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateOrganizationWithOrgAdminInput = {
+  orgAdmin: CreateOrgAdminUserInput;
+  organization: CreateOrganizationInput;
 };
 
 export type CreateProductInput = {
@@ -1491,6 +1506,7 @@ export type Mutation = {
   createLoanRepayment: LoanRepayment;
   createMaterialReceipt: MaterialReceipt;
   createOrganization: Organization;
+  createOrganizationWithOrgAdmin: Organization;
   createPayrollManagement: PayrollManagement;
   createProduct: Product;
   createProductionPlanning: ProductionPlanning;
@@ -1905,6 +1921,11 @@ export type MutationCreateMaterialReceiptArgs = {
 
 export type MutationCreateOrganizationArgs = {
   input: CreateOrganizationInput;
+};
+
+
+export type MutationCreateOrganizationWithOrgAdminArgs = {
+  input: CreateOrganizationWithOrgAdminInput;
 };
 
 
@@ -5241,6 +5262,13 @@ export type CreateOrganizationMutationVariables = Exact<{
 
 export type CreateOrganizationMutation = { __typename?: 'Mutation', createOrganization: { __typename?: 'Organization', id: string, name: string, code?: string | null, status: string } };
 
+export type CreateOrganizationWithOrgAdminMutationVariables = Exact<{
+  input: CreateOrganizationWithOrgAdminInput;
+}>;
+
+
+export type CreateOrganizationWithOrgAdminMutation = { __typename?: 'Mutation', createOrganizationWithOrgAdmin: { __typename?: 'Organization', id: string, name: string, code?: string | null, status: string } };
+
 export type UpdateOrganizationMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   input: UpdateOrganizationInput;
@@ -7845,6 +7873,42 @@ export function useCreateOrganizationMutation(baseOptions?: Apollo.MutationHookO
 export type CreateOrganizationMutationHookResult = ReturnType<typeof useCreateOrganizationMutation>;
 export type CreateOrganizationMutationResult = Apollo.MutationResult<CreateOrganizationMutation>;
 export type CreateOrganizationMutationOptions = Apollo.BaseMutationOptions<CreateOrganizationMutation, CreateOrganizationMutationVariables>;
+export const CreateOrganizationWithOrgAdminDocument = gql`
+    mutation CreateOrganizationWithOrgAdmin($input: CreateOrganizationWithOrgAdminInput!) {
+  createOrganizationWithOrgAdmin(input: $input) {
+    id
+    name
+    code
+    status
+  }
+}
+    `;
+export type CreateOrganizationWithOrgAdminMutationFn = Apollo.MutationFunction<CreateOrganizationWithOrgAdminMutation, CreateOrganizationWithOrgAdminMutationVariables>;
+
+/**
+ * __useCreateOrganizationWithOrgAdminMutation__
+ *
+ * To run a mutation, you first call `useCreateOrganizationWithOrgAdminMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateOrganizationWithOrgAdminMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createOrganizationWithOrgAdminMutation, { data, loading, error }] = useCreateOrganizationWithOrgAdminMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateOrganizationWithOrgAdminMutation(baseOptions?: Apollo.MutationHookOptions<CreateOrganizationWithOrgAdminMutation, CreateOrganizationWithOrgAdminMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateOrganizationWithOrgAdminMutation, CreateOrganizationWithOrgAdminMutationVariables>(CreateOrganizationWithOrgAdminDocument, options);
+      }
+export type CreateOrganizationWithOrgAdminMutationHookResult = ReturnType<typeof useCreateOrganizationWithOrgAdminMutation>;
+export type CreateOrganizationWithOrgAdminMutationResult = Apollo.MutationResult<CreateOrganizationWithOrgAdminMutation>;
+export type CreateOrganizationWithOrgAdminMutationOptions = Apollo.BaseMutationOptions<CreateOrganizationWithOrgAdminMutation, CreateOrganizationWithOrgAdminMutationVariables>;
 export const UpdateOrganizationDocument = gql`
     mutation UpdateOrganization($id: ID!, $input: UpdateOrganizationInput!) {
   updateOrganization(id: $id, input: $input) {
