@@ -5015,7 +5015,7 @@ export type WarehouseInput = {
   location: Scalars['String']['input'];
   managerName: Scalars['String']['input'];
   organizationId: Scalars['String']['input'];
-  warehouseCode: Scalars['String']['input'];
+  warehouseCode?: InputMaybe<Scalars['String']['input']>;
   warehouseName: Scalars['String']['input'];
   warehouseType: Scalars['String']['input'];
 };

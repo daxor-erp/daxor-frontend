@@ -74,18 +74,22 @@ export default function StockAdjustmentsPage() {
 
   const [createAdj, { loading: saving }] = useMutation(CREATE_STOCK_ADJUSTMENT, {
     onCompleted: () => { refetch(); closeForm() },
+    onError: (e) => alert(e.message),
   })
 
   const [confirmAdj] = useMutation(CONFIRM_STOCK_ADJUSTMENT, {
     onCompleted: () => refetch(),
+    onError: (e) => alert(e.message),
   })
 
   const [cancelAdj] = useMutation(CANCEL_STOCK_ADJUSTMENT, {
     onCompleted: () => refetch(),
+    onError: (e) => alert(e.message),
   })
 
   const [deleteAdj] = useMutation(DELETE_STOCK_ADJUSTMENT, {
     onCompleted: () => refetch(),
+    onError: (e) => alert(e.message),
   })
 
   const reset = () => {
@@ -139,16 +143,24 @@ export default function StockAdjustmentsPage() {
 
   const handleSubmit = () => {
     if (!validate()) return
-    const input = {
-      ...form,
+    const input: Record<string, unknown> = {
+      adjDate: form.adjDate,
+      adjustmentType: form.adjustmentType,
       organizationId: orgId,
-      lineItems: lines.map(l => ({
-        itemDescription: l.itemDescription,
+      lineItems: lines.map((l) => ({
+        itemDescription: l.itemDescription.trim(),
         currentQty: Number(l.currentQty),
         adjustedQty: Number(l.adjustedQty),
-        difference: Number(l.difference),
-        unit: l.unit,
+        difference: Number(l.adjustedQty) - Number(l.currentQty),
+        ...(l.unit?.trim() ? { unit: l.unit.trim() } : {}),
       })),
+    }
+    if (form.reason.trim()) input.reason = form.reason.trim()
+    if (form.notes.trim()) input.notes = form.notes.trim()
+    if (form.warehouseId) {
+      input.warehouseId = form.warehouseId
+      const name = form.warehouseName?.trim()
+      if (name) input.warehouseName = name
     }
     createAdj({ variables: { input } })
   }

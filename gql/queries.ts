@@ -412,7 +412,8 @@ export const GET_PURCHASE_ORDERS = gql`
       vendorName
       projectId
       projectName
-      deliveryDate      subtotal
+      deliveryDate
+      subtotal
       taxAmount
       totalAmount
       status
@@ -970,6 +971,7 @@ export const GET_INVENTORY_CONTROLS = gql`
       maxStockLevel
       reorderPoint
       warehouseId
+      lastStockDate
       stockStatus
       createdAt
     }
@@ -999,12 +1001,44 @@ export const CREATE_INVENTORY_CONTROL = gql`
   }
 `
 
+export const UPDATE_INVENTORY_CONTROL = gql`
+  mutation UpdateInventoryControl($id: ID!, $input: InventoryControlInput!) {
+    updateInventoryControl(id: $id, input: $input) {
+      id
+      itemName
+      quantity
+      stockStatus
+      lastStockDate
+    }
+  }
+`
+
 export const ADJUST_STOCK = gql`
-  mutation AdjustStock($itemId: String!, $binLocation: String!, $quantity: Float!, $reason: String!) {
-    adjustStock(itemId: $itemId, binLocation: $binLocation, quantity: $quantity, reason: $reason) {
+  mutation AdjustStock($itemId: String!, $binLocation: String!, $quantity: Float!, $reason: String!, $organizationId: String) {
+    adjustStock(itemId: $itemId, binLocation: $binLocation, quantity: $quantity, reason: $reason, organizationId: $organizationId) {
       id
       quantity
       stockStatus
+    }
+  }
+`
+
+export const GET_STOCK_MOVEMENTS = gql`
+  query GetStockMovements($organizationId: String!, $itemId: String) {
+    stockMovements(organizationId: $organizationId, itemId: $itemId) {
+      id
+      itemId
+      movementType
+      fromLocation
+      toLocation
+      quantity
+      unit
+      referenceModule
+      referenceId
+      movementDate
+      notes
+      organizationId
+      createdAt
     }
   }
 `
@@ -1051,6 +1085,15 @@ export const CREATE_WAREHOUSE = gql`
       id
       warehouseCode
       warehouseName
+      location
+      address
+      capacity
+      currentUtilization
+      managerName
+      contactNumber
+      warehouseType
+      isActive
+      createdAt
     }
   }
 `
@@ -1076,8 +1119,30 @@ export const CREATE_WAREHOUSE_BIN = gql`
   mutation CreateWarehouseBin($input: WarehouseBinInput!) {
     createWarehouseBin(input: $input) {
       id
+      warehouseId
       binCode
       binLocation
+      binType
+      capacity
+      currentStock
+      isAvailable
+      createdAt
+    }
+  }
+`
+
+export const UPDATE_WAREHOUSE_BIN = gql`
+  mutation UpdateWarehouseBin($id: ID!, $input: WarehouseBinInput!) {
+    updateWarehouseBin(id: $id, input: $input) {
+      id
+      warehouseId
+      binCode
+      binLocation
+      binType
+      capacity
+      currentStock
+      isAvailable
+      createdAt
     }
   }
 `
@@ -1929,7 +1994,28 @@ export const CREATE_GOODS_RECEIPT = gql`
     createGoodsReceipt(input: $input) {
       id
       docNumber
+      docDate
+      status
+      createdAt
     }
+  }
+`
+
+export const UPDATE_GOODS_RECEIPT = gql`
+  mutation UpdateGoodsReceipt($id: ID!, $input: GoodsReceiptInput!) {
+    updateGoodsReceipt(id: $id, input: $input) {
+      id
+      docNumber
+      docDate
+      status
+      createdAt
+    }
+  }
+`
+
+export const DELETE_GOODS_RECEIPT = gql`
+  mutation DeleteGoodsReceipt($id: ID!) {
+    deleteGoodsReceipt(id: $id)
   }
 `
 
@@ -1962,7 +2048,39 @@ export const CREATE_GRN = gql`
     createGRN(input: $input) {
       id
       grnNumber
+      receivedDate
+      status
+      lineItems {
+        itemDescription
+        orderedQty
+        receivedQty
+        unitPrice
+      }
     }
+  }
+`
+
+export const UPDATE_GRN = gql`
+  mutation UpdateGRN($id: ID!, $input: UpdateGRNInput!) {
+    updateGRN(id: $id, input: $input) {
+      id
+      grnNumber
+      receivedDate
+      status
+      notes
+      lineItems {
+        itemDescription
+        orderedQty
+        receivedQty
+        unitPrice
+      }
+    }
+  }
+`
+
+export const DELETE_GRN = gql`
+  mutation DeleteGRN($id: ID!) {
+    deleteGRN(id: $id)
   }
 `
 
@@ -2149,6 +2267,143 @@ export const CANCEL_STOCK_TRANSFER = gql`
 export const DELETE_STOCK_TRANSFER = gql`
   mutation DeleteStockTransfer($id: ID!) {
     deleteStockTransfer(id: $id)
+  }
+`
+
+// Fixed assets / equipment masters (Asset module)
+export const GET_ASSETS = gql`
+  query GetAssets(
+    $organizationId: String!
+    $page: Int
+    $limit: Int
+    $status: String
+    $assetType: String
+  ) {
+    assets(
+      organizationId: $organizationId
+      page: $page
+      limit: $limit
+      status: $status
+      assetType: $assetType
+    ) {
+      id
+      assetNumber
+      assetName
+      assetType
+      category
+      purchaseDate
+      purchasePrice
+      currentValue
+      depreciationMethod
+      usefulLife
+      location
+      assignedTo
+      status
+      serialNumber
+      manufacturer
+      warrantyExpiry
+      organizationId
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const CREATE_ASSET = gql`
+  mutation CreateAsset($input: AssetInput!) {
+    createAsset(input: $input) {
+      id
+      assetNumber
+      assetName
+      status
+    }
+  }
+`
+
+export const UPDATE_ASSET = gql`
+  mutation UpdateAsset($id: ID!, $input: AssetInput!) {
+    updateAsset(id: $id, input: $input) {
+      id
+      assetNumber
+      assetName
+      status
+    }
+  }
+`
+
+export const DELETE_ASSET = gql`
+  mutation DeleteAsset($id: ID!) {
+    deleteAsset(id: $id)
+  }
+`
+
+// Intercompany transfer (inventory)
+export const GET_INTERCOMPANY_TRANSFERS = gql`
+  query GetIntercompanyTransfers($organizationId: ID!, $page: Int, $limit: Int) {
+    intercompanyTransfers(organizationId: $organizationId, page: $page, limit: $limit) {
+      id
+      transferNumber
+      transferDate
+      fromOrganizationId
+      fromOrganizationName
+      toOrganizationId
+      toOrganizationName
+      lineItems {
+        itemDescription
+        qty
+        unit
+      }
+      status
+      notes
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const CREATE_INTERCOMPANY_TRANSFER = gql`
+  mutation CreateIntercompanyTransfer($input: CreateIntercompanyTransferInput!) {
+    createIntercompanyTransfer(input: $input) {
+      id
+      transferNumber
+      status
+    }
+  }
+`
+
+export const UPDATE_INTERCOMPANY_TRANSFER = gql`
+  mutation UpdateIntercompanyTransfer($id: ID!, $input: UpdateIntercompanyTransferInput!) {
+    updateIntercompanyTransfer(id: $id, input: $input) {
+      id
+      transferNumber
+      status
+    }
+  }
+`
+
+export const CONFIRM_INTERCOMPANY_TRANSFER = gql`
+  mutation ConfirmIntercompanyTransfer($id: ID!) {
+    confirmIntercompanyTransfer(id: $id) {
+      id
+      transferNumber
+      status
+    }
+  }
+`
+
+export const CANCEL_INTERCOMPANY_TRANSFER = gql`
+  mutation CancelIntercompanyTransfer($id: ID!) {
+    cancelIntercompanyTransfer(id: $id) {
+      id
+      transferNumber
+      status
+    }
+  }
+`
+
+export const DELETE_INTERCOMPANY_TRANSFER = gql`
+  mutation DeleteIntercompanyTransfer($id: ID!) {
+    deleteIntercompanyTransfer(id: $id)
   }
 `
 
