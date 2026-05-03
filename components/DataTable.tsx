@@ -176,7 +176,7 @@ export function DataTable<T extends Record<string, any>>({
             </div>
           ))}
           {actions.length > 0 && (
-            <div className="w-24 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide text-right">
+            <div className="min-w-[7.5rem] px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide text-right">
               Actions
             </div>
           )}
@@ -213,7 +213,7 @@ export function DataTable<T extends Record<string, any>>({
                 </div>
               ))}
               {actions.length > 0 && (
-                <div className="w-24 px-2 py-2 flex items-center justify-end gap-1">
+                <div className="min-w-[7.5rem] px-2 py-2 flex items-center justify-end gap-1 flex-wrap">
                   {actions.map((action, actionIdx) => {
                     if (action.show && !action.show(row)) return null
                     return (
@@ -221,10 +221,11 @@ export function DataTable<T extends Record<string, any>>({
                         key={actionIdx}
                         variant={action.variant || 'ghost'}
                         size="sm"
+                        title={action.label}
                         onClick={() => action.onClick(row)}
                         className="h-6 px-2 text-xs"
                       >
-                        {action.icon}
+                        {action.icon ?? action.label}
                       </Button>
                     )
                   })}

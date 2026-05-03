@@ -122,8 +122,9 @@ const navigation = [
       { name: 'Stock Transfers', href: '/stock-transfers' },
       { name: 'Goods Receipt', href: '/goods-receipt' },
       { name: 'GRN', href: '/grn' },
-      { name: 'Adjust Inventory', href: '/inventory/adjust-inventory' },
-      { name: 'Adjust Inventory Worksheet', href: '/inventory/adjust-inventory-worksheet' },
+      // Consolidated into Inventory control: /inventory-control
+      // { name: 'Adjust Inventory', href: '/inventory/adjust-inventory' },
+      // { name: 'Adjust Inventory Worksheet', href: '/inventory/adjust-inventory-worksheet' },
       { name: 'Enter Transfer Orders', href: '/inventory/enter-transfer-orders' },
       { name: 'Equipment Masters', href: '/inventory/equipment-masters' },
       { name: 'Intercompany Transfer', href: '/inventory/intercompany-transfer' },
