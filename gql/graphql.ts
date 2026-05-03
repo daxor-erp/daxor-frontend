@@ -1492,6 +1492,7 @@ export type Mutation = {
   createMaterialReceipt: MaterialReceipt;
   createOrganization: Organization;
   createPayrollManagement: PayrollManagement;
+  createPayrollUiRecord: PayrollUiRecord;
   createProduct: Product;
   createProductionPlanning: ProductionPlanning;
   createProject: Project;
@@ -1550,6 +1551,7 @@ export type Mutation = {
   deleteMaterialReceipt: Scalars['Boolean']['output'];
   deleteOrganization: Organization;
   deletePayrollManagement: Scalars['Boolean']['output'];
+  deletePayrollUiRecord: Scalars['Boolean']['output'];
   deleteProduct: Scalars['Boolean']['output'];
   deleteProductionPlanning: Scalars['Boolean']['output'];
   deleteProject: Project;
@@ -1619,6 +1621,7 @@ export type Mutation = {
   updateMaterialReceipt: MaterialReceipt;
   updateOrganization: Organization;
   updatePayrollManagement: PayrollManagement;
+  updatePayrollUiRecord: PayrollUiRecord;
   updateProduct: Product;
   updateProductionPlanning: ProductionPlanning;
   updateProject: Project;
@@ -1913,6 +1916,11 @@ export type MutationCreatePayrollManagementArgs = {
 };
 
 
+export type MutationCreatePayrollUiRecordArgs = {
+  input: PayrollUiRecordInput;
+};
+
+
 export type MutationCreateProductArgs = {
   input: CreateProductInput;
 };
@@ -2199,6 +2207,11 @@ export type MutationDeleteOrganizationArgs = {
 
 
 export type MutationDeletePayrollManagementArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeletePayrollUiRecordArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -2577,6 +2590,12 @@ export type MutationUpdatePayrollManagementArgs = {
 };
 
 
+export type MutationUpdatePayrollUiRecordArgs = {
+  id: Scalars['ID']['input'];
+  input: PayrollUiRecordInput;
+};
+
+
 export type MutationUpdateProductArgs = {
   id: Scalars['ID']['input'];
   input: UpdateProductInput;
@@ -2785,6 +2804,24 @@ export type PayrollManagementInput = {
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type PayrollUiRecord = {
+  __typename?: 'PayrollUiRecord';
+  category: Scalars['String']['output'];
+  code?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  data: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  organizationId: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
+export type PayrollUiRecordInput = {
+  category: Scalars['String']['input'];
+  code?: InputMaybe<Scalars['String']['input']>;
+  data: Scalars['String']['input'];
+  organizationId: Scalars['String']['input'];
+};
+
 export type Permission = {
   __typename?: 'Permission';
   actions: Array<Scalars['String']['output']>;
@@ -2984,6 +3021,8 @@ export type Query = {
   outstandingVendorBills: Array<VendorBill>;
   payrollmanagement?: Maybe<PayrollManagement>;
   payrollmanagements: Array<PayrollManagement>;
+  payrolluirecord?: Maybe<PayrollUiRecord>;
+  payrolluirecords: Array<PayrollUiRecord>;
   priceList?: Maybe<PriceList>;
   priceLists: Array<PriceList>;
   product?: Maybe<Product>;
@@ -3590,6 +3629,17 @@ export type QueryPayrollmanagementsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   organizationId: Scalars['String']['input'];
   page?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryPayrolluirecordArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPayrolluirecordsArgs = {
+  category: Scalars['String']['input'];
+  organizationId: Scalars['String']['input'];
 };
 
 
@@ -6361,6 +6411,36 @@ export type DeleteLoanRepaymentMutationVariables = Exact<{
 
 
 export type DeleteLoanRepaymentMutation = { __typename?: 'Mutation', deleteLoanRepayment: boolean };
+
+export type GetPayrollUiRecordsQueryVariables = Exact<{
+  organizationId: Scalars['String']['input'];
+  category: Scalars['String']['input'];
+}>;
+
+
+export type GetPayrollUiRecordsQuery = { __typename?: 'Query', payrolluirecords: Array<{ __typename?: 'PayrollUiRecord', id: string, organizationId: string, category: string, code?: string | null, data: string, createdAt: string, updatedAt: string }> };
+
+export type CreatePayrollUiRecordMutationVariables = Exact<{
+  input: PayrollUiRecordInput;
+}>;
+
+
+export type CreatePayrollUiRecordMutation = { __typename?: 'Mutation', createPayrollUiRecord: { __typename?: 'PayrollUiRecord', id: string, category: string, code?: string | null } };
+
+export type UpdatePayrollUiRecordMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: PayrollUiRecordInput;
+}>;
+
+
+export type UpdatePayrollUiRecordMutation = { __typename?: 'Mutation', updatePayrollUiRecord: { __typename?: 'PayrollUiRecord', id: string, category: string, code?: string | null } };
+
+export type DeletePayrollUiRecordMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeletePayrollUiRecordMutation = { __typename?: 'Mutation', deletePayrollUiRecord: boolean };
 
 export type GetExtractionsQueryVariables = Exact<{
   organizationId: Scalars['String']['input'];
@@ -14190,6 +14270,158 @@ export function useDeleteLoanRepaymentMutation(baseOptions?: Apollo.MutationHook
 export type DeleteLoanRepaymentMutationHookResult = ReturnType<typeof useDeleteLoanRepaymentMutation>;
 export type DeleteLoanRepaymentMutationResult = Apollo.MutationResult<DeleteLoanRepaymentMutation>;
 export type DeleteLoanRepaymentMutationOptions = Apollo.BaseMutationOptions<DeleteLoanRepaymentMutation, DeleteLoanRepaymentMutationVariables>;
+export const GetPayrollUiRecordsDocument = gql`
+    query GetPayrollUiRecords($organizationId: String!, $category: String!) {
+  payrolluirecords(organizationId: $organizationId, category: $category) {
+    id
+    organizationId
+    category
+    code
+    data
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetPayrollUiRecordsQuery__
+ *
+ * To run a query within a React component, call `useGetPayrollUiRecordsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetPayrollUiRecordsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetPayrollUiRecordsQuery({
+ *   variables: {
+ *      organizationId: // value for 'organizationId'
+ *      category: // value for 'category'
+ *   },
+ * });
+ */
+export function useGetPayrollUiRecordsQuery(baseOptions: Apollo.QueryHookOptions<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables> & ({ variables: GetPayrollUiRecordsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables>(GetPayrollUiRecordsDocument, options);
+      }
+export function useGetPayrollUiRecordsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables>(GetPayrollUiRecordsDocument, options);
+        }
+// @ts-ignore
+export function useGetPayrollUiRecordsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables>): Apollo.UseSuspenseQueryResult<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables>;
+export function useGetPayrollUiRecordsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables>): Apollo.UseSuspenseQueryResult<GetPayrollUiRecordsQuery | undefined, GetPayrollUiRecordsQueryVariables>;
+export function useGetPayrollUiRecordsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables>(GetPayrollUiRecordsDocument, options);
+        }
+export type GetPayrollUiRecordsQueryHookResult = ReturnType<typeof useGetPayrollUiRecordsQuery>;
+export type GetPayrollUiRecordsLazyQueryHookResult = ReturnType<typeof useGetPayrollUiRecordsLazyQuery>;
+export type GetPayrollUiRecordsSuspenseQueryHookResult = ReturnType<typeof useGetPayrollUiRecordsSuspenseQuery>;
+export type GetPayrollUiRecordsQueryResult = Apollo.QueryResult<GetPayrollUiRecordsQuery, GetPayrollUiRecordsQueryVariables>;
+export const CreatePayrollUiRecordDocument = gql`
+    mutation CreatePayrollUiRecord($input: PayrollUiRecordInput!) {
+  createPayrollUiRecord(input: $input) {
+    id
+    category
+    code
+  }
+}
+    `;
+export type CreatePayrollUiRecordMutationFn = Apollo.MutationFunction<CreatePayrollUiRecordMutation, CreatePayrollUiRecordMutationVariables>;
+
+/**
+ * __useCreatePayrollUiRecordMutation__
+ *
+ * To run a mutation, you first call `useCreatePayrollUiRecordMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreatePayrollUiRecordMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createPayrollUiRecordMutation, { data, loading, error }] = useCreatePayrollUiRecordMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreatePayrollUiRecordMutation(baseOptions?: Apollo.MutationHookOptions<CreatePayrollUiRecordMutation, CreatePayrollUiRecordMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreatePayrollUiRecordMutation, CreatePayrollUiRecordMutationVariables>(CreatePayrollUiRecordDocument, options);
+      }
+export type CreatePayrollUiRecordMutationHookResult = ReturnType<typeof useCreatePayrollUiRecordMutation>;
+export type CreatePayrollUiRecordMutationResult = Apollo.MutationResult<CreatePayrollUiRecordMutation>;
+export type CreatePayrollUiRecordMutationOptions = Apollo.BaseMutationOptions<CreatePayrollUiRecordMutation, CreatePayrollUiRecordMutationVariables>;
+export const UpdatePayrollUiRecordDocument = gql`
+    mutation UpdatePayrollUiRecord($id: ID!, $input: PayrollUiRecordInput!) {
+  updatePayrollUiRecord(id: $id, input: $input) {
+    id
+    category
+    code
+  }
+}
+    `;
+export type UpdatePayrollUiRecordMutationFn = Apollo.MutationFunction<UpdatePayrollUiRecordMutation, UpdatePayrollUiRecordMutationVariables>;
+
+/**
+ * __useUpdatePayrollUiRecordMutation__
+ *
+ * To run a mutation, you first call `useUpdatePayrollUiRecordMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdatePayrollUiRecordMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updatePayrollUiRecordMutation, { data, loading, error }] = useUpdatePayrollUiRecordMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdatePayrollUiRecordMutation(baseOptions?: Apollo.MutationHookOptions<UpdatePayrollUiRecordMutation, UpdatePayrollUiRecordMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdatePayrollUiRecordMutation, UpdatePayrollUiRecordMutationVariables>(UpdatePayrollUiRecordDocument, options);
+      }
+export type UpdatePayrollUiRecordMutationHookResult = ReturnType<typeof useUpdatePayrollUiRecordMutation>;
+export type UpdatePayrollUiRecordMutationResult = Apollo.MutationResult<UpdatePayrollUiRecordMutation>;
+export type UpdatePayrollUiRecordMutationOptions = Apollo.BaseMutationOptions<UpdatePayrollUiRecordMutation, UpdatePayrollUiRecordMutationVariables>;
+export const DeletePayrollUiRecordDocument = gql`
+    mutation DeletePayrollUiRecord($id: ID!) {
+  deletePayrollUiRecord(id: $id)
+}
+    `;
+export type DeletePayrollUiRecordMutationFn = Apollo.MutationFunction<DeletePayrollUiRecordMutation, DeletePayrollUiRecordMutationVariables>;
+
+/**
+ * __useDeletePayrollUiRecordMutation__
+ *
+ * To run a mutation, you first call `useDeletePayrollUiRecordMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeletePayrollUiRecordMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deletePayrollUiRecordMutation, { data, loading, error }] = useDeletePayrollUiRecordMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeletePayrollUiRecordMutation(baseOptions?: Apollo.MutationHookOptions<DeletePayrollUiRecordMutation, DeletePayrollUiRecordMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeletePayrollUiRecordMutation, DeletePayrollUiRecordMutationVariables>(DeletePayrollUiRecordDocument, options);
+      }
+export type DeletePayrollUiRecordMutationHookResult = ReturnType<typeof useDeletePayrollUiRecordMutation>;
+export type DeletePayrollUiRecordMutationResult = Apollo.MutationResult<DeletePayrollUiRecordMutation>;
+export type DeletePayrollUiRecordMutationOptions = Apollo.BaseMutationOptions<DeletePayrollUiRecordMutation, DeletePayrollUiRecordMutationVariables>;
 export const GetExtractionsDocument = gql`
     query GetExtractions($organizationId: String!, $status: String) {
   extractions(organizationId: $organizationId, status: $status) {

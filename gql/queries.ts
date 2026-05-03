@@ -2271,6 +2271,47 @@ export const DELETE_LOAN_REPAYMENT = gql`
   }
 `
 
+// Payroll UI extension records (persist processing / setup / workflow / statutory forms)
+export const GET_PAYROLL_UI_RECORDS = gql`
+  query GetPayrollUiRecords($organizationId: String!, $category: String!) {
+    payrolluirecords(organizationId: $organizationId, category: $category) {
+      id
+      organizationId
+      category
+      code
+      data
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const CREATE_PAYROLL_UI_RECORD = gql`
+  mutation CreatePayrollUiRecord($input: PayrollUiRecordInput!) {
+    createPayrollUiRecord(input: $input) {
+      id
+      category
+      code
+    }
+  }
+`
+
+export const UPDATE_PAYROLL_UI_RECORD = gql`
+  mutation UpdatePayrollUiRecord($id: ID!, $input: PayrollUiRecordInput!) {
+    updatePayrollUiRecord(id: $id, input: $input) {
+      id
+      category
+      code
+    }
+  }
+`
+
+export const DELETE_PAYROLL_UI_RECORD = gql`
+  mutation DeletePayrollUiRecord($id: ID!) {
+    deletePayrollUiRecord(id: $id)
+  }
+`
+
 // Extraction
 export const GET_EXTRACTIONS = gql`
   query GetExtractions($organizationId: String!, $status: String) {
