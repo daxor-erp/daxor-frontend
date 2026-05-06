@@ -2,11 +2,10 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, gql } from '@apollo/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { InputFloating } from '@/components/ui/input-floating'
+import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Bell, Settings, User, Search, ChevronDown, CheckCircle2 } from 'lucide-react'
+import { Save, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 const GET_CLIENTS = gql`
@@ -46,21 +45,59 @@ const EMPTY_FORM = {
   notes: '',
 }
 
+const ENQUIRY_SOURCE_OPTS = [
+  { value: '', label: 'Select source...' },
+  { value: 'Website', label: 'Website' },
+  { value: 'Email', label: 'Email' },
+  { value: 'Phone', label: 'Phone' },
+  { value: 'Referral', label: 'Referral' },
+  { value: 'Walk-in', label: 'Walk-in' },
+  { value: 'Social Media', label: 'Social Media' },
+]
+
+const PROJECT_TYPE_OPTS = [
+  { value: '', label: 'Select project type...' },
+  { value: 'Construction', label: 'Construction' },
+  { value: 'MEP', label: 'MEP' },
+  { value: 'Renovation', label: 'Renovation' },
+  { value: 'Infrastructure', label: 'Infrastructure' },
+  { value: 'Industrial', label: 'Industrial' },
+  { value: 'Commercial', label: 'Commercial' },
+  { value: 'Residential', label: 'Residential' },
+]
+
+const CURRENCY_OPTS = [
+  { value: 'SGD', label: 'SGD' },
+  { value: 'USD', label: 'USD' },
+  { value: 'EUR', label: 'EUR' },
+  { value: 'GBP', label: 'GBP' },
+  { value: 'AUD', label: 'AUD' },
+  { value: 'INR', label: 'INR' },
+]
+
+const PRIORITY_OPTS = [
+  { value: 'low', label: 'Low' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'high', label: 'High' },
+  { value: 'urgent', label: 'Urgent' },
+]
+
+const cellInput = 'w-full border border-gray-200 rounded px-2 py-1 text-xs'
+
 export default function SalesEnquiryPage() {
   const { user } = useAuth()
-  const [showProfile, setShowProfile] = useState(false)
+  const orgId = user?.organizationId || ''
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
 
   const { data: clientsData, loading: clientsLoading } = useQuery(GET_CLIENTS, {
-    variables: { organizationId: user?.organizationId },
-    skip: !user?.organizationId,
+    variables: { organizationId: orgId },
+    skip: !orgId,
     fetchPolicy: 'network-only',
   })
 
   const clients = clientsData?.clients ?? []
-  const selectedClient = clients.find((c: any) => c.id === formData.clientId)
 
   const [createSalesEnquiry, { loading: submitting }] = useMutation(CREATE_SALES_ENQUIRY, {
     onCompleted: (res) => {
@@ -74,12 +111,11 @@ export default function SalesEnquiryPage() {
     },
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData(p => ({ ...p, [e.target.name]: e.target.value }))
+  const setF = (k: string, v: string) => {
+    setFormData((p) => ({ ...p, [k]: v }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = () => {
     setErrorMsg('')
     createSalesEnquiry({
       variables: {
@@ -93,226 +129,202 @@ export default function SalesEnquiryPage() {
     })
   }
 
-  const selectClass = 'w-full h-10 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white'
+  const clientOptions = [
+    { value: '', label: clientsLoading ? 'Loading clients…' : 'Select client...' },
+    ...clients.map((c: any) => ({
+      value: c.id,
+      label: `${c.name}${c.company ? ` — ${c.company}` : ''}`,
+    })),
+  ]
 
   return (
-    <div className="flex-1 bg-gray-50 h-screen overflow-y-auto">
-      {/* Header */}
-      <header className="bg-white border-b px-6 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="text-lg font-semibold text-gray-800">
-          Welcome, <span className="text-blue-600">{user?.firstName || 'User'}</span>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Sales Enquiry</h1>
+        <p className="text-gray-500">Create a new sales enquiry</p>
+      </div>
+
+      {successMsg && (
+        <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          {successMsg}
         </div>
-        <div className="flex-1 flex justify-center max-w-2xl mx-auto">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
-          </div>
+      )}
+
+      {errorMsg && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{errorMsg}</div>}
+
+      <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2 bg-blue-600">
+          <span className="text-xs font-semibold text-white">New Sales Enquiry</span>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-            <Bell className="h-5 w-5 text-gray-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg"><Settings className="h-5 w-5 text-gray-600" /></button>
-          <div className="relative">
-            <button onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg">
-              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center"><User className="h-4 w-4" /></div>
-              <ChevronDown className="h-4 w-4 text-gray-600" />
-            </button>
-            {showProfile && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100">My Profile</button>
-                <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Account Settings</button>
-                <hr className="my-1" />
-                <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 text-red-600">Logout</button>
-              </div>
-            )}
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <SelectFloating
+              label="Client"
+              value={formData.clientId}
+              onChange={(e) => setF('clientId', typeof e === 'string' ? e : e.target.value)}
+              options={clientOptions}
+              className="h-7 text-xs"
+            />
+            <SelectFloating
+              label="Enquiry source"
+              value={formData.enquirySource}
+              onChange={(e) => setF('enquirySource', typeof e === 'string' ? e : e.target.value)}
+              options={ENQUIRY_SOURCE_OPTS}
+              className="h-7 text-xs"
+            />
+            <SelectFloating
+              label="Priority"
+              value={formData.priority}
+              onChange={(e) => setF('priority', typeof e === 'string' ? e : e.target.value)}
+              options={PRIORITY_OPTS}
+              className="h-7 text-xs"
+            />
           </div>
-        </div>
-      </header>
 
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-1">Sales Enquiry</h1>
-          <p className="text-sm text-gray-500">Create a new sales enquiry</p>
-        </div>
-
-        {/* Success Message */}
-        {successMsg && (
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            {successMsg}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-3">
+              <InputFloating
+                label="Subject"
+                value={formData.subject}
+                onChange={(e) => setF('subject', e.target.value)}
+                placeholder=""
+                maxLength={255}
+                className="h-7 text-xs"
+              />
+            </div>
           </div>
-        )}
 
-        {/* Error Message */}
-        {errorMsg && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
-            {errorMsg}
-          </div>
-        )}
-
-        <Card className="max-w-5xl">
-          <CardHeader>
-            <CardTitle>Enquiry Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-
-              {/* Basic Information */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-700">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                  {/* Client ID dropdown + resolved name */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Client</Label>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-gray-700">Enquiry detail lines</span>
+            </div>
+            <table className="w-full text-xs border border-gray-200 rounded">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left p-2 font-medium text-gray-600 w-36">Project type</th>
+                  <th className="text-left p-2 font-medium text-gray-600">Location</th>
+                  <th className="text-left p-2 font-medium text-gray-600 w-28">Currency</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-gray-100">
+                  <td className="p-1">
                     <select
-                      name="clientId"
-                      value={formData.clientId}
-                      onChange={handleChange}
-                      className={selectClass}
+                      className={cellInput}
+                      value={formData.projectType}
+                      onChange={(e) => setF('projectType', e.target.value)}
                     >
-                      <option value="">{clientsLoading ? 'Loading clients…' : '— Select a client —'}</option>
-                      {clients.map((c: any) => (
-                        <option key={c.id} value={c.id}>{c.name}{c.company ? ` — ${c.company}` : ''}</option>
+                      {PROJECT_TYPE_OPTS.map((o) => (
+                        <option key={`pt-${o.value || 'none'}`} value={o.value}>
+                          {o.label}
+                        </option>
                       ))}
                     </select>
-                    {/* Show resolved client name once selected */}
-                    {selectedClient && (
-                      <div className="flex items-center gap-2 mt-1 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-md">
-                        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                          {selectedClient.name[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-blue-800">{selectedClient.name}</p>
-                          {selectedClient.company && <p className="text-xs text-blue-500">{selectedClient.company}</p>}
-                        </div>
-                        <span className="ml-auto text-xs text-blue-400 font-mono">{selectedClient.id.slice(-8)}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Enquiry Source</Label>
-                    <select name="enquirySource" value={formData.enquirySource} onChange={handleChange} className={selectClass}>
-                      <option value="">Select source</option>
-                      <option value="Website">Website</option>
-                      <option value="Email">Email</option>
-                      <option value="Phone">Phone</option>
-                      <option value="Referral">Referral</option>
-                      <option value="Walk-in">Walk-in</option>
-                      <option value="Social Media">Social Media</option>
+                  </td>
+                  <td className="p-1">
+                    <input
+                      className={cellInput}
+                      value={formData.location}
+                      onChange={(e) => setF('location', e.target.value)}
+                      placeholder="Location"
+                    />
+                  </td>
+                  <td className="p-1">
+                    <select
+                      className={cellInput}
+                      value={formData.currency}
+                      onChange={(e) => setF('currency', e.target.value)}
+                    >
+                      {CURRENCY_OPTS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
                     </select>
-                  </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-                  <div className="space-y-2 md:col-span-2">
-                    <Label className="text-sm font-medium">Subject</Label>
-                    <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="Enter enquiry subject" maxLength={255} className="h-10" />
-                  </div>
-                </div>
-              </div>
+          <div className="grid grid-cols-3 gap-3">
+            <InputFloating
+              label="Estimated start"
+              type="date"
+              value={formData.estimatedStartDate}
+              onChange={(e) => setF('estimatedStartDate', e.target.value)}
+              className="h-7 text-xs"
+            />
+            <InputFloating
+              label="Estimated end"
+              type="date"
+              value={formData.estimatedEndDate}
+              onChange={(e) => setF('estimatedEndDate', e.target.value)}
+              className="h-7 text-xs"
+            />
+            <InputFloating
+              label="Budget"
+              type="number"
+              step="0.01"
+              value={formData.budget}
+              onChange={(e) => setF('budget', e.target.value)}
+              className="h-7 text-xs"
+            />
+          </div>
 
-              {/* Project Details */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-700">Project Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Project Type</Label>
-                    <select name="projectType" value={formData.projectType} onChange={handleChange} className={selectClass}>
-                      <option value="">Select project type</option>
-                      <option value="Construction">Construction</option>
-                      <option value="MEP">MEP</option>
-                      <option value="Renovation">Renovation</option>
-                      <option value="Infrastructure">Infrastructure</option>
-                      <option value="Industrial">Industrial</option>
-                      <option value="Commercial">Commercial</option>
-                      <option value="Residential">Residential</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Location</Label>
-                    <Input name="location" value={formData.location} onChange={handleChange} placeholder="Enter project location" className="h-10" />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label className="text-sm font-medium">Project Scope</Label>
-                    <textarea name="projectScope" value={formData.projectScope} onChange={handleChange} placeholder="Describe the project scope" rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
-                  </div>
-                </div>
-              </div>
+          <div className="grid grid-cols-3 gap-3">
+            <InputFloating
+              label="Assigned to (user ID)"
+              value={formData.assignedTo}
+              onChange={(e) => setF('assignedTo', e.target.value)}
+              className="h-7 text-xs"
+            />
+          </div>
 
-              {/* Timeline & Budget */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-700">Timeline & Budget</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Estimated Start Date</Label>
-                    <Input name="estimatedStartDate" type="date" value={formData.estimatedStartDate} onChange={handleChange} className="h-10" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Estimated End Date</Label>
-                    <Input name="estimatedEndDate" type="date" value={formData.estimatedEndDate} onChange={handleChange} className="h-10" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Budget</Label>
-                    <Input name="budget" type="number" step="0.01" value={formData.budget} onChange={handleChange} placeholder="0.00" className="h-10" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Currency</Label>
-                    <select name="currency" value={formData.currency} onChange={handleChange} className={selectClass}>
-                      <option value="SGD">SGD - Singapore Dollar</option>
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="EUR">EUR - Euro</option>
-                      <option value="GBP">GBP - British Pound</option>
-                      <option value="AUD">AUD - Australian Dollar</option>
-                      <option value="INR">INR - Indian Rupee</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+          <InputFloating
+            label="Project scope"
+            multiline
+            rows={3}
+            value={formData.projectScope}
+            onChange={(e) => setF('projectScope', e.target.value)}
+            className="text-xs min-h-[72px]"
+          />
 
-              {/* Assignment & Priority */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-700">Assignment & Priority</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Assigned To (User ID)</Label>
-                    <Input name="assignedTo" value={formData.assignedTo} onChange={handleChange} placeholder="Enter user ID (optional)" className="h-10" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Priority</Label>
-                    <select name="priority" value={formData.priority} onChange={handleChange} className={selectClass}>
-                      <option value="low">Low</option>
-                      <option value="normal">Normal</option>
-                      <option value="high">High</option>
-                      <option value="urgent">Urgent</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+          <InputFloating
+            label="Notes"
+            multiline
+            rows={2}
+            value={formData.notes}
+            onChange={(e) => setF('notes', e.target.value)}
+            className="text-xs"
+          />
 
-              {/* Notes */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-700">Additional Information</h3>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Notes</Label>
-                  <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="Add any additional notes or comments" rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t">
-                <Button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white px-8">
-                  {submitting ? 'Creating…' : 'Create Sales Enquiry'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => { setFormData(EMPTY_FORM); setErrorMsg('') }}>
-                  Reset Form
-                </Button>
-              </div>
-
-            </form>
-          </CardContent>
-        </Card>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setFormData(EMPTY_FORM)
+                setErrorMsg('')
+              }}
+              className="h-8 text-xs"
+            >
+              Clear
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSubmit}
+              disabled={submitting || !orgId}
+              className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
+            >
+              <Save className="h-3.5 w-3.5 mr-1" />
+              {submitting ? 'Saving…' : 'Save Enquiry'}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )
