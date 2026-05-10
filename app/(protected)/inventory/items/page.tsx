@@ -11,12 +11,37 @@ import { Trash2, Package, Box, Archive, AlertTriangle } from 'lucide-react'
 import { X, Save, Edit } from 'lucide-react'
 import { GET_ITEMS, CREATE_ITEM, UPDATE_ITEM, DELETE_ITEM } from '@/gql/queries'
 
+type ItemRow = {
+  id?: string
+  _id?: string
+  seqNo?: string | null
+  name?: string | null
+  description?: string | null
+  category?: string | null
+  unit?: string | null
+  rate?: number | null
+  status?: string | null
+}
+
+function formatItemRate(value: unknown): string {
+  if (value == null || value === '') return '—'
+  const n = typeof value === 'number' ? value : Number.parseFloat(String(value))
+  if (!Number.isFinite(n)) return '—'
+  return `$${n.toFixed(2)}`
+}
+
+function resolveItemId(row: ItemRow): string {
+  const id = row.id ?? row._id
+  return id != null ? String(id) : ''
+}
+
 export default function ItemsPage() {
   const { user } = useAuth()
-  const orgId = user?.organizationId || ''
+  const orgId = user?.organizationId ?? ''
 
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
+  const [mutationError, setMutationError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -34,22 +59,30 @@ export default function ItemsPage() {
   
   const [createItem, { loading: saving }] = useMutation(CREATE_ITEM, {
     onCompleted: () => {
+      setMutationError(null)
       refetch()
       setAdding(false)
       reset()
     },
+    onError: (e) => setMutationError(e.message ?? 'Failed to create item'),
   })
-  
+
   const [updateItem, { loading: updating }] = useMutation(UPDATE_ITEM, {
     onCompleted: () => {
+      setMutationError(null)
       refetch()
       setEditing(null)
       reset()
     },
+    onError: (e) => setMutationError(e.message ?? 'Failed to update item'),
   })
-  
+
   const [deleteItem] = useMutation(DELETE_ITEM, {
-    onCompleted: () => refetch(),
+    onCompleted: () => {
+      setMutationError(null)
+      refetch()
+    },
+    onError: (e) => setMutationError(e.message ?? 'Failed to delete item'),
   })
 
   const items = data?.items ?? []
@@ -64,6 +97,7 @@ export default function ItemsPage() {
       status: 'active',
     })
     setErrors({})
+    setMutationError(null)
   }
   const setF = (k: string, v: string) => {
     setFormData(p => ({ ...p, [k]: v }))
@@ -80,40 +114,69 @@ export default function ItemsPage() {
   }
 
   const handleSubmit = () => {
+    setMutationError(null)
+    if (!orgId) {
+      setMutationError('Organization is required. Please sign in again.')
+      return
+    }
     if (!validate()) return
-    
+
     const input = {
-      name: formData.name,
-      description: formData.description,
-      category: formData.category,
-      unit: formData.unit,
+      name: formData.name.trim(),
+      description: formData.description.trim() || undefined,
+      category: formData.category.trim() || undefined,
+      unit: formData.unit.trim(),
       rate: parseFloat(formData.rate) || 0,
       organizationId: orgId,
+      status: formData.status,
     }
 
     if (editing) {
-      // Include status for update
-      updateItem({ variables: { id: editing, input: { ...input, status: formData.status } } })
+      updateItem({
+        variables: {
+          id: editing,
+          input: {
+            name: input.name,
+            description: input.description,
+            category: input.category,
+            unit: input.unit,
+            rate: input.rate,
+            status: formData.status,
+          },
+        },
+      })
     } else {
-      // Exclude status for create until backend is restarted
       createItem({ variables: { input } })
     }
   }
 
-  const handleEdit = (item: any) => {
+  const handleEdit = (item: ItemRow) => {
+    const id = resolveItemId(item)
+    if (!id) {
+      setMutationError('Cannot edit this row: missing item id')
+      return
+    }
+    const st = item.status != null ? String(item.status) : ''
+    const status = st === 'inactive' ? 'inactive' : 'active'
     setFormData({
-      name: item.name,
-      description: item.description || '',
-      category: item.category || '',
-      unit: item.unit,
-      rate: item.rate?.toString() || '',
-      status: item.status,
+      name: item.name != null ? String(item.name) : '',
+      description: item.description != null ? String(item.description) : '',
+      category: item.category != null ? String(item.category) : '',
+      unit: item.unit != null && String(item.unit).trim() !== '' ? String(item.unit) : 'pcs',
+      rate: item.rate != null && Number.isFinite(Number(item.rate)) ? String(item.rate) : '',
+      status,
     })
-    setEditing(item.id)
+    setEditing(id)
     setAdding(true)
+    setMutationError(null)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (row: ItemRow) => {
+    const id = resolveItemId(row)
+    if (!id) {
+      setMutationError('Cannot delete this row: missing item id')
+      return
+    }
     if (confirm('Are you sure you want to delete this item?')) {
       deleteItem({ variables: { id } })
     }
@@ -125,19 +188,20 @@ export default function ItemsPage() {
     reset()
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null | undefined) => {
     const colors: Record<string, string> = {
       active: 'bg-green-50 text-green-700 border-green-200',
       inactive: 'bg-gray-100 text-gray-600 border-gray-200',
     }
-    return colors[status] || 'bg-gray-100 text-gray-600 border-gray-200'
+    const key = status != null ? String(status) : 'active'
+    return colors[key] || 'bg-gray-100 text-gray-600 border-gray-200'
   }
 
   const stats = {
     total: items.length,
-    active: items.filter((i: any) => i.status === 'active').length,
-    inactive: items.filter((i: any) => i.status === 'inactive').length,
-    categories: new Set(items.map((i: any) => i.category).filter(Boolean)).size,
+    active: items.filter((i: ItemRow) => (i.status != null ? String(i.status) : 'active') === 'active').length,
+    inactive: items.filter((i: ItemRow) => String(i.status ?? '') === 'inactive').length,
+    categories: new Set(items.map((i: ItemRow) => i.category).filter(Boolean)).size,
   }
 
   const columns: Column[] = [
@@ -153,7 +217,9 @@ export default function ItemsPage() {
       label: 'Item Name',
       sortable: true,
       width: '250px',
-      render: (value) => <span className="font-medium text-gray-800">{value}</span>
+      render: (value) => (
+        <span className="font-medium text-gray-800">{value != null && String(value) !== '' ? String(value) : '—'}</span>
+      )
     },
     {
       key: 'description',
@@ -172,7 +238,7 @@ export default function ItemsPage() {
       key: 'unit',
       label: 'Unit',
       width: '80px',
-      render: (value) => <span className="text-gray-600">{value}</span>
+      render: (value) => <span className="text-gray-600">{value != null && String(value) !== '' ? String(value) : '—'}</span>
     },
     {
       key: 'rate',
@@ -180,17 +246,20 @@ export default function ItemsPage() {
       sortable: true,
       width: '100px',
       align: 'right',
-      render: (value) => <span className="font-semibold text-gray-800">${Number(value).toFixed(2)}</span>
+      render: (value) => <span className="font-semibold text-gray-800">{formatItemRate(value)}</span>
     },
     {
       key: 'status',
       label: 'Status',
       width: '120px',
-      render: (value) => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(value)}`}>
-          {value}
-        </span>
-      )
+      render: (value) => {
+        const label = value != null && String(value) !== '' ? String(value) : 'active'
+        return (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(label)}`}>
+            {label}
+          </span>
+        )
+      }
     },
   ]
 
@@ -231,6 +300,11 @@ export default function ItemsPage() {
 
           {/* Form fields */}
           <div className="p-3 space-y-3">
+            {mutationError && (
+              <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800" role="alert">
+                {mutationError}
+              </div>
+            )}
             {/* Row 1 */}
             <div className="grid grid-cols-3 gap-3">
               <InputFloating
@@ -333,7 +407,7 @@ export default function ItemsPage() {
           {
             label: 'Delete',
             icon: <Trash2 className="h-3.5 w-3.5" />,
-            onClick: (row) => handleDelete(row.id),
+            onClick: (row) => handleDelete(row),
             variant: 'ghost',
           },
         ]}

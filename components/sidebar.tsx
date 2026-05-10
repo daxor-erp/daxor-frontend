@@ -116,8 +116,9 @@ const navigation = [
       { name: 'Stock Transfers', href: '/stock-transfers' },
       { name: 'Goods Receipt', href: '/goods-receipt' },
       { name: 'GRN', href: '/grn' },
-      { name: 'Adjust Inventory', href: '/inventory/adjust-inventory' },
-      { name: 'Adjust Inventory Worksheet', href: '/inventory/adjust-inventory-worksheet' },
+      // Consolidated into Inventory control: /inventory-control
+      // { name: 'Adjust Inventory', href: '/inventory/adjust-inventory' },
+      // { name: 'Adjust Inventory Worksheet', href: '/inventory/adjust-inventory-worksheet' },
       { name: 'Enter Transfer Orders', href: '/inventory/enter-transfer-orders' },
       { name: 'Equipment Masters', href: '/inventory/equipment-masters' },
       { name: 'Intercompany Transfer', href: '/inventory/intercompany-transfer' },
@@ -230,39 +231,6 @@ const navigation = [
     ]
   },
   /* Hidden from sidebar — restore to show Production
-  { 
-    name: 'Production', 
-    icon: Factory,
-    subItems: [
-      { 
-        name: 'Dashboards',
-        subItems: [
-          { name: 'MEP Overall Dashboard', href: '/production/dashboards/mep-overall' },
-          { name: 'Workshop Dashboard', href: '/production/dashboards/workshop' },
-          { name: 'Plant Modules Dashboard', href: '/production/dashboards/plant-modules' },
-        ]
-      },
-      { 
-        name: 'Drawings Documents',
-        subItems: [
-          { name: 'Upload Drawings', href: '/production/drawings/upload' },
-          { name: 'Project Documents', href: '/production/drawings/project-documents' },
-        ]
-      },
-      { 
-        name: 'Master Tables',
-        subItems: [
-          { name: 'Project Masters', href: '/production/masters/project-masters' },
-          { name: 'Site Locations', href: '/production/masters/site-locations' },
-          { name: 'Contractors', href: '/production/masters/contractors' },
-        ]
-      },
-      { name: 'Module Wise Time Tracking', href: '/production/module-time-tracking' },
-      { name: 'Scan QR Code', href: '/production/scan-qr-code' },
-      { name: 'Status All Modules', href: '/production/status-all-modules' },
-    ]
-  },
-  */
   { 
     name: 'Project Management', 
     icon: FolderKanban,

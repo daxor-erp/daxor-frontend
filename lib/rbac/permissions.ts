@@ -1,6 +1,7 @@
 export const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ERP_ADMIN: 'ERP_ADMIN',
+  ORG_ADMIN: 'ORG_ADMIN',
   EXTRACTION_MANAGER: 'EXTRACTION_MANAGER',
   PRODUCTION_MANAGER: 'PRODUCTION_MANAGER',
   PURCHASE_MANAGER: 'PURCHASE_MANAGER',
@@ -33,6 +34,7 @@ export const RESOURCES = {
   INTERNAL_ORDER: 'internal_order',
   STOCK_ADJUSTMENT: 'stock_adjustment',
   STOCK_TRANSFER: 'stock_transfer',
+  INTERCOMPANY_TRANSFER: 'intercompany_transfer',
   GOODS_RECEIPT: 'goods_receipt',
   IP_INSPECTION: 'ip_inspection',
   GRN: 'grn',
@@ -81,7 +83,12 @@ export const ROLE_PERMISSIONS: Record<string, { resource: string; actions: strin
     { resource: RESOURCES.AUDIT_LOG, actions: READ_ONLY },
     { resource: RESOURCES.ORGANIZATION, actions: [ACTIONS.READ, ACTIONS.UPDATE] },
   ],
-  
+
+  [ROLES.ORG_ADMIN]: [
+    { resource: RESOURCES.USER, actions: ALL_ACTIONS },
+    { resource: RESOURCES.ORGANIZATION, actions: READ_ONLY },
+  ],
+
   [ROLES.EXTRACTION_MANAGER]: [
     { resource: RESOURCES.EXTRACTION, actions: ALL_ACTIONS },
     { resource: RESOURCES.STOCK, actions: READ_ONLY },
@@ -110,6 +117,9 @@ export const ROLE_PERMISSIONS: Record<string, { resource: string; actions: strin
     { resource: RESOURCES.INTERNAL_ORDER, actions: ALL_ACTIONS },
     { resource: RESOURCES.STOCK_ADJUSTMENT, actions: ALL_ACTIONS },
     { resource: RESOURCES.STOCK_TRANSFER, actions: ALL_ACTIONS },
+    { resource: RESOURCES.INTERCOMPANY_TRANSFER, actions: ALL_ACTIONS },
+    { resource: RESOURCES.GOODS_RECEIPT, actions: ALL_ACTIONS },
+    { resource: RESOURCES.GRN, actions: ALL_ACTIONS },
     { resource: RESOURCES.WAREHOUSE, actions: READ_ONLY },
   ],
   
@@ -184,8 +194,21 @@ export const hasPermission = (
   return false
 }
 
+/** Business roles an organization admin may assign (not tenant/platform privileged roles). */
+export const ORG_ADMIN_ASSIGNABLE_ROLES = Object.values(ROLES).filter(
+  (r) => r !== ROLES.SUPER_ADMIN && r !== ROLES.ERP_ADMIN && r !== ROLES.ORG_ADMIN,
+) as string[]
+
 export const canAccessRoute = (userRoles: string[] | undefined, route: string): boolean => {
   if (!userRoles || userRoles.length === 0) return false
+
+  if (route.startsWith('/admin')) {
+    return userRoles.some((r) => r === ROLES.SUPER_ADMIN || r === ROLES.ERP_ADMIN)
+  }
+  if (route.startsWith('/org-admin')) {
+    return userRoles.includes(ROLES.ORG_ADMIN)
+  }
+
   if (userRoles.includes(ROLES.SUPER_ADMIN)) return true
   
   const routeResourceMap: Record<string, string> = {
@@ -200,11 +223,17 @@ export const canAccessRoute = (userRoles: string[] | undefined, route: string): 
     '/material-receipts': RESOURCES.MATERIAL_RECEIPT,
     '/stock': RESOURCES.STOCK,
     '/inventory-control': RESOURCES.INVENTORY_CONTROL,
+    '/inventory/adjust-inventory': RESOURCES.STOCK_ADJUSTMENT,
+    '/inventory/adjust-inventory-worksheet': RESOURCES.STOCK_ADJUSTMENT,
     '/inventory-returns': RESOURCES.INVENTORY_RETURN,
     '/internal-orders': RESOURCES.INTERNAL_ORDER,
     '/stock-adjustments': RESOURCES.STOCK_ADJUSTMENT,
     '/stock-transfers': RESOURCES.STOCK_TRANSFER,
+    '/inventory/enter-transfer-orders': RESOURCES.STOCK_TRANSFER,
+    '/inventory/equipment-masters': RESOURCES.FIXED_ASSET,
+    '/inventory/intercompany-transfer': RESOURCES.INTERCOMPANY_TRANSFER,
     '/quality': RESOURCES.QUALITY,
+    '/goods-receipt': RESOURCES.GOODS_RECEIPT,
     '/goods-receipts': RESOURCES.GOODS_RECEIPT,
     '/ip-inspections': RESOURCES.IP_INSPECTION,
     '/grn': RESOURCES.GRN,
