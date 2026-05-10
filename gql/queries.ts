@@ -1631,6 +1631,30 @@ export const GET_PRODUCTION_PLANNINGS = gql`
       id
       docNumber
       docDate
+      projectId
+      managerId
+      budget
+      actualCost
+      progress
+      tasks {
+        id
+        name
+        description
+        assignedTo
+        status
+        priority
+        startDate
+        dueDate
+        completedAt
+      }
+      milestones {
+        id
+        name
+        description
+        dueDate
+        status
+        completedAt
+      }
       status
       createdAt
     }
@@ -1643,6 +1667,21 @@ export const CREATE_PRODUCTION_PLANNING = gql`
       id
       docNumber
     }
+  }
+`
+
+export const UPDATE_PRODUCTION_PLANNING = gql`
+  mutation UpdateProductionPlanning($id: ID!, $input: ProductionPlanningInput!) {
+    updateProductionPlanning(id: $id, input: $input) {
+      id
+      docNumber
+    }
+  }
+`
+
+export const DELETE_PRODUCTION_PLANNING = gql`
+  mutation DeleteProductionPlanning($id: ID!) {
+    deleteProductionPlanning(id: $id)
   }
 `
 
@@ -2537,6 +2576,195 @@ export const DELETE_LOAN_REPAYMENT = gql`
   }
 `
 
+// Site Locations
+export const GET_SITE_LOCATIONS = gql`
+  query GetSiteLocations($organizationId: String!) {
+    siteLocations(organizationId: $organizationId) {
+      id
+      seqNo
+      name
+      address
+      city
+      state
+      country
+      zipCode
+      contactPerson
+      phone
+      email
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_SITE_LOCATION = gql`
+  mutation CreateSiteLocation($input: SiteLocationInput!) {
+    createSiteLocation(input: $input) {
+      id
+      seqNo
+      name
+    }
+  }
+`
+
+export const UPDATE_SITE_LOCATION = gql`
+  mutation UpdateSiteLocation($id: ID!, $input: SiteLocationInput!) {
+    updateSiteLocation(id: $id, input: $input) {
+      id
+      name
+    }
+  }
+`
+
+export const DELETE_SITE_LOCATION = gql`
+  mutation DeleteSiteLocation($id: ID!) {
+    deleteSiteLocation(id: $id)
+  }
+`
+
+// Contractors
+export const GET_CONTRACTORS = gql`
+  query GetContractors($organizationId: String!) {
+    contractors(organizationId: $organizationId) {
+      id
+      seqNo
+      name
+      contactPerson
+      email
+      phone
+      address
+      specialty
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_CONTRACTOR = gql`
+  mutation CreateContractor($input: ContractorInput!) {
+    createContractor(input: $input) {
+      id
+      seqNo
+      name
+    }
+  }
+`
+
+export const UPDATE_CONTRACTOR = gql`
+  mutation UpdateContractor($id: ID!, $input: ContractorInput!) {
+    updateContractor(id: $id, input: $input) {
+      id
+      name
+    }
+  }
+`
+
+export const DELETE_CONTRACTOR = gql`
+  mutation DeleteContractor($id: ID!) {
+    deleteContractor(id: $id)
+  }
+`
+
+// Leads
+export const GET_LEADS = gql`
+  query GetLeads($organizationId: String!, $status: String) {
+    leads(organizationId: $organizationId, status: $status) {
+      id
+      seqNo
+      firstName
+      lastName
+      company
+      title
+      email
+      phone
+      source
+      status
+      rating
+      estimatedValue
+      expectedCloseDate
+      assignedTo
+      notes
+      createdAt
+    }
+  }
+`
+
+export const CREATE_LEAD = gql`
+  mutation CreateLead($input: LeadInput!) {
+    createLead(input: $input) {
+      id
+      seqNo
+    }
+  }
+`
+
+export const UPDATE_LEAD = gql`
+  mutation UpdateLead($id: ID!, $input: LeadInput!) {
+    updateLead(id: $id, input: $input) {
+      id
+    }
+  }
+`
+
+export const DELETE_LEAD = gql`
+  mutation DeleteLead($id: ID!) {
+    deleteLead(id: $id)
+  }
+`
+
+export const CONVERT_LEAD_TO_OPPORTUNITY = gql`
+  mutation ConvertLeadToOpportunity($id: ID!) {
+    convertLeadToOpportunity(id: $id)
+  }
+`
+
+// Opportunities
+export const GET_OPPORTUNITIES = gql`
+  query GetOpportunities($organizationId: String!, $stage: String) {
+    opportunities(organizationId: $organizationId, stage: $stage) {
+      id
+      seqNo
+      name
+      accountName
+      contactName
+      email
+      phone
+      amount
+      closeDate
+      stage
+      probability
+      leadSource
+      nextStep
+      description
+      assignedTo
+      createdAt
+    }
+  }
+`
+
+export const CREATE_OPPORTUNITY = gql`
+  mutation CreateOpportunity($input: OpportunityInput!) {
+    createOpportunity(input: $input) {
+      id
+      seqNo
+    }
+  }
+`
+
+export const UPDATE_OPPORTUNITY = gql`
+  mutation UpdateOpportunity($id: ID!, $input: OpportunityInput!) {
+    updateOpportunity(id: $id, input: $input) {
+      id
+    }
+  }
+`
+
+export const DELETE_OPPORTUNITY = gql`
+  mutation DeleteOpportunity($id: ID!) {
+    deleteOpportunity(id: $id)
+  }
+`
+
 // Payroll UI extension records (persist processing / setup / workflow / statutory forms)
 export const GET_PAYROLL_UI_RECORDS = gql`
   query GetPayrollUiRecords($organizationId: String!, $category: String!) {
@@ -3054,5 +3282,233 @@ export const GET_PURCHASE_ORDERS_FOR_BILLING = gql`
       orderDate
       organizationId
     }
+  }
+`
+
+// Journal Entries
+export const GET_JOURNAL_ENTRIES = gql`
+  query GetJournalEntries($organizationId: String!, $status: String) {
+    journalEntries(organizationId: $organizationId, status: $status) {
+      id
+      seqNo
+      entryNumber
+      entryDate
+      referenceNumber
+      description
+      lines {
+        accountCode
+        accountName
+        debit
+        credit
+        description
+      }
+      totalDebit
+      totalCredit
+      status
+      postedAt
+      createdAt
+    }
+  }
+`
+
+export const CREATE_JOURNAL_ENTRY = gql`
+  mutation CreateJournalEntry($input: JournalEntryInput!) {
+    createJournalEntry(input: $input) {
+      id
+      seqNo
+      entryNumber
+    }
+  }
+`
+
+export const UPDATE_JOURNAL_ENTRY = gql`
+  mutation UpdateJournalEntry($id: ID!, $input: JournalEntryInput!) {
+    updateJournalEntry(id: $id, input: $input) {
+      id
+      entryNumber
+    }
+  }
+`
+
+export const POST_JOURNAL_ENTRY = gql`
+  mutation PostJournalEntry($id: ID!) {
+    postJournalEntry(id: $id) {
+      id
+      status
+      postedAt
+    }
+  }
+`
+
+export const DELETE_JOURNAL_ENTRY = gql`
+  mutation DeleteJournalEntry($id: ID!) {
+    deleteJournalEntry(id: $id)
+  }
+`
+
+// Budgets
+export const GET_BUDGETS = gql`
+  query GetBudgets($organizationId: String!, $fiscalYear: String) {
+    budgets(organizationId: $organizationId, fiscalYear: $fiscalYear) {
+      id
+      seqNo
+      budgetName
+      fiscalYear
+      startDate
+      endDate
+      lines {
+        accountCode
+        accountName
+        period
+        amount
+      }
+      totalAmount
+      status
+      createdAt
+    }
+  }
+`
+
+export const CREATE_BUDGET = gql`
+  mutation CreateBudget($input: BudgetInput!) {
+    createBudget(input: $input) {
+      id
+      seqNo
+      budgetName
+    }
+  }
+`
+
+export const UPDATE_BUDGET = gql`
+  mutation UpdateBudget($id: ID!, $input: BudgetInput!) {
+    updateBudget(id: $id, input: $input) {
+      id
+      budgetName
+    }
+  }
+`
+
+export const ACTIVATE_BUDGET = gql`
+  mutation ActivateBudget($id: ID!) {
+    activateBudget(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const DELETE_BUDGET = gql`
+  mutation DeleteBudget($id: ID!) {
+    deleteBudget(id: $id)
+  }
+`
+
+export const UPDATE_CHART_OF_ACCOUNT = gql`
+  mutation UpdateChartOfAccount($id: ID!, $input: ChartOfAccountsInput!) {
+    updateChartOfAccount(id: $id, input: $input) {
+      id
+      accountCode
+      accountName
+    }
+  }
+`
+
+export const DELETE_CHART_OF_ACCOUNT = gql`
+  mutation DeleteChartOfAccount($id: ID!) {
+    deleteChartOfAccount(id: $id)
+  }
+`
+
+// Allocation Schedules
+export const GET_ALLOCATION_SCHEDULES = gql`
+  query GetAllocationSchedules($organizationId: String!) {
+    allocationSchedules(organizationId: $organizationId) {
+      id
+      seqNo
+      scheduleName
+      sourceAccount
+      allocationMethod
+      lines {
+        destinationAccount
+        percentage
+        amount
+      }
+      isActive
+      createdAt
+    }
+  }
+`
+
+export const CREATE_ALLOCATION_SCHEDULE = gql`
+  mutation CreateAllocationSchedule($input: AllocationScheduleInput!) {
+    createAllocationSchedule(input: $input) {
+      id
+      seqNo
+      scheduleName
+    }
+  }
+`
+
+export const UPDATE_ALLOCATION_SCHEDULE = gql`
+  mutation UpdateAllocationSchedule($id: ID!, $input: AllocationScheduleInput!) {
+    updateAllocationSchedule(id: $id, input: $input) {
+      id
+      scheduleName
+    }
+  }
+`
+
+export const DELETE_ALLOCATION_SCHEDULE = gql`
+  mutation DeleteAllocationSchedule($id: ID!) {
+    deleteAllocationSchedule(id: $id)
+  }
+`
+
+// Currency Revaluation
+export const GET_CURRENCY_REVALUATIONS = gql`
+  query GetCurrencyRevaluations($organizationId: String!) {
+    currencyRevaluations(organizationId: $organizationId) {
+      id
+      seqNo
+      revaluationDate
+      baseCurrency
+      lines {
+        accountCode
+        accountName
+        currency
+        originalAmount
+        revaluedAmount
+        gainLoss
+      }
+      totalGainLoss
+      status
+      postedAt
+      createdAt
+    }
+  }
+`
+
+export const CREATE_CURRENCY_REVALUATION = gql`
+  mutation CreateCurrencyRevaluation($input: CurrencyRevaluationInput!) {
+    createCurrencyRevaluation(input: $input) {
+      id
+      seqNo
+    }
+  }
+`
+
+export const POST_CURRENCY_REVALUATION = gql`
+  mutation PostCurrencyRevaluation($id: ID!) {
+    postCurrencyRevaluation(id: $id) {
+      id
+      status
+      postedAt
+    }
+  }
+`
+
+export const DELETE_CURRENCY_REVALUATION = gql`
+  mutation DeleteCurrencyRevaluation($id: ID!) {
+    deleteCurrencyRevaluation(id: $id)
   }
 `
