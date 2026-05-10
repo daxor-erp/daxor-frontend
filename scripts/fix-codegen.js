@@ -5,26 +5,42 @@ const path = require('path');
 const filePath = path.join(__dirname, '../gql/graphql.ts');
 let content = fs.readFileSync(filePath, 'utf8');
 
-// 1. Add defaultOptions after imports if missing
-if (!content.includes('const defaultOptions')) {
+// 1. Ensure proper imports at the top
+if (!content.includes("import { gql } from '@apollo/client';")) {
   content = content.replace(
-    /(import \* as Apollo from '@apollo\/client';\n)/,
-    `$1const defaultOptions = {} as const;\n`
+    /(\/\* eslint-disable \*\/\n)/,
+    `$1import { gql } from '@apollo/client';\nimport * as Apollo from '@apollo/client';\nconst defaultOptions = {} as const;\n`
   );
 } else {
-  // Remove duplicate defaultOptions if exists
-  const lines = content.split('\n');
-  let foundFirst = false;
-  content = lines.filter(line => {
-    if (line.includes('const defaultOptions')) {
-      if (!foundFirst) {
-        foundFirst = true;
-        return true;
+  // Ensure Apollo import exists
+  if (!content.includes("import * as Apollo from '@apollo/client';")) {
+    content = content.replace(
+      /(import { gql } from '@apollo\/client';\n)/,
+      `$1import * as Apollo from '@apollo/client';\n`
+    );
+  }
+  
+  // Add defaultOptions after imports if missing
+  if (!content.includes('const defaultOptions')) {
+    content = content.replace(
+      /(import \* as Apollo from '@apollo\/client';\n)/,
+      `$1const defaultOptions = {} as const;\n`
+    );
+  } else {
+    // Remove duplicate defaultOptions if exists
+    const lines = content.split('\n');
+    let foundFirst = false;
+    content = lines.filter(line => {
+      if (line.includes('const defaultOptions')) {
+        if (!foundFirst) {
+          foundFirst = true;
+          return true;
+        }
+        return false;
       }
-      return false;
-    }
-    return true;
-  }).join('\n');
+      return true;
+    }).join('\n');
+  }
 }
 
 // 2. Remove duplicate/orphaned type definitions
