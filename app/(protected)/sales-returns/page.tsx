@@ -1,21 +1,83 @@
 'use client'
 
-import { useQuery } from '@apollo/client'
-import { GET_SALES_RETURNS } from '@/gql/queries'
+import { useState } from 'react'
+import { useQuery, useMutation } from '@apollo/client'
+import { GET_SALES_RETURNS, CREATE_SALES_RETURN } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { InputFloating } from '@/components/ui/input-floating'
+import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Save, Plus, X } from 'lucide-react'
+
+const STATUS_OPTS = [
+  { value: 'DRAFT', label: 'DRAFT' },
+  { value: 'SUBMITTED', label: 'SUBMITTED' },
+  { value: 'APPROVED', label: 'APPROVED' },
+  { value: 'REJECTED', label: 'REJECTED' },
+]
 
 export default function SalesReturnsPage() {
-  const { user } = useAuth()
-  
-  const { data, loading } = useQuery(GET_SALES_RETURNS, {
-    variables: { organizationId: user?.organizationId },
-    skip: !user?.organizationId,
+  const { user: authUser } = useAuth()
+  const orgId = authUser?.organizationId || ''
+
+  const [showNewRecord, setShowNewRecord] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [formData, setFormData] = useState({ docDate: '', status: 'DRAFT' })
+
+  const { data, loading, refetch } = useQuery(GET_SALES_RETURNS, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+  })
+
+  const [createSalesReturn, { loading: saving }] = useMutation(CREATE_SALES_RETURN, {
+    onCompleted: () => {
+      setFormError('')
+      setFormData({ docDate: '', status: 'DRAFT' })
+      setShowNewRecord(false)
+      refetch()
+    },
+    onError: (err) => setFormError(err.message),
   })
 
   const items = data?.salesreturns || []
+
+  const reset = () => {
+    setFormData({ docDate: '', status: 'DRAFT' })
+    setFormError('')
+  }
+
+  const openNew = () => {
+    reset()
+    const today = new Date().toISOString().slice(0, 10)
+    setFormData({ docDate: today, status: 'DRAFT' })
+    setShowNewRecord(true)
+  }
+
+  const setF = (k: keyof typeof formData, v: string) => {
+    setFormData((p) => ({ ...p, [k]: v }))
+    setFormError('')
+  }
+
+  const handleSubmit = () => {
+    setFormError('')
+    if (!orgId) {
+      setFormError('Missing organization. Please sign in again.')
+      return
+    }
+    if (!formData.docDate) {
+      setFormError('Document date is required.')
+      return
+    }
+    createSalesReturn({
+      variables: {
+        input: {
+          docDate: formData.docDate,
+          status: formData.status || 'DRAFT',
+          organizationId: orgId,
+        },
+      },
+    })
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -24,39 +86,111 @@ export default function SalesReturnsPage() {
           <h1 className="text-3xl font-bold">Sales Returns</h1>
           <p className="text-gray-500">Manage sales returns</p>
         </div>
-        <Button>
+        <Button type="button" onClick={openNew} className="bg-blue-600 hover:bg-blue-700 text-white">
           <Plus className="h-4 w-4 mr-2" />
           New Record
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Records: {items.length}</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {showNewRecord && (
+        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 bg-blue-600">
+            <span className="text-xs font-semibold text-white">New Sales Return</span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowNewRecord(false)
+                reset()
+              }}
+              className="text-blue-200 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="p-4 space-y-4">
+            {formError && <div className="text-xs text-red-500">{formError}</div>}
+
+            <div className="grid grid-cols-3 gap-3">
+              <InputFloating
+                label="Document date *"
+                type="date"
+                value={formData.docDate}
+                onChange={(e) => setF('docDate', e.target.value)}
+                className="h-7 text-xs"
+              />
+              <SelectFloating
+                label="Status"
+                value={formData.status}
+                onChange={(e) => setF('status', typeof e === 'string' ? e : e.target.value)}
+                options={STATUS_OPTS}
+                className="h-7 text-xs"
+              />
+              <div className="flex flex-col justify-end pb-1">
+                <span className="text-[10px] text-gray-400 px-1">Organization</span>
+                <span className="text-xs text-gray-700 border border-gray-200 rounded px-2 py-1.5 bg-gray-50 truncate" title={orgId}>
+                  {orgId || '—'}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500">Document number is assigned when you save.</p>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowNewRecord(false)
+                  reset()
+                }}
+                className="h-8 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSubmit}
+                disabled={saving || !orgId}
+                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]"
+              >
+                <Save className="h-3.5 w-3.5 mr-1" />
+                {saving ? 'Saving…' : 'Save Return'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200">
+          <h2 className="text-sm font-semibold text-gray-800">All Returns</h2>
+          <p className="text-xs text-gray-500">Total records: {items.length}</p>
+        </div>
+        <div className="p-4">
           {loading ? (
-            <p>Loading...</p>
+            <p className="text-sm text-gray-500">Loading...</p>
           ) : items.length === 0 ? (
-            <p className="text-gray-500">No records found</p>
+            <p className="text-sm text-gray-500">No records found. Click New Record to add one.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Document #</th>
-                    <th className="text-left p-2">Date</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Created</th>
+              <table className="w-full text-xs border border-gray-200 rounded">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left p-2 font-medium text-gray-600">Document #</th>
+                    <th className="text-left p-2 font-medium text-gray-600">Date</th>
+                    <th className="text-left p-2 font-medium text-gray-600">Status</th>
+                    <th className="text-left p-2 font-medium text-gray-600">Created</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item: any) => (
-                    <tr key={item.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
+                    <tr key={item.id} className="border-t border-gray-100 hover:bg-gray-50/80">
+                      <td className="p-2 font-mono text-gray-600">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
                       <td className="p-2">{item.docDate ? new Date(item.docDate).toLocaleDateString() : 'N/A'}</td>
                       <td className="p-2">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
                           {item.status || 'Active'}
                         </span>
                       </td>
@@ -67,8 +201,8 @@ export default function SalesReturnsPage() {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

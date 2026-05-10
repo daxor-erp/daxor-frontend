@@ -6,20 +6,13 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useState } from 'react'
 import { 
   LayoutDashboard, Users, ShoppingCart, Package, DollarSign, Warehouse,
-  TrendingUp, Briefcase, UserCheck, Factory, FolderKanban, ClipboardList,
-  Building2, FileText, Settings, ChevronDown, ChevronRight, LogOut
+  TrendingUp, Briefcase, UserCheck, FolderKanban,
+  Building2, FileText, ChevronDown, ChevronRight, LogOut
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { 
-    name: 'Extraction', 
-    icon: Factory,
-    subItems: [
-      { name: 'Extraction', href: '/extraction' },
-      { name: 'Raw Material Requisition', href: '/extraction' },
-    ]
-  },
+  /* Hidden from sidebar — restore to show Production Management (uses Factory icon)
   { 
     name: 'Production Management', 
     icon: Factory,
@@ -54,6 +47,7 @@ const navigation = [
       { name: 'Status All Modules', href: '/production/status-all-modules' },
     ]
   },
+  */
   { 
     name: 'CRM', 
     icon: Users,
@@ -236,6 +230,7 @@ const navigation = [
       },
     ]
   },
+  /* Hidden from sidebar — restore to show Production
   { 
     name: 'Project Management', 
     icon: FolderKanban,
@@ -248,6 +243,7 @@ const navigation = [
       { name: 'Tasks', href: '/project-management/tasks' },
     ]
   },
+  /* Hidden from sidebar — restore to show Order Management
   { 
     name: 'Order Management', 
     icon: ClipboardList,
@@ -268,6 +264,7 @@ const navigation = [
       { name: 'Reallocate Items', href: '/order-management/reallocate-items' },
     ]
   },
+  */
   { 
     name: 'Customers', 
     icon: Users,
@@ -301,6 +298,7 @@ const navigation = [
       { name: 'Write Tax Liability', href: '/banks/write-tax-liability' },
     ]
   },
+  /* Hidden from sidebar — restore to show Masters
   { 
     name: 'Masters', 
     icon: FileText,
@@ -314,6 +312,7 @@ const navigation = [
       { name: 'Vendor Masters', href: '/masters/vendor-masters' },
     ]
   },
+  */
   { 
     name: 'Reports', 
     icon: FileText,
@@ -341,6 +340,7 @@ const navigation = [
       },
     ]
   },
+  /* Hidden from sidebar — restore to show Setup
   { 
     name: 'Setup', 
     icon: Settings,
@@ -369,6 +369,7 @@ const navigation = [
       },
     ]
   },
+  */
 ]
 
 export function Sidebar() {
