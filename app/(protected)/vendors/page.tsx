@@ -7,7 +7,7 @@ import { DataTable, Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
-import { GET_VENDORS, CREATE_VENDOR, UPDATE_VENDOR, DELETE_VENDOR } from '@/gql/queries'
+import { GET_VENDORS, CREATE_VENDOR, UPDATE_VENDOR, DELETE_VENDOR, SUBMIT_VENDOR_FOR_APPROVAL } from '@/gql/queries'
 import { Trash2, Edit, X, Save, Building2, Users, CheckCircle, XCircle } from 'lucide-react'
 
 const EMPTY_FORM = {
@@ -48,6 +48,10 @@ export default function VendorsPage() {
   })
 
   const [deleteVendor] = useMutation(DELETE_VENDOR, {
+    onCompleted: () => refetch(),
+  })
+
+  const [submitVendorForApproval] = useMutation(SUBMIT_VENDOR_FOR_APPROVAL, {
     onCompleted: () => refetch(),
   })
 
@@ -120,6 +124,45 @@ export default function VendorsPage() {
           {v}
         </span>
       )
+    },
+    {
+      key: '_orgApproval',
+      label: 'Org approval',
+      width: '168px',
+      render: (_v, row: any) => {
+        const ap = String(row.orgApprovalStatus ?? 'approved')
+        const showSubmit = ap === 'draft' || ap === 'approval_declined'
+        const label =
+          ap === 'draft'
+            ? 'Draft'
+            : ap === 'submitted'
+              ? 'Pending approval'
+              : ap === 'approval_declined'
+                ? 'Declined'
+                : 'Approved'
+        return (
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            <span className="text-xs text-gray-600">{label}</span>
+            {showSubmit ? (
+              <select
+                aria-label="Vendor approval action"
+                className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2"
+                defaultValue=""
+                onChange={(e) => {
+                  const val = e.target.value
+                  e.target.value = ''
+                  if (val === 'submit') void submitVendorForApproval({ variables: { id: row.id } })
+                }}
+              >
+                <option value="">Change status…</option>
+                <option value="submit">Send for approval</option>
+              </select>
+            ) : (
+              <span className="text-xs text-gray-400">—</span>
+            )}
+          </div>
+        )
+      },
     },
   ]
 

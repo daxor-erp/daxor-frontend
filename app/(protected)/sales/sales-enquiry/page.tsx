@@ -9,7 +9,7 @@ import { Save, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 const GET_CLIENTS = gql`
-  query GetClients($organizationId: ID) {
+  query GetClientsForEnquiry($organizationId: ID) {
     clients(organizationId: $organizationId) {
       id
       name
@@ -25,6 +25,7 @@ const CREATE_SALES_ENQUIRY = gql`
       id
       enquiryNumber
       subject
+      status
     }
   }
 `
@@ -97,11 +98,9 @@ export default function SalesEnquiryPage() {
     fetchPolicy: 'network-only',
   })
 
-  const clients = clientsData?.clients ?? []
-
   const [createSalesEnquiry, { loading: submitting }] = useMutation(CREATE_SALES_ENQUIRY, {
     onCompleted: (res) => {
-      setSuccessMsg(`Sales Enquiry "${res.createSalesEnquiry.enquiryNumber}" created successfully!`)
+      setSuccessMsg(`Sales enquiry "${res.createSalesEnquiry.enquiryNumber}" created successfully!`)
       setErrorMsg('')
       setFormData(EMPTY_FORM)
       setTimeout(() => setSuccessMsg(''), 5000)
@@ -129,6 +128,8 @@ export default function SalesEnquiryPage() {
     })
   }
 
+  const clients = clientsData?.clients ?? []
+
   const clientOptions = [
     { value: '', label: clientsLoading ? 'Loading clients…' : 'Select client...' },
     ...clients.map((c: any) => ({
@@ -141,7 +142,10 @@ export default function SalesEnquiryPage() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Sales Enquiry</h1>
-        <p className="text-gray-500">Create a new sales enquiry</p>
+        <p className="text-gray-500">
+          Create a new enquiry. Use the <span className="font-semibold text-slate-700">eye</span> button (top
+          right) to open past enquiries, send them for approval, and inspect details.
+        </p>
       </div>
 
       {successMsg && (
@@ -151,7 +155,9 @@ export default function SalesEnquiryPage() {
         </div>
       )}
 
-      {errorMsg && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{errorMsg}</div>}
+      {errorMsg && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{errorMsg}</div>
+      )}
 
       <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2 bg-blue-600">

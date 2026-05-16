@@ -5,7 +5,6 @@ import { useQuery, useMutation } from '@apollo/client'
 import { format, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { InputFloating } from '@/components/ui/input-floating'
-import { SelectFloating } from '@/components/ui/select-floating'
 import {
   Table,
   TableBody,
@@ -22,17 +21,19 @@ import {
   CREATE_PAYROLL_MANAGEMENT,
   UPDATE_PAYROLL_MANAGEMENT,
   DELETE_PAYROLL_MANAGEMENT,
+  SUBMIT_PAYROLL_MANAGEMENT_FOR_APPROVAL,
 } from '@/gql/queries'
 
-const STATUS_OPTIONS = [
-  { value: 'DRAFT', label: 'Draft' },
-  { value: 'PENDING_REVIEW', label: 'Pending review' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'PROCESSED', label: 'Processed' },
-  { value: 'CANCELLED', label: 'Cancelled' },
-] as const
-
-const STATUS_SELECT_OPTIONS = STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))
+/** Saved on the document (lifecycle). SUBMITTED = waiting for org approver. */
+const WORKFLOW_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Draft',
+  SUBMITTED: 'Pending approval',
+  PENDING_REVIEW: 'Pending approval',
+  APPROVAL_DECLINED: 'Approval declined',
+  APPROVED: 'Approved',
+  PROCESSED: 'Processed',
+  CANCELLED: 'Cancelled',
+}
 
 function toYmd(iso?: string | null) {
   if (!iso) return ''
@@ -51,11 +52,22 @@ function ymdToIso(ymd: string) {
 function statusBadgeClass(status: string) {
   const s = (status || '').toUpperCase()
   if (s === 'DRAFT') return 'bg-slate-100 text-slate-800 border-slate-200'
-  if (s === 'PENDING_REVIEW') return 'bg-amber-50 text-amber-800 border-amber-200'
+  if (s === 'SUBMITTED' || s === 'PENDING_REVIEW') return 'bg-amber-50 text-amber-800 border-amber-200'
+  if (s === 'APPROVAL_DECLINED') return 'bg-red-50 text-red-800 border-red-200'
   if (s === 'APPROVED') return 'bg-sky-50 text-sky-800 border-sky-200'
   if (s === 'PROCESSED') return 'bg-emerald-50 text-emerald-800 border-emerald-200'
   if (s === 'CANCELLED') return 'bg-red-50 text-red-800 border-red-200'
   return 'bg-gray-100 text-gray-800'
+}
+
+function workflowStatusLabel(status: string) {
+  const s = (status || '').toUpperCase()
+  return WORKFLOW_STATUS_LABELS[s] ?? status ?? '—'
+}
+
+function payrollMgmtCanSendApproval(status: string) {
+  const s = (status || '').toUpperCase()
+  return s === 'DRAFT' || s === 'APPROVAL_DECLINED' || s === 'PENDING_REVIEW'
 }
 
 type Row = {
@@ -80,7 +92,6 @@ export default function PayrollManagementPage() {
   const [form, setForm] = useState({
     title: '',
     docDateYmd: format(new Date(), 'yyyy-MM-dd'),
-    status: 'DRAFT' as (typeof STATUS_OPTIONS)[number]['value'],
     payPeriodStartYmd: '',
     payPeriodEndYmd: '',
     remarks: '',
@@ -110,6 +121,17 @@ export default function PayrollManagementPage() {
     },
     onError: (e) => setBanner({ ok: false, text: e.message }),
   })
+  const [submitPmApproval, { loading: submittingApproval }] = useMutation(
+    SUBMIT_PAYROLL_MANAGEMENT_FOR_APPROVAL,
+    {
+      onCompleted: () => {
+        refetch()
+        setBanner({ ok: true, text: 'Sent for approval.' })
+        setTimeout(() => setBanner(null), 4000)
+      },
+      onError: (e) => setBanner({ ok: false, text: e.message }),
+    },
+  )
   const [deletePm] = useMutation(DELETE_PAYROLL_MANAGEMENT, {
     onCompleted: () => {
       refetch()
@@ -128,7 +150,6 @@ export default function PayrollManagementPage() {
     setForm({
       title: '',
       docDateYmd: format(new Date(), 'yyyy-MM-dd'),
-      status: 'DRAFT',
       payPeriodStartYmd: '',
       payPeriodEndYmd: '',
       remarks: '',
@@ -142,7 +163,6 @@ export default function PayrollManagementPage() {
     return {
       organizationId: orgId,
       docDate: ymdToIso(form.docDateYmd) || new Date().toISOString(),
-      status: form.status,
       title: form.title.trim() || undefined,
       remarks: form.remarks.trim() || undefined,
       payPeriodStart: payStart,
@@ -165,7 +185,6 @@ export default function PayrollManagementPage() {
     setForm({
       title: '',
       docDateYmd: format(new Date(), 'yyyy-MM-dd'),
-      status: 'DRAFT',
       payPeriodStartYmd: '',
       payPeriodEndYmd: '',
       remarks: '',
@@ -178,8 +197,6 @@ export default function PayrollManagementPage() {
     setForm({
       title: r.title || '',
       docDateYmd: toYmd(r.docDate) || format(new Date(), 'yyyy-MM-dd'),
-      status: (STATUS_OPTIONS.find((o) => o.value === (r.status || '').toUpperCase())?.value ||
-        'DRAFT') as (typeof STATUS_OPTIONS)[number]['value'],
       payPeriodStartYmd: toYmd(r.payPeriodStart),
       payPeriodEndYmd: toYmd(r.payPeriodEnd),
       remarks: r.remarks || '',
@@ -249,7 +266,7 @@ export default function PayrollManagementPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <InputFloating
                 id="pm-docdate"
                 label="Document date"
@@ -258,22 +275,9 @@ export default function PayrollManagementPage() {
                 onChange={(e) => setForm((f) => ({ ...f, docDateYmd: e.target.value }))}
                 className="h-7 text-xs"
               />
-              <SelectFloating
-                label="Status"
-                name="pm-status"
-                value={form.status}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    status: (e as React.ChangeEvent<HTMLSelectElement>).target
-                      .value as (typeof f)['status'],
-                  }))
-                }
-                options={STATUS_SELECT_OPTIONS}
-                className="h-7 text-xs"
-                placeholder="Select…"
-              />
-              <div className="hidden min-[600px]:block" aria-hidden />
+              <p className="text-xs text-slate-500 sm:col-span-2 flex items-end pb-1">
+                New runs start as Draft. Use &quot;Send for approval&quot; in the list once saved.
+              </p>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <InputFloating
@@ -341,7 +345,10 @@ export default function PayrollManagementPage() {
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Title</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Doc date</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Pay period</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-gray-600">Status</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Workflow</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600 min-w-[148px]">
+                  Org approval
+                </TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[100px]" />
               </TableRow>
             </TableHeader>
@@ -360,10 +367,28 @@ export default function PayrollManagementPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={statusBadgeClass(r.status)}>
-                      {STATUS_OPTIONS.find((o) => o.value === (r.status || '').toUpperCase())?.label ||
-                        r.status ||
-                        '—'}
+                      {workflowStatusLabel(r.status)}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {payrollMgmtCanSendApproval(r.status) ? (
+                      <select
+                        aria-label="Payroll management approval action"
+                        className="h-7 text-xs rounded-md border border-input bg-background px-2 max-w-[180px]"
+                        disabled={submittingApproval}
+                        defaultValue=""
+                        onChange={(e) => {
+                          const v = e.target.value
+                          e.target.value = ''
+                          if (v === 'submit') submitPmApproval({ variables: { id: r.id } })
+                        }}
+                      >
+                        <option value="">Change status…</option>
+                        <option value="submit">Send for approval</option>
+                      </select>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="space-x-1">
                     <Button

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
 import {
   GET_PAYROLL_UI_RECORDS,
@@ -38,6 +39,7 @@ type EmployeePfRow = {
   effectiveFromYmd: string
   status: PfStatus
   remarks: string
+  approvalStatus: string
 }
 
 const STATUS_OPTIONS: ReadonlyArray<{ value: PfStatus; label: string }> = [
@@ -57,7 +59,7 @@ function nextRecordRef(rows: EmployeePfRow[]): string {
   return `EPF-${String(max + 1).padStart(4, '0')}`
 }
 
-function parseEmployeePfRecord(r: { id: string; data: string }): EmployeePfRow {
+function parseEmployeePfRecord(r: { id: string; data: string }): Omit<EmployeePfRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const st = typeof o.status === 'string' ? o.status : 'ACTIVE'
@@ -128,7 +130,17 @@ export default function EmployeePfSetupPage() {
   })
 
   const rows = useMemo(
-    () => ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parseEmployeePfRecord),
+    () =>
+      (
+        (data?.payrolluirecords as {
+          id: string
+          data: string
+          approvalStatus?: string | null
+        }[]) ?? []
+      ).map((rec) => ({
+        ...parseEmployeePfRecord(rec),
+        approvalStatus: rec.approvalStatus ?? 'none',
+      })),
     [data],
   )
 
@@ -411,6 +423,7 @@ export default function EmployeePfSetupPage() {
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Extra%</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Effective</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Status</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[96px]" />
               </TableRow>
             </TableHeader>
@@ -431,6 +444,13 @@ export default function EmployeePfSetupPage() {
                     <Badge variant="outline" className={statusBadge(r.status)}>
                       {STATUS_OPTIONS.find((s) => s.value === r.status)?.label ?? r.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <PayrollUiRecordOrgApprovalCell
+                      recordId={r.id}
+                      approvalStatus={r.approvalStatus}
+                      onCompleted={() => refetch()}
+                    />
                   </TableCell>
                   <TableCell className="space-x-1">
                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

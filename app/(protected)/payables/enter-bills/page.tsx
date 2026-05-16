@@ -9,7 +9,7 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import {
   GET_VENDOR_BILLS, CREATE_VENDOR_BILL, UPDATE_VENDOR_BILL,
-  APPROVE_VENDOR_BILL, DELETE_VENDOR_BILL, GET_VENDORS, GET_ITEMS
+  APPROVE_VENDOR_BILL, SUBMIT_VENDOR_BILL_FOR_APPROVAL, DELETE_VENDOR_BILL, GET_VENDORS, GET_ITEMS
 } from '@/gql/queries'
 import { Trash2, Edit, X, Save, Plus, CheckCircle, FileText, Clock, DollarSign } from 'lucide-react'
 
@@ -56,6 +56,10 @@ export default function EnterBillsPage() {
   })
 
   const [approveBill] = useMutation(APPROVE_VENDOR_BILL, {
+    onCompleted: () => refetch(),
+  })
+
+  const [submitBillForApproval] = useMutation(SUBMIT_VENDOR_BILL_FOR_APPROVAL, {
     onCompleted: () => refetch(),
   })
 
@@ -162,10 +166,19 @@ export default function EnterBillsPage() {
 
   const statusColor: Record<string, string> = {
     draft: 'bg-gray-100 text-gray-600 border-gray-200',
+    submitted: 'bg-amber-50 text-amber-800 border-amber-200',
+    approval_declined: 'bg-red-50 text-red-700 border-red-200',
     approved: 'bg-blue-50 text-blue-700 border-blue-200',
     partially_paid: 'bg-yellow-50 text-yellow-700 border-yellow-200',
     paid: 'bg-green-50 text-green-700 border-green-200',
     cancelled: 'bg-red-50 text-red-700 border-red-200',
+  }
+
+  const statusDisplay = (s: string) => {
+    const x = (s || '').toLowerCase()
+    if (x === 'submitted') return 'pending approval'
+    if (x === 'approval_declined') return 'declined'
+    return x.replace('_', ' ')
   }
 
   const stats = {
@@ -185,8 +198,42 @@ export default function EnterBillsPage() {
     { key: 'paidAmount', label: 'Paid', width: '100px', align: 'right', render: v => <span className="text-green-600">${Number(v).toFixed(2)}</span> },
     { key: 'outstandingAmount', label: 'Outstanding', width: '110px', align: 'right', render: v => <span className="font-semibold text-red-600">${Number(v).toFixed(2)}</span> },
     {
-      key: 'status', label: 'Status', width: '120px',
-      render: v => <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[v] || statusColor.draft}`}>{v?.replace('_', ' ')}</span>
+      key: 'status', label: 'Status', width: '130px',
+      render: (v) => (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[String(v)] || statusColor.draft}`}>
+          {statusDisplay(String(v))}
+        </span>
+      ),
+    },
+    {
+      key: '_orgApproval',
+      label: 'Org approval',
+      width: '168px',
+      render: (_v, row: any) => {
+        const st = String(row.status || '')
+        const showSubmit = st === 'draft' || st === 'approval_declined'
+        return (
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            {showSubmit ? (
+              <select
+                aria-label="Vendor bill approval action"
+                className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2"
+                defaultValue=""
+                onChange={(e) => {
+                  const val = e.target.value
+                  e.target.value = ''
+                  if (val === 'submit') submitBillForApproval({ variables: { id: row.id } })
+                }}
+              >
+                <option value="">Change status…</option>
+                <option value="submit">Send for approval</option>
+              </select>
+            ) : (
+              <span className="text-xs text-gray-400">—</span>
+            )}
+          </div>
+        )
+      },
     },
   ]
 
@@ -320,7 +367,8 @@ export default function EnterBillsPage() {
           {
             label: 'Approve',
             icon: <CheckCircle className="h-3.5 w-3.5" />,
-            onClick: row => { if (confirm('Approve this bill?')) approveBill({ variables: { id: row.id } }) },
+            show: (row) => row.status === 'draft',
+            onClick: row => { if (confirm('Approve this bill without routing through the approver queue?')) approveBill({ variables: { id: row.id } }) },
             variant: 'ghost',
           },
           { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => { setEditing(row.id); setAdding(true) }, variant: 'ghost' },

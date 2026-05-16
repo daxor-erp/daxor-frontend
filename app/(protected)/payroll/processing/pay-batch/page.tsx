@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
 import {
   GET_PAYROLL_UI_RECORDS,
@@ -39,6 +40,7 @@ type PayBatchRow = {
   status: PayBatchStatus
   lineEstimate: number
   remarks: string
+  approvalStatus: string
 }
 
 const STATUS_OPTIONS: ReadonlyArray<{ value: PayBatchStatus; label: string }> = [
@@ -60,7 +62,7 @@ function nextBatchCode(rows: PayBatchRow[]): string {
   return `PB-${String(max + 1).padStart(4, '0')}`
 }
 
-function parsePayBatchRecord(r: { id: string; data: string }): PayBatchRow {
+function parsePayBatchRecord(r: { id: string; data: string }): Omit<PayBatchRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const st = typeof o.status === 'string' ? o.status : 'DRAFT'
@@ -133,7 +135,16 @@ export default function PayBatchPage() {
 
   const rows = useMemo(
     () =>
-      ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parsePayBatchRecord),
+      (
+        (data?.payrolluirecords as {
+          id: string
+          data: string
+          approvalStatus?: string | null
+        }[]) ?? []
+      ).map((rec) => ({
+        ...parsePayBatchRecord(rec),
+        approvalStatus: rec.approvalStatus ?? 'none',
+      })),
     [data],
   )
 
@@ -429,7 +440,8 @@ export default function PayBatchPage() {
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Period</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Pay group</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Lines</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-gray-600">Status</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Batch status</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[100px]" />
               </TableRow>
             </TableHeader>
@@ -449,6 +461,13 @@ export default function PayBatchPage() {
                     <Badge variant="outline" className={statusBadgeClass(r.status)}>
                       {STATUS_OPTIONS.find((o) => o.value === r.status)?.label ?? r.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <PayrollUiRecordOrgApprovalCell
+                      recordId={r.id}
+                      approvalStatus={r.approvalStatus}
+                      onCompleted={() => refetch()}
+                    />
                   </TableCell>
                   <TableCell className="space-x-1">
                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

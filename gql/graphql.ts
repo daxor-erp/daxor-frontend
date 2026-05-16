@@ -1,5 +1,7 @@
+/* eslint-disable */
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
+const defaultOptions = {} as const;
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -7,7 +9,6 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: 
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
-const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string; output: string; }
@@ -114,6 +115,34 @@ export type ApplicantInput = {
   skills: Array<Scalars['String']['input']>;
   source: Scalars['String']['input'];
 };
+
+export type ApprovalDecision =
+  | 'APPROVED'
+  | 'REJECTED';
+
+export type ApprovalRequest = {
+  __typename?: 'ApprovalRequest';
+  assigneeApproverUserId: Scalars['ID']['output'];
+  createdAt?: Maybe<Scalars['String']['output']>;
+  decidedAt?: Maybe<Scalars['String']['output']>;
+  decidedByUserId?: Maybe<Scalars['ID']['output']>;
+  entityId: Scalars['ID']['output'];
+  entityType: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  moduleKey: Scalars['String']['output'];
+  organizationId: Scalars['ID']['output'];
+  requesterDisplayName?: Maybe<Scalars['String']['output']>;
+  requesterUserId: Scalars['ID']['output'];
+  resolutionNote?: Maybe<Scalars['String']['output']>;
+  status: ApprovalRequestStatus;
+  title: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+};
+
+export type ApprovalRequestStatus =
+  | 'APPROVED'
+  | 'PENDING'
+  | 'REJECTED';
 
 export type Asset = {
   __typename?: 'Asset';
@@ -541,7 +570,7 @@ export type CreateGrnInput = {
   organizationId: Scalars['ID']['input'];
   purchaseOrderId?: InputMaybe<Scalars['ID']['input']>;
   receivedDate: Scalars['String']['input'];
-  /** draft | confirmed (default confirmed) */
+  /** draft | submitted | approval_declined | confirmed (default draft) */
   status?: InputMaybe<Scalars['String']['input']>;
   vendorId?: InputMaybe<Scalars['ID']['input']>;
   vendorName?: InputMaybe<Scalars['String']['input']>;
@@ -620,6 +649,15 @@ export type CreateMaterialReceiptInput = {
   vendorName?: InputMaybe<Scalars['String']['input']>;
   warehouseId?: InputMaybe<Scalars['ID']['input']>;
   warehouseName?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateModuleWorkspaceRecordInput = {
+  approvalModuleKey: Scalars['String']['input'];
+  detail?: InputMaybe<Scalars['String']['input']>;
+  organizationId: Scalars['ID']['input'];
+  routePath: Scalars['String']['input'];
+  snapshot?: InputMaybe<Scalars['String']['input']>;
+  title: Scalars['String']['input'];
 };
 
 /** Create a tenant organization and its first ORG_ADMIN user (platform admins only). */
@@ -1727,6 +1765,44 @@ export type MilestoneInput = {
   status?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type ModulePermission = {
+  __typename?: 'ModulePermission';
+  canCreate: Scalars['Boolean']['output'];
+  canDelete: Scalars['Boolean']['output'];
+  canUpdate: Scalars['Boolean']['output'];
+  canView: Scalars['Boolean']['output'];
+  moduleKey: Scalars['String']['output'];
+};
+
+export type ModulePermissionInput = {
+  canCreate: Scalars['Boolean']['input'];
+  canDelete: Scalars['Boolean']['input'];
+  canUpdate: Scalars['Boolean']['input'];
+  canView: Scalars['Boolean']['input'];
+  moduleKey: Scalars['String']['input'];
+};
+
+export type ModuleWorkspaceRecord = {
+  __typename?: 'ModuleWorkspaceRecord';
+  approvalModuleKey: Scalars['String']['output'];
+  createdAt?: Maybe<Scalars['String']['output']>;
+  createdByUserId?: Maybe<Scalars['ID']['output']>;
+  detail?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  organizationId: Scalars['ID']['output'];
+  routePath: Scalars['String']['output'];
+  snapshot?: Maybe<Scalars['String']['output']>;
+  status: ModuleWorkspaceStatus;
+  title: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+};
+
+export type ModuleWorkspaceStatus =
+  | 'APPROVED'
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'REJECTED';
+
 export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
@@ -1791,6 +1867,7 @@ export type Mutation = {
   createLeaveType: LeaveType;
   createLoanRepayment: LoanRepayment;
   createMaterialReceipt: MaterialReceipt;
+  createModuleWorkspaceRecord: ModuleWorkspaceRecord;
   createOpportunity: Opportunity;
   createOrganization: Organization;
   createOrganizationWithOrgAdmin: Organization;
@@ -1902,10 +1979,30 @@ export type Mutation = {
   rejectLeaveApplication: LeaveApplication;
   rejectLeaveReinstatement: LeaveReinstatement;
   rejectReturnAuthorization: ReturnAuthorization;
+  resolveApprovalRequest: ApprovalRequest;
   seedIndividualPriceListFromCatalog: IndividualPriceList;
   seedSystemRoles: Array<Role>;
   sendQuotation: SendQuotationResult;
+  /** Replace module-level approver assignments for an organization (org admin: own org only). */
+  setOrganizationModuleApprovers: Organization;
+  setUserModulePermissions: User;
+  submitCustomerInvoiceForApproval: CustomerInvoice;
+  submitDeliveryChallanForApproval: DeliveryChallan;
+  submitGRNForApproval: Grn;
+  submitLeadForApproval: Lead;
+  submitMaterialReceiptForApproval: MaterialReceipt;
+  submitModuleWorkspaceRecordForApproval: ModuleWorkspaceRecord;
+  submitPayrollManagementForApproval: PayrollManagement;
+  submitPayrollUiRecordForApproval: PayrollUiRecord;
+  submitProjectForApproval: Project;
   submitPurchaseOrder: PurchaseOrder;
+  submitQuotationForApproval: Quotation;
+  submitSalesEnquiryForApproval: SalesEnquiry;
+  /** Draft → pending approval inbox for the Sales approver configured under Org admin → Approvals. */
+  submitSalesOrder: SalesOrder;
+  submitSalesReturnForApproval: SalesReturn;
+  submitVendorBillForApproval: VendorBill;
+  submitVendorForApproval: Vendor;
   transferBankFunds: BankTransferResult;
   updateAllocationSchedule: AllocationSchedule;
   updateApplicant: Applicant;
@@ -1941,6 +2038,7 @@ export type Mutation = {
   updateLeaveType: LeaveType;
   updateLoanRepayment: LoanRepayment;
   updateMaterialReceipt: MaterialReceipt;
+  updateModuleWorkspaceRecord: ModuleWorkspaceRecord;
   updateOpportunity: Opportunity;
   updateOrganization: Organization;
   updatePayrollManagement: PayrollManagement;
@@ -2283,6 +2381,11 @@ export type MutationCreateLoanRepaymentArgs = {
 
 export type MutationCreateMaterialReceiptArgs = {
   input: CreateMaterialReceiptInput;
+};
+
+
+export type MutationCreateModuleWorkspaceRecordArgs = {
+  input: CreateModuleWorkspaceRecordInput;
 };
 
 
@@ -2845,6 +2948,13 @@ export type MutationRejectReturnAuthorizationArgs = {
 };
 
 
+export type MutationResolveApprovalRequestArgs = {
+  decision: ApprovalDecision;
+  id: Scalars['ID']['input'];
+  note?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type MutationSeedIndividualPriceListFromCatalogArgs = {
   customerId: Scalars['ID']['input'];
   organizationId: Scalars['String']['input'];
@@ -2856,7 +2966,94 @@ export type MutationSendQuotationArgs = {
 };
 
 
+export type MutationSetOrganizationModuleApproversArgs = {
+  assignments: Array<OrganizationModuleApproverInput>;
+  organizationId: Scalars['ID']['input'];
+};
+
+
+export type MutationSetUserModulePermissionsArgs = {
+  permissions: Array<ModulePermissionInput>;
+  userId: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitCustomerInvoiceForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitDeliveryChallanForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitGrnForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitLeadForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitMaterialReceiptForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitModuleWorkspaceRecordForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitPayrollManagementForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitPayrollUiRecordForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitProjectForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationSubmitPurchaseOrderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitQuotationForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitSalesEnquiryForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitSalesOrderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitSalesReturnForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitVendorBillForApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationSubmitVendorForApprovalArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -3067,6 +3264,14 @@ export type MutationUpdateLoanRepaymentArgs = {
 export type MutationUpdateMaterialReceiptArgs = {
   id: Scalars['ID']['input'];
   input: UpdateMaterialReceiptInput;
+};
+
+
+export type MutationUpdateModuleWorkspaceRecordArgs = {
+  detail?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  snapshot?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -3299,10 +3504,24 @@ export type Organization = {
   createdAt: Scalars['String']['output'];
   email?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  moduleApprovers: Array<OrganizationModuleApprover>;
   name: Scalars['String']['output'];
   phone?: Maybe<Scalars['String']['output']>;
   seqNo: Scalars['String']['output'];
   status: Scalars['String']['output'];
+};
+
+/** Which user under the organization acts as workflow approver for a given ERP module. */
+export type OrganizationModuleApprover = {
+  __typename?: 'OrganizationModuleApprover';
+  approverUserId?: Maybe<Scalars['ID']['output']>;
+  moduleKey: Scalars['String']['output'];
+};
+
+export type OrganizationModuleApproverInput = {
+  /** Set to omit or empty to clear the approver for this module. */
+  approverUserId?: InputMaybe<Scalars['ID']['input']>;
+  moduleKey: Scalars['String']['input'];
 };
 
 export type PoLineItem = {
@@ -3348,6 +3567,7 @@ export type PayrollManagementInput = {
 
 export type PayrollUiRecord = {
   __typename?: 'PayrollUiRecord';
+  approvalStatus: Scalars['String']['output'];
   category: Scalars['String']['output'];
   code?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
@@ -3459,6 +3679,8 @@ export type Project = {
   endDate?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  /** draft | submitted | approval_declined | approved — omitted on legacy rows means approved */
+  orgApprovalStatus: Scalars['String']['output'];
   organizationId: Scalars['ID']['output'];
   seqNo?: Maybe<Scalars['String']['output']>;
   startDate?: Maybe<Scalars['String']['output']>;
@@ -3586,6 +3808,9 @@ export type Query = {
   materialreceipts: Array<MaterialReceipt>;
   materialreceiptsByPO: Array<MaterialReceipt>;
   me?: Maybe<User>;
+  moduleWorkspaceRecords: Array<ModuleWorkspaceRecord>;
+  /** Approval tasks assigned to the current user (same organization). */
+  myPendingApprovalRequests: Array<ApprovalRequest>;
   opportunities: Array<Opportunity>;
   opportunity?: Maybe<Opportunity>;
   organization?: Maybe<Organization>;
@@ -4257,6 +4482,14 @@ export type QueryMaterialreceiptsByPoArgs = {
 };
 
 
+export type QueryModuleWorkspaceRecordsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  organizationId: Scalars['ID']['input'];
+  page?: InputMaybe<Scalars['Int']['input']>;
+  routePath: Scalars['String']['input'];
+};
+
+
 export type QueryOpportunitiesArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   organizationId: Scalars['String']['input'];
@@ -4894,6 +5127,13 @@ export type ReconciliationRulePatch = {
   priority?: InputMaybe<Scalars['Int']['input']>;
 };
 
+/** Unified workflow state stored on approvable ERP records (extend per module). */
+export type RecordApprovalWorkflowStatus =
+  | 'APPROVED'
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'REJECTED';
+
 export type Recruitment = {
   __typename?: 'Recruitment';
   applicantId: Scalars['String']['output'];
@@ -5067,6 +5307,11 @@ export type SalaryRangeInput = {
 
 export type SalesEnquiry = {
   __typename?: 'SalesEnquiry';
+  approvalRequestedAt?: Maybe<Scalars['String']['output']>;
+  /** Org approval workflow (Draft → Pending → Approved/Rejected). Derived for legacy rows. */
+  approvalStatus: RecordApprovalWorkflowStatus;
+  approvedAt?: Maybe<Scalars['String']['output']>;
+  approvedBy?: Maybe<Scalars['ID']['output']>;
   assignedTo?: Maybe<Scalars['ID']['output']>;
   budget?: Maybe<Scalars['Float']['output']>;
   clientId: Scalars['ID']['output'];
@@ -5603,6 +5848,7 @@ export type User = {
   firstName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
+  modulePermissions?: Maybe<Array<ModulePermission>>;
   organizationId?: Maybe<Scalars['ID']['output']>;
   roles?: Maybe<Array<Scalars['String']['output']>>;
   seqNo?: Maybe<Scalars['String']['output']>;
@@ -5629,6 +5875,8 @@ export type Vendor = {
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   notes?: Maybe<Scalars['String']['output']>;
+  /** draft | submitted | approval_declined | approved — omitted on legacy rows means approved */
+  orgApprovalStatus: Scalars['String']['output'];
   organizationId: Scalars['ID']['output'];
   paymentTerms?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
@@ -5974,19 +6222,19 @@ export type RegisterMutationVariables = Exact<{
 }>;
 
 
-export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', token: string, user: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, roles?: Array<string> | null, organizationId?: string | null } } };
+export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', token: string, user: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, roles?: Array<string> | null, organizationId?: string | null, modulePermissions?: Array<{ __typename?: 'ModulePermission', moduleKey: string, canCreate: boolean, canUpdate: boolean, canDelete: boolean, canView: boolean }> | null } } };
 
 export type LoginMutationVariables = Exact<{
   input: LoginInput;
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthPayload', token: string, user: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, roles?: Array<string> | null, organizationId?: string | null } } };
+export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthPayload', token: string, user: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, roles?: Array<string> | null, organizationId?: string | null, modulePermissions?: Array<{ __typename?: 'ModulePermission', moduleKey: string, canCreate: boolean, canUpdate: boolean, canDelete: boolean, canView: boolean }> | null } } };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, roles?: Array<string> | null, organizationId?: string | null } | null };
+export type MeQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, roles?: Array<string> | null, organizationId?: string | null, modulePermissions?: Array<{ __typename?: 'ModulePermission', moduleKey: string, canCreate: boolean, canUpdate: boolean, canDelete: boolean, canView: boolean }> | null } | null };
 
 export type GetUsersQueryVariables = Exact<{
   organizationId: Scalars['ID']['input'];
@@ -6003,7 +6251,15 @@ export type GetUserQueryVariables = Exact<{
 }>;
 
 
-export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, seqNo?: string | null, email: string, firstName: string, lastName: string, userType?: string | null, roles?: Array<string> | null, status: string, organizationId?: string | null, createdAt: string } | null };
+export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, seqNo?: string | null, email: string, firstName: string, lastName: string, userType?: string | null, roles?: Array<string> | null, status: string, organizationId?: string | null, createdAt: string, modulePermissions?: Array<{ __typename?: 'ModulePermission', moduleKey: string, canCreate: boolean, canUpdate: boolean, canDelete: boolean, canView: boolean }> | null } | null };
+
+export type SetUserModulePermissionsMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  permissions: Array<ModulePermissionInput> | ModulePermissionInput;
+}>;
+
+
+export type SetUserModulePermissionsMutation = { __typename?: 'Mutation', setUserModulePermissions: { __typename?: 'User', id: string, modulePermissions?: Array<{ __typename?: 'ModulePermission', moduleKey: string, canCreate: boolean, canUpdate: boolean, canDelete: boolean, canView: boolean }> | null } };
 
 export type CreateUserMutationVariables = Exact<{
   input: CreateUserInput;
@@ -6041,7 +6297,15 @@ export type GetOrganizationQueryVariables = Exact<{
 }>;
 
 
-export type GetOrganizationQuery = { __typename?: 'Query', organization?: { __typename?: 'Organization', id: string, seqNo: string, name: string, code?: string | null, address?: string | null, phone?: string | null, email?: string | null, status: string, createdAt: string } | null };
+export type GetOrganizationQuery = { __typename?: 'Query', organization?: { __typename?: 'Organization', id: string, seqNo: string, name: string, code?: string | null, address?: string | null, phone?: string | null, email?: string | null, status: string, createdAt: string, moduleApprovers: Array<{ __typename?: 'OrganizationModuleApprover', moduleKey: string, approverUserId?: string | null }> } | null };
+
+export type SetOrganizationModuleApproversMutationVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  assignments: Array<OrganizationModuleApproverInput> | OrganizationModuleApproverInput;
+}>;
+
+
+export type SetOrganizationModuleApproversMutation = { __typename?: 'Mutation', setOrganizationModuleApprovers: { __typename?: 'Organization', id: string, moduleApprovers: Array<{ __typename?: 'OrganizationModuleApprover', moduleKey: string, approverUserId?: string | null }> } };
 
 export type CreateOrganizationMutationVariables = Exact<{
   input: CreateOrganizationInput;
@@ -6071,6 +6335,96 @@ export type DeleteOrganizationMutationVariables = Exact<{
 
 
 export type DeleteOrganizationMutation = { __typename?: 'Mutation', deleteOrganization: { __typename?: 'Organization', id: string } };
+
+export type MyPendingApprovalRequestsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyPendingApprovalRequestsQuery = { __typename?: 'Query', myPendingApprovalRequests: Array<{ __typename?: 'ApprovalRequest', id: string, organizationId: string, moduleKey: string, entityType: string, entityId: string, title: string, status: ApprovalRequestStatus, requesterDisplayName?: string | null, createdAt?: string | null }> };
+
+export type ResolveApprovalRequestMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  decision: ApprovalDecision;
+  note?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type ResolveApprovalRequestMutation = { __typename?: 'Mutation', resolveApprovalRequest: { __typename?: 'ApprovalRequest', id: string, status: ApprovalRequestStatus, decidedAt?: string | null } };
+
+export type ModuleWorkspaceRecordsQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  routePath: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type ModuleWorkspaceRecordsQuery = { __typename?: 'Query', moduleWorkspaceRecords: Array<{ __typename?: 'ModuleWorkspaceRecord', id: string, routePath: string, approvalModuleKey: string, title: string, detail?: string | null, snapshot?: string | null, status: ModuleWorkspaceStatus, createdAt?: string | null, updatedAt?: string | null }> };
+
+export type CreateModuleWorkspaceRecordMutationVariables = Exact<{
+  input: CreateModuleWorkspaceRecordInput;
+}>;
+
+
+export type CreateModuleWorkspaceRecordMutation = { __typename?: 'Mutation', createModuleWorkspaceRecord: { __typename?: 'ModuleWorkspaceRecord', id: string, title: string, status: ModuleWorkspaceStatus, routePath: string, approvalModuleKey: string, createdAt?: string | null } };
+
+export type SubmitModuleWorkspaceRecordForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitModuleWorkspaceRecordForApprovalMutation = { __typename?: 'Mutation', submitModuleWorkspaceRecordForApproval: { __typename?: 'ModuleWorkspaceRecord', id: string, title: string, status: ModuleWorkspaceStatus, updatedAt?: string | null } };
+
+export type SalesEnquiriesQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  page?: InputMaybe<Scalars['Int']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type SalesEnquiriesQuery = { __typename?: 'Query', salesEnquiries: Array<{ __typename?: 'SalesEnquiry', id: string, enquiryNumber: string, subject?: string | null, status: string, approvalStatus: RecordApprovalWorkflowStatus, approvalRequestedAt?: string | null, approvedAt?: string | null, approvedBy?: string | null, priority: string, createdAt: string, updatedAt: string }> };
+
+export type SubmitSalesEnquiryForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitSalesEnquiryForApprovalMutation = { __typename?: 'Mutation', submitSalesEnquiryForApproval: { __typename?: 'SalesEnquiry', id: string, enquiryNumber: string, subject?: string | null, status: string, approvalStatus: RecordApprovalWorkflowStatus, approvalRequestedAt?: string | null, approvedAt?: string | null, approvedBy?: string | null } };
+
+export type SubmitSalesOrderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitSalesOrderMutation = { __typename?: 'Mutation', submitSalesOrder: { __typename?: 'SalesOrder', id: string, status: string, seqNo: string } };
+
+export type SubmitQuotationForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitQuotationForApprovalMutation = { __typename?: 'Mutation', submitQuotationForApproval: { __typename?: 'Quotation', id: string, quotationNumber: string, status: string } };
+
+export type SubmitCustomerInvoiceForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitCustomerInvoiceForApprovalMutation = { __typename?: 'Mutation', submitCustomerInvoiceForApproval: { __typename?: 'CustomerInvoice', id: string, seqNo: string, status: string } };
+
+export type SubmitLeadForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitLeadForApprovalMutation = { __typename?: 'Mutation', submitLeadForApproval: { __typename?: 'Lead', id: string, seqNo?: string | null, status: string } };
+
+export type SubmitPayrollUiRecordForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitPayrollUiRecordForApprovalMutation = { __typename?: 'Mutation', submitPayrollUiRecordForApproval: { __typename?: 'PayrollUiRecord', id: string, approvalStatus: string, category: string } };
 
 export type GetItemsQueryVariables = Exact<{
   organizationId: Scalars['ID']['input'];
@@ -6119,21 +6473,21 @@ export type GetVendorsQueryVariables = Exact<{
 }>;
 
 
-export type GetVendorsQuery = { __typename?: 'Query', vendors: Array<{ __typename?: 'Vendor', id: string, seqNo?: string | null, name: string, contactPerson?: string | null, email?: string | null, phone?: string | null, address?: string | null, organizationId: string, status: string, createdAt: string }> };
+export type GetVendorsQuery = { __typename?: 'Query', vendors: Array<{ __typename?: 'Vendor', id: string, seqNo?: string | null, name: string, contactPerson?: string | null, email?: string | null, phone?: string | null, address?: string | null, organizationId: string, orgApprovalStatus: string, status: string, createdAt: string }> };
 
 export type GetVendorQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetVendorQuery = { __typename?: 'Query', vendor?: { __typename?: 'Vendor', id: string, seqNo?: string | null, name: string, contactPerson?: string | null, email?: string | null, phone?: string | null, address?: string | null, organizationId: string, status: string, createdAt: string } | null };
+export type GetVendorQuery = { __typename?: 'Query', vendor?: { __typename?: 'Vendor', id: string, seqNo?: string | null, name: string, contactPerson?: string | null, email?: string | null, phone?: string | null, address?: string | null, organizationId: string, orgApprovalStatus: string, status: string, createdAt: string } | null };
 
 export type CreateVendorMutationVariables = Exact<{
   input: CreateVendorInput;
 }>;
 
 
-export type CreateVendorMutation = { __typename?: 'Mutation', createVendor: { __typename?: 'Vendor', id: string, name: string, status: string } };
+export type CreateVendorMutation = { __typename?: 'Mutation', createVendor: { __typename?: 'Vendor', id: string, name: string, orgApprovalStatus: string, status: string } };
 
 export type UpdateVendorMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6141,7 +6495,14 @@ export type UpdateVendorMutationVariables = Exact<{
 }>;
 
 
-export type UpdateVendorMutation = { __typename?: 'Mutation', updateVendor: { __typename?: 'Vendor', id: string, name: string, status: string } };
+export type UpdateVendorMutation = { __typename?: 'Mutation', updateVendor: { __typename?: 'Vendor', id: string, name: string, orgApprovalStatus: string, status: string } };
+
+export type SubmitVendorForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitVendorForApprovalMutation = { __typename?: 'Mutation', submitVendorForApproval: { __typename?: 'Vendor', id: string, seqNo?: string | null, orgApprovalStatus: string, status: string } };
 
 export type DeleteVendorMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6158,21 +6519,28 @@ export type GetProjectsQueryVariables = Exact<{
 }>;
 
 
-export type GetProjectsQuery = { __typename?: 'Query', projects: Array<{ __typename?: 'Project', id: string, seqNo?: string | null, name: string, description?: string | null, startDate?: string | null, endDate?: string | null, status: string, organizationId: string, createdAt?: string | null }> };
+export type GetProjectsQuery = { __typename?: 'Query', projects: Array<{ __typename?: 'Project', id: string, seqNo?: string | null, name: string, description?: string | null, startDate?: string | null, endDate?: string | null, orgApprovalStatus: string, status: string, organizationId: string, createdAt?: string | null }> };
 
 export type GetProjectQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetProjectQuery = { __typename?: 'Query', project?: { __typename?: 'Project', id: string, seqNo?: string | null, name: string, description?: string | null, startDate?: string | null, endDate?: string | null, status: string, organizationId: string, createdAt?: string | null } | null };
+export type GetProjectQuery = { __typename?: 'Query', project?: { __typename?: 'Project', id: string, seqNo?: string | null, name: string, description?: string | null, startDate?: string | null, endDate?: string | null, orgApprovalStatus: string, status: string, organizationId: string, createdAt?: string | null } | null };
 
 export type CreateProjectMutationVariables = Exact<{
   input: CreateProjectInput;
 }>;
 
 
-export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string, name: string, status: string } };
+export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string, name: string, orgApprovalStatus: string, status: string } };
+
+export type SubmitProjectForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitProjectForApprovalMutation = { __typename?: 'Mutation', submitProjectForApproval: { __typename?: 'Project', id: string, seqNo?: string | null, orgApprovalStatus: string, status: string } };
 
 export type UpdateProjectMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6180,7 +6548,7 @@ export type UpdateProjectMutationVariables = Exact<{
 }>;
 
 
-export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string, name: string, status: string } };
+export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string, name: string, orgApprovalStatus: string, status: string } };
 
 export type DeleteProjectMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6253,7 +6621,7 @@ export type GetSalesOrdersQueryVariables = Exact<{
 }>;
 
 
-export type GetSalesOrdersQuery = { __typename?: 'Query', salesorders: Array<{ __typename?: 'SalesOrder', id: string, seqNo: string, customerId: string, projectId?: string | null, totalAmount: number, status: string, orderDate: string, organizationId: string, cashSale: boolean, refundedAt?: string | null, refundAmount?: number | null, createdAt: string }> };
+export type GetSalesOrdersQuery = { __typename?: 'Query', salesorders: Array<{ __typename?: 'SalesOrder', id: string, seqNo: string, quotationId?: string | null, quotationStatus?: string | null, customerId: string, projectId?: string | null, totalAmount: number, status: string, orderDate: string, organizationId: string, cashSale: boolean, refundedAt?: string | null, refundAmount?: number | null, createdAt: string }> };
 
 export type GetSalesOrderQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -6923,6 +7291,13 @@ export type ApproveVendorBillMutationVariables = Exact<{
 
 export type ApproveVendorBillMutation = { __typename?: 'Mutation', approveVendorBill: { __typename?: 'VendorBill', id: string, billNumber: string, status: string } };
 
+export type SubmitVendorBillForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitVendorBillForApprovalMutation = { __typename?: 'Mutation', submitVendorBillForApproval: { __typename?: 'VendorBill', id: string, billNumber: string, status: string } };
+
 export type DeleteVendorBillMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -6975,6 +7350,13 @@ export type CancelMaterialReceiptMutationVariables = Exact<{
 
 
 export type CancelMaterialReceiptMutation = { __typename?: 'Mutation', cancelMaterialReceipt: { __typename?: 'MaterialReceipt', id: string, mrnNumber: string, status: string } };
+
+export type SubmitMaterialReceiptForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitMaterialReceiptForApprovalMutation = { __typename?: 'Mutation', submitMaterialReceiptForApproval: { __typename?: 'MaterialReceipt', id: string, mrnNumber: string, status: string } };
 
 export type DeleteMaterialReceiptMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -7036,6 +7418,13 @@ export type UpdateGrnMutationVariables = Exact<{
 
 export type UpdateGrnMutation = { __typename?: 'Mutation', updateGRN: { __typename?: 'GRN', id: string, grnNumber: string, receivedDate: string, status: string, notes?: string | null, lineItems: Array<{ __typename?: 'GRNLineItem', itemDescription: string, orderedQty: number, receivedQty: number, unitPrice?: number | null }> } };
 
+export type SubmitGrnForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitGrnForApprovalMutation = { __typename?: 'Mutation', submitGRNForApproval: { __typename?: 'GRN', id: string, grnNumber: string, status: string } };
+
 export type DeleteGrnMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -7055,7 +7444,14 @@ export type CreateDeliveryChallanMutationVariables = Exact<{
 }>;
 
 
-export type CreateDeliveryChallanMutation = { __typename?: 'Mutation', createDeliveryChallan: { __typename?: 'DeliveryChallan', id: string, docNumber: string } };
+export type CreateDeliveryChallanMutation = { __typename?: 'Mutation', createDeliveryChallan: { __typename?: 'DeliveryChallan', id: string, docNumber: string, status: string } };
+
+export type SubmitDeliveryChallanForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitDeliveryChallanForApprovalMutation = { __typename?: 'Mutation', submitDeliveryChallanForApproval: { __typename?: 'DeliveryChallan', id: string, docNumber: string, status: string } };
 
 export type GetSalesReturnsQueryVariables = Exact<{
   organizationId: Scalars['String']['input'];
@@ -7069,7 +7465,14 @@ export type CreateSalesReturnMutationVariables = Exact<{
 }>;
 
 
-export type CreateSalesReturnMutation = { __typename?: 'Mutation', createSalesReturn: { __typename?: 'SalesReturn', id: string, docNumber: string } };
+export type CreateSalesReturnMutation = { __typename?: 'Mutation', createSalesReturn: { __typename?: 'SalesReturn', id: string, docNumber: string, status: string } };
+
+export type SubmitSalesReturnForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitSalesReturnForApprovalMutation = { __typename?: 'Mutation', submitSalesReturnForApproval: { __typename?: 'SalesReturn', id: string, docNumber: string, status: string } };
 
 export type GetStockAdjustmentsQueryVariables = Exact<{
   organizationId: Scalars['ID']['input'];
@@ -7268,6 +7671,13 @@ export type DeletePayrollManagementMutationVariables = Exact<{
 
 export type DeletePayrollManagementMutation = { __typename?: 'Mutation', deletePayrollManagement: boolean };
 
+export type SubmitPayrollManagementForApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SubmitPayrollManagementForApprovalMutation = { __typename?: 'Mutation', submitPayrollManagementForApproval: { __typename?: 'PayrollManagement', id: string, docNumber: string, status: string } };
+
 export type GetSalaryProcessingsQueryVariables = Exact<{
   organizationId: Scalars['String']['input'];
 }>;
@@ -7457,7 +7867,7 @@ export type GetPayrollUiRecordsQueryVariables = Exact<{
 }>;
 
 
-export type GetPayrollUiRecordsQuery = { __typename?: 'Query', payrolluirecords: Array<{ __typename?: 'PayrollUiRecord', id: string, organizationId: string, category: string, code?: string | null, data: string, createdAt: string, updatedAt: string }> };
+export type GetPayrollUiRecordsQuery = { __typename?: 'Query', payrolluirecords: Array<{ __typename?: 'PayrollUiRecord', id: string, organizationId: string, category: string, code?: string | null, data: string, approvalStatus: string, createdAt: string, updatedAt: string }> };
 
 export type CreatePayrollUiRecordMutationVariables = Exact<{
   input: PayrollUiRecordInput;
@@ -8277,6 +8687,13 @@ export const RegisterDocument = gql`
       lastName
       roles
       organizationId
+      modulePermissions {
+        moduleKey
+        canCreate
+        canUpdate
+        canDelete
+        canView
+      }
     }
   }
 }
@@ -8300,6 +8717,13 @@ export const LoginDocument = gql`
       lastName
       roles
       organizationId
+      modulePermissions {
+        moduleKey
+        canCreate
+        canUpdate
+        canDelete
+        canView
+      }
     }
   }
 }
@@ -8321,6 +8745,13 @@ export const MeDocument = gql`
     lastName
     roles
     organizationId
+    modulePermissions {
+      moduleKey
+      canCreate
+      canUpdate
+      canDelete
+      canView
+    }
   }
 }
     `;
@@ -8400,6 +8831,13 @@ export const GetUserDocument = gql`
     roles
     status
     organizationId
+    modulePermissions {
+      moduleKey
+      canCreate
+      canUpdate
+      canDelete
+      canView
+    }
     createdAt
   }
 }
@@ -8423,6 +8861,28 @@ export type GetUserQueryHookResult = ReturnType<typeof useGetUserQuery>;
 export type GetUserLazyQueryHookResult = ReturnType<typeof useGetUserLazyQuery>;
 export type GetUserSuspenseQueryHookResult = ReturnType<typeof useGetUserSuspenseQuery>;
 export type GetUserQueryResult = Apollo.QueryResult<GetUserQuery, GetUserQueryVariables>;
+export const SetUserModulePermissionsDocument = gql`
+    mutation SetUserModulePermissions($userId: ID!, $permissions: [ModulePermissionInput!]!) {
+  setUserModulePermissions(userId: $userId, permissions: $permissions) {
+    id
+    modulePermissions {
+      moduleKey
+      canCreate
+      canUpdate
+      canDelete
+      canView
+    }
+  }
+}
+    `;
+export type SetUserModulePermissionsMutationFn = Apollo.MutationFunction<SetUserModulePermissionsMutation, SetUserModulePermissionsMutationVariables>;
+export function useSetUserModulePermissionsMutation(baseOptions?: Apollo.MutationHookOptions<SetUserModulePermissionsMutation, SetUserModulePermissionsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SetUserModulePermissionsMutation, SetUserModulePermissionsMutationVariables>(SetUserModulePermissionsDocument, options);
+      }
+export type SetUserModulePermissionsMutationHookResult = ReturnType<typeof useSetUserModulePermissionsMutation>;
+export type SetUserModulePermissionsMutationResult = Apollo.MutationResult<SetUserModulePermissionsMutation>;
+export type SetUserModulePermissionsMutationOptions = Apollo.BaseMutationOptions<SetUserModulePermissionsMutation, SetUserModulePermissionsMutationVariables>;
 export const CreateUserDocument = gql`
     mutation CreateUser($input: CreateUserInput!) {
   createUser(input: $input) {
@@ -8521,6 +8981,10 @@ export const GetOrganizationDocument = gql`
     phone
     email
     status
+    moduleApprovers {
+      moduleKey
+      approverUserId
+    }
     createdAt
   }
 }
@@ -8544,6 +9008,28 @@ export type GetOrganizationQueryHookResult = ReturnType<typeof useGetOrganizatio
 export type GetOrganizationLazyQueryHookResult = ReturnType<typeof useGetOrganizationLazyQuery>;
 export type GetOrganizationSuspenseQueryHookResult = ReturnType<typeof useGetOrganizationSuspenseQuery>;
 export type GetOrganizationQueryResult = Apollo.QueryResult<GetOrganizationQuery, GetOrganizationQueryVariables>;
+export const SetOrganizationModuleApproversDocument = gql`
+    mutation SetOrganizationModuleApprovers($organizationId: ID!, $assignments: [OrganizationModuleApproverInput!]!) {
+  setOrganizationModuleApprovers(
+    organizationId: $organizationId
+    assignments: $assignments
+  ) {
+    id
+    moduleApprovers {
+      moduleKey
+      approverUserId
+    }
+  }
+}
+    `;
+export type SetOrganizationModuleApproversMutationFn = Apollo.MutationFunction<SetOrganizationModuleApproversMutation, SetOrganizationModuleApproversMutationVariables>;
+export function useSetOrganizationModuleApproversMutation(baseOptions?: Apollo.MutationHookOptions<SetOrganizationModuleApproversMutation, SetOrganizationModuleApproversMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SetOrganizationModuleApproversMutation, SetOrganizationModuleApproversMutationVariables>(SetOrganizationModuleApproversDocument, options);
+      }
+export type SetOrganizationModuleApproversMutationHookResult = ReturnType<typeof useSetOrganizationModuleApproversMutation>;
+export type SetOrganizationModuleApproversMutationResult = Apollo.MutationResult<SetOrganizationModuleApproversMutation>;
+export type SetOrganizationModuleApproversMutationOptions = Apollo.BaseMutationOptions<SetOrganizationModuleApproversMutation, SetOrganizationModuleApproversMutationVariables>;
 export const CreateOrganizationDocument = gql`
     mutation CreateOrganization($input: CreateOrganizationInput!) {
   createOrganization(input: $input) {
@@ -8612,6 +9098,282 @@ export function useDeleteOrganizationMutation(baseOptions?: Apollo.MutationHookO
 export type DeleteOrganizationMutationHookResult = ReturnType<typeof useDeleteOrganizationMutation>;
 export type DeleteOrganizationMutationResult = Apollo.MutationResult<DeleteOrganizationMutation>;
 export type DeleteOrganizationMutationOptions = Apollo.BaseMutationOptions<DeleteOrganizationMutation, DeleteOrganizationMutationVariables>;
+export const MyPendingApprovalRequestsDocument = gql`
+    query MyPendingApprovalRequests {
+  myPendingApprovalRequests {
+    id
+    organizationId
+    moduleKey
+    entityType
+    entityId
+    title
+    status
+    requesterDisplayName
+    createdAt
+  }
+}
+    `;
+export function useMyPendingApprovalRequestsQuery(baseOptions?: Apollo.QueryHookOptions<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>(MyPendingApprovalRequestsDocument, options);
+      }
+export function useMyPendingApprovalRequestsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>(MyPendingApprovalRequestsDocument, options);
+        }
+// @ts-ignore
+export function useMyPendingApprovalRequestsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>): Apollo.UseSuspenseQueryResult<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>;
+export function useMyPendingApprovalRequestsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>): Apollo.UseSuspenseQueryResult<MyPendingApprovalRequestsQuery | undefined, MyPendingApprovalRequestsQueryVariables>;
+export function useMyPendingApprovalRequestsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>(MyPendingApprovalRequestsDocument, options);
+        }
+export type MyPendingApprovalRequestsQueryHookResult = ReturnType<typeof useMyPendingApprovalRequestsQuery>;
+export type MyPendingApprovalRequestsLazyQueryHookResult = ReturnType<typeof useMyPendingApprovalRequestsLazyQuery>;
+export type MyPendingApprovalRequestsSuspenseQueryHookResult = ReturnType<typeof useMyPendingApprovalRequestsSuspenseQuery>;
+export type MyPendingApprovalRequestsQueryResult = Apollo.QueryResult<MyPendingApprovalRequestsQuery, MyPendingApprovalRequestsQueryVariables>;
+export const ResolveApprovalRequestDocument = gql`
+    mutation ResolveApprovalRequest($id: ID!, $decision: ApprovalDecision!, $note: String) {
+  resolveApprovalRequest(id: $id, decision: $decision, note: $note) {
+    id
+    status
+    decidedAt
+  }
+}
+    `;
+export type ResolveApprovalRequestMutationFn = Apollo.MutationFunction<ResolveApprovalRequestMutation, ResolveApprovalRequestMutationVariables>;
+export function useResolveApprovalRequestMutation(baseOptions?: Apollo.MutationHookOptions<ResolveApprovalRequestMutation, ResolveApprovalRequestMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ResolveApprovalRequestMutation, ResolveApprovalRequestMutationVariables>(ResolveApprovalRequestDocument, options);
+      }
+export type ResolveApprovalRequestMutationHookResult = ReturnType<typeof useResolveApprovalRequestMutation>;
+export type ResolveApprovalRequestMutationResult = Apollo.MutationResult<ResolveApprovalRequestMutation>;
+export type ResolveApprovalRequestMutationOptions = Apollo.BaseMutationOptions<ResolveApprovalRequestMutation, ResolveApprovalRequestMutationVariables>;
+export const ModuleWorkspaceRecordsDocument = gql`
+    query ModuleWorkspaceRecords($organizationId: ID!, $routePath: String!, $limit: Int) {
+  moduleWorkspaceRecords(
+    organizationId: $organizationId
+    routePath: $routePath
+    limit: $limit
+  ) {
+    id
+    routePath
+    approvalModuleKey
+    title
+    detail
+    snapshot
+    status
+    createdAt
+    updatedAt
+  }
+}
+    `;
+export function useModuleWorkspaceRecordsQuery(baseOptions: Apollo.QueryHookOptions<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables> & ({ variables: ModuleWorkspaceRecordsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables>(ModuleWorkspaceRecordsDocument, options);
+      }
+export function useModuleWorkspaceRecordsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables>(ModuleWorkspaceRecordsDocument, options);
+        }
+// @ts-ignore
+export function useModuleWorkspaceRecordsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables>): Apollo.UseSuspenseQueryResult<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables>;
+export function useModuleWorkspaceRecordsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables>): Apollo.UseSuspenseQueryResult<ModuleWorkspaceRecordsQuery | undefined, ModuleWorkspaceRecordsQueryVariables>;
+export function useModuleWorkspaceRecordsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables>(ModuleWorkspaceRecordsDocument, options);
+        }
+export type ModuleWorkspaceRecordsQueryHookResult = ReturnType<typeof useModuleWorkspaceRecordsQuery>;
+export type ModuleWorkspaceRecordsLazyQueryHookResult = ReturnType<typeof useModuleWorkspaceRecordsLazyQuery>;
+export type ModuleWorkspaceRecordsSuspenseQueryHookResult = ReturnType<typeof useModuleWorkspaceRecordsSuspenseQuery>;
+export type ModuleWorkspaceRecordsQueryResult = Apollo.QueryResult<ModuleWorkspaceRecordsQuery, ModuleWorkspaceRecordsQueryVariables>;
+export const CreateModuleWorkspaceRecordDocument = gql`
+    mutation CreateModuleWorkspaceRecord($input: CreateModuleWorkspaceRecordInput!) {
+  createModuleWorkspaceRecord(input: $input) {
+    id
+    title
+    status
+    routePath
+    approvalModuleKey
+    createdAt
+  }
+}
+    `;
+export type CreateModuleWorkspaceRecordMutationFn = Apollo.MutationFunction<CreateModuleWorkspaceRecordMutation, CreateModuleWorkspaceRecordMutationVariables>;
+export function useCreateModuleWorkspaceRecordMutation(baseOptions?: Apollo.MutationHookOptions<CreateModuleWorkspaceRecordMutation, CreateModuleWorkspaceRecordMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateModuleWorkspaceRecordMutation, CreateModuleWorkspaceRecordMutationVariables>(CreateModuleWorkspaceRecordDocument, options);
+      }
+export type CreateModuleWorkspaceRecordMutationHookResult = ReturnType<typeof useCreateModuleWorkspaceRecordMutation>;
+export type CreateModuleWorkspaceRecordMutationResult = Apollo.MutationResult<CreateModuleWorkspaceRecordMutation>;
+export type CreateModuleWorkspaceRecordMutationOptions = Apollo.BaseMutationOptions<CreateModuleWorkspaceRecordMutation, CreateModuleWorkspaceRecordMutationVariables>;
+export const SubmitModuleWorkspaceRecordForApprovalDocument = gql`
+    mutation SubmitModuleWorkspaceRecordForApproval($id: ID!) {
+  submitModuleWorkspaceRecordForApproval(id: $id) {
+    id
+    title
+    status
+    updatedAt
+  }
+}
+    `;
+export type SubmitModuleWorkspaceRecordForApprovalMutationFn = Apollo.MutationFunction<SubmitModuleWorkspaceRecordForApprovalMutation, SubmitModuleWorkspaceRecordForApprovalMutationVariables>;
+export function useSubmitModuleWorkspaceRecordForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitModuleWorkspaceRecordForApprovalMutation, SubmitModuleWorkspaceRecordForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitModuleWorkspaceRecordForApprovalMutation, SubmitModuleWorkspaceRecordForApprovalMutationVariables>(SubmitModuleWorkspaceRecordForApprovalDocument, options);
+      }
+export type SubmitModuleWorkspaceRecordForApprovalMutationHookResult = ReturnType<typeof useSubmitModuleWorkspaceRecordForApprovalMutation>;
+export type SubmitModuleWorkspaceRecordForApprovalMutationResult = Apollo.MutationResult<SubmitModuleWorkspaceRecordForApprovalMutation>;
+export type SubmitModuleWorkspaceRecordForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitModuleWorkspaceRecordForApprovalMutation, SubmitModuleWorkspaceRecordForApprovalMutationVariables>;
+export const SalesEnquiriesDocument = gql`
+    query SalesEnquiries($organizationId: ID!, $page: Int, $limit: Int, $status: String, $search: String) {
+  salesEnquiries(
+    organizationId: $organizationId
+    page: $page
+    limit: $limit
+    status: $status
+    search: $search
+  ) {
+    id
+    enquiryNumber
+    subject
+    status
+    approvalStatus
+    approvalRequestedAt
+    approvedAt
+    approvedBy
+    priority
+    createdAt
+    updatedAt
+  }
+}
+    `;
+export function useSalesEnquiriesQuery(baseOptions: Apollo.QueryHookOptions<SalesEnquiriesQuery, SalesEnquiriesQueryVariables> & ({ variables: SalesEnquiriesQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SalesEnquiriesQuery, SalesEnquiriesQueryVariables>(SalesEnquiriesDocument, options);
+      }
+export function useSalesEnquiriesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SalesEnquiriesQuery, SalesEnquiriesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SalesEnquiriesQuery, SalesEnquiriesQueryVariables>(SalesEnquiriesDocument, options);
+        }
+// @ts-ignore
+export function useSalesEnquiriesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<SalesEnquiriesQuery, SalesEnquiriesQueryVariables>): Apollo.UseSuspenseQueryResult<SalesEnquiriesQuery, SalesEnquiriesQueryVariables>;
+export function useSalesEnquiriesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<SalesEnquiriesQuery, SalesEnquiriesQueryVariables>): Apollo.UseSuspenseQueryResult<SalesEnquiriesQuery | undefined, SalesEnquiriesQueryVariables>;
+export function useSalesEnquiriesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<SalesEnquiriesQuery, SalesEnquiriesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<SalesEnquiriesQuery, SalesEnquiriesQueryVariables>(SalesEnquiriesDocument, options);
+        }
+export type SalesEnquiriesQueryHookResult = ReturnType<typeof useSalesEnquiriesQuery>;
+export type SalesEnquiriesLazyQueryHookResult = ReturnType<typeof useSalesEnquiriesLazyQuery>;
+export type SalesEnquiriesSuspenseQueryHookResult = ReturnType<typeof useSalesEnquiriesSuspenseQuery>;
+export type SalesEnquiriesQueryResult = Apollo.QueryResult<SalesEnquiriesQuery, SalesEnquiriesQueryVariables>;
+export const SubmitSalesEnquiryForApprovalDocument = gql`
+    mutation SubmitSalesEnquiryForApproval($id: ID!) {
+  submitSalesEnquiryForApproval(id: $id) {
+    id
+    enquiryNumber
+    subject
+    status
+    approvalStatus
+    approvalRequestedAt
+    approvedAt
+    approvedBy
+  }
+}
+    `;
+export type SubmitSalesEnquiryForApprovalMutationFn = Apollo.MutationFunction<SubmitSalesEnquiryForApprovalMutation, SubmitSalesEnquiryForApprovalMutationVariables>;
+export function useSubmitSalesEnquiryForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitSalesEnquiryForApprovalMutation, SubmitSalesEnquiryForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitSalesEnquiryForApprovalMutation, SubmitSalesEnquiryForApprovalMutationVariables>(SubmitSalesEnquiryForApprovalDocument, options);
+      }
+export type SubmitSalesEnquiryForApprovalMutationHookResult = ReturnType<typeof useSubmitSalesEnquiryForApprovalMutation>;
+export type SubmitSalesEnquiryForApprovalMutationResult = Apollo.MutationResult<SubmitSalesEnquiryForApprovalMutation>;
+export type SubmitSalesEnquiryForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitSalesEnquiryForApprovalMutation, SubmitSalesEnquiryForApprovalMutationVariables>;
+export const SubmitSalesOrderDocument = gql`
+    mutation SubmitSalesOrder($id: ID!) {
+  submitSalesOrder(id: $id) {
+    id
+    status
+    seqNo
+  }
+}
+    `;
+export type SubmitSalesOrderMutationFn = Apollo.MutationFunction<SubmitSalesOrderMutation, SubmitSalesOrderMutationVariables>;
+export function useSubmitSalesOrderMutation(baseOptions?: Apollo.MutationHookOptions<SubmitSalesOrderMutation, SubmitSalesOrderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitSalesOrderMutation, SubmitSalesOrderMutationVariables>(SubmitSalesOrderDocument, options);
+      }
+export type SubmitSalesOrderMutationHookResult = ReturnType<typeof useSubmitSalesOrderMutation>;
+export type SubmitSalesOrderMutationResult = Apollo.MutationResult<SubmitSalesOrderMutation>;
+export type SubmitSalesOrderMutationOptions = Apollo.BaseMutationOptions<SubmitSalesOrderMutation, SubmitSalesOrderMutationVariables>;
+export const SubmitQuotationForApprovalDocument = gql`
+    mutation SubmitQuotationForApproval($id: ID!) {
+  submitQuotationForApproval(id: $id) {
+    id
+    quotationNumber
+    status
+  }
+}
+    `;
+export type SubmitQuotationForApprovalMutationFn = Apollo.MutationFunction<SubmitQuotationForApprovalMutation, SubmitQuotationForApprovalMutationVariables>;
+export function useSubmitQuotationForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitQuotationForApprovalMutation, SubmitQuotationForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitQuotationForApprovalMutation, SubmitQuotationForApprovalMutationVariables>(SubmitQuotationForApprovalDocument, options);
+      }
+export type SubmitQuotationForApprovalMutationHookResult = ReturnType<typeof useSubmitQuotationForApprovalMutation>;
+export type SubmitQuotationForApprovalMutationResult = Apollo.MutationResult<SubmitQuotationForApprovalMutation>;
+export type SubmitQuotationForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitQuotationForApprovalMutation, SubmitQuotationForApprovalMutationVariables>;
+export const SubmitCustomerInvoiceForApprovalDocument = gql`
+    mutation SubmitCustomerInvoiceForApproval($id: ID!) {
+  submitCustomerInvoiceForApproval(id: $id) {
+    id
+    seqNo
+    status
+  }
+}
+    `;
+export type SubmitCustomerInvoiceForApprovalMutationFn = Apollo.MutationFunction<SubmitCustomerInvoiceForApprovalMutation, SubmitCustomerInvoiceForApprovalMutationVariables>;
+export function useSubmitCustomerInvoiceForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitCustomerInvoiceForApprovalMutation, SubmitCustomerInvoiceForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitCustomerInvoiceForApprovalMutation, SubmitCustomerInvoiceForApprovalMutationVariables>(SubmitCustomerInvoiceForApprovalDocument, options);
+      }
+export type SubmitCustomerInvoiceForApprovalMutationHookResult = ReturnType<typeof useSubmitCustomerInvoiceForApprovalMutation>;
+export type SubmitCustomerInvoiceForApprovalMutationResult = Apollo.MutationResult<SubmitCustomerInvoiceForApprovalMutation>;
+export type SubmitCustomerInvoiceForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitCustomerInvoiceForApprovalMutation, SubmitCustomerInvoiceForApprovalMutationVariables>;
+export const SubmitLeadForApprovalDocument = gql`
+    mutation SubmitLeadForApproval($id: ID!) {
+  submitLeadForApproval(id: $id) {
+    id
+    seqNo
+    status
+  }
+}
+    `;
+export type SubmitLeadForApprovalMutationFn = Apollo.MutationFunction<SubmitLeadForApprovalMutation, SubmitLeadForApprovalMutationVariables>;
+export function useSubmitLeadForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitLeadForApprovalMutation, SubmitLeadForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitLeadForApprovalMutation, SubmitLeadForApprovalMutationVariables>(SubmitLeadForApprovalDocument, options);
+      }
+export type SubmitLeadForApprovalMutationHookResult = ReturnType<typeof useSubmitLeadForApprovalMutation>;
+export type SubmitLeadForApprovalMutationResult = Apollo.MutationResult<SubmitLeadForApprovalMutation>;
+export type SubmitLeadForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitLeadForApprovalMutation, SubmitLeadForApprovalMutationVariables>;
+export const SubmitPayrollUiRecordForApprovalDocument = gql`
+    mutation SubmitPayrollUiRecordForApproval($id: ID!) {
+  submitPayrollUiRecordForApproval(id: $id) {
+    id
+    approvalStatus
+    category
+  }
+}
+    `;
+export type SubmitPayrollUiRecordForApprovalMutationFn = Apollo.MutationFunction<SubmitPayrollUiRecordForApprovalMutation, SubmitPayrollUiRecordForApprovalMutationVariables>;
+export function useSubmitPayrollUiRecordForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitPayrollUiRecordForApprovalMutation, SubmitPayrollUiRecordForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitPayrollUiRecordForApprovalMutation, SubmitPayrollUiRecordForApprovalMutationVariables>(SubmitPayrollUiRecordForApprovalDocument, options);
+      }
+export type SubmitPayrollUiRecordForApprovalMutationHookResult = ReturnType<typeof useSubmitPayrollUiRecordForApprovalMutation>;
+export type SubmitPayrollUiRecordForApprovalMutationResult = Apollo.MutationResult<SubmitPayrollUiRecordForApprovalMutation>;
+export type SubmitPayrollUiRecordForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitPayrollUiRecordForApprovalMutation, SubmitPayrollUiRecordForApprovalMutationVariables>;
 export const GetItemsDocument = gql`
     query GetItems($organizationId: ID!, $page: Int, $limit: Int, $search: String) {
   items(
@@ -8753,6 +9515,7 @@ export const GetVendorsDocument = gql`
     phone
     address
     organizationId
+    orgApprovalStatus
     status
     createdAt
   }
@@ -8788,6 +9551,7 @@ export const GetVendorDocument = gql`
     phone
     address
     organizationId
+    orgApprovalStatus
     status
     createdAt
   }
@@ -8817,6 +9581,7 @@ export const CreateVendorDocument = gql`
   createVendor(input: $input) {
     id
     name
+    orgApprovalStatus
     status
   }
 }
@@ -8834,6 +9599,7 @@ export const UpdateVendorDocument = gql`
   updateVendor(id: $id, input: $input) {
     id
     name
+    orgApprovalStatus
     status
   }
 }
@@ -8846,6 +9612,24 @@ export function useUpdateVendorMutation(baseOptions?: Apollo.MutationHookOptions
 export type UpdateVendorMutationHookResult = ReturnType<typeof useUpdateVendorMutation>;
 export type UpdateVendorMutationResult = Apollo.MutationResult<UpdateVendorMutation>;
 export type UpdateVendorMutationOptions = Apollo.BaseMutationOptions<UpdateVendorMutation, UpdateVendorMutationVariables>;
+export const SubmitVendorForApprovalDocument = gql`
+    mutation SubmitVendorForApproval($id: ID!) {
+  submitVendorForApproval(id: $id) {
+    id
+    seqNo
+    orgApprovalStatus
+    status
+  }
+}
+    `;
+export type SubmitVendorForApprovalMutationFn = Apollo.MutationFunction<SubmitVendorForApprovalMutation, SubmitVendorForApprovalMutationVariables>;
+export function useSubmitVendorForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitVendorForApprovalMutation, SubmitVendorForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitVendorForApprovalMutation, SubmitVendorForApprovalMutationVariables>(SubmitVendorForApprovalDocument, options);
+      }
+export type SubmitVendorForApprovalMutationHookResult = ReturnType<typeof useSubmitVendorForApprovalMutation>;
+export type SubmitVendorForApprovalMutationResult = Apollo.MutationResult<SubmitVendorForApprovalMutation>;
+export type SubmitVendorForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitVendorForApprovalMutation, SubmitVendorForApprovalMutationVariables>;
 export const DeleteVendorDocument = gql`
     mutation DeleteVendor($id: ID!) {
   deleteVendor(id: $id)
@@ -8873,6 +9657,7 @@ export const GetProjectsDocument = gql`
     description
     startDate
     endDate
+    orgApprovalStatus
     status
     organizationId
     createdAt
@@ -8907,6 +9692,7 @@ export const GetProjectDocument = gql`
     description
     startDate
     endDate
+    orgApprovalStatus
     status
     organizationId
     createdAt
@@ -8937,6 +9723,7 @@ export const CreateProjectDocument = gql`
   createProject(input: $input) {
     id
     name
+    orgApprovalStatus
     status
   }
 }
@@ -8949,11 +9736,30 @@ export function useCreateProjectMutation(baseOptions?: Apollo.MutationHookOption
 export type CreateProjectMutationHookResult = ReturnType<typeof useCreateProjectMutation>;
 export type CreateProjectMutationResult = Apollo.MutationResult<CreateProjectMutation>;
 export type CreateProjectMutationOptions = Apollo.BaseMutationOptions<CreateProjectMutation, CreateProjectMutationVariables>;
+export const SubmitProjectForApprovalDocument = gql`
+    mutation SubmitProjectForApproval($id: ID!) {
+  submitProjectForApproval(id: $id) {
+    id
+    seqNo
+    orgApprovalStatus
+    status
+  }
+}
+    `;
+export type SubmitProjectForApprovalMutationFn = Apollo.MutationFunction<SubmitProjectForApprovalMutation, SubmitProjectForApprovalMutationVariables>;
+export function useSubmitProjectForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitProjectForApprovalMutation, SubmitProjectForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitProjectForApprovalMutation, SubmitProjectForApprovalMutationVariables>(SubmitProjectForApprovalDocument, options);
+      }
+export type SubmitProjectForApprovalMutationHookResult = ReturnType<typeof useSubmitProjectForApprovalMutation>;
+export type SubmitProjectForApprovalMutationResult = Apollo.MutationResult<SubmitProjectForApprovalMutation>;
+export type SubmitProjectForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitProjectForApprovalMutation, SubmitProjectForApprovalMutationVariables>;
 export const UpdateProjectDocument = gql`
     mutation UpdateProject($id: ID!, $input: UpdateProjectInput!) {
   updateProject(id: $id, input: $input) {
     id
     name
+    orgApprovalStatus
     status
   }
 }
@@ -9145,6 +9951,8 @@ export const GetSalesOrdersDocument = gql`
   ) {
     id
     seqNo
+    quotationId
+    quotationStatus
     customerId
     projectId
     totalAmount
@@ -11514,6 +12322,23 @@ export function useApproveVendorBillMutation(baseOptions?: Apollo.MutationHookOp
 export type ApproveVendorBillMutationHookResult = ReturnType<typeof useApproveVendorBillMutation>;
 export type ApproveVendorBillMutationResult = Apollo.MutationResult<ApproveVendorBillMutation>;
 export type ApproveVendorBillMutationOptions = Apollo.BaseMutationOptions<ApproveVendorBillMutation, ApproveVendorBillMutationVariables>;
+export const SubmitVendorBillForApprovalDocument = gql`
+    mutation SubmitVendorBillForApproval($id: ID!) {
+  submitVendorBillForApproval(id: $id) {
+    id
+    billNumber
+    status
+  }
+}
+    `;
+export type SubmitVendorBillForApprovalMutationFn = Apollo.MutationFunction<SubmitVendorBillForApprovalMutation, SubmitVendorBillForApprovalMutationVariables>;
+export function useSubmitVendorBillForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitVendorBillForApprovalMutation, SubmitVendorBillForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitVendorBillForApprovalMutation, SubmitVendorBillForApprovalMutationVariables>(SubmitVendorBillForApprovalDocument, options);
+      }
+export type SubmitVendorBillForApprovalMutationHookResult = ReturnType<typeof useSubmitVendorBillForApprovalMutation>;
+export type SubmitVendorBillForApprovalMutationResult = Apollo.MutationResult<SubmitVendorBillForApprovalMutation>;
+export type SubmitVendorBillForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitVendorBillForApprovalMutation, SubmitVendorBillForApprovalMutationVariables>;
 export const DeleteVendorBillDocument = gql`
     mutation DeleteVendorBill($id: ID!) {
   deleteVendorBill(id: $id)
@@ -11699,6 +12524,23 @@ export function useCancelMaterialReceiptMutation(baseOptions?: Apollo.MutationHo
 export type CancelMaterialReceiptMutationHookResult = ReturnType<typeof useCancelMaterialReceiptMutation>;
 export type CancelMaterialReceiptMutationResult = Apollo.MutationResult<CancelMaterialReceiptMutation>;
 export type CancelMaterialReceiptMutationOptions = Apollo.BaseMutationOptions<CancelMaterialReceiptMutation, CancelMaterialReceiptMutationVariables>;
+export const SubmitMaterialReceiptForApprovalDocument = gql`
+    mutation SubmitMaterialReceiptForApproval($id: ID!) {
+  submitMaterialReceiptForApproval(id: $id) {
+    id
+    mrnNumber
+    status
+  }
+}
+    `;
+export type SubmitMaterialReceiptForApprovalMutationFn = Apollo.MutationFunction<SubmitMaterialReceiptForApprovalMutation, SubmitMaterialReceiptForApprovalMutationVariables>;
+export function useSubmitMaterialReceiptForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitMaterialReceiptForApprovalMutation, SubmitMaterialReceiptForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitMaterialReceiptForApprovalMutation, SubmitMaterialReceiptForApprovalMutationVariables>(SubmitMaterialReceiptForApprovalDocument, options);
+      }
+export type SubmitMaterialReceiptForApprovalMutationHookResult = ReturnType<typeof useSubmitMaterialReceiptForApprovalMutation>;
+export type SubmitMaterialReceiptForApprovalMutationResult = Apollo.MutationResult<SubmitMaterialReceiptForApprovalMutation>;
+export type SubmitMaterialReceiptForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitMaterialReceiptForApprovalMutation, SubmitMaterialReceiptForApprovalMutationVariables>;
 export const DeleteMaterialReceiptDocument = gql`
     mutation DeleteMaterialReceipt($id: ID!) {
   deleteMaterialReceipt(id: $id)
@@ -11883,6 +12725,23 @@ export function useUpdateGrnMutation(baseOptions?: Apollo.MutationHookOptions<Up
 export type UpdateGrnMutationHookResult = ReturnType<typeof useUpdateGrnMutation>;
 export type UpdateGrnMutationResult = Apollo.MutationResult<UpdateGrnMutation>;
 export type UpdateGrnMutationOptions = Apollo.BaseMutationOptions<UpdateGrnMutation, UpdateGrnMutationVariables>;
+export const SubmitGrnForApprovalDocument = gql`
+    mutation SubmitGRNForApproval($id: ID!) {
+  submitGRNForApproval(id: $id) {
+    id
+    grnNumber
+    status
+  }
+}
+    `;
+export type SubmitGrnForApprovalMutationFn = Apollo.MutationFunction<SubmitGrnForApprovalMutation, SubmitGrnForApprovalMutationVariables>;
+export function useSubmitGrnForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitGrnForApprovalMutation, SubmitGrnForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitGrnForApprovalMutation, SubmitGrnForApprovalMutationVariables>(SubmitGrnForApprovalDocument, options);
+      }
+export type SubmitGrnForApprovalMutationHookResult = ReturnType<typeof useSubmitGrnForApprovalMutation>;
+export type SubmitGrnForApprovalMutationResult = Apollo.MutationResult<SubmitGrnForApprovalMutation>;
+export type SubmitGrnForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitGrnForApprovalMutation, SubmitGrnForApprovalMutationVariables>;
 export const DeleteGrnDocument = gql`
     mutation DeleteGRN($id: ID!) {
   deleteGRN(id: $id)
@@ -11931,6 +12790,7 @@ export const CreateDeliveryChallanDocument = gql`
   createDeliveryChallan(input: $input) {
     id
     docNumber
+    status
   }
 }
     `;
@@ -11942,6 +12802,23 @@ export function useCreateDeliveryChallanMutation(baseOptions?: Apollo.MutationHo
 export type CreateDeliveryChallanMutationHookResult = ReturnType<typeof useCreateDeliveryChallanMutation>;
 export type CreateDeliveryChallanMutationResult = Apollo.MutationResult<CreateDeliveryChallanMutation>;
 export type CreateDeliveryChallanMutationOptions = Apollo.BaseMutationOptions<CreateDeliveryChallanMutation, CreateDeliveryChallanMutationVariables>;
+export const SubmitDeliveryChallanForApprovalDocument = gql`
+    mutation SubmitDeliveryChallanForApproval($id: ID!) {
+  submitDeliveryChallanForApproval(id: $id) {
+    id
+    docNumber
+    status
+  }
+}
+    `;
+export type SubmitDeliveryChallanForApprovalMutationFn = Apollo.MutationFunction<SubmitDeliveryChallanForApprovalMutation, SubmitDeliveryChallanForApprovalMutationVariables>;
+export function useSubmitDeliveryChallanForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitDeliveryChallanForApprovalMutation, SubmitDeliveryChallanForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitDeliveryChallanForApprovalMutation, SubmitDeliveryChallanForApprovalMutationVariables>(SubmitDeliveryChallanForApprovalDocument, options);
+      }
+export type SubmitDeliveryChallanForApprovalMutationHookResult = ReturnType<typeof useSubmitDeliveryChallanForApprovalMutation>;
+export type SubmitDeliveryChallanForApprovalMutationResult = Apollo.MutationResult<SubmitDeliveryChallanForApprovalMutation>;
+export type SubmitDeliveryChallanForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitDeliveryChallanForApprovalMutation, SubmitDeliveryChallanForApprovalMutationVariables>;
 export const GetSalesReturnsDocument = gql`
     query GetSalesReturns($organizationId: String!) {
   salesreturns(organizationId: $organizationId) {
@@ -11977,6 +12854,7 @@ export const CreateSalesReturnDocument = gql`
   createSalesReturn(input: $input) {
     id
     docNumber
+    status
   }
 }
     `;
@@ -11988,6 +12866,23 @@ export function useCreateSalesReturnMutation(baseOptions?: Apollo.MutationHookOp
 export type CreateSalesReturnMutationHookResult = ReturnType<typeof useCreateSalesReturnMutation>;
 export type CreateSalesReturnMutationResult = Apollo.MutationResult<CreateSalesReturnMutation>;
 export type CreateSalesReturnMutationOptions = Apollo.BaseMutationOptions<CreateSalesReturnMutation, CreateSalesReturnMutationVariables>;
+export const SubmitSalesReturnForApprovalDocument = gql`
+    mutation SubmitSalesReturnForApproval($id: ID!) {
+  submitSalesReturnForApproval(id: $id) {
+    id
+    docNumber
+    status
+  }
+}
+    `;
+export type SubmitSalesReturnForApprovalMutationFn = Apollo.MutationFunction<SubmitSalesReturnForApprovalMutation, SubmitSalesReturnForApprovalMutationVariables>;
+export function useSubmitSalesReturnForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitSalesReturnForApprovalMutation, SubmitSalesReturnForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitSalesReturnForApprovalMutation, SubmitSalesReturnForApprovalMutationVariables>(SubmitSalesReturnForApprovalDocument, options);
+      }
+export type SubmitSalesReturnForApprovalMutationHookResult = ReturnType<typeof useSubmitSalesReturnForApprovalMutation>;
+export type SubmitSalesReturnForApprovalMutationResult = Apollo.MutationResult<SubmitSalesReturnForApprovalMutation>;
+export type SubmitSalesReturnForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitSalesReturnForApprovalMutation, SubmitSalesReturnForApprovalMutationVariables>;
 export const GetStockAdjustmentsDocument = gql`
     query GetStockAdjustments($organizationId: ID!, $page: Int, $limit: Int) {
   stockadjustments(organizationId: $organizationId, page: $page, limit: $limit) {
@@ -12539,6 +13434,23 @@ export function useDeletePayrollManagementMutation(baseOptions?: Apollo.Mutation
 export type DeletePayrollManagementMutationHookResult = ReturnType<typeof useDeletePayrollManagementMutation>;
 export type DeletePayrollManagementMutationResult = Apollo.MutationResult<DeletePayrollManagementMutation>;
 export type DeletePayrollManagementMutationOptions = Apollo.BaseMutationOptions<DeletePayrollManagementMutation, DeletePayrollManagementMutationVariables>;
+export const SubmitPayrollManagementForApprovalDocument = gql`
+    mutation SubmitPayrollManagementForApproval($id: ID!) {
+  submitPayrollManagementForApproval(id: $id) {
+    id
+    docNumber
+    status
+  }
+}
+    `;
+export type SubmitPayrollManagementForApprovalMutationFn = Apollo.MutationFunction<SubmitPayrollManagementForApprovalMutation, SubmitPayrollManagementForApprovalMutationVariables>;
+export function useSubmitPayrollManagementForApprovalMutation(baseOptions?: Apollo.MutationHookOptions<SubmitPayrollManagementForApprovalMutation, SubmitPayrollManagementForApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SubmitPayrollManagementForApprovalMutation, SubmitPayrollManagementForApprovalMutationVariables>(SubmitPayrollManagementForApprovalDocument, options);
+      }
+export type SubmitPayrollManagementForApprovalMutationHookResult = ReturnType<typeof useSubmitPayrollManagementForApprovalMutation>;
+export type SubmitPayrollManagementForApprovalMutationResult = Apollo.MutationResult<SubmitPayrollManagementForApprovalMutation>;
+export type SubmitPayrollManagementForApprovalMutationOptions = Apollo.BaseMutationOptions<SubmitPayrollManagementForApprovalMutation, SubmitPayrollManagementForApprovalMutationVariables>;
 export const GetSalaryProcessingsDocument = gql`
     query GetSalaryProcessings($organizationId: String!) {
   salaryprocessings(organizationId: $organizationId) {
@@ -13059,6 +13971,7 @@ export const GetPayrollUiRecordsDocument = gql`
     category
     code
     data
+    approvalStatus
     createdAt
     updatedAt
   }

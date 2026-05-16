@@ -7,8 +7,22 @@ import { DataTable, Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
-import { GET_LEADS, CREATE_LEAD, UPDATE_LEAD, DELETE_LEAD, CONVERT_LEAD_TO_OPPORTUNITY, GET_USERS } from '@/gql/queries'
-import { Trash2, Edit, X, Save, UserPlus, TrendingUp } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  GET_LEADS,
+  CREATE_LEAD,
+  UPDATE_LEAD,
+  DELETE_LEAD,
+  CONVERT_LEAD_TO_OPPORTUNITY,
+  GET_USERS,
+} from '@/gql/queries'
+import { Trash2, Edit, X, Save, TrendingUp, Eye } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 const EMPTY_FORM = {
@@ -37,6 +51,7 @@ export default function LeadManagementPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [convertModal, setConvertModal] = useState<{ show: boolean; lead: any | null }>({ show: false, lead: null })
+  const [leadView, setLeadView] = useState<any | null>(null)
 
   const { data, loading, refetch } = useQuery(GET_LEADS, {
     variables: { organizationId: orgId },
@@ -138,6 +153,8 @@ export default function LeadManagementPage() {
     qualified: 'bg-green-100 text-green-700',
     unqualified: 'bg-red-100 text-red-700',
     converted: 'bg-purple-100 text-purple-700',
+    pending_approval: 'bg-amber-100 text-amber-900',
+    approval_rejected: 'bg-rose-100 text-rose-800',
   }
 
   const ratingColor: Record<string, string> = {
@@ -198,7 +215,7 @@ export default function LeadManagementPage() {
             </div>
             <div className="grid grid-cols-4 gap-3">
               <InputFloating label="Source" value={form.source} onChange={e => setF('source', e.target.value)} className="h-7 text-xs" />
-              <SelectFloating label="Status" value={form.status} onChange={e => setF('status', typeof e === 'string' ? e : e.target.value)} options={[{ value: 'new', label: 'New' }, { value: 'contacted', label: 'Contacted' }, { value: 'qualified', label: 'Qualified' }, { value: 'unqualified', label: 'Unqualified' }]} className="h-7 text-xs" />
+              <SelectFloating label="Status" value={form.status} onChange={e => setF('status', typeof e === 'string' ? e : e.target.value)} options={[{ value: 'new', label: 'New' }, { value: 'contacted', label: 'Contacted' }, { value: 'qualified', label: 'Qualified' }, { value: 'unqualified', label: 'Unqualified' }, { value: 'pending_approval', label: 'Pending approval' }, { value: 'approval_rejected', label: 'Approval declined' }]} className="h-7 text-xs" />
               <SelectFloating label="Rating" value={form.rating} onChange={e => setF('rating', typeof e === 'string' ? e : e.target.value)} options={[{ value: 'hot', label: 'Hot' }, { value: 'warm', label: 'Warm' }, { value: 'cold', label: 'Cold' }]} className="h-7 text-xs" />
               <SelectFloating label="Assigned To" value={form.assignedTo} onChange={e => setF('assignedTo', typeof e === 'string' ? e : e.target.value)} options={[{ value: '', label: 'None' }, ...users.map((u: any) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` }))]} className="h-7 text-xs" />
             </div>
@@ -228,11 +245,41 @@ export default function LeadManagementPage() {
         searchPlaceholder="Search leads..."
         emptyMessage="No leads yet. Click 'New Lead' to create one."
         actions={[
+          {
+            label: 'View',
+            icon: <Eye className="h-3.5 w-3.5" />,
+            onClick: row => setLeadView(row),
+            variant: 'ghost',
+          },
           { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
-          { label: 'Convert', icon: <TrendingUp className="h-3.5 w-3.5" />, onClick: row => setConvertModal({ show: true, lead: row }), variant: 'ghost', show: (row: any) => row.status !== 'converted' },
+          {
+            label: 'Convert',
+            icon: <TrendingUp className="h-3.5 w-3.5" />,
+            onClick: row => setConvertModal({ show: true, lead: row }),
+            variant: 'ghost',
+            show: (row: any) => row.status !== 'converted' && row.status !== 'pending_approval',
+          },
           { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this lead?')) deleteLead({ variables: { id: row.id } }) }, variant: 'ghost' },
         ]}
       />
+
+      <Dialog open={leadView != null} onOpenChange={(o) => !o && setLeadView(null)}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              {leadView ? `${leadView.firstName ?? ''} ${leadView.lastName ?? ''}`.trim() || 'Lead' : 'Lead'}
+            </DialogTitle>
+          </DialogHeader>
+          <pre className="text-[11px] rounded border bg-slate-50 p-3 overflow-auto max-h-[60vh] whitespace-pre-wrap">
+            {leadView ? JSON.stringify(leadView, null, 2) : ''}
+          </pre>
+          <DialogFooter>
+            <Button type="button" variant="outline" size="sm" onClick={() => setLeadView(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {convertModal.show && convertModal.lead && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

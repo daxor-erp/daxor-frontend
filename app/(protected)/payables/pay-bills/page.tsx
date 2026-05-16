@@ -104,6 +104,8 @@ export default function PayBillsPage() {
 
   const statusColor: Record<string, string> = {
     draft: 'bg-gray-100 text-gray-600 border-gray-200',
+    submitted: 'bg-amber-50 text-amber-800 border-amber-200',
+    approval_declined: 'bg-red-50 text-red-700 border-red-200',
     approved: 'bg-blue-50 text-blue-700 border-blue-200',
     partially_paid: 'bg-yellow-50 text-yellow-700 border-yellow-200',
     paid: 'bg-green-50 text-green-700 border-green-200',
@@ -153,11 +155,16 @@ export default function PayBillsPage() {
     },
     {
       key: 'status', label: 'Status', width: '120px',
-      render: v => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[v] || statusColor.draft}`}>
-          {v?.replace('_', ' ')}
-        </span>
-      )
+      render: v => {
+        const s = String(v || '')
+        const label =
+          s === 'submitted' ? 'pending approval' : s === 'approval_declined' ? 'declined' : s.replace('_', ' ')
+        return (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[s] || statusColor.draft}`}>
+            {label}
+          </span>
+        )
+      },
     },
   ]
 
@@ -264,6 +271,9 @@ export default function PayBillsPage() {
             onClick: row => {
               if (row.status === 'paid') return alert('This bill is already fully paid.')
               if (row.status === 'cancelled') return alert('Cannot pay a cancelled bill.')
+              if (['draft', 'submitted', 'approval_declined'].includes(row.status)) {
+                return alert('Bill must be approved before recording payment. Use Enter Bills to submit or approve.')
+              }
               openPayForm(row)
             },
             variant: 'ghost',

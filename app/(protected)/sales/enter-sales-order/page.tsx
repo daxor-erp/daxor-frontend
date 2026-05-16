@@ -2,12 +2,10 @@
 
 import { useState } from 'react'
 import { useMutation, useQuery, gql } from '@apollo/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Bell, Settings, User, Search, ChevronDown, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Send } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { CREATE_SALES_ORDER, GET_SALES_ORDERS, SUBMIT_SALES_ORDER } from '@/gql/queries'
 
 const GET_QUOTATIONS = gql`
   query GetQuotationsForSalesOrder($organizationId: ID) {
@@ -28,41 +26,20 @@ const GET_QUOTATIONS = gql`
   }
 `
 
-const CREATE_SALES_ORDER = gql`
-  mutation CreateSalesOrder($input: CreateSalesOrderInput!) {
-    createSalesOrder(input: $input) {
-      id
-      seqNo
-      status
-      quotationId
-      customerId
-      totalAmount
-    }
-  }
-`
-
-const GET_SALES_ORDERS = gql`
-  query GetSalesOrdersForEntry($organizationId: ID!, $page: Int, $limit: Int) {
-    salesorders(organizationId: $organizationId, page: $page, limit: $limit) {
-      id
-      seqNo
-      quotationId
-      quotationStatus
-      customerId
-      projectId
-      totalAmount
-      status
-      orderDate
-      organizationId
-      createdAt
-    }
-  }
-`
-
 const today = () => new Date().toISOString().split('T')[0]
 
+const SO_STATUS: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Draft', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+  submitted: { label: 'Pending approval', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
+  approved: { label: 'Approved', cls: 'bg-blue-50 text-blue-800 border-blue-200' },
+  rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-800 border-red-300' },
+  active: { label: 'Active', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  completed: { label: 'Completed', cls: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
+  cancelled: { label: 'Cancelled', cls: 'bg-gray-100 text-gray-500 border-gray-200' },
+  refunded: { label: 'Refunded', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+}
+
 export default function EnterSalesOrderPage() {
-  const [showProfile, setShowProfile] = useState(false)
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
@@ -84,7 +61,7 @@ export default function EnterSalesOrderPage() {
     fetchPolicy: 'network-only',
   })
   const { data: orderData, loading: ordersLoading, refetch: refetchOrders } = useQuery(GET_SALES_ORDERS, {
-    variables: { organizationId: orgId, page: 1, limit: 200 },
+    variables: { organizationId: orgId, page: 1, limit: 200, cashSale: false },
     skip: !orgId,
     fetchPolicy: 'network-only',
   })
@@ -106,6 +83,11 @@ export default function EnterSalesOrderPage() {
       setTimeout(() => setSuccessMsg(''), 6000)
     },
     onError: (err) => setErrorMsg(err.message),
+  })
+
+  const [submitSalesOrder, { loading: submittingOrder }] = useMutation(SUBMIT_SALES_ORDER, {
+    onCompleted: () => refetchOrders(),
+    onError: (e) => alert(e.message),
   })
 
   const mapStatus = (status: string) => {
@@ -176,59 +158,7 @@ export default function EnterSalesOrderPage() {
   }
 
   return (
-    <div className="flex-1 bg-gray-50 h-screen overflow-y-auto">
-      <header className="bg-white border-b px-6 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-6">
-          <div className="text-lg font-semibold text-gray-800">
-            Welcome, <span className="text-blue-600">{user?.firstName || 'User'}</span>
-          </div>
-        </div>
-        
-        <div className="flex-1 flex justify-center max-w-2xl mx-auto">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Bell className="h-5 w-5 text-gray-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </button>
-          
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Settings className="h-5 w-5 text-gray-600" />
-          </button>
-
-          <div className="relative">
-            <button 
-              onClick={() => setShowProfile(!showProfile)}
-              className="flex items-center gap-2 p-1 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center">
-                <User className="h-4 w-4" />
-              </div>
-              <ChevronDown className="h-4 w-4 text-gray-600" />
-            </button>
-            {showProfile && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors">My Profile</button>
-                <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors">Account Settings</button>
-                <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors">Preferences</button>
-                <hr className="my-1" />
-                <button className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors text-red-600">Logout</button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <div className="p-6">
+    <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold mb-1">Enter Sales Order</h1>
           <p className="text-sm text-gray-500">Create sales order from accepted quotation</p>
@@ -383,14 +313,19 @@ export default function EnterSalesOrderPage() {
 
         <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm mt-4">
           <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
-            <span className="text-sm font-semibold text-gray-700">Created Sales Orders</span>
+            <div>
+              <span className="text-sm font-semibold text-gray-700">Created Sales Orders</span>
+              <p className="text-[11px] text-gray-500 mt-0.5 max-w-xl">
+                New orders start as Draft. Use Send for approval to route to the Sales approver (Org admin → Approvals); they act in the header inbox.
+              </p>
+            </div>
             <span className="text-xs text-gray-500">{orders.length} records</span>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-[1100px] w-full text-xs">
               <thead>
                 <tr className="bg-[#f0f0f0] border-b border-gray-300">
-                  {['Seq No', 'Quotation ID', 'Quotation Status', 'Customer', 'Project', 'Amount', 'Order Date', 'Status', 'Organization'].map((h) => (
+                  {['Seq No', 'Quotation ID', 'Quotation Status', 'Customer', 'Project', 'Amount', 'Order Date', 'Status', 'Organization', 'Actions'].map((h) => (
                     <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">
                       {h}
                     </th>
@@ -400,11 +335,11 @@ export default function EnterSalesOrderPage() {
               <tbody>
                 {ordersLoading ? (
                   <tr>
-                    <td className="px-3 py-3 text-gray-500" colSpan={9}>Loading sales orders...</td>
+                    <td className="px-3 py-3 text-gray-500" colSpan={10}>Loading sales orders...</td>
                   </tr>
                 ) : orders.length === 0 ? (
                   <tr>
-                    <td className="px-3 py-3 text-gray-500" colSpan={9}>No sales orders created yet.</td>
+                    <td className="px-3 py-3 text-gray-500" colSpan={10}>No sales orders created yet.</td>
                   </tr>
                 ) : (
                   orders.map((order: any, idx: number) => (
@@ -418,8 +353,39 @@ export default function EnterSalesOrderPage() {
                       <td className="px-3 py-2 border-r border-gray-200">
                         {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '—'}
                       </td>
-                      <td className="px-3 py-2 border-r border-gray-200">{order.status || '—'}</td>
-                      <td className="px-3 py-2">{order.organizationId || '—'}</td>
+                      <td className="px-3 py-2 border-r border-gray-200 align-top">
+                        {(() => {
+                          const raw = String(order.status ?? '').toLowerCase()
+                          const m = SO_STATUS[raw]
+                          const label = m?.label ?? (order.status || '—')
+                          const cls = m?.cls ?? 'bg-gray-50 text-gray-600 border-gray-200'
+                          return (
+                            <span className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-semibold ${cls}`}>
+                              {label}
+                            </span>
+                          )
+                        })()}
+                      </td>
+                      <td className="px-3 py-2 border-r border-gray-200">{order.organizationId || '—'}</td>
+                      <td className="px-3 py-2 align-top whitespace-nowrap">
+                        {order.cashSale ? (
+                          <span className="text-[11px] text-gray-400">—</span>
+                        ) : ['draft', 'rejected'].includes(String(order.status).toLowerCase()) ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[11px] gap-1"
+                            disabled={submittingOrder}
+                            onClick={() => submitSalesOrder({ variables: { id: order.id } })}
+                          >
+                            <Send className="h-3 w-3" />
+                            Send for approval
+                          </Button>
+                        ) : (
+                          <span className="text-[11px] text-gray-400">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
@@ -427,7 +393,6 @@ export default function EnterSalesOrderPage() {
             </table>
           </div>
         </div>
-      </div>
     </div>
   )
 }

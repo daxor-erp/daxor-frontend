@@ -12,6 +12,13 @@ export const REGISTER = gql`
         lastName
         roles
         organizationId
+        modulePermissions {
+          moduleKey
+          canCreate
+          canUpdate
+          canDelete
+          canView
+        }
       }
     }
   }
@@ -28,6 +35,13 @@ export const LOGIN = gql`
         lastName
         roles
         organizationId
+        modulePermissions {
+          moduleKey
+          canCreate
+          canUpdate
+          canDelete
+          canView
+        }
       }
     }
   }
@@ -42,6 +56,13 @@ export const ME = gql`
       lastName
       roles
       organizationId
+      modulePermissions {
+        moduleKey
+        canCreate
+        canUpdate
+        canDelete
+        canView
+      }
     }
   }
 `
@@ -86,7 +107,29 @@ export const GET_USER = gql`
       roles
       status
       organizationId
+      modulePermissions {
+        moduleKey
+        canCreate
+        canUpdate
+        canDelete
+        canView
+      }
       createdAt
+    }
+  }
+`
+
+export const SET_USER_MODULE_PERMISSIONS = gql`
+  mutation SetUserModulePermissions($userId: ID!, $permissions: [ModulePermissionInput!]!) {
+    setUserModulePermissions(userId: $userId, permissions: $permissions) {
+      id
+      modulePermissions {
+        moduleKey
+        canCreate
+        canUpdate
+        canDelete
+        canView
+      }
     }
   }
 `
@@ -151,7 +194,26 @@ export const GET_ORGANIZATION = gql`
       phone
       email
       status
+      moduleApprovers {
+        moduleKey
+        approverUserId
+      }
       createdAt
+    }
+  }
+`
+
+export const SET_ORGANIZATION_MODULE_APPROVERS = gql`
+  mutation SetOrganizationModuleApprovers(
+    $organizationId: ID!
+    $assignments: [OrganizationModuleApproverInput!]!
+  ) {
+    setOrganizationModuleApprovers(organizationId: $organizationId, assignments: $assignments) {
+      id
+      moduleApprovers {
+        moduleKey
+        approverUserId
+      }
     }
   }
 `
@@ -192,6 +254,157 @@ export const DELETE_ORGANIZATION = gql`
   mutation DeleteOrganization($id: ID!) {
     deleteOrganization(id: $id) {
       id
+    }
+  }
+`
+
+// Approvals (workflow inbox — see org-admin routing)
+export const MY_PENDING_APPROVAL_REQUESTS = gql`
+  query MyPendingApprovalRequests {
+    myPendingApprovalRequests {
+      id
+      organizationId
+      moduleKey
+      entityType
+      entityId
+      title
+      status
+      requesterDisplayName
+      createdAt
+    }
+  }
+`
+
+export const RESOLVE_APPROVAL_REQUEST = gql`
+  mutation ResolveApprovalRequest($id: ID!, $decision: ApprovalDecision!, $note: String) {
+    resolveApprovalRequest(id: $id, decision: $decision, note: $note) {
+      id
+      status
+      decidedAt
+    }
+  }
+`
+
+/** Workspace snapshots saved per route (createModuleWorkspaceRecord / approval drafts). */
+export const GET_MODULE_WORKSPACE_RECORDS = gql`
+  query ModuleWorkspaceRecords($organizationId: ID!, $routePath: String!, $limit: Int) {
+    moduleWorkspaceRecords(organizationId: $organizationId, routePath: $routePath, limit: $limit) {
+      id
+      routePath
+      approvalModuleKey
+      title
+      detail
+      snapshot
+      status
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const CREATE_MODULE_WORKSPACE_RECORD = gql`
+  mutation CreateModuleWorkspaceRecord($input: CreateModuleWorkspaceRecordInput!) {
+    createModuleWorkspaceRecord(input: $input) {
+      id
+      title
+      status
+      routePath
+      approvalModuleKey
+      createdAt
+    }
+  }
+`
+
+export const SUBMIT_MODULE_WORKSPACE_RECORD_FOR_APPROVAL = gql`
+  mutation SubmitModuleWorkspaceRecordForApproval($id: ID!) {
+    submitModuleWorkspaceRecordForApproval(id: $id) {
+      id
+      title
+      status
+      updatedAt
+    }
+  }
+`
+
+export const GET_SALES_ENQUIRIES = gql`
+  query SalesEnquiries($organizationId: ID!, $page: Int, $limit: Int, $status: String, $search: String) {
+    salesEnquiries(organizationId: $organizationId, page: $page, limit: $limit, status: $status, search: $search) {
+      id
+      enquiryNumber
+      subject
+      status
+      approvalStatus
+      approvalRequestedAt
+      approvedAt
+      approvedBy
+      priority
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const SUBMIT_SALES_ENQUIRY_FOR_APPROVAL = gql`
+  mutation SubmitSalesEnquiryForApproval($id: ID!) {
+    submitSalesEnquiryForApproval(id: $id) {
+      id
+      enquiryNumber
+      subject
+      status
+      approvalStatus
+      approvalRequestedAt
+      approvedAt
+      approvedBy
+    }
+  }
+`
+
+export const SUBMIT_SALES_ORDER = gql`
+  mutation SubmitSalesOrder($id: ID!) {
+    submitSalesOrder(id: $id) {
+      id
+      status
+      seqNo
+    }
+  }
+`
+
+export const SUBMIT_QUOTATION_FOR_APPROVAL = gql`
+  mutation SubmitQuotationForApproval($id: ID!) {
+    submitQuotationForApproval(id: $id) {
+      id
+      quotationNumber
+      status
+    }
+  }
+`
+
+export const SUBMIT_CUSTOMER_INVOICE_FOR_APPROVAL = gql`
+  mutation SubmitCustomerInvoiceForApproval($id: ID!) {
+    submitCustomerInvoiceForApproval(id: $id) {
+      id
+      seqNo
+      status
+    }
+  }
+`
+
+export const SUBMIT_LEAD_FOR_APPROVAL = gql`
+  mutation SubmitLeadForApproval($id: ID!) {
+    submitLeadForApproval(id: $id) {
+      id
+      seqNo
+      status
+    }
+  }
+`
+
+export const SUBMIT_PAYROLL_UI_RECORD_FOR_APPROVAL = gql`
+  mutation SubmitPayrollUiRecordForApproval($id: ID!) {
+    submitPayrollUiRecordForApproval(id: $id) {
+      id
+      approvalStatus
+      category
     }
   }
 `
@@ -282,6 +495,7 @@ export const GET_VENDORS = gql`
       phone
       address
       organizationId
+      orgApprovalStatus
       status
       createdAt
     }
@@ -299,6 +513,7 @@ export const GET_VENDOR = gql`
       phone
       address
       organizationId
+      orgApprovalStatus
       status
       createdAt
     }
@@ -310,6 +525,7 @@ export const CREATE_VENDOR = gql`
     createVendor(input: $input) {
       id
       name
+      orgApprovalStatus
       status
     }
   }
@@ -320,6 +536,18 @@ export const UPDATE_VENDOR = gql`
     updateVendor(id: $id, input: $input) {
       id
       name
+      orgApprovalStatus
+      status
+    }
+  }
+`
+
+export const SUBMIT_VENDOR_FOR_APPROVAL = gql`
+  mutation SubmitVendorForApproval($id: ID!) {
+    submitVendorForApproval(id: $id) {
+      id
+      seqNo
+      orgApprovalStatus
       status
     }
   }
@@ -346,6 +574,7 @@ export const GET_PROJECTS = gql`
       description
       startDate
       endDate
+      orgApprovalStatus
       status
       organizationId
       createdAt
@@ -362,6 +591,7 @@ export const GET_PROJECT = gql`
       description
       startDate
       endDate
+      orgApprovalStatus
       status
       organizationId
       createdAt
@@ -374,6 +604,18 @@ export const CREATE_PROJECT = gql`
     createProject(input: $input) {
       id
       name
+      orgApprovalStatus
+      status
+    }
+  }
+`
+
+export const SUBMIT_PROJECT_FOR_APPROVAL = gql`
+  mutation SubmitProjectForApproval($id: ID!) {
+    submitProjectForApproval(id: $id) {
+      id
+      seqNo
+      orgApprovalStatus
       status
     }
   }
@@ -384,6 +626,7 @@ export const UPDATE_PROJECT = gql`
     updateProject(id: $id, input: $input) {
       id
       name
+      orgApprovalStatus
       status
     }
   }
@@ -509,6 +752,8 @@ export const GET_SALES_ORDERS = gql`
     ) {
       id
       seqNo
+      quotationId
+      quotationStatus
       customerId
       projectId
       totalAmount
@@ -1899,6 +2144,16 @@ export const APPROVE_VENDOR_BILL = gql`
   }
 `
 
+export const SUBMIT_VENDOR_BILL_FOR_APPROVAL = gql`
+  mutation SubmitVendorBillForApproval($id: ID!) {
+    submitVendorBillForApproval(id: $id) {
+      id
+      billNumber
+      status
+    }
+  }
+`
+
 export const DELETE_VENDOR_BILL = gql`
   mutation DeleteVendorBill($id: ID!) {
     deleteVendorBill(id: $id)
@@ -2002,6 +2257,16 @@ export const CONFIRM_MATERIAL_RECEIPT = gql`
 export const CANCEL_MATERIAL_RECEIPT = gql`
   mutation CancelMaterialReceipt($id: ID!) {
     cancelMaterialReceipt(id: $id) {
+      id
+      mrnNumber
+      status
+    }
+  }
+`
+
+export const SUBMIT_MATERIAL_RECEIPT_FOR_APPROVAL = gql`
+  mutation SubmitMaterialReceiptForApproval($id: ID!) {
+    submitMaterialReceiptForApproval(id: $id) {
       id
       mrnNumber
       status
@@ -2117,6 +2382,16 @@ export const UPDATE_GRN = gql`
   }
 `
 
+export const SUBMIT_GRN_FOR_APPROVAL = gql`
+  mutation SubmitGRNForApproval($id: ID!) {
+    submitGRNForApproval(id: $id) {
+      id
+      grnNumber
+      status
+    }
+  }
+`
+
 export const DELETE_GRN = gql`
   mutation DeleteGRN($id: ID!) {
     deleteGRN(id: $id)
@@ -2141,6 +2416,17 @@ export const CREATE_DELIVERY_CHALLAN = gql`
     createDeliveryChallan(input: $input) {
       id
       docNumber
+      status
+    }
+  }
+`
+
+export const SUBMIT_DELIVERY_CHALLAN_FOR_APPROVAL = gql`
+  mutation SubmitDeliveryChallanForApproval($id: ID!) {
+    submitDeliveryChallanForApproval(id: $id) {
+      id
+      docNumber
+      status
     }
   }
 `
@@ -2163,6 +2449,17 @@ export const CREATE_SALES_RETURN = gql`
     createSalesReturn(input: $input) {
       id
       docNumber
+      status
+    }
+  }
+`
+
+export const SUBMIT_SALES_RETURN_FOR_APPROVAL = gql`
+  mutation SubmitSalesReturnForApproval($id: ID!) {
+    submitSalesReturnForApproval(id: $id) {
+      id
+      docNumber
+      status
     }
   }
 `
@@ -2488,6 +2785,16 @@ export const DELETE_PAYROLL_MANAGEMENT = gql`
   }
 `
 
+export const SUBMIT_PAYROLL_MANAGEMENT_FOR_APPROVAL = gql`
+  mutation SubmitPayrollManagementForApproval($id: ID!) {
+    submitPayrollManagementForApproval(id: $id) {
+      id
+      docNumber
+      status
+    }
+  }
+`
+
 // Salary Processing
 export const GET_SALARY_PROCESSINGS = gql`
   query GetSalaryProcessings($organizationId: String!) {
@@ -2774,6 +3081,7 @@ export const GET_PAYROLL_UI_RECORDS = gql`
       category
       code
       data
+      approvalStatus
       createdAt
       updatedAt
     }

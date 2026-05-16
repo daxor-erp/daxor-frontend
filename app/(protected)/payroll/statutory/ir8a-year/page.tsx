@@ -16,7 +16,9 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
+import { type PayrollUiRecordQueryRow, withOrgApproval } from '@/lib/payroll-ui-record-row'
 import {
   GET_PAYROLL_UI_RECORDS,
   CREATE_PAYROLL_UI_RECORD,
@@ -36,6 +38,7 @@ type Ir8aYearRow = {
   status: Ir8YearStatus
   autoAppendFromPayroll: boolean
   remarks: string
+  approvalStatus: string
 }
 
 const STATUS_OPTIONS: ReadonlyArray<{ value: Ir8YearStatus; label: string }> = [
@@ -61,7 +64,7 @@ function statusBadge(status: Ir8YearStatus): string {
   return 'bg-slate-100 text-slate-700 border-slate-200'
 }
 
-function parseIr8aRecord(r: { id: string; data: string }): Ir8aYearRow {
+function parseIr8aRecord(r: { id: string; data: string }): Omit<Ir8aYearRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const status =
@@ -124,7 +127,10 @@ export default function Ir8aYearPage() {
   })
 
   const rows = useMemo(
-    () => ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parseIr8aRecord),
+    () =>
+      ((data?.payrolluirecords as PayrollUiRecordQueryRow[]) ?? []).map((rec) =>
+        withOrgApproval<Ir8aYearRow>(rec, parseIr8aRecord(rec)),
+      ),
     [data],
   )
 
@@ -384,6 +390,7 @@ export default function Ir8aYearPage() {
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Filing window</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Status</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Payroll stub</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                   <TableHead className="w-[92px]" />
                 </TableRow>
               </TableHeader>
@@ -402,6 +409,13 @@ export default function Ir8aYearPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">{r.autoAppendFromPayroll ? 'Yes' : 'Manual only'}</TableCell>
+                    <TableCell>
+                      <PayrollUiRecordOrgApprovalCell
+                        recordId={r.id}
+                        approvalStatus={r.approvalStatus}
+                        onCompleted={() => refetch()}
+                      />
+                    </TableCell>
                     <TableCell className="space-x-1">
                       <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>
                         <Pencil className="h-3.5 w-3.5 text-gray-500" />

@@ -15,7 +15,9 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
+import { type PayrollUiRecordQueryRow, withOrgApproval } from '@/lib/payroll-ui-record-row'
 import {
   GET_PAYROLL_UI_RECORDS,
   CREATE_PAYROLL_UI_RECORD,
@@ -34,6 +36,7 @@ type SdlMasterRow = {
   effectiveToYmd: string
   active: boolean
   remarks: string
+  approvalStatus: string
 }
 
 function nextRef(rows: SdlMasterRow[]): string {
@@ -47,7 +50,7 @@ function nextRef(rows: SdlMasterRow[]): string {
 
 const money = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-function parseSdlRecord(r: { id: string; data: string }): SdlMasterRow {
+function parseSdlRecord(r: { id: string; data: string }): Omit<SdlMasterRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     return {
@@ -107,7 +110,10 @@ export default function SdlMasterPage() {
   })
 
   const rows = useMemo(
-    () => ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parseSdlRecord),
+    () =>
+      ((data?.payrolluirecords as PayrollUiRecordQueryRow[]) ?? []).map((rec) =>
+        withOrgApproval<SdlMasterRow>(rec, parseSdlRecord(rec)),
+      ),
     [data],
   )
 
@@ -383,6 +389,7 @@ export default function SdlMasterPage() {
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Min / cap</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Validity</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">State</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                   <TableHead className="w-[92px]" />
                 </TableRow>
               </TableHeader>
@@ -408,6 +415,13 @@ export default function SdlMasterPage() {
                       >
                         {r.active ? 'Active' : 'Inactive'}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <PayrollUiRecordOrgApprovalCell
+                        recordId={r.id}
+                        approvalStatus={r.approvalStatus}
+                        onCompleted={() => refetch()}
+                      />
                     </TableCell>
                     <TableCell className="space-x-1">
                       <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

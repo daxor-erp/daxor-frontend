@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
 import {
   GET_PAYROLL_UI_RECORDS,
@@ -35,6 +36,7 @@ type PayGroupRow = {
   payrollCutoffDay: number
   remarks: string
   active: boolean
+  approvalStatus: string
 }
 
 const FREQUENCY_OPTIONS: ReadonlyArray<{ value: PayFrequency; label: string }> = [
@@ -55,7 +57,7 @@ function nextGroupRef(rows: PayGroupRow[]): string {
   return `PG-${String(max + 1).padStart(4, '0')}`
 }
 
-function parsePayGroupRecord(r: { id: string; data: string }): PayGroupRow {
+function parsePayGroupRecord(r: { id: string; data: string }): Omit<PayGroupRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const f = typeof o.frequency === 'string' ? o.frequency : 'MONTHLY'
@@ -115,7 +117,17 @@ export default function PayGroupSetupPage() {
   })
 
   const rows = useMemo(
-    () => ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parsePayGroupRecord),
+    () =>
+      (
+        (data?.payrolluirecords as {
+          id: string
+          data: string
+          approvalStatus?: string | null
+        }[]) ?? []
+      ).map((rec) => ({
+        ...parsePayGroupRecord(rec),
+        approvalStatus: rec.approvalStatus ?? 'none',
+      })),
     [data],
   )
 
@@ -358,6 +370,7 @@ export default function PayGroupSetupPage() {
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Frequency</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Cut-off</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">State</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[96px]" />
               </TableRow>
             </TableHeader>
@@ -380,6 +393,13 @@ export default function PayGroupSetupPage() {
                     >
                       {r.active ? 'Active' : 'Inactive'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <PayrollUiRecordOrgApprovalCell
+                      recordId={r.id}
+                      approvalStatus={r.approvalStatus}
+                      onCompleted={() => refetch()}
+                    />
                   </TableCell>
                   <TableCell className="space-x-1">
                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

@@ -15,7 +15,9 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
+import { type PayrollUiRecordQueryRow, withOrgApproval } from '@/lib/payroll-ui-record-row'
 import {
   GET_PAYROLL_UI_RECORDS,
   CREATE_PAYROLL_UI_RECORD,
@@ -37,6 +39,7 @@ type CpfAgeGroupRow = {
   effectiveToYmd: string
   active: boolean
   remarks: string
+  approvalStatus: string
 }
 
 function nextRef(rows: CpfAgeGroupRow[]): string {
@@ -48,7 +51,7 @@ function nextRef(rows: CpfAgeGroupRow[]): string {
   return `CPFA-${String(max + 1).padStart(4, '0')}`
 }
 
-function parseCpfRecord(r: { id: string; data: string }): CpfAgeGroupRow {
+function parseCpfRecord(r: { id: string; data: string }): Omit<CpfAgeGroupRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     return {
@@ -117,7 +120,10 @@ export default function CpfAgeGroupPage() {
   })
 
   const rows = useMemo(
-    () => ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parseCpfRecord),
+    () =>
+      ((data?.payrolluirecords as PayrollUiRecordQueryRow[]) ?? []).map((rec) =>
+        withOrgApproval<CpfAgeGroupRow>(rec, parseCpfRecord(rec)),
+      ),
     [data],
   )
 
@@ -434,6 +440,7 @@ export default function CpfAgeGroupPage() {
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">EE% / ER%</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Validity</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">State</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                   <TableHead className="w-[92px]" />
                 </TableRow>
               </TableHeader>
@@ -463,6 +470,13 @@ export default function CpfAgeGroupPage() {
                       >
                         {r.active ? 'Active' : 'Inactive'}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <PayrollUiRecordOrgApprovalCell
+                        recordId={r.id}
+                        approvalStatus={r.approvalStatus}
+                        onCompleted={() => refetch()}
+                      />
                     </TableCell>
                     <TableCell className="space-x-1">
                       <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

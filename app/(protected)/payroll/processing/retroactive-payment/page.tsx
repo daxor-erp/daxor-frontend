@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
 import {
   GET_PAYROLL_UI_RECORDS,
@@ -38,6 +39,7 @@ type RetroRow = {
   amount: number
   status: 'DRAFT' | 'SUBMITTED' | 'POSTED' | 'CANCELLED'
   notes: string
+  approvalStatus: string
 }
 
 const SCENARIO_OPTIONS: ReadonlyArray<{ value: RetroScenario; label: string }> = [
@@ -63,7 +65,7 @@ function retroRecordCode(employeeNo: string, payoutDateYmd: string): string {
   return x || employeeNo.trim()
 }
 
-function parseRetroRecord(r: { id: string; data: string }): RetroRow {
+function parseRetroRecord(r: { id: string; data: string }): Omit<RetroRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const sc = typeof o.scenario === 'string' ? o.scenario : 'OTHER'
@@ -145,7 +147,16 @@ export default function RetroactivePaymentPage() {
 
   const rows = useMemo(
     () =>
-      ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parseRetroRecord),
+      (
+        (data?.payrolluirecords as {
+          id: string
+          data: string
+          approvalStatus?: string | null
+        }[]) ?? []
+      ).map((rec) => ({
+        ...parseRetroRecord(rec),
+        approvalStatus: rec.approvalStatus ?? 'none',
+      })),
     [data],
   )
 
@@ -459,7 +470,8 @@ export default function RetroactivePaymentPage() {
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Original period</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Payout</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Amount</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-gray-600">Status</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Record status</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[100px]" />
               </TableRow>
             </TableHeader>
@@ -482,6 +494,13 @@ export default function RetroactivePaymentPage() {
                     <Badge variant="outline" className={statusBadgeClass(r.status)}>
                       {STATUS_OPTIONS.find((s) => s.value === r.status)?.label ?? r.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <PayrollUiRecordOrgApprovalCell
+                      recordId={r.id}
+                      approvalStatus={r.approvalStatus}
+                      onCompleted={() => refetch()}
+                    />
                   </TableCell>
                   <TableCell className="space-x-1">
                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

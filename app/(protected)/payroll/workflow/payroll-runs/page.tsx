@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
 import {
   GET_PAYROLL_UI_RECORDS,
@@ -45,6 +46,7 @@ type PayrollWorkflowRunRow = {
   runOwnerLabel: string
   linesExpected: number
   remarks: string
+  approvalStatus: string
 }
 
 const STAGE_OPTIONS: ReadonlyArray<{ value: RunStage; label: string }> = [
@@ -89,7 +91,7 @@ function stageBadgeClass(stage: RunStage): string {
   }
 }
 
-function parseRunRecord(r: { id: string; data: string }): PayrollWorkflowRunRow {
+function parseRunRecord(r: { id: string; data: string }): Omit<PayrollWorkflowRunRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const runStage =
@@ -156,7 +158,17 @@ export default function PayrollRunsWorkflowPage() {
   })
 
   const rows = useMemo(
-    () => ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parseRunRecord),
+    () =>
+      (
+        (data?.payrolluirecords as {
+          id: string
+          data: string
+          approvalStatus?: string | null
+        }[]) ?? []
+      ).map((rec) => ({
+        ...parseRunRecord(rec),
+        approvalStatus: rec.approvalStatus ?? 'none',
+      })),
     [data],
   )
 
@@ -469,6 +481,7 @@ export default function PayrollRunsWorkflowPage() {
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Batch</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Pay period</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Stage</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600 whitespace-nowrap w-[92px]" />
                 </TableRow>
               </TableHeader>
@@ -492,6 +505,13 @@ export default function PayrollRunsWorkflowPage() {
                       <Badge variant="outline" className={stageBadgeClass(r.runStage)}>
                         {STAGE_OPTIONS.find((s) => s.value === r.runStage)?.label ?? r.runStage}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <PayrollUiRecordOrgApprovalCell
+                        recordId={r.id}
+                        approvalStatus={r.approvalStatus}
+                        onCompleted={() => refetch()}
+                      />
                     </TableCell>
                     <TableCell className="space-x-1">
                       <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

@@ -13,8 +13,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, Send, Pencil, Loader2 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, Send, Pencil, Loader2, Eye } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
+import { friendlyMutationDeniedMessage } from '@/lib/apollo-user-errors'
+import { SUBMIT_QUOTATION_FOR_APPROVAL } from '@/gql/queries'
 
 const GET_CLIENTS = gql`
   query GetClients($organizationId: ID) {
@@ -119,11 +129,14 @@ const DELETE_QUOTATION = gql`
 `
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  draft:    { label: 'Draft',    cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  sent:     { label: 'Sent',     cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  accepted: { label: 'Accepted', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-700 border-red-200' },
-  expired:  { label: 'Expired',  cls: 'bg-orange-50 text-orange-700 border-orange-200' },
+  draft:               { label: 'Draft',               cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+  submitted:           { label: 'Pending approval',    cls: 'bg-amber-50 text-amber-800 border-amber-200' },
+  approval_declined:   { label: 'Declined (internal)', cls: 'bg-red-50 text-red-800 border-red-200' },
+  approved:            { label: 'Approved (internal)', cls: 'bg-teal-50 text-teal-800 border-teal-200' },
+  sent:                { label: 'Sent',                cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  accepted:            { label: 'Accepted',            cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  rejected:            { label: 'Rejected',            cls: 'bg-red-50 text-red-700 border-red-200' },
+  expired:             { label: 'Expired',             cls: 'bg-orange-50 text-orange-700 border-orange-200' },
 }
 
 const STATUS_KEYS = Object.keys(STATUS_CFG) as (keyof typeof STATUS_CFG)[]
@@ -165,7 +178,9 @@ export default function CreateQuotationsPage() {
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; quotationNumber: string } | null>(null)
+  const [viewListId, setViewListId] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState('')
+  const [errorBanner, setErrorBanner] = useState('')
   const [form, setForm] = useState({ clientId: '', subject: '', quotationDate: today(), validUntil: in30Days(), terms: '', notes: '' })
   const [lines, setLines] = useState<Line[]>([emptyLine()])
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -178,25 +193,24 @@ export default function CreateQuotationsPage() {
     fetchPolicy: 'network-only',
   })
 
-  const [create, { loading: saving, error: saveError }] = useMutation(CREATE_QUOTATION, {
-    onCompleted: (res) => {
-      setAdding(false)
-      reset()
-      refetch()
-      setSuccessMsg(`Quotation "${res.createQuotation.quotationNumber}" saved successfully!`)
-      setTimeout(() => setSuccessMsg(''), 5000)
-    },
-  })
+  const [create, { loading: saving }] = useMutation(CREATE_QUOTATION)
 
-  const [updateQuotation, { loading: updating, error: updateError }] = useMutation(UPDATE_QUOTATION)
+  const [updateQuotation, { loading: updating }] = useMutation(UPDATE_QUOTATION)
 
-  const [deleteQuotation, { loading: deleting }] = useMutation(DELETE_QUOTATION, {
-    onCompleted: () => {
-      setDeleteTarget(null)
-      refetch()
-      setSuccessMsg('Quotation deleted.')
-      setTimeout(() => setSuccessMsg(''), 5000)
-    },
+  const [deleteQuotation, { loading: deleting }] = useMutation(DELETE_QUOTATION)
+
+  const [submitQuotationForApproval, { loading: submittingApproval }] = useMutation(SUBMIT_QUOTATION_FOR_APPROVAL)
+
+  const reportMutationFailure = (err: unknown) => {
+    const msg = friendlyMutationDeniedMessage(err)
+    setErrorBanner(msg)
+    toast.error(msg)
+  }
+
+  const { data: listViewData, loading: listViewLoading } = useQuery(GET_QUOTATION, {
+    variables: { id: viewListId! },
+    skip: !viewListId,
+    fetchPolicy: 'network-only',
   })
 
   const detail = quotationDetail?.quotation
@@ -250,12 +264,14 @@ export default function CreateQuotationsPage() {
   const closeForm = () => {
     setAdding(false)
     setEditingId(null)
+    setErrorBanner('')
     reset()
   }
 
   const startCreate = () => {
     setEditingId(null)
     reset()
+    setErrorBanner('')
     setAdding(true)
   }
 
@@ -317,8 +333,9 @@ export default function CreateQuotationsPage() {
       total:       lineTotal(l),
     }))
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return
+    setErrorBanner('')
     const payload = {
       clientId:       form.clientId,
       subject:        form.subject,
@@ -332,37 +349,60 @@ export default function CreateQuotationsPage() {
       terms:          form.terms,
       notes:          form.notes,
     }
-    if (editingId) {
-      updateQuotation({
-        variables: { id: editingId, input: payload },
-        onCompleted: (res) => {
-          setEditingId(null)
-          reset()
-          refetch()
-          setSuccessMsg(`Quotation "${res.updateQuotation.quotationNumber}" updated successfully!`)
-          setTimeout(() => setSuccessMsg(''), 5000)
-        },
-      })
-    } else {
-      create({
-        variables: {
-          input: { ...payload, organizationId: orgId },
-        },
-      })
+    try {
+      if (editingId) {
+        const res = await updateQuotation({
+          variables: { id: editingId, input: payload },
+        })
+        const qn = res.data?.updateQuotation?.quotationNumber
+        setEditingId(null)
+        reset()
+        await refetch()
+        setSuccessMsg(`Quotation "${qn ?? ''}" updated successfully!`)
+        setTimeout(() => setSuccessMsg(''), 5000)
+      } else {
+        const res = await create({
+          variables: {
+            input: { ...payload, organizationId: orgId },
+          },
+        })
+        const qn = res.data?.createQuotation?.quotationNumber
+        setAdding(false)
+        reset()
+        await refetch()
+        setSuccessMsg(`Quotation "${qn ?? ''}" saved successfully!`)
+        setTimeout(() => setSuccessMsg(''), 5000)
+      }
+    } catch (err) {
+      reportMutationFailure(err)
     }
   }
 
-  const handleStatusChange = (id: string, current: string, next: string) => {
+  const handleStatusChange = async (id: string, current: string, next: string) => {
     if (next === current) return
-    updateQuotation({
-      variables: { id, input: { status: next } },
-      onCompleted: () => { refetch() },
-    })
+    setErrorBanner('')
+    try {
+      await updateQuotation({
+        variables: { id, input: { status: next } },
+      })
+      await refetch()
+    } catch (err) {
+      reportMutationFailure(err)
+    }
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return
-    deleteQuotation({ variables: { id: deleteTarget.id } })
+    setErrorBanner('')
+    try {
+      await deleteQuotation({ variables: { id: deleteTarget.id } })
+      setDeleteTarget(null)
+      await refetch()
+      setSuccessMsg('Quotation deleted.')
+      setTimeout(() => setSuccessMsg(''), 5000)
+    } catch (err) {
+      reportMutationFailure(err)
+    }
   }
 
   const stats = {
@@ -372,9 +412,9 @@ export default function CreateQuotationsPage() {
     accepted: quotations.filter((q: { status: string }) => q.status === 'accepted').length,
   }
 
-  const headerCols = ['Quotation #', 'Client', 'Subject', 'Date', 'Valid Until', 'Amount', 'Status', 'Actions'] as const
+  const headerCols = ['Quotation #', 'Client', 'Subject', 'Date', 'Valid Until', 'Amount', 'Status', 'View', 'Actions'] as const
   const colClass = (i: number) =>
-    i === 0 ? 'w-32' : i === 1 ? 'flex-1 min-w-0' : i === 2 ? 'w-40' : i === 3 || i === 4 ? 'w-28' : i === 5 ? 'w-28' : i === 6 ? 'w-36' : 'w-28'
+    i === 0 ? 'w-32' : i === 1 ? 'flex-1 min-w-0' : i === 2 ? 'w-40' : i === 3 || i === 4 ? 'w-28' : i === 5 ? 'w-28' : i === 6 ? 'w-36' : i === 7 ? 'w-12 shrink-0' : 'w-36'
 
   return (
     <div className="p-6 space-y-6">
@@ -388,6 +428,12 @@ export default function CreateQuotationsPage() {
       {successMsg && (
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
           <CheckCircle2 className="h-4 w-4 shrink-0" />{successMsg}
+        </div>
+      )}
+
+      {errorBanner && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded-lg text-sm font-medium">
+          {errorBanner}
         </div>
       )}
 
@@ -531,11 +577,7 @@ export default function CreateQuotationsPage() {
                 </div>
 
                 <div className="flex items-end justify-between mt-3">
-                  <div>
-                    {(saveError || updateError) && (
-                      <p className="text-xs text-red-500">{(saveError || updateError)?.message}</p>
-                    )}
-                  </div>
+                  <div />
                   <div className="flex items-center gap-6">
                     <div className="text-right space-y-1">
                       <div className="flex gap-8 text-xs text-gray-500"><span>Subtotal</span><span>${totals.subtotal.toFixed(2)}</span></div>
@@ -606,7 +648,38 @@ export default function CreateQuotationsPage() {
                     ))}
                   </select>
                 </div>
-                <div className="w-28 border-r border-gray-200 last:border-r-0 px-2 py-2 flex items-center justify-center gap-1">
+                <div className="w-12 shrink-0 border-r border-gray-200 px-1 py-2 flex items-center justify-center">
+                  <button
+                    type="button"
+                    title="View full quotation (snapshot)"
+                    onClick={() => setViewListId(q.id)}
+                    className="p-1.5 rounded-md text-gray-500 hover:text-teal-700 hover:bg-teal-50"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="w-36 px-2 py-2 flex flex-wrap items-center justify-center gap-1">
+                  {(q.status === 'draft' || q.status === 'approval_declined') && (
+                    <button
+                      type="button"
+                      title="Send for internal approval"
+                      disabled={submittingApproval}
+                      onClick={async () => {
+                        setErrorBanner('')
+                        try {
+                          await submitQuotationForApproval({ variables: { id: q.id } })
+                          await refetch()
+                          setSuccessMsg('Submitted for internal approval.')
+                          setTimeout(() => setSuccessMsg(''), 5000)
+                        } catch (err) {
+                          reportMutationFailure(err)
+                        }
+                      }}
+                      className="p-1.5 rounded-md text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     title="Edit quotation"
@@ -629,6 +702,32 @@ export default function CreateQuotationsPage() {
           })
         )}
       </div>
+
+      <Dialog open={viewListId != null} onOpenChange={(o) => !o && setViewListId(null)}>
+        <DialogContent className="sm:max-w-xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              {listViewData?.quotation?.quotationNumber ? `Quotation ${listViewData.quotation.quotationNumber}` : 'Quotation'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-xs overflow-y-auto min-h-0">
+            {listViewLoading ? (
+              <p className="text-gray-500 py-8 text-center">Loading…</p>
+            ) : listViewData?.quotation ? (
+              <pre className="rounded border bg-slate-50 p-3 text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap max-h-[60vh]">
+                {JSON.stringify(listViewData.quotation, null, 2)}
+              </pre>
+            ) : (
+              <p className="text-gray-500">No detail loaded.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setViewListId(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
         <AlertDialogContent>
