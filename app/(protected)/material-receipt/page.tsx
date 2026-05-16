@@ -11,7 +11,7 @@ import {
   GET_MATERIAL_RECEIPTS,
   CREATE_MATERIAL_RECEIPT,
   UPDATE_MATERIAL_RECEIPT,
-  CONFIRM_MATERIAL_RECEIPT,
+  SUBMIT_MATERIAL_RECEIPT_FOR_APPROVAL,
   CANCEL_MATERIAL_RECEIPT,
   DELETE_MATERIAL_RECEIPT,
   GET_VENDORS,
@@ -22,14 +22,13 @@ import {
   Package,
   CheckCircle,
   Clock,
-  XCircle,
   X,
   Save,
   Plus,
   Trash2,
   Edit,
-  BadgeCheck,
   Ban,
+  Send,
 } from 'lucide-react'
 
 interface LineItem {
@@ -65,6 +64,8 @@ const EMPTY_FORM = {
 
 const STATUS_STYLES: Record<string, string> = {
   draft: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  submitted: 'bg-sky-50 text-sky-800 border-sky-200',
+  approval_declined: 'bg-red-50 text-red-700 border-red-200',
   confirmed: 'bg-green-50 text-green-700 border-green-200',
   cancelled: 'bg-red-50 text-red-600 border-red-200',
 }
@@ -107,7 +108,7 @@ export default function MaterialReceiptPage() {
     onCompleted: () => { refetch(); closeForm() },
   })
 
-  const [confirmMRN] = useMutation(CONFIRM_MATERIAL_RECEIPT, {
+  const [submitMRNForApproval] = useMutation(SUBMIT_MATERIAL_RECEIPT_FOR_APPROVAL, {
     onCompleted: () => refetch(),
   })
 
@@ -271,12 +272,6 @@ export default function MaterialReceiptPage() {
     setAdding(true)
   }
 
-  const handleConfirm = (id: string) => {
-    if (confirm('Confirm this Material Receipt? Stock will be updated.')) {
-      confirmMRN({ variables: { id } })
-    }
-  }
-
   const handleCancel = (id: string) => {
     if (confirm('Cancel this Material Receipt?')) {
       cancelMRN({ variables: { id } })
@@ -290,7 +285,10 @@ export default function MaterialReceiptPage() {
   }
 
   const mrns = data?.materialreceipts ?? []
-  const vendors = vendorData?.vendors ?? []
+  const vendors = (vendorData?.vendors ?? []).filter((v: any) => {
+    const ap = v.orgApprovalStatus ?? 'approved'
+    return ap === 'approved'
+  })
   const purchaseOrders = poData?.purchaseorders ?? []
   const warehouses = warehouseData?.warehouses ?? []
 
@@ -298,10 +296,7 @@ export default function MaterialReceiptPage() {
     total: mrns.length,
     draft: mrns.filter((m: any) => m.status === 'draft').length,
     confirmed: mrns.filter((m: any) => m.status === 'confirmed').length,
-    thisMonth: mrns.filter(
-      (m: any) =>
-        m.createdAt && new Date(m.createdAt).getMonth() === new Date().getMonth(),
-    ).length,
+    pending: mrns.filter((m: any) => m.status === 'submitted').length,
   }
 
   const columns: Column[] = [
@@ -358,11 +353,41 @@ export default function MaterialReceiptPage() {
       width: '110px',
       render: v => (
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${STATUS_STYLES[v] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${STATUS_STYLES[String(v)] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}
         >
           {v}
         </span>
       ),
+    },
+    {
+      key: '_orgApproval',
+      label: 'Org approval',
+      width: '168px',
+      render: (_v, row: any) => {
+        const st = String(row.status || '')
+        const showSubmit = st === 'draft' || st === 'approval_declined'
+        return (
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            {showSubmit ? (
+              <select
+                aria-label="Material receipt approval action"
+                className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2"
+                defaultValue=""
+                onChange={(e) => {
+                  const val = e.target.value
+                  e.target.value = ''
+                  if (val === 'submit') void submitMRNForApproval({ variables: { id: row.id } })
+                }}
+              >
+                <option value="">Change status…</option>
+                <option value="submit">Send for approval</option>
+              </select>
+            ) : (
+              <span className="text-xs text-gray-400">—</span>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'createdAt',
@@ -384,8 +409,8 @@ export default function MaterialReceiptPage() {
         {[
           { label: 'Total MRNs', value: stats.total, icon: Package, cls: 'text-blue-600 bg-blue-50' },
           { label: 'Draft', value: stats.draft, icon: Clock, cls: 'text-yellow-600 bg-yellow-50' },
+          { label: 'Pending approval', value: stats.pending, icon: Send, cls: 'text-sky-600 bg-sky-50' },
           { label: 'Confirmed', value: stats.confirmed, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'This Month', value: stats.thisMonth, icon: BadgeCheck, cls: 'text-purple-600 bg-purple-50' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div
             key={label}
@@ -636,21 +661,15 @@ export default function MaterialReceiptPage() {
             icon: <Edit className="h-3.5 w-3.5" />,
             onClick: row => handleEdit(row),
             variant: 'ghost',
-            show: (row: any) => row.status === 'draft',
-          },
-          {
-            label: 'Confirm',
-            icon: <BadgeCheck className="h-3.5 w-3.5" />,
-            onClick: row => handleConfirm(row.id),
-            variant: 'ghost',
-            show: (row: any) => row.status === 'draft',
+            show: (row: any) => row.status === 'draft' || row.status === 'approval_declined',
           },
           {
             label: 'Cancel',
             icon: <Ban className="h-3.5 w-3.5" />,
             onClick: row => handleCancel(row.id),
             variant: 'ghost',
-            show: (row: any) => row.status !== 'cancelled',
+            show: (row: any) =>
+              row.status !== 'cancelled' && row.status !== 'submitted' && row.status !== 'confirmed',
           },
           {
             label: 'Delete',

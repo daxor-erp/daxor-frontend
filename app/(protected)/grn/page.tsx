@@ -8,11 +8,11 @@ import {
   GET_GRNS,
   GET_PURCHASE_ORDERS,
   CREATE_GRN,
-  UPDATE_GRN,
   DELETE_GRN,
+  SUBMIT_GRN_FOR_APPROVAL,
 } from '@/gql/queries'
 import { Button } from '@/components/ui/button'
-import { PackageCheck, FileText, CheckCircle, Plus, Minus, Save, X, FileEdit, Trash2 } from 'lucide-react'
+import { FileText, Plus, Minus, Save, X, Trash2, Send, Clock, CheckCircle } from 'lucide-react'
 
 type GrnRow = {
   id: string
@@ -67,7 +67,6 @@ export default function GRNPage() {
   const [poId, setPoId] = useState('')
   const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
-  const [statusNew, setStatusNew] = useState<'draft' | 'confirmed'>('confirmed')
   const [vendorName, setVendorName] = useState('')
   const [lines, setLines] = useState([{ ...EMPTY_LINE }])
 
@@ -90,7 +89,7 @@ export default function GRNPage() {
     onError: (e) => setFormError(e.message),
   })
 
-  const [updateGrn] = useMutation(UPDATE_GRN, {
+  const [submitGrnForApproval] = useMutation(SUBMIT_GRN_FOR_APPROVAL, {
     onCompleted: () => void refetch(),
     onError: (e) => alert(e.message),
   })
@@ -108,15 +107,11 @@ export default function GRNPage() {
     [purchaseOrders],
   )
 
-  const now = new Date()
   const stats = {
     total: grns.length,
+    draft: grns.filter((g) => g.status === 'draft').length,
+    pending: grns.filter((g) => g.status === 'submitted').length,
     confirmed: grns.filter((g) => g.status === 'confirmed').length,
-    thisMonth: grns.filter((g) => {
-      if (!g.createdAt) return false
-      const d = new Date(g.createdAt)
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    }).length,
   }
 
   function closePanel() {
@@ -125,7 +120,6 @@ export default function GRNPage() {
     setPoId('')
     setReceivedDate(new Date().toISOString().split('T')[0])
     setNotes('')
-    setStatusNew('confirmed')
     setVendorName('')
     setLines([{ ...EMPTY_LINE }])
   }
@@ -199,7 +193,7 @@ export default function GRNPage() {
       organizationId: orgId,
       receivedDate,
       lineItems: mappedLines,
-      status: statusNew,
+      status: 'draft',
     }
     if (notes.trim()) input.notes = notes.trim()
     if (poId && po) {
@@ -249,17 +243,49 @@ export default function GRNPage() {
       width: '100px',
       render: (v) => {
         const s = String(v ?? '')
-        const ok = s === 'confirmed'
+        let cls = 'bg-amber-50 text-amber-800 border-amber-200'
+        let label = s || '—'
+        if (s === 'confirmed') cls = 'bg-green-50 text-green-700 border-green-200'
+        else if (s === 'submitted') cls = 'bg-sky-50 text-sky-800 border-sky-200'
+        else if (s === 'approval_declined') cls = 'bg-red-50 text-red-700 border-red-200'
+        if (s === 'submitted') label = 'pending approval'
+        if (s === 'approval_declined') label = 'declined'
         return (
           <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-              ok
-                ? 'bg-green-50 text-green-700 border-green-200'
-                : 'bg-amber-50 text-amber-800 border-amber-200'
-            }`}
+            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${cls}`}
           >
-            {s || '—'}
+            {label}
           </span>
+        )
+      },
+    },
+    {
+      key: '_orgApproval',
+      label: 'Org approval',
+      width: '168px',
+      render: (_v, row) => {
+        const st = String(row.status ?? '')
+        const showSubmit = st === 'draft' || st === 'approval_declined'
+        return (
+          <div className="flex flex-col gap-1 min-w-[140px]">
+            {showSubmit ? (
+              <select
+                aria-label="GRN approval action"
+                className="h-7 text-xs rounded-md border border-gray-300 bg-white px-2 max-w-[160px]"
+                defaultValue=""
+                onChange={(e) => {
+                  const val = e.target.value
+                  e.target.value = ''
+                  if (val === 'submit' && row.id) void submitGrnForApproval({ variables: { id: row.id } })
+                }}
+              >
+                <option value="">Change status…</option>
+                <option value="submit">Send for approval</option>
+              </select>
+            ) : (
+              <span className="text-xs text-gray-400">—</span>
+            )}
+          </div>
         )
       },
     },
@@ -272,27 +298,6 @@ export default function GRNPage() {
   ]
 
   const actions: Action<GrnRow>[] = [
-    {
-      label: 'Confirm',
-      icon: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
-      show: (row) => row.status === 'draft',
-      onClick: (row) => {
-        if (!row.id) return
-        updateGrn({ variables: { id: row.id, input: { status: 'confirmed' } } })
-      },
-    },
-    {
-      label: 'Reopen as draft',
-      icon: <FileEdit className="h-3.5 w-3.5 text-amber-600" />,
-      variant: 'outline',
-      show: (row) => row.status === 'confirmed',
-      onClick: (row) => {
-        if (!row.id) return
-        if (confirm('Reopen this GRN as draft?')) {
-          updateGrn({ variables: { id: row.id, input: { status: 'draft' } } })
-        }
-      },
-    },
     {
       label: 'Delete',
       icon: <Trash2 className="h-3.5 w-3.5 text-red-600" />,
@@ -341,7 +346,7 @@ export default function GRNPage() {
             </button>
           </div>
           <div className="p-4 space-y-4 text-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <label className="flex flex-col gap-1">
                 <span className="font-semibold text-gray-600">Purchase order (optional)</span>
                 <select
@@ -367,17 +372,6 @@ export default function GRNPage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="font-semibold text-gray-600">Initial status</span>
-                <select
-                  value={statusNew}
-                  onChange={(e) => setStatusNew(e.target.value as 'draft' | 'confirmed')}
-                  className="h-9 border border-gray-300 rounded px-2 bg-white"
-                >
-                  <option value="confirmed">Confirmed (posted)</option>
-                  <option value="draft">Draft</option>
-                </select>
-              </label>
-              <label className="flex flex-col gap-1">
                 <span className="font-semibold text-gray-600">Vendor name</span>
                 <input
                   type="text"
@@ -388,6 +382,9 @@ export default function GRNPage() {
                 />
               </label>
             </div>
+            <p className="text-gray-500 text-[11px]">
+              New GRNs save as <strong>draft</strong>. Use <strong>Send for approval</strong> in the list so the purchases approver can post them as confirmed.
+            </p>
             <label className="flex flex-col gap-1">
               <span className="font-semibold text-gray-600">Notes</span>
               <input
@@ -492,11 +489,12 @@ export default function GRNPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total GRNs', value: stats.total, icon: FileText, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Draft', value: stats.draft, icon: Clock, cls: 'text-amber-600 bg-amber-50' },
+          { label: 'Pending approval', value: stats.pending, icon: Send, cls: 'text-sky-600 bg-sky-50' },
           { label: 'Confirmed', value: stats.confirmed, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'This month', value: stats.thisMonth, icon: PackageCheck, cls: 'text-purple-600 bg-purple-50' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
             <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}>

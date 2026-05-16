@@ -125,6 +125,9 @@ export default function SendQuotationsPage() {
   const getStatusStyle = (status: string) => {
     const colors: Record<string, string> = {
       draft: 'bg-gray-500 text-white border-transparent',
+      submitted: 'bg-amber-600 text-white border-transparent',
+      approval_declined: 'bg-red-500 text-white border-transparent',
+      approved: 'bg-teal-600 text-white border-transparent',
       sent: 'bg-blue-600 text-white border-transparent',
       accepted: 'bg-emerald-600 text-white border-transparent',
       rejected: 'bg-red-600 text-white border-transparent',
@@ -144,14 +147,14 @@ export default function SendQuotationsPage() {
   if (loading) return <div className="p-6">Loading…</div>
 
   const rows: QuotationRow[] = data?.quotations ?? []
-  const draftQuotations = rows.filter((q) => q.status === 'draft')
-  const sentQuotations = rows.filter((q) => q.status !== 'draft')
+  const draftQuotations = rows.filter((q) => q.status === 'approved')
+  const sentQuotations = rows.filter((q) => q.status !== 'approved')
 
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Send quotations</h1>
-        <p className="text-gray-500 mt-2">Review draft quotations, send them to clients by email, and browse history.</p>
+        <p className="text-gray-500 mt-2">Internally approved quotations appear here ready to email clients; other statuses appear in the list below.</p>
       </div>
 
       {banner?.type === 'ok' && (
@@ -169,11 +172,11 @@ export default function SendQuotationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Draft quotations — ready to send</CardTitle>
+          <CardTitle>Ready to send (internally approved)</CardTitle>
         </CardHeader>
         <CardContent>
           {draftQuotations.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No draft quotations. Create one under Quotations, then return here to send it.</p>
+            <p className="text-gray-500 text-center py-8">No internally approved quotations yet. On Create Quotations, submit for approval; when approved they show here.</p>
           ) : (
             <Table>
               <TableHeader>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_PROJECTS, CREATE_PROJECT } from '@/gql/queries'
+import { GET_PROJECTS, CREATE_PROJECT, SUBMIT_PROJECT_FOR_APPROVAL } from '@/gql/queries'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,7 @@ const COLS = [
   { key: 'startDate',   label: 'Start Date',   w: 'w-32' },
   { key: 'endDate',     label: 'End Date',     w: 'w-32' },
   { key: 'status',      label: 'Status',       w: 'w-28' },
+  { key: 'orgApproval', label: 'Org approval',   w: 'w-44' },
 ]
 
 export default function SalesProjectPage() {
@@ -37,6 +38,10 @@ export default function SalesProjectPage() {
 
   const [create, { loading: saving, error: saveError }] = useMutation(CREATE_PROJECT, {
     onCompleted: () => { setAdding(false); setForm({ name: '', description: '', startDate: '', endDate: '' }); setErrors({}); refetch() },
+  })
+
+  const [submitProjectForApproval] = useMutation(SUBMIT_PROJECT_FOR_APPROVAL, {
+    onCompleted: () => refetch(),
   })
 
   const [adding, setAdding] = useState(false)
@@ -150,9 +155,9 @@ export default function SalesProjectPage() {
                 className="w-full h-7 px-2 text-xs border border-gray-300 rounded bg-white outline-none focus:ring-1 focus:ring-blue-400" />
             </div>
 
-            {/* Status — auto */}
-            <div className="w-28 px-2 py-1 flex items-center gap-1">
-              <span className="text-xs text-gray-400 italic">active</span>
+            {/* Status — inactive until approved */}
+            <div className="w-28 border-r border-gray-300 px-2 py-1 flex items-center">
+              <span className="text-xs text-gray-400 italic">inactive</span>
               <div className="ml-auto flex gap-1">
                 <button onClick={handleSave} disabled={saving}
                   className="h-6 w-6 flex items-center justify-center rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors">
@@ -164,6 +169,8 @@ export default function SalesProjectPage() {
                 </button>
               </div>
             </div>
+
+            <div className="w-44 px-2 py-1 flex items-center text-xs text-gray-400">—</div>
           </div>
         )}
 
@@ -193,8 +200,44 @@ export default function SalesProjectPage() {
                 <div className="flex-1 border-r border-gray-200 px-2 py-2 text-xs text-gray-500 truncate">{p.description || '—'}</div>
                 <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{p.startDate ? new Date(p.startDate).toLocaleDateString() : '—'}</div>
                 <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{p.endDate ? new Date(p.endDate).toLocaleDateString() : '—'}</div>
-                <div className="w-28 px-2 py-2">
+                <div className="w-28 border-r border-gray-200 px-2 py-2">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
+                </div>
+                <div className="w-44 px-2 py-2">
+                  {(() => {
+                    const ap = String(p.orgApprovalStatus ?? 'approved')
+                    const showSubmit = ap === 'draft' || ap === 'approval_declined'
+                    const label =
+                      ap === 'draft'
+                        ? 'Draft'
+                        : ap === 'submitted'
+                          ? 'Pending approval'
+                          : ap === 'approval_declined'
+                            ? 'Declined'
+                            : 'Approved'
+                    return (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-gray-600">{label}</span>
+                        {showSubmit ? (
+                          <select
+                            aria-label="Project approval action"
+                            className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2 max-w-[160px]"
+                            defaultValue=""
+                            onChange={(e) => {
+                              const val = e.target.value
+                              e.target.value = ''
+                              if (val === 'submit') void submitProjectForApproval({ variables: { id: p.id } })
+                            }}
+                          >
+                            <option value="">Change status…</option>
+                            <option value="submit">Send for approval</option>
+                          </select>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )

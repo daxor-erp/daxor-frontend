@@ -1,6 +1,14 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+
+export interface ModulePermissionRow {
+  moduleKey: string
+  canCreate: boolean
+  canUpdate: boolean
+  canDelete: boolean
+  canView: boolean
+}
 
 interface User {
   id: string
@@ -9,6 +17,7 @@ interface User {
   lastName: string
   roles: string[]
   organizationId?: string | null
+  modulePermissions?: ModulePermissionRow[]
 }
 
 interface AuthContextType {
@@ -16,6 +25,7 @@ interface AuthContextType {
   token: string | null
   login: (token: string, user: User) => void
   logout: () => void
+  mergeUser: (partial: Partial<User>) => void
   isAuthenticated: boolean
 }
 
@@ -31,6 +41,15 @@ function postLoginPath(roles: string[] | undefined): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
+
+  const mergeUser = useCallback((partial: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev
+      const next = { ...prev, ...partial }
+      localStorage.setItem('user', JSON.stringify(next))
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token')
@@ -59,7 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, mergeUser, isAuthenticated: !!token }}
+    >
       {children}
     </AuthContext.Provider>
   )

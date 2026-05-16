@@ -2,15 +2,24 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, gql } from '@apollo/client'
-import { GET_CUSTOMER_INVOICES, CREATE_CUSTOMER_INVOICE, GET_SALES_ORDERS } from '@/gql/queries'
+import { GET_CUSTOMER_INVOICES, CREATE_CUSTOMER_INVOICE, GET_SALES_ORDERS, SUBMIT_CUSTOMER_INVOICE_FOR_APPROVAL } from '@/gql/queries'
 import { Button } from '@/components/ui/button'
-import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, XCircle, Eye, Send } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  draft:          { label: 'Draft',    cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  approved:       { label: 'Approved', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  sent:           { label: 'Sent',     cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  draft:            { label: 'Draft',    cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+  submitted:        { label: 'Pending approval', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  approval_declined:{ label: 'Declined', cls: 'bg-red-50 text-red-700 border-red-200' },
+  approved:         { label: 'Approved', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  sent:             { label: 'Sent',     cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   partially_paid: { label: 'Partial',  cls: 'bg-amber-50 text-amber-700 border-amber-200' },
   paid:           { label: 'Paid',     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   overdue:        { label: 'Overdue',  cls: 'bg-red-50 text-red-700 border-red-200' },
@@ -38,12 +47,19 @@ export default function CreateInvoicesPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
+  const [viewInv, setViewInv] = useState<any | null>(null)
+
   const { data: invData, loading, refetch } = useQuery(GET_CUSTOMER_INVOICES, { variables: { organizationId: orgId, page: 1, limit: 100 }, skip: !orgId })
   const { data: clientsData } = useQuery(GET_CLIENTS, { variables: { organizationId: orgId }, skip: !orgId })
   const { data: soData } = useQuery(GET_SALES_ORDERS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
 
   const [create, { loading: saving, error: saveError }] = useMutation(CREATE_CUSTOMER_INVOICE, {
     onCompleted: () => { setAdding(false); reset(); refetch() },
+  })
+
+  const [submitInvoiceForApproval, { loading: submittingInv }] = useMutation(SUBMIT_CUSTOMER_INVOICE_FOR_APPROVAL, {
+    onCompleted: () => refetch(),
+    onError: (e) => alert(e.message),
   })
 
   const [adding, setAdding] = useState(false)
@@ -301,8 +317,8 @@ export default function CreateInvoicesPage() {
         {/* Header */}
         <div className="flex bg-[#f0f0f0] border-b border-gray-300">
           <div className="w-8 border-r border-gray-300 py-2 flex items-center justify-center text-xs text-gray-400">#</div>
-          {['Code', 'Client', 'Sales Order', 'Invoice Date', 'Due Date', 'Total', 'Paid', 'Status'].map((h, i) => (
-            <div key={h} className={`border-r border-gray-300 last:border-r-0 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide ${i === 1 ? 'flex-1' : i === 0 ? 'w-24' : i === 2 ? 'w-28' : i === 3 || i === 4 ? 'w-28' : i === 5 || i === 6 ? 'w-24' : 'w-24'}`}>{h}</div>
+          {['Code', 'Client', 'Sales Order', 'Invoice Date', 'Due Date', 'Total', 'Paid', 'Status', ''].map((h, i) => (
+            <div key={h === '' ? 'actions' : h} className={`border-r border-gray-300 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide ${i === 1 ? 'flex-1' : i === 0 ? 'w-24' : i === 2 ? 'w-28' : i === 3 || i === 4 ? 'w-28' : i === 5 || i === 6 ? 'w-24' : i === 7 ? 'w-28' : 'w-28'}`}>{h === '' ? 'View / Send' : h}</div>
           ))}
         </div>
 
@@ -326,14 +342,51 @@ export default function CreateInvoicesPage() {
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}</div>
                 <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-semibold text-gray-800">${Number(inv.totalAmount).toFixed(2)}</div>
                 <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">${Number(inv.paidAmount ?? 0).toFixed(2)}</div>
-                <div className="w-24 px-2 py-2">
+                <div className="w-24 border-r border-gray-200 px-2 py-2">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
+                </div>
+                <div className="w-28 px-2 py-2 flex items-center justify-center gap-1 border-l border-gray-100">
+                  <button
+                    type="button"
+                    title="View invoice row"
+                    className="p-1.5 rounded text-gray-500 hover:text-teal-700 hover:bg-teal-50"
+                    onClick={() => setViewInv(inv)}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </button>
+                  {(inv.status === 'draft' || inv.status === 'approval_declined') && (
+                    <button
+                      type="button"
+                      title="Send for approval"
+                      disabled={submittingInv}
+                      className="p-1.5 rounded text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                      onClick={() => submitInvoiceForApproval({ variables: { id: inv.id } })}
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             )
           })
         )}
       </div>
+
+      <Dialog open={viewInv != null} onOpenChange={(o) => !o && setViewInv(null)}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Invoice snapshot</DialogTitle>
+          </DialogHeader>
+          <pre className="text-[11px] rounded border bg-slate-50 p-3 overflow-auto max-h-[65vh] whitespace-pre-wrap">
+            {viewInv ? JSON.stringify(viewInv, null, 2) : ''}
+          </pre>
+          <DialogFooter>
+            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setViewInv(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

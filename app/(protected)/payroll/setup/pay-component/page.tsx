@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
 import {
   GET_PAYROLL_UI_RECORDS,
@@ -38,6 +39,7 @@ type PayComponentRow = {
   taxable: boolean
   active: boolean
   remarks: string
+  approvalStatus: string
 }
 
 const KIND_OPTIONS: ReadonlyArray<{ value: ComponentKind; label: string }> = [
@@ -64,7 +66,7 @@ function nextComponentCode(rows: PayComponentRow[]): string {
   return `PC-${String(max + 1).padStart(4, '0')}`
 }
 
-function parsePayComponentRecord(r: { id: string; data: string }): PayComponentRow {
+function parsePayComponentRecord(r: { id: string; data: string }): Omit<PayComponentRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const k = typeof o.kind === 'string' ? o.kind : 'EARNING'
@@ -131,7 +133,16 @@ export default function PayComponentSetupPage() {
 
   const rows = useMemo(
     () =>
-      ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parsePayComponentRecord),
+      (
+        (data?.payrolluirecords as {
+          id: string
+          data: string
+          approvalStatus?: string | null
+        }[]) ?? []
+      ).map((rec) => ({
+        ...parsePayComponentRecord(rec),
+        approvalStatus: rec.approvalStatus ?? 'none',
+      })),
     [data],
   )
 
@@ -412,6 +423,7 @@ export default function PayComponentSetupPage() {
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Basis</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Value</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Flags</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[96px]" />
               </TableRow>
             </TableHeader>
@@ -440,6 +452,13 @@ export default function PayComponentSetupPage() {
                     <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
                       {r.taxable ? 'Taxable' : 'Non-tax'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <PayrollUiRecordOrgApprovalCell
+                      recordId={r.id}
+                      approvalStatus={r.approvalStatus}
+                      onCompleted={() => refetch()}
+                    />
                   </TableCell>
                   <TableCell className="space-x-1">
                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

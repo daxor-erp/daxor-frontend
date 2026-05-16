@@ -2,19 +2,20 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_SALES_RETURNS, CREATE_SALES_RETURN } from '@/gql/queries'
+import { GET_SALES_RETURNS, CREATE_SALES_RETURN, SUBMIT_SALES_RETURN_FOR_APPROVAL } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
 import { InputFloating } from '@/components/ui/input-floating'
-import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { Save, Plus, X } from 'lucide-react'
 
-const STATUS_OPTS = [
-  { value: 'DRAFT', label: 'DRAFT' },
-  { value: 'SUBMITTED', label: 'SUBMITTED' },
-  { value: 'APPROVED', label: 'APPROVED' },
-  { value: 'REJECTED', label: 'REJECTED' },
-]
+function srStatusLabel(st: string) {
+  const u = String(st || '').toUpperCase()
+  if (u === 'DRAFT') return 'Draft'
+  if (u === 'SUBMITTED') return 'Pending approval'
+  if (u === 'APPROVED') return 'Approved'
+  if (u === 'APPROVAL_DECLINED') return 'Declined'
+  return st || '—'
+}
 
 export default function SalesReturnsPage() {
   const { user: authUser } = useAuth()
@@ -22,7 +23,7 @@ export default function SalesReturnsPage() {
 
   const [showNewRecord, setShowNewRecord] = useState(false)
   const [formError, setFormError] = useState('')
-  const [formData, setFormData] = useState({ docDate: '', status: 'DRAFT' })
+  const [formData, setFormData] = useState({ docDate: '' })
 
   const { data, loading, refetch } = useQuery(GET_SALES_RETURNS, {
     variables: { organizationId: orgId },
@@ -32,24 +33,28 @@ export default function SalesReturnsPage() {
   const [createSalesReturn, { loading: saving }] = useMutation(CREATE_SALES_RETURN, {
     onCompleted: () => {
       setFormError('')
-      setFormData({ docDate: '', status: 'DRAFT' })
+      setFormData({ docDate: '' })
       setShowNewRecord(false)
       refetch()
     },
     onError: (err) => setFormError(err.message),
   })
 
+  const [submitSalesReturnForApproval] = useMutation(SUBMIT_SALES_RETURN_FOR_APPROVAL, {
+    onCompleted: () => refetch(),
+  })
+
   const items = data?.salesreturns || []
 
   const reset = () => {
-    setFormData({ docDate: '', status: 'DRAFT' })
+    setFormData({ docDate: '' })
     setFormError('')
   }
 
   const openNew = () => {
     reset()
     const today = new Date().toISOString().slice(0, 10)
-    setFormData({ docDate: today, status: 'DRAFT' })
+    setFormData({ docDate: today })
     setShowNewRecord(true)
   }
 
@@ -72,7 +77,6 @@ export default function SalesReturnsPage() {
       variables: {
         input: {
           docDate: formData.docDate,
-          status: formData.status || 'DRAFT',
           organizationId: orgId,
         },
       },
@@ -110,19 +114,12 @@ export default function SalesReturnsPage() {
           <div className="p-4 space-y-4">
             {formError && <div className="text-xs text-red-500">{formError}</div>}
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 max-w-lg">
               <InputFloating
                 label="Document date *"
                 type="date"
                 value={formData.docDate}
                 onChange={(e) => setF('docDate', e.target.value)}
-                className="h-7 text-xs"
-              />
-              <SelectFloating
-                label="Status"
-                value={formData.status}
-                onChange={(e) => setF('status', typeof e === 'string' ? e : e.target.value)}
-                options={STATUS_OPTS}
                 className="h-7 text-xs"
               />
               <div className="flex flex-col justify-end pb-1">
@@ -133,7 +130,7 @@ export default function SalesReturnsPage() {
               </div>
             </div>
 
-            <p className="text-xs text-gray-500">Document number is assigned when you save.</p>
+            <p className="text-xs text-gray-500">New returns are saved as <strong>Draft</strong>. Use “Send for approval” from the list.</p>
 
             <div className="flex justify-end gap-2">
               <Button
@@ -181,22 +178,46 @@ export default function SalesReturnsPage() {
                     <th className="text-left p-2 font-medium text-gray-600">Document #</th>
                     <th className="text-left p-2 font-medium text-gray-600">Date</th>
                     <th className="text-left p-2 font-medium text-gray-600">Status</th>
+                    <th className="text-left p-2 font-medium text-gray-600">Org approval</th>
                     <th className="text-left p-2 font-medium text-gray-600">Created</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item: any) => (
-                    <tr key={item.id} className="border-t border-gray-100 hover:bg-gray-50/80">
-                      <td className="p-2 font-mono text-gray-600">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
-                      <td className="p-2">{item.docDate ? new Date(item.docDate).toLocaleDateString() : 'N/A'}</td>
-                      <td className="p-2">
-                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
-                          {item.status || 'Active'}
-                        </span>
-                      </td>
-                      <td className="p-2">{new Date(item.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
+                  {items.map((item: any) => {
+                    const st = String(item.status || '').toUpperCase()
+                    const showSubmit = st === 'DRAFT' || st === 'APPROVAL_DECLINED'
+                    return (
+                      <tr key={item.id} className="border-t border-gray-100 hover:bg-gray-50/80">
+                        <td className="p-2 font-mono text-gray-600">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
+                        <td className="p-2">{item.docDate ? new Date(item.docDate).toLocaleDateString() : 'N/A'}</td>
+                        <td className="p-2">
+                          <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
+                            {srStatusLabel(item.status)}
+                          </span>
+                        </td>
+                        <td className="p-2">
+                          {showSubmit ? (
+                            <select
+                              aria-label="Sales return approval action"
+                              className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2 max-w-[160px]"
+                              defaultValue=""
+                              onChange={(e) => {
+                                const val = e.target.value
+                                e.target.value = ''
+                                if (val === 'submit') void submitSalesReturnForApproval({ variables: { id: item.id } })
+                              }}
+                            >
+                              <option value="">Change status…</option>
+                              <option value="submit">Send for approval</option>
+                            </select>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
+                        <td className="p-2">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '—'}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

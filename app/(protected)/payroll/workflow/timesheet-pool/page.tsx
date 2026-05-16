@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
-import { ClipboardList, Plus, Pencil, Trash2, Save, CheckCircle2, X } from 'lucide-react'
+import { ClipboardList, Plus, Pencil, Trash2, Save, CheckCircle2, X, Eye, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
@@ -15,6 +15,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
@@ -23,6 +30,7 @@ import {
   CREATE_PAYROLL_UI_RECORD,
   UPDATE_PAYROLL_UI_RECORD,
   DELETE_PAYROLL_UI_RECORD,
+  SUBMIT_PAYROLL_UI_RECORD_FOR_APPROVAL,
 } from '@/gql/queries'
 
 type TimesheetSource = 'WEB' | 'MOBILE_APP' | 'IMPORT' | 'BIOMETRIC'
@@ -42,6 +50,8 @@ type TimesheetPoolRow = {
   poolStatus: PoolStatus
   projectCode: string
   remarks: string
+  /** Routed org-admin payroll approver (none / pending / approved / declined). */
+  orgApproval: string
 }
 
 const SOURCE_OPTIONS: ReadonlyArray<{ value: TimesheetSource; label: string }> = [
@@ -88,6 +98,54 @@ function statusBadgeClass(status: PoolStatus): string {
   }
 }
 
+function orgApprovalBadgeCls(s: string): string {
+  switch (s) {
+    case 'pending':
+      return 'bg-amber-50 text-amber-900 border-amber-200'
+    case 'approved':
+      return 'bg-emerald-50 text-emerald-900 border-emerald-200'
+    case 'declined':
+      return 'bg-red-50 text-red-900 border-red-200'
+    default:
+      return 'bg-slate-50 text-slate-700 border-slate-200'
+  }
+}
+
+function orgApprovalLabel(s: string): string {
+  switch (s) {
+    case 'none':
+      return 'Not submitted'
+    case 'pending':
+      return 'Pending'
+    case 'approved':
+      return 'Approved'
+    case 'declined':
+      return 'Declined'
+    default:
+      return s
+  }
+}
+
+function viewDetailPayload(r: TimesheetPoolRow) {
+  return {
+    id: r.id,
+    approvalStatus: r.orgApproval,
+    timesheet: {
+      lineRef: r.lineRef,
+      employeeNo: r.employeeNo,
+      employeeName: r.employeeName,
+      periodStartYmd: r.periodStartYmd,
+      periodEndYmd: r.periodEndYmd,
+      regularHours: r.regularHours,
+      overtimeHours: r.overtimeHours,
+      source: r.source,
+      poolStatus: r.poolStatus,
+      projectCode: r.projectCode,
+      remarks: r.remarks,
+    },
+  }
+}
+
 function parseHours(raw: string, label: string, setBanner: (b: { ok: boolean; text: string }) => void): number | null {
   const t = raw.trim()
   if (t === '') return 0
@@ -99,7 +157,11 @@ function parseHours(raw: string, label: string, setBanner: (b: { ok: boolean; te
   return Math.round(n * 100) / 100
 }
 
-function parsePoolRecord(r: { id: string; data: string }): TimesheetPoolRow {
+function parsePoolRecord(r: {
+  id: string
+  data: string
+  approvalStatus?: string | null
+}): TimesheetPoolRow {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const src =
@@ -123,6 +185,7 @@ function parsePoolRecord(r: { id: string; data: string }): TimesheetPoolRow {
       poolStatus: pst,
       projectCode: typeof o.projectCode === 'string' ? o.projectCode : '',
       remarks: typeof o.remarks === 'string' ? o.remarks : '',
+      orgApproval: r.approvalStatus && r.approvalStatus !== '' ? String(r.approvalStatus) : 'none',
     }
   } catch {
     return {
@@ -138,6 +201,7 @@ function parsePoolRecord(r: { id: string; data: string }): TimesheetPoolRow {
       poolStatus: 'PENDING_REV',
       projectCode: '',
       remarks: '',
+      orgApproval: r.approvalStatus && r.approvalStatus !== '' ? String(r.approvalStatus) : 'none',
     }
   }
 }
@@ -165,6 +229,7 @@ export default function TimesheetPoolPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [banner, setBanner] = useState<{ ok: boolean; text: string } | null>(null)
   const [form, setForm] = useState(emptyForm)
+  const [viewDetailRow, setViewDetailRow] = useState<TimesheetPoolRow | null>(null)
 
   const { data, loading, refetch } = useQuery(GET_PAYROLL_UI_RECORDS, {
     variables: { organizationId: orgId, category: PAYROLL_UI_CATEGORY.TIMESHEET_POOL },
@@ -173,7 +238,10 @@ export default function TimesheetPoolPage() {
   })
 
   const rows = useMemo(
-    () => ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parsePoolRecord),
+    () =>
+      (
+        (data?.payrolluirecords as { id: string; data: string; approvalStatus?: string | null }[]) ?? []
+      ).map(parsePoolRecord),
     [data],
   )
 
@@ -209,6 +277,17 @@ export default function TimesheetPoolPage() {
     },
     onError: (e) => setBanner({ ok: false, text: e.message }),
   })
+  const [submitPayrollForApproval, { loading: submittingPayrollApproval }] = useMutation(
+    SUBMIT_PAYROLL_UI_RECORD_FOR_APPROVAL,
+    {
+      onCompleted: () => {
+        refetch()
+        setBanner({ ok: true, text: 'Sent for payroll approval.' })
+        setTimeout(() => setBanner(null), 4000)
+      },
+      onError: (e) => setBanner({ ok: false, text: e.message }),
+    },
+  )
 
   const busy = creating || updating
   const ready = Boolean(orgId) && !loading
@@ -512,7 +591,8 @@ export default function TimesheetPoolPage() {
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Reg / OT</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Source</TableHead>
                   <TableHead className="text-xs font-semibold uppercase text-gray-600">Pool status</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase text-gray-600 whitespace-nowrap w-[92px]" />
+                  <TableHead className="text-xs font-semibold uppercase text-gray-600 whitespace-nowrap">Approval</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase text-gray-600 whitespace-nowrap w-[176px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -539,7 +619,35 @@ export default function TimesheetPoolPage() {
                         {STATUS_OPTIONS.find((s) => s.value === r.poolStatus)?.label ?? r.poolStatus}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={orgApprovalBadgeCls(r.orgApproval)}>
+                        {orgApprovalLabel(r.orgApproval)}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="space-x-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        title="View record"
+                        onClick={() => setViewDetailRow(r)}
+                      >
+                        <Eye className="h-3.5 w-3.5 text-gray-500" />
+                      </Button>
+                      {r.orgApproval === 'none' || r.orgApproval === 'declined' ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          disabled={submittingPayrollApproval}
+                          title="Submit for org approval"
+                          onClick={() => submitPayrollForApproval({ variables: { id: r.id } })}
+                        >
+                          <Send className="h-3.5 w-3.5 text-sky-600" />
+                        </Button>
+                      ) : null}
                       <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>
                         <Pencil className="h-3.5 w-3.5 text-gray-500" />
                       </Button>
@@ -564,6 +672,29 @@ export default function TimesheetPoolPage() {
           </div>
         )}
       </div>
+
+      <Dialog
+        open={viewDetailRow !== null}
+        onOpenChange={(openState) => {
+          if (!openState) setViewDetailRow(null)
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Timesheet pool record</DialogTitle>
+          </DialogHeader>
+          {viewDetailRow ? (
+            <pre className="text-xs font-mono bg-slate-950 text-slate-100 rounded-md p-3 overflow-auto max-h-[min(60vh,520px)] border border-slate-800">
+              {JSON.stringify(viewDetailPayload(viewDetailRow), null, 2)}
+            </pre>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" size="sm" onClick={() => setViewDetailRow(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

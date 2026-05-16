@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
 import {
   GET_PAYROLL_UI_RECORDS,
@@ -38,6 +39,7 @@ type FwlQualificationRow = {
   sectorMemo: string
   active: boolean
   remarks: string
+  approvalStatus: string
 }
 
 const TIER_LABELS: ReadonlyArray<{ value: FwlTier; label: string }> = [
@@ -58,7 +60,7 @@ function nextRowRef(rows: FwlQualificationRow[]): string {
   return `FWL-${String(max + 1).padStart(4, '0')}`
 }
 
-function parseFwlRecord(r: { id: string; data: string }): FwlQualificationRow {
+function parseFwlRecord(r: { id: string; data: string }): Omit<FwlQualificationRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const tier = typeof o.tier === 'string' && TIER_LABELS.some((t) => t.value === o.tier) ? (o.tier as FwlTier) : 'CUSTOM'
@@ -124,7 +126,17 @@ export default function FwlQualificationSetupPage() {
   })
 
   const rows = useMemo(
-    () => ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parseFwlRecord),
+    () =>
+      (
+        (data?.payrolluirecords as {
+          id: string
+          data: string
+          approvalStatus?: string | null
+        }[]) ?? []
+      ).map((rec) => ({
+        ...parseFwlRecord(rec),
+        approvalStatus: rec.approvalStatus ?? 'none',
+      })),
     [data],
   )
 
@@ -415,6 +427,7 @@ export default function FwlQualificationSetupPage() {
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Monthly levy</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Validity</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">State</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[96px]" />
               </TableRow>
             </TableHeader>
@@ -444,6 +457,13 @@ export default function FwlQualificationSetupPage() {
                     >
                       {r.active ? 'Active' : 'Inactive'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <PayrollUiRecordOrgApprovalCell
+                      recordId={r.id}
+                      approvalStatus={r.approvalStatus}
+                      onCompleted={() => refetch()}
+                    />
                   </TableCell>
                   <TableCell className="space-x-1">
                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
+import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
 import {
   GET_PAYROLL_UI_RECORDS,
@@ -36,6 +37,7 @@ type PayeeRow = {
   netPay: number
   included: boolean
   remarks: string
+  approvalStatus: string
 }
 
 const METHOD_OPTIONS: ReadonlyArray<{ value: PayMethod; label: string }> = [
@@ -50,7 +52,7 @@ function payeeRecordCode(employeeNo: string, payBatchRef: string): string {
   return `${employeeNo.trim()}::${payBatchRef.trim()}`.replace(/::+$/, '').replace(/^::/, '')
 }
 
-function parsePayeeRecord(r: { id: string; data: string }): PayeeRow {
+function parsePayeeRecord(r: { id: string; data: string }): Omit<PayeeRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     const pm = typeof o.paymentMethod === 'string' ? o.paymentMethod : 'BANK_TRANSFER'
@@ -113,7 +115,16 @@ export default function PayeeEmployeePage() {
 
   const rows = useMemo(
     () =>
-      ((data?.payrolluirecords as { id: string; data: string }[]) ?? []).map(parsePayeeRecord),
+      (
+        (data?.payrolluirecords as {
+          id: string
+          data: string
+          approvalStatus?: string | null
+        }[]) ?? []
+      ).map((rec) => ({
+        ...parsePayeeRecord(rec),
+        approvalStatus: rec.approvalStatus ?? 'none',
+      })),
     [data],
   )
 
@@ -402,6 +413,7 @@ export default function PayeeEmployeePage() {
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Method</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Net pay</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Include</TableHead>
+                <TableHead className="text-xs font-semibold uppercase text-gray-600">Org approval</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[100px]" />
               </TableRow>
             </TableHeader>
@@ -428,6 +440,13 @@ export default function PayeeEmployeePage() {
                     >
                       {r.included ? 'Included' : 'Excluded'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <PayrollUiRecordOrgApprovalCell
+                      recordId={r.id}
+                      approvalStatus={r.approvalStatus}
+                      onCompleted={() => refetch()}
+                    />
                   </TableCell>
                   <TableCell className="space-x-1">
                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>

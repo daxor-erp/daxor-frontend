@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { filterNavigationByModuleView, type ErpNavItem } from '@/lib/erp-module-access'
 import { 
   LayoutDashboard, Users, ShoppingCart, Package, DollarSign, Warehouse,
   TrendingUp, Briefcase, UserCheck, FolderKanban,
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
   /* Hidden from sidebar — restore to show Production Management (uses Factory icon)
   { 
     name: 'Production Management', 
@@ -51,6 +52,7 @@ const navigation = [
   { 
     name: 'CRM', 
     icon: Users,
+    moduleKey: 'crm',
     subItems: [
       { name: 'Clients', href: '/clients' },
       { name: 'Lead Management', href: '/crm/lead-management' },
@@ -60,6 +62,7 @@ const navigation = [
   { 
     name: 'Quotations', 
     icon: FileText,
+    moduleKey: 'quotations',
     subItems: [
       { name: 'Create Quotations', href: '/quotations' },
       { name: 'Send Quotations', href: '/quotations/send' },
@@ -68,6 +71,7 @@ const navigation = [
   { 
     name: 'Sales', 
     icon: ShoppingCart,
+    moduleKey: 'sales',
     subItems: [
       { name: 'Sales Returns', href: '/sales-returns' },
       { name: 'Delivery Challan', href: '/delivery-challan' },
@@ -84,6 +88,7 @@ const navigation = [
   { 
     name: 'Purchases', 
     icon: Package,
+    moduleKey: 'purchases',
     subItems: [
       { name: 'Vendors', href: '/vendors' },
       { name: 'Projects', href: '/projects' },
@@ -97,6 +102,7 @@ const navigation = [
   { 
     name: 'Payables', 
     icon: DollarSign,
+    moduleKey: 'payables',
     subItems: [
       { name: 'Enter Bills', href: '/payables/enter-bills' },
       { name: 'Pay Bills', href: '/payables/pay-bills' },
@@ -109,6 +115,7 @@ const navigation = [
   { 
     name: 'Inventory', 
     icon: Warehouse,
+    moduleKey: 'inventory',
     subItems: [
       { name: 'Inventory Control', href: '/inventory-control' },
       { name: 'Warehouses', href: '/warehouse' },
@@ -128,10 +135,11 @@ const navigation = [
       { name: 'Stock Ledger', href: '/inventory/stock-ledger' },
     ]
   },
-  { name: 'Products', href: '/products', icon: Package },
+  { name: 'Products', href: '/products', icon: Package, moduleKey: 'products' },
   { 
     name: 'Financial', 
     icon: TrendingUp,
+    moduleKey: 'financial',
     subItems: [
       { name: 'General Ledger', href: '/general-ledger' },
       { name: 'Cash & Bank', href: '/cash-bank' },
@@ -148,6 +156,7 @@ const navigation = [
   { 
     name: 'Payroll', 
     icon: Briefcase,
+    moduleKey: 'payroll',
     subItems: [
       { name: 'Payroll Management', href: '/payroll-management' },
       { name: 'Salary Processing', href: '/salary-processing' },
@@ -204,6 +213,7 @@ const navigation = [
   { 
     name: 'HR', 
     icon: UserCheck,
+    moduleKey: 'hr',
     subItems: [
       { 
         name: 'Leave',
@@ -268,6 +278,7 @@ const navigation = [
   { 
     name: 'Customers', 
     icon: Users,
+    moduleKey: 'customers',
     subItems: [
       { name: 'Customer Registration', href: '/customers' },
       { name: 'Accept Customer Payments', href: '/customers/accept-payments' },
@@ -288,6 +299,7 @@ const navigation = [
   { 
     name: 'Banks', 
     icon: Building2,
+    moduleKey: 'banks',
     subItems: [
       { name: 'Make Deposits', href: '/banks/make-deposits' },
       { name: 'Reconcile Account Statement', href: '/banks/reconcile-account' },
@@ -316,6 +328,7 @@ const navigation = [
   { 
     name: 'Reports', 
     icon: FileText,
+    moduleKey: 'reports',
     subItems: [
       { 
         name: 'Financial',
@@ -374,8 +387,18 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { logout } = useAuth()
+  const { user } = useAuth()
   const [openMenus, setOpenMenus] = useState<string[]>([])
+
+  const visibleNavigation = useMemo(
+    () =>
+      filterNavigationByModuleView(
+        navigation as ErpNavItem[],
+        user?.modulePermissions,
+        user?.roles,
+      ),
+    [user?.modulePermissions, user?.roles],
+  )
 
   const toggleMenu = (name: string) => {
     setOpenMenus(prev => 
@@ -454,7 +477,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 space-y-1 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-        {navigation.map((item) => renderMenuItem(item))}
+        {visibleNavigation.map((item) => renderMenuItem(item))}
       </nav>
 
       <div className="shrink-0 p-4" style={{ borderTop: '1px solid rgba(203, 213, 225, 0.1)' }}>

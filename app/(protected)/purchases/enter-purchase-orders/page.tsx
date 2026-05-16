@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_PURCHASE_ORDERS, CREATE_PURCHASE_ORDER, GET_VENDORS, GET_PROJECTS, GET_ITEMS, SUBMIT_PURCHASE_ORDER, APPROVE_PURCHASE_ORDER, RECEIVE_PURCHASE_ORDER } from '@/gql/queries'
+import { GET_PURCHASE_ORDERS, CREATE_PURCHASE_ORDER, GET_VENDORS, GET_PROJECTS, GET_ITEMS, SUBMIT_PURCHASE_ORDER, RECEIVE_PURCHASE_ORDER } from '@/gql/queries'
 import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
 import { Plus, X, Save, Trash2, ShoppingCart, Clock, CheckCircle2, Send, PackageCheck } from 'lucide-react'
@@ -10,11 +10,12 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const PO_STATUS: Record<string, { label: string; cls: string }> = {
   draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  submitted: { label: 'Submitted', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  submitted: { label: 'Pending approval', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
   approved:  { label: 'Approved',  cls: 'bg-blue-50 text-blue-700 border-blue-200' },
   sent:      { label: 'Sent',      cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   received:  { label: 'Received',  cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
+  rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-800 border-red-300' },
 }
 
 interface Line { desc: string; qty: string; price: string }
@@ -40,10 +41,6 @@ export default function EnterPurchaseOrdersPage() {
     onCompleted: () => refetch(),
     onError: (err) => alert(`Submit failed: ${err.message}`)
   })
-  const [approvePO] = useMutation(APPROVE_PURCHASE_ORDER, { 
-    onCompleted: () => refetch(),
-    onError: (err) => alert(`Approve failed: ${err.message}`)
-  })
   const [receivePO] = useMutation(RECEIVE_PURCHASE_ORDER, { 
     onCompleted: () => refetch(),
     onError: (err) => alert(`Receive failed: ${err.message}`)
@@ -54,8 +51,12 @@ export default function EnterPurchaseOrdersPage() {
   const [lines, setLines] = useState<Line[]>([emptyLine()])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const vendors = vendorData?.vendors ?? []
-  const projects = projectData?.projects ?? []
+  const vendors = (vendorData?.vendors ?? []).filter(
+    (v: any) => (v.orgApprovalStatus ?? 'approved') === 'approved',
+  )
+  const projects = (projectData?.projects ?? []).filter(
+    (p: any) => (p.orgApprovalStatus ?? 'approved') === 'approved',
+  )
   const items = itemData?.items ?? []
   const orders = poData?.purchaseorders ?? []
 
@@ -103,7 +104,10 @@ export default function EnterPurchaseOrdersPage() {
   }
 
   return (
-    <PageTemplate title="Enter Purchase Orders" description="Create and manage purchase orders">
+    <PageTemplate
+      title="Enter Purchase Orders"
+      description='New POs start in Draft. Use “Send for approval” to notify the purchaser assigned under Organization admin → Approvals. The approver clears items from the header inbox (clipboard icon).'
+    >
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-5">
         {[
@@ -257,10 +261,21 @@ export default function EnterPurchaseOrdersPage() {
               <div className="w-24 border-r border-gray-200 px-2 py-2"><span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span></div>
               <div className="w-32 px-2 py-1.5 flex items-center gap-1">
                 {o.status === 'draft' && (
-                  <Button size="sm" onClick={() => submitPO({ variables: { id: o.id } })} className="h-6 text-xs bg-amber-500 hover:bg-amber-600 text-white px-2">Submit</Button>
+                  <Button
+                    size="sm"
+                    onClick={() => submitPO({ variables: { id: o.id } })}
+                    title="Queues this PO for the designated purchases approver"
+                    className="h-6 text-xs gap-1 bg-amber-500 hover:bg-amber-600 text-white px-2"
+                  >
+                    <Send className="h-3 w-3" />
+                    Send for approval
+                  </Button>
                 )}
                 {o.status === 'submitted' && (
-                  <Button size="sm" onClick={() => approvePO({ variables: { id: o.id } })} className="h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2">Approve</Button>
+                  <span className="inline-flex flex-col gap-0.5 text-[10px] text-amber-800 leading-tight">
+                    <span className="font-medium">Approver inbox</span>
+                    <span className="text-gray-500">Waiting for designated approver</span>
+                  </span>
                 )}
                 {(o.status === 'approved' || o.status === 'sent') && (
                   <Button size="sm" onClick={() => receivePO({ variables: { id: o.id } })} className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2">Receive</Button>
