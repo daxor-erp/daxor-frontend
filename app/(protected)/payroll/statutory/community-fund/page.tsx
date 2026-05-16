@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
 import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
+import { type PayrollUiRecordQueryRow, withOrgApproval } from '@/lib/payroll-ui-record-row'
 import {
   GET_PAYROLL_UI_RECORDS,
   CREATE_PAYROLL_UI_RECORD,
@@ -124,16 +125,9 @@ export default function CommunityContributionFundPage() {
 
   const rows = useMemo(
     () =>
-      (
-        (data?.payrolluirecords as {
-          id: string
-          data: string
-          approvalStatus?: string | null
-        }[]) ?? []
-      ).map((rec) => ({
-        ...parseFundRecord(rec),
-        approvalStatus: rec.approvalStatus ?? 'none',
-      })),
+      ((data?.payrolluirecords as PayrollUiRecordQueryRow[]) ?? []).map((rec) =>
+        withOrgApproval<CommunityFundRow>(rec, parseFundRecord(rec)),
+      ),
     [data],
   )
 

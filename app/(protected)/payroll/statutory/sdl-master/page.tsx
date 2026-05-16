@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
 import { PayrollUiRecordOrgApprovalCell } from '@/components/payroll-ui-record-org-approval-cell'
 import { PAYROLL_UI_CATEGORY } from '@/lib/payroll-ui-category'
+import { type PayrollUiRecordQueryRow, withOrgApproval } from '@/lib/payroll-ui-record-row'
 import {
   GET_PAYROLL_UI_RECORDS,
   CREATE_PAYROLL_UI_RECORD,
@@ -49,7 +50,7 @@ function nextRef(rows: SdlMasterRow[]): string {
 
 const money = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-function parseSdlRecord(r: { id: string; data: string }): SdlMasterRow {
+function parseSdlRecord(r: { id: string; data: string }): Omit<SdlMasterRow, 'approvalStatus'> {
   try {
     const o = JSON.parse(r.data) as Record<string, unknown>
     return {
@@ -110,16 +111,9 @@ export default function SdlMasterPage() {
 
   const rows = useMemo(
     () =>
-      (
-        (data?.payrolluirecords as {
-          id: string
-          data: string
-          approvalStatus?: string | null
-        }[]) ?? []
-      ).map((rec) => ({
-        ...parseSdlRecord(rec),
-        approvalStatus: rec.approvalStatus ?? 'none',
-      })),
+      ((data?.payrolluirecords as PayrollUiRecordQueryRow[]) ?? []).map((rec) =>
+        withOrgApproval<SdlMasterRow>(rec, parseSdlRecord(rec)),
+      ),
     [data],
   )
 
