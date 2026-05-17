@@ -152,7 +152,7 @@ function WorkflowPageInner() {
           })
         }
       }
-    } catch {}
+    } catch { /* ignore */ }
   }, [query])
 
   const summaryEntries = data

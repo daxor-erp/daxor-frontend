@@ -574,7 +574,7 @@ function Message({ msg, large = false, replyGraph, query }: {
   function handleExpandGraph(graph: WorkflowGraphData, q: string) {
     try {
       localStorage.setItem('daxor_inline_graph', JSON.stringify({ query: q, ...graph }))
-    } catch {}
+    } catch { /* ignore */ }
     router.push(`/workflow?q=${encodeURIComponent(q)}&from=chat`)
   }
 

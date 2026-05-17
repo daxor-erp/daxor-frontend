@@ -30,7 +30,7 @@ function PaginatedTable({ children }: { children?: ReactNode }) {
   // Extract <tr> rows out of the tbody so we can slice
   const allRows: ReactNode[] = []
   if (isValidElement(tbody)) {
-    Children.forEach((tbody.props as any).children, (row) => {
+    Children.forEach(((tbody as any).props as any).children, (row) => {
       if (isValidElement(row) || typeof row === 'string') allRows.push(row)
     })
   }
@@ -533,7 +533,7 @@ export function AgentChat({ config }: { config: AgentConfig }) {
                 m.id === loadingMsg.id ? { ...m, content: accumulated, loading: false, steps: collectedSteps } : m
               ))
             }
-          } catch {}
+          } catch { /* ignore */ }
         }
       }
     } catch (e) {
