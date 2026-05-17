@@ -38,6 +38,7 @@ import {
   Legend,
 } from 'recharts'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAiPane } from '@/contexts/AiPaneContext'
 import { useDashboardPreferences } from '@/hooks/use-dashboard-preferences'
 import {
   GET_CUSTOMER_INVOICES,
@@ -117,6 +118,7 @@ function buildMonthlyBuckets(rows: Array<{ date?: string; amount?: number }>) {
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const { isOpen: aiOpen } = useAiPane()
   const orgId = user?.organizationId ?? ''
   const skip = !orgId
   const prefs = useDashboardPreferences('erp')
@@ -699,15 +701,23 @@ export default function DashboardPage() {
       />
 
       {visibleKpis.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <div className={cn(
+          "grid gap-3 sm:gap-4 auto-rows-fr transition-all duration-300 ease-in-out",
+          aiOpen
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+            : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+        )}>
           {visibleKpis.map((w) => (
-            <div key={w.id}>{kpiCards[w.id]}</div>
+            <div key={w.id} className="h-full">{kpiCards[w.id]}</div>
           ))}
         </div>
       )}
 
       {visibleSections.length > 0 && (
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+        <div className={cn(
+          "grid gap-4 sm:gap-6 transition-all duration-300 ease-in-out",
+          aiOpen ? "grid-cols-1 xl:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"
+        )}>
           {visibleSections.map((w) => (
             <Fragment key={w.id}>{renderSection(w.id, spanClassFor(w.colSpan))}</Fragment>
           ))}
