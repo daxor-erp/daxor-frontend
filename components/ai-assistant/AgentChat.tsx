@@ -1,11 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, Children, isValidElement, ReactNode } from 'react'
+import { useState, useRef, useEffect, useCallback, ReactNode } from 'react'
 import { Send, Bot, User, Loader2, Sparkles, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-
-const PAGE_SIZE = 25
 
 /**
  * PaginatedTable — renders a markdown table with:
@@ -16,64 +14,13 @@ const PAGE_SIZE = 25
  * and we re-render them while slicing the tbody's <tr> list.
  */
 function PaginatedTable({ children }: { children?: ReactNode }) {
-  const [page, setPage] = useState(0)
-
-  // Find thead + tbody among the children
-  let thead: ReactNode = null
-  let tbody: ReactNode = null
-  Children.forEach(children, (child) => {
-    if (!isValidElement(child)) return
-    if (child.type === 'thead' || (child.props as any)?.node?.tagName === 'thead') thead = child
-    else if (child.type === 'tbody' || (child.props as any)?.node?.tagName === 'tbody') tbody = child
-  })
-
-  // Extract <tr> rows out of the tbody so we can slice
-  const allRows: ReactNode[] = []
-  if (isValidElement(tbody)) {
-    Children.forEach(((tbody as any).props as any).children, (row) => {
-      if (isValidElement(row) || typeof row === 'string') allRows.push(row)
-    })
-  }
-  // Filter out whitespace-only text nodes
-  const rows = allRows.filter(r => !(typeof r === 'string' && !r.trim()))
-
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  const safePage = Math.min(page, totalPages - 1)
-  const pageRows = rows.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE)
-  const showPagination = rows.length > PAGE_SIZE
-
   return (
-    <div className="my-2 not-prose border border-gray-200 rounded-md overflow-hidden">
+    <div className="my-2 not-prose border border-border rounded-md overflow-hidden bg-card">
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-xs">
-          {thead}
-          <tbody>{pageRows}</tbody>
+        <table className="w-full border-collapse text-xs [&_th]:bg-secondary [&_th]:text-foreground [&_th]:font-semibold [&_th]:text-left [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:whitespace-nowrap [&_th]:border-b [&_th]:border-border [&_td]:px-2.5 [&_td]:py-1.5 [&_td]:border-b [&_td]:border-border [&_td]:text-foreground [&_td]:whitespace-nowrap [&_tr:last-child_td]:border-b-0">
+          {children}
         </table>
       </div>
-      {showPagination && (
-        <div className="flex items-center justify-between px-3 py-1.5 border-t border-gray-100 bg-gray-50 text-[11px]">
-          <span className="text-gray-500">
-            Showing {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, rows.length)} of {rows.length}
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage(p => Math.max(0, p - 1))}
-              disabled={safePage === 0}
-              className="px-2 py-0.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
-            >
-              <ChevronLeft className="h-3 w-3" /> Prev
-            </button>
-            <span className="text-gray-500 px-1">{safePage + 1} / {totalPages}</span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-              disabled={safePage >= totalPages - 1}
-              className="px-2 py-0.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
-            >
-              Next <ChevronRight className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -485,16 +432,26 @@ export function AgentChat({ config }: { config: AgentConfig }) {
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
+      let buffer = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value, { stream: true })
-        for (const line of chunk.split('\n')) {
+        buffer += decoder.decode(value, { stream: true })
+
+        // Split on newlines; the last (possibly partial) line stays in the buffer
+        // until the next chunk completes it. This is what previously caused the
+        // tail of long answers (markdown tables) to be dropped.
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
           if (!line.startsWith('data: ')) continue
+          const payload = line.slice(6).trim()
+          if (!payload) continue
           try {
-            const event = JSON.parse(line.slice(6))
+            const event = JSON.parse(payload)
             if (event.type === 'token') {
               accumulated += event.content
               setMessages(prev => prev.map(m =>
