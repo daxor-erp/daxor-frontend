@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { GET_PRODUCTION_PLANNINGS } from '@/gql/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function GanttChartPage() {
   const { user } = useAuth()
@@ -112,7 +113,7 @@ export default function GanttChartPage() {
                             width: `${Math.max(width, 40)}px`,
                             backgroundColor: statusColor[task.status] || '#94A3B8',
                           }}
-                          title={`${task.name}\n${new Date(task.startDate).toLocaleDateString()} - ${new Date(task.dueDate).toLocaleDateString()}\nStatus: ${task.status}`}
+                          title={`${task.name}\n${formatDate(task.startDate)} - ${formatDate(task.dueDate)}\nStatus: ${task.status}`}
                         >
                           <span className="truncate">{task.status}</span>
                         </div>

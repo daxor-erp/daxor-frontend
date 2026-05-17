@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import { Save, Plus, X } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 function srStatusLabel(st: string) {
   const u = String(st || '').toUpperCase()
@@ -189,7 +190,7 @@ export default function SalesReturnsPage() {
                     return (
                       <tr key={item.id} className="border-t border-gray-100 hover:bg-gray-50/80">
                         <td className="p-2 font-mono text-gray-600">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
-                        <td className="p-2">{item.docDate ? new Date(item.docDate).toLocaleDateString() : 'N/A'}</td>
+                        <td className="p-2">{item.docDate ? formatDate(item.docDate) : 'N/A'}</td>
                         <td className="p-2">
                           <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
                             {srStatusLabel(item.status)}
@@ -214,7 +215,7 @@ export default function SalesReturnsPage() {
                             <span className="text-xs text-gray-400">—</span>
                           )}
                         </td>
-                        <td className="p-2">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '—'}</td>
+                        <td className="p-2">{item.createdAt ? formatDate(item.createdAt) : '—'}</td>
                       </tr>
                     )
                   })}

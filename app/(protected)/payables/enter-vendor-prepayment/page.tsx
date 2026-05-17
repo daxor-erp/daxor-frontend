@@ -9,6 +9,8 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_VENDOR_PREPAYMENTS, CREATE_VENDOR_PREPAYMENT, DELETE_VENDOR_PREPAYMENT, GET_VENDORS } from '@/gql/queries'
 import { X, Save, Trash2, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const PAYMENT_METHODS = [
   { value: 'bank_transfer', label: 'Bank Transfer' },
@@ -94,12 +96,12 @@ export default function EnterVendorPrepaymentPage() {
   const columns: Column[] = [
     { key: 'prepaymentNumber', label: 'Prepayment #', width: '150px', render: v => <span className="font-mono text-xs text-gray-600">{v}</span> },
     { key: 'vendor', label: 'Vendor', render: (_v, row) => <span className="font-medium">{row.vendor?.name || '—'}</span> },
-    { key: 'prepaymentDate', label: 'Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
+    { key: 'prepaymentDate', label: 'Date', width: '110px', render: v => v ? formatDate(v) : '—' },
     { key: 'paymentMethod', label: 'Method', width: '130px', render: v => <span className="capitalize text-gray-600">{v?.replace('_', ' ')}</span> },
     { key: 'referenceNumber', label: 'Reference', width: '120px', render: v => v || '—' },
-    { key: 'amount', label: 'Amount', width: '110px', align: 'right', render: v => <span className="font-semibold">${Number(v || 0).toFixed(2)}</span> },
-    { key: 'appliedAmount', label: 'Applied', width: '100px', align: 'right', render: v => <span className="text-gray-500">${Number(v || 0).toFixed(2)}</span> },
-    { key: 'remainingAmount', label: 'Remaining', width: '110px', align: 'right', render: v => <span className={Number(v) > 0 ? 'font-bold text-green-600' : 'text-gray-400'}>${Number(v || 0).toFixed(2)}</span> },
+    { key: 'amount', label: 'Amount', width: '110px', align: 'right', render: v => <span className="font-semibold">{formatMoney(v || 0)}</span> },
+    { key: 'appliedAmount', label: 'Applied', width: '100px', align: 'right', render: v => <span className="text-gray-500">{formatMoney(v || 0)}</span> },
+    { key: 'remainingAmount', label: 'Remaining', width: '110px', align: 'right', render: v => <span className={Number(v) > 0 ? 'font-bold text-green-600' : 'text-gray-400'}>{formatMoney(v || 0)}</span> },
     { key: 'status', label: 'Status', width: '100px', render: v => <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[v] || ''}`}>{v}</span> },
   ]
 
@@ -120,8 +122,8 @@ export default function EnterVendorPrepaymentPage() {
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total Prepaid', value: `$${totalPrepaid.toFixed(2)}`, icon: DollarSign, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Available to Apply', value: `$${totalAvailable.toFixed(2)}`, icon: Clock, cls: 'text-green-600 bg-green-50' },
+          { label: 'Total Prepaid', value: `${formatMoney(totalPrepaid)}`, icon: DollarSign, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Available to Apply', value: `${formatMoney(totalAvailable)}`, icon: Clock, cls: 'text-green-600 bg-green-50' },
           { label: 'Fully Applied', value: prepayments.filter((p: any) => p.status === 'applied').length, icon: CheckCircle, cls: 'text-gray-600 bg-gray-50' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">

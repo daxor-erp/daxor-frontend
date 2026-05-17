@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus, Save, X } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 function dcStatusLabel(st: string) {
   const u = String(st || '').toUpperCase()
@@ -148,7 +149,7 @@ export default function DeliveryChallansPage() {
                     return (
                       <tr key={item.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                         <td className="px-3 py-2 border-r border-gray-200 font-mono">{item.docNumber || 'N/A'}</td>
-                        <td className="px-3 py-2 border-r border-gray-200">{item.docDate ? new Date(item.docDate).toLocaleDateString() : 'N/A'}</td>
+                        <td className="px-3 py-2 border-r border-gray-200">{item.docDate ? formatDate(item.docDate) : 'N/A'}</td>
                         <td className="px-3 py-2 border-r border-gray-200">
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs border border-blue-200">
                             {dcStatusLabel(item.status)}
@@ -173,7 +174,7 @@ export default function DeliveryChallansPage() {
                             <span className="text-xs text-gray-400">—</span>
                           )}
                         </td>
-                        <td className="px-3 py-2">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</td>
+                        <td className="px-3 py-2">{item.createdAt ? formatDate(item.createdAt) : 'N/A'}</td>
                       </tr>
                     )
                   })}

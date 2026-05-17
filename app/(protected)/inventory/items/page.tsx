@@ -10,6 +10,7 @@ import { DataTable, Column } from '@/components/DataTable'
 import { Trash2, Package, Box, Archive, AlertTriangle } from 'lucide-react'
 import { X, Save, Edit } from 'lucide-react'
 import { GET_ITEMS, CREATE_ITEM, UPDATE_ITEM, DELETE_ITEM } from '@/gql/queries'
+import { formatMoney } from '@/lib/format-money'
 
 type ItemRow = {
   id?: string
@@ -27,7 +28,7 @@ function formatItemRate(value: unknown): string {
   if (value == null || value === '') return '—'
   const n = typeof value === 'number' ? value : Number.parseFloat(String(value))
   if (!Number.isFinite(n)) return '—'
-  return `$${n.toFixed(2)}`
+  return `${formatMoney(n)}`
 }
 
 function resolveItemId(row: ItemRow): string {

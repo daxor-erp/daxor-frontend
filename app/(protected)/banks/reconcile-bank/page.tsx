@@ -16,6 +16,7 @@ import {
 import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
 import { FileText, Link2, RefreshCw, Trash2 } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const labelCell = wsLabelCell
 const cell = wsCell
@@ -364,7 +365,7 @@ export default function ReconcileBankStatementPage() {
                     return (
                       <tr key={bl.id} className="hover:bg-gray-50">
                         <td className={`${cell} font-mono`}>
-                          {bl.lineDate ? new Date(bl.lineDate).toLocaleDateString() : '—'}
+                          {bl.lineDate ? formatDate(bl.lineDate) : '—'}
                         </td>
                         <td className={cell}>{bl.lineKind}</td>
                         <td className={`${cell} ${moneyClass}`}>{formatMoney(Number(bl.amount ?? 0))}</td>
@@ -448,7 +449,7 @@ export default function ReconcileBankStatementPage() {
                       <tr key={b.id} className="hover:bg-gray-50">
                         <td className={`${cell} font-mono`}>{b.transactionNumber}</td>
                         <td className={`${cell} font-mono`}>
-                          {b.transactionDate ? new Date(b.transactionDate).toLocaleDateString() : '—'}
+                          {b.transactionDate ? formatDate(b.transactionDate) : '—'}
                         </td>
                         <td className={cell}>{b.transactionType}</td>
                         <td className={`${cell} font-mono ${moneyClass}`}>{signedBook(b).toFixed(2)}</td>
@@ -482,7 +483,7 @@ export default function ReconcileBankStatementPage() {
                     {matchedBank.map((m) => (
                       <tr key={m.id} className="hover:bg-gray-50">
                         <td className={`${cell} font-mono`}>
-                          {m.lineDate ? new Date(m.lineDate).toLocaleDateString() : '—'}
+                          {m.lineDate ? formatDate(m.lineDate) : '—'}
                         </td>
                         <td className={cell}>{m.lineKind}</td>
                         <td className={`${cell} ${moneyClass}`}>{formatMoney(Number(m.amount))}</td>

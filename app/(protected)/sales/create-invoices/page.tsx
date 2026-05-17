@@ -11,8 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, XCircle, Eye, Send } from 'lucide-react'
+import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, XCircle, Eye, Send, Download } from 'lucide-react'
+import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { useAuth } from '@/contexts/AuthContext'
+import { DocumentAttachments } from '@/components/widgets/document-attachments'
+import { PdfDownloadButton } from '@/components/widgets/pdf-download-button'
+import { escapeHtml, pdfMoney } from '@/lib/pdf-download'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   draft:            { label: 'Draft',    cls: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -165,7 +171,7 @@ export default function CreateInvoicesPage() {
           <div className="grid grid-cols-4 border-b border-gray-200">
             {[
               { label: 'Client *', key: 'customerId', type: 'select', opts: clients.map((c: any) => ({ id: c.id, name: `${c.name} (${c.id})` })), err: errors.customerId },
-              { label: 'Sales Order', key: 'salesOrderId', type: 'select', opts: availableSalesOrders.map((s: any) => ({ id: s.id, name: `${s.seqNo || s.id} - $${Number(s.totalAmount || 0).toFixed(2)}` })), err: '' },
+              { label: 'Sales Order', key: 'salesOrderId', type: 'select', opts: availableSalesOrders.map((s: any) => ({ id: s.id, name: `${s.seqNo || s.id} - ${formatMoney(s.totalAmount || 0)}` })), err: '' },
               { label: 'Invoice Date *', key: 'invoiceDate', type: 'date', err: errors.invoiceDate },
               { label: 'Due Date', key: 'dueDate', type: 'date', err: '' },
             ].map(({ label, key, type, opts, err }: any) => (
@@ -242,10 +248,10 @@ export default function CreateInvoicesPage() {
               <div className="flex items-center gap-6">
                 <div className="text-right">
                   <div className="flex gap-8 text-xs text-gray-500 mb-1">
-                    <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+                    <span>Subtotal</span><span>{formatMoney(subtotal)}</span>
                   </div>
                   <div className="flex gap-8 text-sm font-bold text-gray-800 border-t border-gray-300 pt-1">
-                    <span>Total</span><span>${subtotal.toFixed(2)}</span>
+                    <span>Total</span><span>{formatMoney(subtotal)}</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -286,8 +292,8 @@ export default function CreateInvoicesPage() {
                     <tr key={so.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                       <td className="px-3 py-2 border-r border-gray-200 font-mono">{so.seqNo || '—'}</td>
                       <td className="px-3 py-2 border-r border-gray-200">{getClient(so.customerId || so.clientId || '—')}</td>
-                      <td className="px-3 py-2 border-r border-gray-200">{so.orderDate ? new Date(so.orderDate).toLocaleDateString() : '—'}</td>
-                      <td className="px-3 py-2 border-r border-gray-200 font-semibold">${Number(so.totalAmount || 0).toFixed(2)}</td>
+                      <td className="px-3 py-2 border-r border-gray-200">{so.orderDate ? formatDate(so.orderDate) : '—'}</td>
+                      <td className="px-3 py-2 border-r border-gray-200 font-semibold">{formatMoney(so.totalAmount || 0)}</td>
                       <td className="px-3 py-2 border-r border-gray-200">{so.status || '—'}</td>
                       <td className="px-3 py-2">
                         <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => startFromSalesOrder(so)}>
@@ -338,10 +344,10 @@ export default function CreateInvoicesPage() {
                 <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-400">{inv.seqNo || '—'}</div>
                 <div className="flex-1 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{getClient(inv.customerId || inv.clientId)}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-500">{inv.salesOrderId ? getSO(inv.salesOrderId) : '—'}</div>
-                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : '—'}</div>
-                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}</div>
-                <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-semibold text-gray-800">${Number(inv.totalAmount).toFixed(2)}</div>
-                <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">${Number(inv.paidAmount ?? 0).toFixed(2)}</div>
+                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}</div>
+                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{inv.dueDate ? formatDate(inv.dueDate) : '—'}</div>
+                <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-semibold text-gray-800">{formatMoney(inv.totalAmount)}</div>
+                <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{formatMoney(inv.paidAmount ?? 0)}</div>
                 <div className="w-24 border-r border-gray-200 px-2 py-2">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
                 </div>
@@ -353,6 +359,14 @@ export default function CreateInvoicesPage() {
                     onClick={() => setViewInv(inv)}
                   >
                     <Eye className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Download PDF"
+                    className="p-1.5 rounded text-gray-500 hover:text-blue-700 hover:bg-blue-50"
+                    onClick={() => downloadDocumentPdf('customer-invoice', inv.id, inv.invoiceNumber || inv.seqNo).catch(() => {})}
+                  >
+                    <Download className="h-3.5 w-3.5" />
                   </button>
                   {(inv.status === 'draft' || inv.status === 'approval_declined') && (
                     <button
@@ -373,13 +387,55 @@ export default function CreateInvoicesPage() {
       </div>
 
       <Dialog open={viewInv != null} onOpenChange={(o) => !o && setViewInv(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Invoice snapshot</DialogTitle>
+            <DialogTitle className="flex items-center justify-between gap-2">
+              <span>Invoice #{viewInv?.seqNo ?? viewInv?.id?.slice?.(-6)}</span>
+              {viewInv && (
+                <PdfDownloadButton
+                  title={`Invoice #${viewInv.seqNo ?? viewInv.id?.slice?.(-6)}`}
+                  subtitle={viewInv.invoiceDate ? formatDate(viewInv.invoiceDate) : undefined}
+                  filename={`invoice-${viewInv.seqNo ?? viewInv.id?.slice?.(-6)}`}
+                  size="sm"
+                  variant="primary"
+                  label="PDF"
+                  buildHtml={() => `
+                    <div class="pdf-meta">
+                      <div><strong>Invoice #:</strong> ${escapeHtml(viewInv.seqNo ?? viewInv.id?.slice?.(-6) ?? '')}</div>
+                      <div><strong>Date:</strong> ${escapeHtml(viewInv.invoiceDate ? formatDate(viewInv.invoiceDate) : '')}</div>
+                      <div><strong>Due:</strong> ${escapeHtml(viewInv.dueDate ? formatDate(viewInv.dueDate) : '')}</div>
+                      <div><strong>Status:</strong> ${escapeHtml(String(viewInv.status ?? '').toUpperCase())}</div>
+                    </div>
+                    <div class="pdf-section">
+                      <div class="pdf-section-title">Summary</div>
+                      <table>
+                        <tbody>
+                          <tr><td>Total</td><td class="num">${pdfMoney(viewInv.totalAmount)}</td></tr>
+                          <tr><td>Paid</td><td class="num">${pdfMoney(viewInv.paidAmount)}</td></tr>
+                          <tr style="background:#ecfdf5;border-top:2px solid #059669;"><td><strong>Outstanding</strong></td><td class="num"><strong>${pdfMoney(viewInv.outstandingAmount)}</strong></td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  `}
+                />
+              )}
+            </DialogTitle>
           </DialogHeader>
-          <pre className="text-[11px] rounded border bg-slate-50 p-3 overflow-auto max-h-[65vh] whitespace-pre-wrap">
-            {viewInv ? JSON.stringify(viewInv, null, 2) : ''}
-          </pre>
+          {viewInv && (
+            <div className="space-y-3 overflow-auto">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <Stat label="Total" value={formatMoney(Number(viewInv.totalAmount ?? 0))} />
+                <Stat label="Outstanding" value={formatMoney(Number(viewInv.outstandingAmount ?? 0))} tone="rose" />
+                <Stat label="Status" value={String(viewInv.status ?? '').toUpperCase()} />
+                <Stat label="Date" value={viewInv.invoiceDate ? formatDate(viewInv.invoiceDate) : '—'} />
+              </div>
+              <DocumentAttachments parentModule="invoice" parentId={viewInv.id} compact title="Attachments" />
+              <details className="rounded border bg-slate-50 p-3">
+                <summary className="cursor-pointer text-xs font-medium text-muted-foreground">Raw JSON</summary>
+                <pre className="text-[11px] mt-2 overflow-auto max-h-[20vh] whitespace-pre-wrap">{JSON.stringify(viewInv, null, 2)}</pre>
+              </details>
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setViewInv(null)}>
               Close
@@ -387,6 +443,15 @@ export default function CreateInvoicesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: 'rose' }) {
+  return (
+    <div className={`rounded-lg border p-3 ${tone === 'rose' ? 'bg-rose-50 border-rose-200' : 'bg-secondary/40 border-border'}`}>
+      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</p>
+      <p className={`text-base font-bold tabular-nums ${tone === 'rose' ? 'text-rose-700' : ''}`}>{value}</p>
     </div>
   )
 }

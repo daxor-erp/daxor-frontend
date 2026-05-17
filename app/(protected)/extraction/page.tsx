@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function ExtractionPage() {
   const { user } = useAuth()
@@ -54,13 +55,13 @@ export default function ExtractionPage() {
                   {items.map((item: any) => (
                     <tr key={item.id} className="border-b hover:bg-gray-50">
                       <td className="p-2">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
-                      <td className="p-2">{item.docDate ? new Date(item.docDate).toLocaleDateString() : 'N/A'}</td>
+                      <td className="p-2">{item.docDate ? formatDate(item.docDate) : 'N/A'}</td>
                       <td className="p-2">
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
                           {item.status || 'Active'}
                         </span>
                       </td>
-                      <td className="p-2">{new Date(item.createdAt).toLocaleDateString()}</td>
+                      <td className="p-2">{formatDate(item.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>

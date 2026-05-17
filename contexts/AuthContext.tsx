@@ -10,6 +10,17 @@ export interface ModulePermissionRow {
   canView: boolean
 }
 
+export interface DashboardWidgetPrefs {
+  hiddenWidgets: string[]
+  widgetOrder: string[]
+}
+
+export interface DashboardPreferences {
+  erp?: DashboardWidgetPrefs | null
+  admin?: DashboardWidgetPrefs | null
+  orgAdmin?: DashboardWidgetPrefs | null
+}
+
 interface User {
   id: string
   email: string
@@ -18,6 +29,7 @@ interface User {
   roles: string[]
   organizationId?: string | null
   modulePermissions?: ModulePermissionRow[]
+  dashboardPreferences?: DashboardPreferences | null
 }
 
 interface AuthContextType {

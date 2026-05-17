@@ -9,6 +9,7 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_PRODUCTION_PLANNINGS, UPDATE_PRODUCTION_PLANNING, GET_PROJECTS, GET_USERS } from '@/gql/queries'
 import { Trash2, Edit, X, Save, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const EMPTY_FORM = {
   name: '',
@@ -168,7 +169,7 @@ export default function TasksPage() {
     }},
     { key: 'status', label: 'Status', width: '110px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${statusColor[v]}`}>{v}</span> },
     { key: 'priority', label: 'Priority', width: '100px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${priorityColor[v]}`}>{v}</span> },
-    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
+    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => v ? formatDate(v) : '—' },
   ]
 
   return (

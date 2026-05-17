@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Truck, PackageCheck, Clock, CheckCircle2, Building2, FolderKanban, CalendarDays, DollarSign, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
 
 const SO_STATUS: Record<string, { label: string; cls: string }> = {
   draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -111,7 +112,7 @@ export default function DeliveryOrderPage() {
                 <td className="px-3 py-2 border-r border-gray-200">{getClientDisplay(o.customerId || o.clientId || '—')}</td>
                 <td className="px-3 py-2 border-r border-gray-200">{o.projectId ? getProjectName(o.projectId) : '—'}</td>
                 <td className="px-3 py-2 border-r border-gray-200">{formatDate(o.orderDate)}</td>
-                <td className="px-3 py-2 border-r border-gray-200 font-semibold">${Number(o.totalAmount || 0).toFixed(2)}</td>
+                <td className="px-3 py-2 border-r border-gray-200 font-semibold">{formatMoney(o.totalAmount || 0)}</td>
                 <td className="px-3 py-2 border-r border-gray-200">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
                 </td>
@@ -230,7 +231,7 @@ export default function DeliveryOrderPage() {
                     <DollarSign className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-xs text-gray-400">Order Amount</p>
-                      <p className="text-base font-bold text-gray-800">${Number(selected.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                      <p className="text-base font-bold text-gray-800">{formatMoney(selected.totalAmount)}</p>
                     </div>
                   </div>
                 </div>

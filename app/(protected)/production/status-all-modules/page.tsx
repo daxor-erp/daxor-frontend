@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { GET_PRODUCTION_PLANNINGS } from '@/gql/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Activity, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function StatusAllModulesPage() {
   const { user } = useAuth()
@@ -85,7 +86,7 @@ export default function StatusAllModulesPage() {
                 <div className="grid grid-cols-4 gap-3 text-xs">
                   <div>
                     <p className="text-gray-400">Date</p>
-                    <p className="font-semibold">{new Date(plan.docDate).toLocaleDateString()}</p>
+                    <p className="font-semibold">{formatDate(plan.docDate)}</p>
                   </div>
                   <div>
                     <p className="text-gray-400">Tasks</p>

@@ -10,6 +10,7 @@ import {
   CANCEL_RETURN_AUTHORIZATION,
 } from '@/gql/queries'
 import { CheckCircle, XCircle, Clock, Ban } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 function linesSummary(lines: { description: string; quantity: number }[] | undefined) {
   if (!lines?.length) return '—'
@@ -83,7 +84,7 @@ export default function ApproveReturnAuthorizationsPage() {
       key: 'requestedDate',
       label: 'Requested',
       width: '110px',
-      render: (v) => (v ? new Date(v).toLocaleDateString() : '—'),
+      render: (v) => (v ? formatDate(v) : '—'),
     },
     {
       key: 'reason',

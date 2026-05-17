@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
+import { CellInput } from '@/components/ui/cell-input'
+import { CellSelect } from '@/components/ui/cell-select'
 import { Button } from '@/components/ui/button'
 import {
   GET_MATERIAL_RECEIPTS,
@@ -30,6 +32,7 @@ import {
   Ban,
   Send,
 } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 interface LineItem {
   itemDescription: string
@@ -321,7 +324,7 @@ export default function MaterialReceiptPage() {
       key: 'receiptDate',
       label: 'Receipt Date',
       width: '120px',
-      render: v => (v ? new Date(v).toLocaleDateString() : '—'),
+      render: v => (v ? formatDate(v) : '—'),
     },
     {
       key: 'warehouseName',
@@ -369,19 +372,19 @@ export default function MaterialReceiptPage() {
         return (
           <div className="flex flex-col gap-1 min-w-[140px]">
             {showSubmit ? (
-              <select
+              <CellSelect
                 aria-label="Material receipt approval action"
-                className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2"
                 defaultValue=""
                 onChange={(e) => {
                   const val = e.target.value
                   e.target.value = ''
                   if (val === 'submit') void submitMRNForApproval({ variables: { id: row.id } })
                 }}
-              >
-                <option value="">Change status…</option>
-                <option value="submit">Send for approval</option>
-              </select>
+                options={[
+                  { value: '', label: 'Change status…' },
+                  { value: 'submit', label: 'Send for approval' },
+                ]}
+              />
             ) : (
               <span className="text-xs text-gray-400">—</span>
             )}
@@ -393,7 +396,7 @@ export default function MaterialReceiptPage() {
       key: 'createdAt',
       label: 'Created',
       width: '110px',
-      render: v => (v ? new Date(v).toLocaleDateString() : '—'),
+      render: v => (v ? formatDate(v) : '—'),
     },
   ]
 
@@ -524,62 +527,62 @@ export default function MaterialReceiptPage() {
                     {lineItems.map((line, idx) => (
                       <tr key={idx} className="border-b last:border-0">
                         <td className="p-1">
-                          <input
-                            className={`w-full border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 ${errors[`line_${idx}`] ? 'border-red-400' : 'border-gray-300'}`}
+                          <CellInput
+                            invalid={!!errors[`line_${idx}`]}
                             placeholder="Item description"
                             value={line.itemDescription}
                             onChange={e => updateLineItem(idx, 'itemDescription', e.target.value)}
                           />
                         </td>
                         <td className="p-1">
-                          <input
+                          <CellInput
                             type="number"
                             min="0"
-                            className="w-full border border-gray-300 rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            className="text-right"
                             value={line.orderedQty}
                             onChange={e => updateLineItem(idx, 'orderedQty', Number(e.target.value))}
                           />
                         </td>
                         <td className="p-1">
-                          <input
+                          <CellInput
                             type="number"
                             min="0"
-                            className={`w-full border rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-400 ${errors[`lineQty_${idx}`] ? 'border-red-400' : 'border-gray-300'}`}
+                            className="text-right"
+                            invalid={!!errors[`lineQty_${idx}`]}
                             value={line.receivedQty}
                             onChange={e => updateLineItem(idx, 'receivedQty', Number(e.target.value))}
                           />
                         </td>
                         <td className="p-1">
-                          <input
+                          <CellInput
                             type="number"
                             min="0"
-                            className="w-full border border-gray-300 rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            className="text-right"
                             value={line.rejectedQty}
                             onChange={e => updateLineItem(idx, 'rejectedQty', Number(e.target.value))}
                           />
                         </td>
                         <td className="p-1">
-                          <input
-                            className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
+                          <CellInput
                             placeholder="pcs"
                             value={line.unit}
                             onChange={e => updateLineItem(idx, 'unit', e.target.value)}
                           />
                         </td>
                         <td className="p-1">
-                          <input
+                          <CellInput
                             type="number"
                             min="0"
-                            className="w-full border border-gray-300 rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            className="text-right"
                             value={line.unitPrice}
                             onChange={e => updateLineItem(idx, 'unitPrice', Number(e.target.value))}
                           />
                         </td>
                         <td className="p-1">
-                          <input
+                          <CellInput
                             type="number"
                             readOnly
-                            className="w-full border border-gray-100 bg-gray-50 rounded px-2 py-1 text-xs text-right text-gray-700"
+                            className="text-right bg-gray-50 text-gray-700"
                             value={line.lineTotal.toFixed(2)}
                           />
                         </td>

@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, gql } from '@apollo/client'
 import { Button } from '@/components/ui/button'
+import { CellInput } from '@/components/ui/cell-input'
+import { CellSelect } from '@/components/ui/cell-select'
+import { InputFloating } from '@/components/ui/input-floating'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,11 +23,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, Send, Pencil, Loader2, Eye } from 'lucide-react'
+import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, Send, Pencil, Loader2, Eye, Download } from 'lucide-react'
+import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { friendlyMutationDeniedMessage } from '@/lib/apollo-user-errors'
 import { SUBMIT_QUOTATION_FOR_APPROVAL } from '@/gql/queries'
+import { formatDate, toDateInputValue } from '@/lib/format-date'
+import { formatMoney } from '@/lib/format-money'
 
 const GET_CLIENTS = gql`
   query GetClients($organizationId: ID) {
@@ -147,14 +153,9 @@ const today = () => new Date().toISOString().split('T')[0]
 const in30Days = () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
 function toDateInput(v: string) {
-  if (!v) return ''
-  const d = new Date(v)
-  if (Number.isNaN(d.getTime())) return v.slice(0, 10)
-  return d.toISOString().split('T')[0]
+  return toDateInputValue(v)
 }
 
-const cell    = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 text-xs px-2 h-7 w-full rounded-sm'
-const cellErr = 'border border-red-400 bg-red-50 outline-none focus:ring-1 focus:ring-red-400 text-xs px-2 h-7 w-full rounded-sm'
 
 export default function CreateQuotationsPage() {
   const { user } = useAuth()
@@ -414,7 +415,7 @@ export default function CreateQuotationsPage() {
 
   const headerCols = ['Quotation #', 'Client', 'Subject', 'Date', 'Valid Until', 'Amount', 'Status', 'View', 'Actions'] as const
   const colClass = (i: number) =>
-    i === 0 ? 'w-32' : i === 1 ? 'flex-1 min-w-0' : i === 2 ? 'w-40' : i === 3 || i === 4 ? 'w-28' : i === 5 ? 'w-28' : i === 6 ? 'w-36' : i === 7 ? 'w-12 shrink-0' : 'w-36'
+    i === 0 ? 'w-32' : i === 1 ? 'flex-1 min-w-0' : i === 2 ? 'w-40' : i === 3 || i === 4 ? 'w-28' : i === 5 ? 'w-28' : i === 6 ? 'w-36' : i === 7 ? 'w-20 shrink-0' : 'w-36'
 
   return (
     <div className="p-6 space-y-6">
@@ -480,14 +481,18 @@ export default function CreateQuotationsPage() {
                   <div key={key} className="border-r border-gray-200 last:border-r-0 p-2">
                     <p className={`text-xs mb-1 font-medium ${err ? 'text-red-500' : 'text-gray-500'}`}>{label}{err ? ` — ${err}` : ''}</p>
                     {type === 'select' ? (
-                      <select value={(form as Record<string, string>)[key]} onChange={e => setF(key, e.target.value)} className={err ? cellErr : cell}>
-                        <option value="">— select client —</option>
-                        {clients.map((c: { id: string; name: string; email?: string }) => (
-                          <option key={c.id} value={c.id}>{c.name}{c.email ? ` (${c.email})` : ''}</option>
-                        ))}
-                      </select>
+                      <CellSelect
+                        value={(form as Record<string, string>)[key]}
+                        onChange={e => setF(key, e.target.value)}
+                        invalid={!!err}
+                        placeholder="— select client —"
+                        options={clients.map((c: { id: string; name: string; email?: string }) => ({
+                          value: c.id,
+                          label: `${c.name}${c.email ? ` (${c.email})` : ''}`,
+                        }))}
+                      />
                     ) : (
-                      <input type={type} value={(form as Record<string, string>)[key]} onChange={e => setF(key, e.target.value)} className={err ? cellErr : cell} />
+                      <CellInput type={type} value={(form as Record<string, string>)[key]} onChange={e => setF(key, e.target.value)} invalid={!!err} />
                     )}
                   </div>
                 ))}
@@ -496,16 +501,13 @@ export default function CreateQuotationsPage() {
               {editingId && (
                 <div className="px-3 py-2 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
                   <span className="text-xs font-medium text-gray-600">Status</span>
-                  <select
+                  <CellSelect
+                    className="w-auto"
                     value={detail?.status ?? 'draft'}
                     onChange={e => handleStatusChange(editingId, detail?.status ?? 'draft', e.target.value)}
                     disabled={updating}
-                    className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
-                  >
-                    {STATUS_KEYS.map(k => (
-                      <option key={k} value={k}>{STATUS_CFG[k].label}</option>
-                    ))}
-                  </select>
+                    options={STATUS_KEYS.map(k => ({ value: k, label: STATUS_CFG[k].label }))}
+                  />
                 </div>
               )}
 
@@ -521,30 +523,30 @@ export default function CreateQuotationsPage() {
                     <div key={i} className="grid border-b border-gray-200 last:border-b-0 hover:bg-blue-50/20" style={{ gridTemplateColumns: '2rem 12rem 1fr 6rem 8rem 6rem 6rem 8rem 2rem' }}>
                       <div className="border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-1">{i + 1}</div>
                       <div className="border-r border-gray-200 px-1 py-1">
-                        <select value={l.itemId} onChange={e => setL(i, 'itemId', e.target.value)} className={cell}>
-                          <option value="">— select item —</option>
-                          {items.map((it: { id: string; name: string }) => (
-                            <option key={it.id} value={it.id}>{it.name}</option>
-                          ))}
-                        </select>
+                        <CellSelect
+                          value={l.itemId}
+                          onChange={e => setL(i, 'itemId', e.target.value)}
+                          placeholder="— select item —"
+                          options={items.map((it: { id: string; name: string }) => ({ value: it.id, label: it.name }))}
+                        />
                       </div>
                       <div className="border-r border-gray-200 px-1 py-1">
-                        <input value={l.desc} onChange={e => setL(i, 'desc', e.target.value)} placeholder="Description" className={errors[`d${i}`] ? cellErr : cell} />
+                        <CellInput value={l.desc} onChange={e => setL(i, 'desc', e.target.value)} placeholder="Description" invalid={!!errors[`d${i}`]} />
                       </div>
                       <div className="border-r border-gray-200 px-1 py-1">
-                        <input type="number" min="0" value={l.qty} onChange={e => setL(i, 'qty', e.target.value)} className={errors[`q${i}`] ? cellErr : cell} />
+                        <CellInput type="number" min="0" value={l.qty} onChange={e => setL(i, 'qty', e.target.value)} invalid={!!errors[`q${i}`]} />
                       </div>
                       <div className="border-r border-gray-200 px-1 py-1">
-                        <input type="number" min="0" step="0.01" value={l.price} onChange={e => setL(i, 'price', e.target.value)} className={errors[`p${i}`] ? cellErr : cell} />
+                        <CellInput type="number" min="0" step="0.01" value={l.price} onChange={e => setL(i, 'price', e.target.value)} invalid={!!errors[`p${i}`]} />
                       </div>
                       <div className="border-r border-gray-200 px-1 py-1">
-                        <input type="number" min="0" max="100" step="0.1" value={l.discount} onChange={e => setL(i, 'discount', e.target.value)} className={cell} />
+                        <CellInput type="number" min="0" max="100" step="0.1" value={l.discount} onChange={e => setL(i, 'discount', e.target.value)} />
                       </div>
                       <div className="border-r border-gray-200 px-1 py-1">
-                        <input type="number" min="0" max="100" step="0.1" value={l.tax} onChange={e => setL(i, 'tax', e.target.value)} className={cell} />
+                        <CellInput type="number" min="0" max="100" step="0.1" value={l.tax} onChange={e => setL(i, 'tax', e.target.value)} />
                       </div>
                       <div className="border-r border-gray-200 px-2 py-1 flex items-center">
-                        <span className="text-xs font-medium text-gray-700">${lineTotal(l).toFixed(2)}</span>
+                        <span className="text-xs font-medium text-gray-700">{formatMoney(lineTotal(l))}</span>
                       </div>
                       <div className="flex items-center justify-center py-1">
                         {lines.length > 1 && (
@@ -566,13 +568,11 @@ export default function CreateQuotationsPage() {
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   <div>
                     <p className="text-xs mb-1 font-medium text-gray-500">Terms & Conditions</p>
-                    <textarea value={form.terms} onChange={e => setF('terms', e.target.value)} placeholder="Enter terms and conditions"
-                      className="border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 py-1.5 w-full rounded-sm resize-none" rows={3} />
+                    <InputFloating multiline rows={3} value={form.terms} onChange={e => setF('terms', e.target.value)} placeholder="Enter terms and conditions" />
                   </div>
                   <div>
                     <p className="text-xs mb-1 font-medium text-gray-500">Notes</p>
-                    <textarea value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Enter additional notes"
-                      className="border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 py-1.5 w-full rounded-sm resize-none" rows={3} />
+                    <InputFloating multiline rows={3} value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Enter additional notes" />
                   </div>
                 </div>
 
@@ -580,10 +580,10 @@ export default function CreateQuotationsPage() {
                   <div />
                   <div className="flex items-center gap-6">
                     <div className="text-right space-y-1">
-                      <div className="flex gap-8 text-xs text-gray-500"><span>Subtotal</span><span>${totals.subtotal.toFixed(2)}</span></div>
-                      <div className="flex gap-8 text-xs text-gray-500"><span>Discount</span><span>-${totals.discountAmount.toFixed(2)}</span></div>
-                      <div className="flex gap-8 text-xs text-gray-500"><span>Tax</span><span>${totals.taxAmount.toFixed(2)}</span></div>
-                      <div className="flex gap-8 text-sm font-bold text-gray-800 border-t border-gray-300 pt-1"><span>Total</span><span>${totals.totalAmount.toFixed(2)}</span></div>
+                      <div className="flex gap-8 text-xs text-gray-500"><span>Subtotal</span><span>{formatMoney(totals.subtotal)}</span></div>
+                      <div className="flex gap-8 text-xs text-gray-500"><span>Discount</span><span>-{formatMoney(totals.discountAmount)}</span></div>
+                      <div className="flex gap-8 text-xs text-gray-500"><span>Tax</span><span>{formatMoney(totals.taxAmount)}</span></div>
+                      <div className="flex gap-8 text-sm font-bold text-gray-800 border-t border-gray-300 pt-1"><span>Total</span><span>{formatMoney(totals.totalAmount)}</span></div>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={closeForm} className="h-8 text-xs">Cancel</Button>
@@ -632,23 +632,20 @@ export default function CreateQuotationsPage() {
                 <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-700 font-semibold truncate">{q.quotationNumber}</div>
                 <div className="flex-1 min-w-0 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{q.clientId?.name}</div>
                 <div className="w-40 border-r border-gray-200 px-2 py-2 text-xs text-gray-600 truncate">{q.subject}</div>
-                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{new Date(q.quotationDate).toLocaleDateString()}</div>
-                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{new Date(q.validUntil).toLocaleDateString()}</div>
-                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs font-semibold text-gray-800">${Number(q.totalAmount).toFixed(2)}</div>
+                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{formatDate(q.quotationDate)}</div>
+                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{formatDate(q.validUntil)}</div>
+                <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs font-semibold text-gray-800">{formatMoney(q.totalAmount)}</div>
                 <div className="w-36 border-r border-gray-200 px-2 py-2 flex items-center">
-                  <select
+                  <CellSelect
                     value={q.status}
                     onChange={e => handleStatusChange(q.id, q.status, e.target.value)}
                     disabled={updating}
-                    className={`w-full max-w-[9rem] text-xs rounded border px-1.5 py-0.5 font-medium ${s.cls}`}
+                    className={`max-w-[9rem] font-medium ${s.cls}`}
                     aria-label={`Status for ${q.quotationNumber}`}
-                  >
-                    {STATUS_KEYS.map(k => (
-                      <option key={k} value={k}>{STATUS_CFG[k].label}</option>
-                    ))}
-                  </select>
+                    options={STATUS_KEYS.map(k => ({ value: k, label: STATUS_CFG[k].label }))}
+                  />
                 </div>
-                <div className="w-12 shrink-0 border-r border-gray-200 px-1 py-2 flex items-center justify-center">
+                <div className="w-20 shrink-0 border-r border-gray-200 px-1 py-2 flex items-center justify-center gap-1">
                   <button
                     type="button"
                     title="View full quotation (snapshot)"
@@ -656,6 +653,14 @@ export default function CreateQuotationsPage() {
                     className="p-1.5 rounded-md text-gray-500 hover:text-teal-700 hover:bg-teal-50"
                   >
                     <Eye className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Download PDF"
+                    onClick={() => downloadDocumentPdf('quotation', q.id, q.quotationNumber).catch((e) => toast.error(String(e?.message || e)))}
+                    className="p-1.5 rounded-md text-gray-500 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Download className="h-3.5 w-3.5" />
                   </button>
                 </div>
                 <div className="w-36 px-2 py-2 flex flex-wrap items-center justify-center gap-1">

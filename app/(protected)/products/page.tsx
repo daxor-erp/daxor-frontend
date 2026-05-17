@@ -9,6 +9,7 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { DataTable, Column } from '@/components/DataTable'
 import { Trash2, Package, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react'
 import { X, Save } from 'lucide-react'
+import { formatMoney } from '@/lib/format-money'
 
 const GET_PRODUCTS = gql`
   query GetProducts {
@@ -250,7 +251,7 @@ export default function ProductsPage() {
       sortable: true,
       width: '100px',
       align: 'right',
-      render: (value) => <span className="font-semibold text-gray-800">${Number(value).toFixed(2)}</span>
+      render: (value) => <span className="font-semibold text-gray-800">{formatMoney(value)}</span>
     },
     {
       key: 'status',

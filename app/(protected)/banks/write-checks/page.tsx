@@ -11,6 +11,7 @@ import { InputFloating } from '@/components/ui/input-floating'
 import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
 import { FilePen, RefreshCw, Building2, ChevronDown, ChevronRight, Plus } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const labelCell = wsLabelCell
 const cell = wsCell
@@ -494,7 +495,7 @@ export default function WriteChecksPage() {
                   <td className={cell}>{holderByAccountNumber.get(d.bankAccount) ?? '—'}</td>
                   <td className={`${cell} font-mono`}>{d.bankAccount}</td>
                   <td className={`${cell} font-mono`}>
-                    {d.transactionDate ? new Date(d.transactionDate).toLocaleDateString() : '—'}
+                    {d.transactionDate ? formatDate(d.transactionDate) : '—'}
                   </td>
                   <td className={`${cell} font-mono`}>{d.chequeNumber || '—'}</td>
                   <td className={`${cell} font-mono`}>{d.referenceId || '—'}</td>

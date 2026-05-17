@@ -11,6 +11,8 @@ import {
   GET_VENDOR_BILLS, CREATE_VENDOR_PAYMENT, GET_VENDORS
 } from '@/gql/queries'
 import { X, Save, DollarSign, Clock, CheckCircle, CreditCard, AlertCircle } from 'lucide-react'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const PAYMENT_METHODS = [
   { value: 'bank_transfer', label: 'Bank Transfer' },
@@ -70,7 +72,7 @@ export default function PayBillsPage() {
     const e: Record<string, string> = {}
     const amount = parseFloat(payAmount)
     if (!payAmount || isNaN(amount) || amount <= 0) e.amount = 'Enter a valid amount'
-    if (amount > payingBill.outstandingAmount) e.amount = `Cannot exceed outstanding amount ($${payingBill.outstandingAmount.toFixed(2)})`
+    if (amount > payingBill.outstandingAmount) e.amount = `Cannot exceed outstanding amount (${formatMoney(payingBill.outstandingAmount)})`
     if (!paymentDate) e.date = 'Required'
     setErrors(e)
     if (Object.keys(e).length) return
@@ -123,7 +125,7 @@ export default function PayBillsPage() {
     },
     {
       key: 'billDate', label: 'Bill Date', width: '100px',
-      render: v => v ? new Date(v).toLocaleDateString() : '—'
+      render: v => v ? formatDate(v) : '—'
     },
     {
       key: 'dueDate', label: 'Due Date', width: '100px',
@@ -131,7 +133,7 @@ export default function PayBillsPage() {
         const overdue = ['approved', 'partially_paid'].includes(row.status) && v && new Date(v) < new Date()
         return (
           <span className={overdue ? 'text-red-600 font-semibold' : ''}>
-            {v ? new Date(v).toLocaleDateString() : '—'}
+            {v ? formatDate(v) : '—'}
             {overdue && ' ⚠'}
           </span>
         )
@@ -139,17 +141,17 @@ export default function PayBillsPage() {
     },
     {
       key: 'totalAmount', label: 'Bill Amount', width: '110px', align: 'right',
-      render: v => <span className="font-semibold">${Number(v || 0).toFixed(2)}</span>
+      render: v => <span className="font-semibold">{formatMoney(v || 0)}</span>
     },
     {
       key: 'paidAmount', label: 'Paid', width: '100px', align: 'right',
-      render: v => <span className="text-green-600 font-medium">${Number(v || 0).toFixed(2)}</span>
+      render: v => <span className="text-green-600 font-medium">{formatMoney(v || 0)}</span>
     },
     {
       key: 'outstandingAmount', label: 'Outstanding', width: '110px', align: 'right',
       render: v => (
         <span className={Number(v) > 0 ? 'text-red-600 font-bold' : 'text-gray-400'}>
-          ${Number(v || 0).toFixed(2)}
+          {formatMoney(v || 0)}
         </span>
       )
     },
@@ -178,9 +180,9 @@ export default function PayBillsPage() {
       {/* Summary stats */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Total Billed', value: `$${totalBilled.toFixed(2)}`, icon: CreditCard, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Total Paid', value: `$${totalPaid.toFixed(2)}`, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'Outstanding', value: `$${totalOutstanding.toFixed(2)}`, icon: DollarSign, cls: 'text-red-600 bg-red-50' },
+          { label: 'Total Billed', value: `${formatMoney(totalBilled)}`, icon: CreditCard, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Total Paid', value: `${formatMoney(totalPaid)}`, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
+          { label: 'Outstanding', value: `${formatMoney(totalOutstanding)}`, icon: DollarSign, cls: 'text-red-600 bg-red-50' },
           { label: 'Overdue Bills', value: overdueCount, icon: AlertCircle, cls: 'text-orange-600 bg-orange-50' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
@@ -202,15 +204,15 @@ export default function PayBillsPage() {
           <div className="p-4 space-y-4">
             {/* Bill summary */}
             <div className="grid grid-cols-3 gap-3 bg-gray-50 rounded p-3 text-xs">
-              <div><span className="text-gray-400">Bill Total</span><p className="font-bold text-gray-800">${Number(payingBill.totalAmount).toFixed(2)}</p></div>
-              <div><span className="text-gray-400">Already Paid</span><p className="font-bold text-green-600">${Number(payingBill.paidAmount).toFixed(2)}</p></div>
-              <div><span className="text-gray-400">Outstanding</span><p className="font-bold text-red-600">${Number(payingBill.outstandingAmount).toFixed(2)}</p></div>
+              <div><span className="text-gray-400">Bill Total</span><p className="font-bold text-gray-800">{formatMoney(payingBill.totalAmount)}</p></div>
+              <div><span className="text-gray-400">Already Paid</span><p className="font-bold text-green-600">{formatMoney(payingBill.paidAmount)}</p></div>
+              <div><span className="text-gray-400">Outstanding</span><p className="font-bold text-red-600">{formatMoney(payingBill.outstandingAmount)}</p></div>
             </div>
 
             {/* Payment fields */}
             <div className="grid grid-cols-4 gap-3">
               <InputFloating
-                label={`Pay Amount * (max $${Number(payingBill.outstandingAmount).toFixed(2)})`}
+                label={`Pay Amount * (max ${formatMoney(payingBill.outstandingAmount)})`}
                 type="number"
                 value={payAmount}
                 onChange={e => setPayAmount(e.target.value)}

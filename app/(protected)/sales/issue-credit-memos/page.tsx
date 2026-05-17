@@ -18,6 +18,8 @@ import {
   Building2, CalendarDays, DollarSign, Hash, Info,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const CREDIT_REASONS = [
   'Returned goods',
@@ -87,7 +89,7 @@ export default function IssueCreditMemosPage() {
     if (!form.creditAmount || isNaN(amt) || amt <= 0)
       e.creditAmount = 'Enter a valid credit amount'
     else if (amt > selected.totalAmount)
-      e.creditAmount = `Cannot exceed invoice total ($${selected.totalAmount.toFixed(2)})`
+      e.creditAmount = `Cannot exceed invoice total (${formatMoney(selected.totalAmount)})`
     if (!form.reason) e.reason = 'Reason is required'
     if (!form.memoDate) e.memoDate = 'Memo date is required'
     setErrors(e)
@@ -132,13 +134,13 @@ export default function IssueCreditMemosPage() {
             <TableRow key={inv.id} className="hover:bg-gray-50 transition-colors">
               <TableCell className="pl-6 font-mono text-xs text-gray-400">{inv.seqNo || '—'}</TableCell>
               <TableCell className="text-sm font-medium text-gray-800">{getOrgName(inv.customerId)}</TableCell>
-              <TableCell className="text-sm text-gray-600">{inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : '—'}</TableCell>
-              <TableCell className="text-sm text-gray-600">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : '—'}</TableCell>
+              <TableCell className="text-sm text-gray-600">{inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}</TableCell>
+              <TableCell className="text-sm text-gray-600">{inv.dueDate ? formatDate(inv.dueDate) : '—'}</TableCell>
               <TableCell className="text-sm font-semibold text-gray-800">
-                ${Number(inv.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {formatMoney(inv.totalAmount)}
               </TableCell>
               <TableCell className="text-sm text-gray-600">
-                ${Number(inv.paidAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {formatMoney(inv.paidAmount ?? 0)}
               </TableCell>
               <TableCell>
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.cls}`}>
@@ -175,7 +177,7 @@ export default function IssueCreditMemosPage() {
         {[
           { label: 'Eligible Invoices', value: stats.eligible,      icon: FileText,    color: 'text-blue-600',   bg: 'bg-blue-50',  fmt: (v: number) => String(v) },
           { label: 'Credits Issued',    value: stats.issued,        icon: FileMinus,   color: 'text-rose-600',   bg: 'bg-rose-50',  fmt: (v: number) => String(v) },
-          { label: 'Total Credited',    value: stats.totalCredited, icon: DollarSign,  color: 'text-amber-600',  bg: 'bg-amber-50', fmt: (v: number) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+          { label: 'Total Credited',    value: stats.totalCredited, icon: DollarSign,  color: 'text-amber-600',  bg: 'bg-amber-50', fmt: (v: number) => formatMoney(v) },
         ].map(({ label, value, icon: Icon, color, bg, fmt }) => (
           <Card key={label} className="border shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
@@ -265,7 +267,7 @@ export default function IssueCreditMemosPage() {
                     <div>
                       <p className="text-xs text-gray-400">Invoice Date</p>
                       <p className="text-sm text-gray-700">
-                        {selected.invoiceDate ? new Date(selected.invoiceDate).toLocaleDateString() : '—'}
+                        {selected.invoiceDate ? formatDate(selected.invoiceDate) : '—'}
                       </p>
                     </div>
                   </div>
@@ -274,7 +276,7 @@ export default function IssueCreditMemosPage() {
                     <div>
                       <p className="text-xs text-gray-400">Invoice Total</p>
                       <p className="text-base font-bold text-gray-800">
-                        ${Number(selected.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {formatMoney(selected.totalAmount)}
                       </p>
                     </div>
                   </div>
@@ -293,7 +295,7 @@ export default function IssueCreditMemosPage() {
                     Credit Amount <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
                     <Input
                       type="number"
                       min="0.01"
@@ -307,7 +309,7 @@ export default function IssueCreditMemosPage() {
                   </div>
                   {errors.creditAmount
                     ? <p className="text-xs text-red-500">{errors.creditAmount}</p>
-                    : <p className="text-xs text-gray-400">Max: ${Number(selected.totalAmount).toFixed(2)}</p>
+                    : <p className="text-xs text-gray-400">Max: {formatMoney(selected.totalAmount)}</p>
                   }
                 </div>
 

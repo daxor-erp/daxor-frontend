@@ -3,435 +3,158 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { filterNavigationByModuleView, type ErpNavItem } from '@/lib/erp-module-access'
-import { 
-  LayoutDashboard, Users, ShoppingCart, Package, DollarSign, Warehouse,
-  TrendingUp, Briefcase, UserCheck, FolderKanban,
-  Building2, FileText, ChevronDown, ChevronRight, LogOut
+import {
+  ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
+  LogOut,
+  Sparkles,
+  X,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { NAVIGATION } from '@/lib/navigation'
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
-  /* Hidden from sidebar — restore to show Production Management (uses Factory icon)
-  { 
-    name: 'Production Management', 
-    icon: Factory,
-    subItems: [
-      { name: 'Production Planning', href: '/production-planning' },
-      { name: 'Work Orders', href: '/work-orders' },
-      { 
-        name: 'Dashboards',
-        subItems: [
-          { name: 'MEP Overall Dashboard', href: '/production/dashboards/mep-overall' },
-          { name: 'Workshop Dashboard', href: '/production/dashboards/workshop' },
-          { name: 'Plant Modules Dashboard', href: '/production/dashboards/plant-modules' },
-        ]
-      },
-      { 
-        name: 'Drawings Documents',
-        subItems: [
-          { name: 'Upload Drawings', href: '/production/drawings/upload' },
-          { name: 'Project Documents', href: '/production/drawings/project-documents' },
-        ]
-      },
-      { 
-        name: 'Master Tables',
-        subItems: [
-          { name: 'Project Masters', href: '/production/masters/project-masters' },
-          { name: 'Site Locations', href: '/production/masters/site-locations' },
-          { name: 'Contractors', href: '/production/masters/contractors' },
-        ]
-      },
-      { name: 'Module Wise Time Tracking', href: '/production/module-time-tracking' },
-      { name: 'Scan QR Code', href: '/production/scan-qr-code' },
-      { name: 'Status All Modules', href: '/production/status-all-modules' },
-    ]
-  },
-  */
-  { 
-    name: 'CRM', 
-    icon: Users,
-    moduleKey: 'crm',
-    subItems: [
-      { name: 'Clients', href: '/clients' },
-      { name: 'Lead Management', href: '/crm/lead-management' },
-      { name: 'Opportunity Management', href: '/crm/opportunity-management' },
-    ]
-  },
-  { 
-    name: 'Quotations', 
-    icon: FileText,
-    moduleKey: 'quotations',
-    subItems: [
-      { name: 'Create Quotations', href: '/quotations' },
-      { name: 'Send Quotations', href: '/quotations/send' },
-    ]
-  },
-  { 
-    name: 'Sales', 
-    icon: ShoppingCart,
-    moduleKey: 'sales',
-    subItems: [
-      { name: 'Sales Returns', href: '/sales-returns' },
-      { name: 'Delivery Challan', href: '/delivery-challan' },
-      { name: 'Create Invoices', href: '/sales/create-invoices' },
-      { name: 'Delivery Order', href: '/sales/delivery-order' },
-      { name: 'Enter Cash Sales', href: '/sales/enter-cash-sales' },
-      { name: 'Enter Sales Order', href: '/sales/enter-sales-order' },
-      { name: 'Invoice Sales Order', href: '/sales/invoice-sales-order' },
-      { name: 'Issue Credit Memos', href: '/sales/issue-credit-memos' },
-      { name: 'Project', href: '/sales/project' },
-      { name: 'Sales Enquiry', href: '/sales/sales-enquiry' },
-    ]
-  },
-  { 
-    name: 'Purchases', 
-    icon: Package,
-    moduleKey: 'purchases',
-    subItems: [
-      { name: 'Vendors', href: '/vendors' },
-      { name: 'Projects', href: '/projects' },
-      { name: 'Purchase Requisition', href: '/purchases/purchase-requisition' },
-      { name: 'Enter Purchase Orders', href: '/purchases/enter-purchase-orders' },
-      { name: 'Receive Orders', href: '/purchases/receive-orders' },
-      { name: 'Material Receipt', href: '/material-receipt' },
-      { name: 'GRN', href: '/grn' },
-    ]
-  },
-  { 
-    name: 'Payables', 
-    icon: DollarSign,
-    moduleKey: 'payables',
-    subItems: [
-      { name: 'Enter Bills', href: '/payables/enter-bills' },
-      { name: 'Pay Bills', href: '/payables/pay-bills' },
-      { name: 'Approve Vendor Payments', href: '/payables/approve-vendor-payments' },
-      { name: 'Bill Purchase Orders', href: '/payables/bill-purchase-orders' },
-      { name: 'Enter Vendor Credits', href: '/payables/enter-vendor-credits' },
-      { name: 'Enter Vendor Prepayment', href: '/payables/enter-vendor-prepayment' },
-    ]
-  },
-  { 
-    name: 'Inventory', 
-    icon: Warehouse,
-    moduleKey: 'inventory',
-    subItems: [
-      { name: 'Inventory Control', href: '/inventory-control' },
-      { name: 'Warehouses', href: '/warehouse' },
-      { name: 'Stock Adjustments', href: '/stock-adjustments' },
-      { name: 'Stock Transfers', href: '/stock-transfers' },
-      { name: 'Goods Receipt', href: '/goods-receipt' },
-      { name: 'GRN', href: '/grn' },
-      // Consolidated into Inventory control: /inventory-control
-      // { name: 'Adjust Inventory', href: '/inventory/adjust-inventory' },
-      // { name: 'Adjust Inventory Worksheet', href: '/inventory/adjust-inventory-worksheet' },
-      { name: 'Enter Transfer Orders', href: '/inventory/enter-transfer-orders' },
-      { name: 'Equipment Masters', href: '/inventory/equipment-masters' },
-      { name: 'Intercompany Transfer', href: '/inventory/intercompany-transfer' },
-      { name: 'Items', href: '/inventory/items' },
-      { name: 'Replenish Location by Inventory Transfer', href: '/inventory/replenish-location' },
-      { name: 'Review Negative Inventory', href: '/inventory/review-negative-inventory' },
-      { name: 'Stock Ledger', href: '/inventory/stock-ledger' },
-    ]
-  },
-  { name: 'Products', href: '/products', icon: Package, moduleKey: 'products' },
-  { 
-    name: 'Financial', 
-    icon: TrendingUp,
-    moduleKey: 'financial',
-    subItems: [
-      { name: 'General Ledger', href: '/general-ledger' },
-      { name: 'Cash & Bank', href: '/cash-bank' },
-      { name: 'Chart of Accounts', href: '/financial/chart-of-accounts' },
-      { name: 'Create Allocation Schedules', href: '/financial/create-allocation-schedules' },
-      { name: 'Create Intercompany Allocation Schedules', href: '/financial/create-intercompany-allocation' },
-      { name: 'Make Advanced Intercompany Journal Entries', href: '/financial/advanced-intercompany-journal' },
-      { name: 'Make Journal Entries', href: '/financial/make-journal-entries' },
-      { name: 'Make Statis', href: '/financial/make-statis' },
-      { name: 'Revalue Open Currency Balances', href: '/financial/revalue-currency-balances' },
-      { name: 'Set Up Budgets', href: '/financial/set-up-budgets' },
-    ]
-  },
-  { 
-    name: 'Payroll', 
-    icon: Briefcase,
-    moduleKey: 'payroll',
-    subItems: [
-      { name: 'Payroll Management', href: '/payroll-management' },
-      { name: 'Salary Processing', href: '/salary-processing' },
-      { 
-        name: 'Data Preparation',
-        subItems: [
-          { name: 'Overview', href: '/payroll/data-preparation' },
-          { name: 'Yard Data', href: '/payroll/data-preparation/yard-data' },
-          { name: 'Biometric Data', href: '/payroll/data-preparation/biometric-data' },
-          { name: 'Manual Entry', href: '/payroll/data-preparation/manual-entry' },
-        ]
-      },
-      { 
-        name: 'Others',
-        subItems: [
-          { name: 'Loan Repayment', href: '/payroll/others/loan-repayment' },
-        ]
-      },
-      { 
-        name: 'Payroll Processing',
-        subItems: [
-          { name: 'Pay Batch', href: '/payroll/processing/pay-batch' },
-          { name: 'Payee Employee', href: '/payroll/processing/payee-employee' },
-          { name: 'Retroactive Payment', href: '/payroll/processing/retroactive-payment' },
-        ]
-      },
-      { 
-        name: 'Payroll Setup',
-        subItems: [
-          { name: 'Pay Component', href: '/payroll/setup/pay-component' },
-          { name: 'Pay Group', href: '/payroll/setup/pay-group' },
-          { name: 'Employee PF', href: '/payroll/setup/employee-pf' },
-          { name: 'FWL Qualification', href: '/payroll/setup/fwl-qualification' },
-        ]
-      },
-      { 
-        name: 'Payroll Workflow',
-        subItems: [
-          { name: 'Timesheet Pool', href: '/payroll/workflow/timesheet-pool' },
-          { name: 'Payroll Runs', href: '/payroll/workflow/payroll-runs' },
-        ]
-      },
-      { 
-        name: 'Statutory Compliance',
-        subItems: [
-          { name: 'CPF Applied Age Group', href: '/payroll/statutory/cpf-age-group' },
-          { name: 'Community Contribution Fund', href: '/payroll/statutory/community-fund' },
-          { name: 'SDL Master', href: '/payroll/statutory/sdl-master' },
-          { name: 'IR8A Year', href: '/payroll/statutory/ir8a-year' },
-        ]
-      },
-    ]
-  },
-  { 
-    name: 'HR', 
-    icon: UserCheck,
-    moduleKey: 'hr',
-    subItems: [
-      { 
-        name: 'Leave',
-        subItems: [
-          { name: 'Leave Type', href: '/hr/leave/leave-type' },
-          { name: 'Employee Leave Application', href: '/hr/leave/leave-application' },
-          { name: 'Employee Leave Enrollment', href: '/hr/leave/leave-enrollment' },
-          { name: 'Employee Leave Reinstatement', href: '/hr/leave/leave-reinstatement' },
-        ]
-      },
-      { 
-        name: 'Masters',
-        subItems: [
-          { name: 'Employee Master', href: '/hr/masters/employee-master' },
-          { name: 'Career Progress Salary', href: '/hr/masters/career-progress-salary' },
-          { name: 'Asset Name List', href: '/hr/masters/asset-name-list' },
-          { name: 'Asset Issue to Employee', href: '/hr/masters/asset-issue' },
-          { name: 'Employee Loan Application', href: '/hr/masters/loan-application' },
-          { name: 'Calendar Masters', href: '/hr/masters/calendar-masters' },
-          { name: 'FWL Qualification', href: '/hr/masters/fwl-qualification' },
-          { name: 'Shift Master', href: '/hr/masters/shift-master' },
-          { name: 'Employee Exit Process', href: '/hr/masters/exit-process' },
-        ]
-      },
-    ]
-  },
-  /* Hidden from sidebar — restore to show Production
-  { 
-    name: 'Project Management', 
-    icon: FolderKanban,
-    subItems: [
-      { name: 'Gantt Chart', href: '/project-management/gantt-chart' },
-      { name: 'Milestones', href: '/project-management/milestones' },
-      { name: 'Project Masters', href: '/project-management/project-masters' },
-      { name: 'Reports Analytics', href: '/project-management/reports-analytics' },
-      { name: 'Resources', href: '/project-management/resources' },
-      { name: 'Tasks', href: '/project-management/tasks' },
-    ]
-  },
-  /* Hidden from sidebar — restore to show Order Management
-  { 
-    name: 'Order Management', 
-    icon: ClipboardList,
-    subItems: [
-      { 
-        name: 'Commit Orders',
-        subItems: [
-          { name: 'Schedule Order', href: '/order-management/commit-orders/schedule-order' },
-        ]
-      },
-      { name: 'Fulfill Orders', href: '/order-management/fulfill-orders' },
-      { 
-        name: 'Order Items',
-        subItems: [
-          { name: 'New Order Items', href: '/order-management/order-items/new-order-items' },
-        ]
-      },
-      { name: 'Reallocate Items', href: '/order-management/reallocate-items' },
-    ]
-  },
-  */
-  { 
-    name: 'Customers', 
-    icon: Users,
-    moduleKey: 'customers',
-    subItems: [
-      { name: 'Customer Registration', href: '/customers' },
-      { name: 'Accept Customer Payments', href: '/customers/accept-payments' },
-      { name: 'Approve Return Authorizations', href: '/customers/approve-returns' },
-      { name: 'Assess Finance Charges', href: '/customers/assess-finance-charges' },
-      { name: 'Generate Price Lists', href: '/customers/generate-price-lists' },
-      { name: 'Generate Statements', href: '/customers/generate-statements' },
-      { name: 'Individual Price List', href: '/customers/individual-price-list' },
-      { name: 'Invoice Billable Customers', href: '/customers/invoice-billable' },
-      { name: 'Issue Customer Refund', href: '/customers/issue-refund' },
-      { name: 'Issue Return Authorizations', href: '/customers/issue-return-authorizations' },
-      { name: 'Print Individual Statement', href: '/customers/print-statement' },
-      { name: 'Receive Returned Order', href: '/customers/receive-returned-order' },
-      { name: 'Record Customer Deposits', href: '/customers/record-deposits' },
-      { name: 'Refund Cash Sales', href: '/customers/refund-cash-sales' },
-    ]
-  },
-  { 
-    name: 'Banks', 
-    icon: Building2,
-    moduleKey: 'banks',
-    subItems: [
-      { name: 'Make Deposits', href: '/banks/make-deposits' },
-      { name: 'Reconcile Account Statement', href: '/banks/reconcile-account' },
-      { name: 'Reconcile Bank Statement', href: '/banks/reconcile-bank' },
-      { name: 'Reconciliation Rules', href: '/banks/reconciliation-rules' },
-      { name: 'Transfer Funds', href: '/banks/transfer-funds' },
-      { name: 'Write Checks', href: '/banks/write-checks' },
-      { name: 'Write Tax Liability', href: '/banks/write-tax-liability' },
-    ]
-  },
-  /* Hidden from sidebar — restore to show Masters
-  { 
-    name: 'Masters', 
-    icon: FileText,
-    subItems: [
-      { name: 'Bank Masters', href: '/masters/bank-masters' },
-      { name: 'Classes', href: '/masters/classes' },
-      { name: 'Customer Masters', href: '/masters/customer-masters' },
-      { name: 'Department', href: '/masters/department' },
-      { name: 'Location', href: '/masters/location' },
-      { name: 'Subsidiary', href: '/masters/subsidiary' },
-      { name: 'Vendor Masters', href: '/masters/vendor-masters' },
-    ]
-  },
-  */
-  { 
-    name: 'Reports', 
-    icon: FileText,
-    moduleKey: 'reports',
-    subItems: [
-      { 
-        name: 'Financial',
-        subItems: [
-          { name: 'Income Statement', href: '/reports/financial/income-statement' },
-          { name: 'Balance Sheet', href: '/reports/financial/balance-sheet' },
-          { name: 'Cash Flow Statement', href: '/reports/financial/cash-flow' },
-          { name: 'General Ledger', href: '/reports/financial/general-ledger' },
-          { name: 'Trial Balance', href: '/reports/financial/trial-balance' },
-          { name: 'Transaction Detail', href: '/reports/financial/transaction-detail' },
-        ]
-      },
-      { 
-        name: 'Inventory',
-        subItems: [
-          { name: 'Inventory Profitability', href: '/reports/inventory/profitability' },
-          { name: 'Inventory Summary', href: '/reports/inventory/summary' },
-          { name: 'Inventory Valuation', href: '/reports/inventory/valuation' },
-          { name: 'Stock Movement Report', href: '/reports/inventory/stock-movement' },
-          { name: 'Low Stock Report', href: '/reports/inventory/low-stock' },
-        ]
-      },
-    ]
-  },
-  /* Hidden from sidebar — restore to show Setup
-  { 
-    name: 'Setup', 
-    icon: Settings,
-    subItems: [
-      { 
-        name: 'Accounting',
-        subItems: [
-          { name: 'Accounting List', href: '/setup/accounting/accounting-list' },
-          { name: 'Expense Categories', href: '/setup/accounting/expense-categories' },
-          { name: 'Tax Codes', href: '/setup/accounting/tax-codes' },
-        ]
-      },
-      { 
-        name: 'Company',
-        subItems: [
-          { name: 'Company Information', href: '/setup/company/company-information' },
-          { name: 'Enable Features', href: '/setup/company/enable-features' },
-        ]
-      },
-      { 
-        name: 'Users Roles',
-        subItems: [
-          { name: 'Manage Users', href: '/setup/users-roles/manage-users' },
-          { name: 'Show Role Differences', href: '/setup/users-roles/role-differences' },
-        ]
-      },
-    ]
-  },
-  */
-]
+interface SidebarProps {
+  collapsed?: boolean
+  onCollapseToggle?: () => void
+  mobile?: boolean
+  onMobileClose?: () => void
+}
 
-export function Sidebar() {
-  const pathname = usePathname()
+type NavItem = {
+  name: string
+  href?: string
+  icon?: any
+  subItems?: NavItem[]
+}
+
+const SIDE_RAIL_WIDTH = 68 // px, must match w-[68px] below
+
+export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, onMobileClose }: SidebarProps) {
+  const pathname = usePathname() ?? ''
   const { user } = useAuth()
-  const [openMenus, setOpenMenus] = useState<string[]>([])
+  // Accordion: only one section open at a time in expanded mode.
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
+  // Flyout (collapsed/icon-only mode): which top-level section is hovered.
+  const [flyoutName, setFlyoutName] = useState<string | null>(null)
+  const [flyoutTop, setFlyoutTop] = useState(0)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const visibleNavigation = useMemo(
     () =>
       filterNavigationByModuleView(
-        navigation as ErpNavItem[],
+        NAVIGATION as unknown as ErpNavItem[],
         user?.modulePermissions,
         user?.roles,
-      ),
+      ) as NavItem[],
     [user?.modulePermissions, user?.roles],
   )
 
-  const toggleMenu = (name: string) => {
-    setOpenMenus(prev => 
-      prev.includes(name) ? prev.filter(m => m !== name) : [...prev, name]
+  const isItemActive = (item: NavItem): boolean => {
+    if (item.href && (pathname === item.href || pathname.startsWith(item.href + '/'))) return true
+    if (item.subItems) return item.subItems.some((s) => isItemActive(s))
+    return false
+  }
+
+  // Auto-open the active section in expanded mode.
+  useEffect(() => {
+    if (!pathname || collapsed) return
+    const activeTop = visibleNavigation.find((it) => isItemActive(it))
+    if (activeTop?.subItems?.length) setOpenMenu(activeTop.name)
+    // intentionally not depending on isItemActive (stable enough)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, collapsed, visibleNavigation])
+
+  // Close any open flyout when entering expanded mode or unmounting.
+  useEffect(() => {
+    if (!collapsed) setFlyoutName(null)
+  }, [collapsed])
+
+  const showFlyout = (name: string, top: number) => {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    setFlyoutName(name)
+    setFlyoutTop(top)
+  }
+  const scheduleHide = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    hideTimer.current = setTimeout(() => setFlyoutName(null), 120)
+  }
+  const cancelHide = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+  }
+
+  /* ---------- render: collapsed icon rail ---------- */
+
+  const renderCollapsedItem = (item: NavItem) => {
+    const Icon = item.icon
+    const hasSub = !!item.subItems?.length
+    const active = isItemActive(item)
+    const isFlyoutOpen = flyoutName === item.name
+
+    return (
+      <div
+        key={item.name}
+        className="relative"
+        onMouseEnter={(e) => {
+          if (!hasSub) return
+          const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
+          showFlyout(item.name, rect.top)
+        }}
+        onMouseLeave={scheduleHide}
+      >
+        <Link
+          href={item.href ?? '#'}
+          onClick={(e) => {
+            if (hasSub && !item.href) e.preventDefault()
+            else if (mobile) onMobileClose?.()
+          }}
+          aria-label={item.name}
+          className={cn(
+            'group relative mx-auto flex h-11 w-11 items-center justify-center rounded-lg transition-colors',
+            active
+              ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] shadow-[0_8px_18px_-10px_hsl(var(--sidebar-primary)/0.7)]'
+              : isFlyoutOpen
+                ? 'bg-[hsl(var(--sidebar-accent))] text-white'
+                : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-white',
+          )}
+        >
+          {active && (
+            <span className="absolute left-[-10px] top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-white/90" />
+          )}
+          {Icon ? <Icon className="h-5 w-5" /> : null}
+        </Link>
+      </div>
     )
   }
 
-  const renderMenuItem = (item: any, level = 0) => {
-    const Icon = item.icon
-    const hasSubItems = item.subItems && item.subItems.length > 0
-    const isOpen = openMenus.includes(item.name)
-    const isActive = pathname === item.href
+  /* ---------- render: expanded sections ---------- */
 
-    if (!hasSubItems && item.href) {
+  const renderExpandedItem = (item: NavItem) => {
+    const Icon = item.icon
+    const hasSub = !!item.subItems?.length
+    const active = isItemActive(item)
+    const isOpen = openMenu === item.name
+
+    if (!hasSub && item.href) {
       return (
         <Link
           key={item.name}
           href={item.href}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
-          style={{
-            backgroundColor: isActive ? '#2563EB' : 'transparent',
-            color: isActive ? '#FFFFFF' : '#CBD5E1',
-            paddingLeft: `${12 + level * 16}px`
-          }}
-          onMouseEnter={(e) => {
-            if (!isActive) e.currentTarget.style.backgroundColor = '#1E293B'
-          }}
-          onMouseLeave={(e) => {
-            if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'
-          }}
+          onClick={() => mobile && onMobileClose?.()}
+          className={cn(
+            'relative flex h-9 items-center gap-2.5 rounded-lg px-3 text-[13px] transition-colors',
+            active
+              ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] font-semibold shadow-[0_8px_18px_-10px_hsl(var(--sidebar-primary)/0.7)]'
+              : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-white',
+          )}
         >
-          {Icon && <Icon className="h-4 w-4" />}
-          <span className="text-xs">{item.name}</span>
+          {active && (
+            <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-white/90" />
+          )}
+          {Icon ? <Icon className="h-4 w-4 shrink-0" /> : null}
+          <span className="truncate">{item.name}</span>
         </Link>
       )
     }
@@ -439,63 +162,212 @@ export function Sidebar() {
     return (
       <div key={item.name}>
         <button
-          onClick={() => toggleMenu(item.name)}
-          className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
-          style={{
-            color: '#CBD5E1',
-            paddingLeft: `${12 + level * 16}px`
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#1E293B'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-          }}
+          type="button"
+          onClick={() => setOpenMenu((prev) => (prev === item.name ? null : item.name))}
+          aria-expanded={isOpen}
+          className={cn(
+            'relative flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-[13px] transition-colors',
+            isOpen
+              ? 'bg-[hsl(var(--sidebar-accent))] text-white font-medium'
+              : active
+                ? 'text-white font-medium hover:bg-[hsl(var(--sidebar-accent))]'
+                : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-white',
+          )}
         >
-          <div className="flex items-center gap-3">
-            {Icon && <Icon className="h-4 w-4" />}
-            <span className="text-xs">{item.name}</span>
-          </div>
-          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          {active && !isOpen && (
+            <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-[hsl(var(--sidebar-primary))]" />
+          )}
+          {Icon ? <Icon className="h-4 w-4 shrink-0" /> : null}
+          <span className="flex-1 truncate text-left">{item.name}</span>
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 shrink-0 opacity-80 transition-transform duration-200',
+              isOpen ? 'rotate-0' : '-rotate-90',
+            )}
+          />
         </button>
-        {isOpen && (
-          <div className="mt-1 space-y-1">
-            {item.subItems.map((subItem: any) => renderMenuItem(subItem, level + 1))}
+        <div
+          className={cn(
+            'grid transition-[grid-template-rows] duration-200 ease-out',
+            isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+          )}
+        >
+          <div className="overflow-hidden">
+            <ul className="mt-0.5 space-y-0.5 pb-1 pl-7 pr-1">
+              {item.subItems!.map((sub) => {
+                const subActive = isItemActive(sub)
+                return (
+                  <li key={sub.name}>
+                    <Link
+                      href={sub.href ?? '#'}
+                      onClick={() => mobile && onMobileClose?.()}
+                      className={cn(
+                        'group flex h-8 items-center gap-2.5 rounded-md px-2 text-[12.5px] transition-colors',
+                        subActive
+                          ? 'bg-[hsl(var(--sidebar-primary))]/85 text-white font-medium'
+                          : 'text-[hsl(var(--sidebar-muted))] hover:bg-[hsl(var(--sidebar-accent))]/70 hover:text-white',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'h-1.5 w-1.5 shrink-0 rounded-full transition-colors',
+                          subActive
+                            ? 'bg-white'
+                            : 'bg-[hsl(var(--sidebar-muted))] group-hover:bg-white',
+                        )}
+                      />
+                      <span className="truncate">{sub.name}</span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
           </div>
-        )}
+        </div>
       </div>
     )
   }
 
+  /* ---------- flyout (collapsed mode) ---------- */
+
+  const flyoutItem =
+    collapsed && !mobile && flyoutName
+      ? visibleNavigation.find((i) => i.name === flyoutName)
+      : null
+
   return (
-    <aside className="w-64 h-screen flex flex-col" style={{ backgroundColor: '#0F172A' }}>
-      <div className="p-6 flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xl" style={{ backgroundColor: '#2563EB' }}>
-          👋
+    <aside
+      className={cn(
+        'relative flex h-screen flex-col bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))] transition-[width] duration-300 ease-out',
+        collapsed ? 'w-[68px]' : 'w-72',
+        mobile && 'w-72 shadow-2xl',
+      )}
+    >
+      {/* Brand */}
+      <div
+        className={cn(
+          'flex h-16 shrink-0 items-center gap-2.5 border-b border-[hsl(var(--sidebar-border))] px-4',
+          collapsed && 'justify-center px-2',
+        )}
+      >
+        <div className="bg-grad-brand elev-brand grid h-9 w-9 place-items-center rounded-xl text-white">
+          <Sparkles className="h-5 w-5" />
         </div>
-        <span className="text-xl font-bold" style={{ color: '#FFFFFF' }}>Daxor</span>
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <p className="font-bold leading-none tracking-tight text-white">Daxor</p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--sidebar-muted))]">
+              ERP Suite
+            </p>
+          </div>
+        )}
+        {mobile && (
+          <button
+            type="button"
+            onClick={onMobileClose}
+            className="rounded-md p-1 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-white"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 space-y-1 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-        {visibleNavigation.map((item) => renderMenuItem(item))}
+      {/* Nav */}
+      <nav
+        className={cn(
+          'scrollbar-thin min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-visible py-3',
+          collapsed ? 'px-2' : 'px-2.5',
+        )}
+      >
+        {!collapsed && (
+          <p className="px-2 pb-2 pt-1 text-[10px] uppercase tracking-wider text-[hsl(var(--sidebar-muted))]">
+            Workspace
+          </p>
+        )}
+        {visibleNavigation.map((item) =>
+          collapsed && !mobile ? renderCollapsedItem(item) : renderExpandedItem(item),
+        )}
       </nav>
 
-      <div className="shrink-0 p-4" style={{ borderTop: '1px solid rgba(203, 213, 225, 0.1)' }}>
+      {/* Footer */}
+      <div className="shrink-0 space-y-1 border-t border-[hsl(var(--sidebar-border))] p-2">
+        {!mobile && onCollapseToggle && (
+          <button
+            type="button"
+            onClick={onCollapseToggle}
+            className={cn(
+              'flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-[13px] text-[hsl(var(--sidebar-foreground))] transition-colors hover:bg-[hsl(var(--sidebar-accent))] hover:text-white',
+              collapsed && 'mx-auto h-11 w-11 justify-center px-0',
+            )}
+            title={collapsed ? 'Expand' : 'Collapse'}
+          >
+            {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+            {!collapsed && <span>Collapse</span>}
+          </button>
+        )}
         <button
+          type="button"
           onClick={() => {
             localStorage.removeItem('token')
             localStorage.removeItem('user')
             window.location.href = '/login'
           }}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors w-full cursor-pointer"
-          style={{ color: '#CBD5E1', backgroundColor: 'transparent' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1E293B' }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+          className={cn(
+            'flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-[13px] text-rose-300 transition-colors hover:!bg-rose-500/15 hover:!text-rose-200',
+            collapsed && 'mx-auto h-11 w-11 justify-center px-0',
+          )}
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          <span>Logout</span>
+          {!collapsed && <span>Logout</span>}
         </button>
       </div>
+
+      {/* Flyout (collapsed only, desktop) */}
+      {flyoutItem?.subItems?.length ? (
+        <div
+          className="fixed z-50"
+          style={{ left: `${SIDE_RAIL_WIDTH + 4}px`, top: Math.max(8, flyoutTop) }}
+          onMouseEnter={cancelHide}
+          onMouseLeave={scheduleHide}
+        >
+          <div className="min-w-[220px] rounded-xl border border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-background))] p-2 shadow-2xl">
+            <p className="px-2 pb-1.5 pt-0.5 text-[10px] uppercase tracking-wider text-[hsl(var(--sidebar-muted))]">
+              {flyoutItem.name}
+            </p>
+            <ul className="space-y-0.5">
+              {flyoutItem.subItems.map((sub) => {
+                const subActive = isItemActive(sub)
+                return (
+                  <li key={sub.name}>
+                    <Link
+                      href={sub.href ?? '#'}
+                      onClick={() => {
+                        setFlyoutName(null)
+                        if (mobile) onMobileClose?.()
+                      }}
+                      className={cn(
+                        'flex h-8 items-center gap-2 rounded-md px-2 text-[12.5px] transition-colors',
+                        subActive
+                          ? 'bg-[hsl(var(--sidebar-primary))] font-medium text-white'
+                          : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-white',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'h-1.5 w-1.5 shrink-0 rounded-full',
+                          subActive ? 'bg-white' : 'bg-[hsl(var(--sidebar-muted))]',
+                        )}
+                      />
+                      <span className="truncate">{sub.name}</span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : null}
     </aside>
   )
 }

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Plus } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatDate } from '@/lib/format-date'
 
 export default function UsersPage() {
   const { user } = useAuth()
@@ -56,7 +57,7 @@ export default function UsersPage() {
                         {user.status}
                       </span>
                     </TableCell>
-                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDate(user.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

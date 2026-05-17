@@ -9,8 +9,11 @@ import { Button } from '@/components/ui/button'
 import { GET_CASH_BANKS, GET_BANK_ACCOUNTS, CREATE_CASH_BANK, CREATE_BANK_ACCOUNT } from '@/gql/queries'
 import { InputFloating } from '@/components/ui/input-floating'
 import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
+import { CellInput } from '@/components/ui/cell-input'
+import { CellSelect } from '@/components/ui/cell-select'
 import { formatMoney } from '@/lib/format-money'
 import { Landmark, RefreshCw, Building2, ChevronDown, ChevronRight, Plus, Receipt } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const labelCell = wsLabelCell
 const cell = wsCell
@@ -292,17 +295,12 @@ export default function WriteTaxLiabilityPage() {
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
                   <label className="text-[10px] text-gray-500 block mb-0.5">Type</label>
-                  <select
-                    className="w-full h-9 text-xs border rounded-md px-2"
+                  <CellSelect
+                    className="h-9 rounded-md"
                     value={newBank.accountType}
                     onChange={(e) => setNewBank((b) => ({ ...b, accountType: e.target.value }))}
-                  >
-                    {ACCOUNT_TYPE_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={ACCOUNT_TYPE_OPTIONS}
+                  />
                 </div>
                 <div className="flex-1">
                   <InputFloating
@@ -389,33 +387,29 @@ export default function WriteTaxLiabilityPage() {
               <tr>
                 <td className={labelCell}>Payment date</td>
                 <td className={cell}>
-                  <input
+                  <CellInput
+                    transparent
                     type="date"
-                    className="w-full bg-transparent outline-none font-mono"
+                    className="font-mono"
                     value={paymentDate}
                     onChange={(e) => setPaymentDate(e.target.value)}
                   />
                 </td>
                 <td className={labelCell}>Method</td>
                 <td className={cell}>
-                  <select
-                    className="w-full bg-transparent outline-none"
+                  <CellSelect
+                    transparent
                     value={method}
                     onChange={(e) => setMethod(e.target.value)}
-                  >
-                    {PAY_METHOD_OPTIONS.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={PAY_METHOD_OPTIONS}
+                  />
                 </td>
               </tr>
               <tr>
                 <td className={labelCell}>Tax authority / type *</td>
                 <td className={cell} colSpan={3}>
-                  <input
-                    className="w-full bg-transparent outline-none"
+                  <CellInput
+                    transparent
                     placeholder="e.g. Federal, State sales tax, VAT"
                     value={taxAuthority}
                     onChange={(e) => setTaxAuthority(e.target.value)}
@@ -425,8 +419,8 @@ export default function WriteTaxLiabilityPage() {
               <tr>
                 <td className={labelCell}>Period or return</td>
                 <td className={cell} colSpan={3}>
-                  <input
-                    className="w-full bg-transparent outline-none"
+                  <CellInput
+                    transparent
                     placeholder="e.g. 2025-Q1, Annual 2024"
                     value={periodOrReturn}
                     onChange={(e) => setPeriodOrReturn(e.target.value)}
@@ -436,8 +430,9 @@ export default function WriteTaxLiabilityPage() {
               <tr>
                 <td className={labelCell}>Filing / confirmation ref</td>
                 <td className={cell}>
-                  <input
-                    className="w-full bg-transparent outline-none font-mono"
+                  <CellInput
+                    transparent
+                    className="font-mono"
                     placeholder="Optional; used as reference id"
                     value={filingRef}
                     onChange={(e) => setFilingRef(e.target.value)}
@@ -445,11 +440,12 @@ export default function WriteTaxLiabilityPage() {
                 </td>
                 <td className={labelCell}>Amount *</td>
                 <td className={`${cell} ${moneyClass}`}>
-                  <input
+                  <CellInput
+                    transparent
                     type="number"
                     step="0.01"
                     min="0"
-                    className="w-full bg-transparent outline-none font-mono text-right"
+                    className="font-mono text-right"
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
@@ -459,8 +455,8 @@ export default function WriteTaxLiabilityPage() {
               <tr>
                 <td className={labelCell}>Details</td>
                 <td className={cell} colSpan={3}>
-                  <input
-                    className="w-full bg-transparent outline-none"
+                  <CellInput
+                    transparent
                     placeholder="Optional notes"
                     value={details}
                     onChange={(e) => setDetails(e.target.value)}
@@ -530,7 +526,7 @@ export default function WriteTaxLiabilityPage() {
                   <td className={cell}>{holderByAccountNumber.get(d.bankAccount) ?? '—'}</td>
                   <td className={`${cell} font-mono`}>{d.bankAccount}</td>
                   <td className={`${cell} font-mono`}>
-                    {d.transactionDate ? new Date(d.transactionDate).toLocaleDateString() : '—'}
+                    {d.transactionDate ? formatDate(d.transactionDate) : '—'}
                   </td>
                   <td className={cell}>{(d.paymentMethod || '—').replace(/_/g, ' ')}</td>
                   <td className={`${cell} font-mono`}>{d.referenceId || '—'}</td>

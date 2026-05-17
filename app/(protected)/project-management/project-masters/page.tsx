@@ -9,6 +9,7 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_PROJECTS, CREATE_PROJECT, UPDATE_PROJECT, DELETE_PROJECT } from '@/gql/queries'
 import { Trash2, Edit, X, Save, FolderKanban } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const EMPTY_FORM = {
   name: '',
@@ -91,8 +92,8 @@ export default function ProjectMastersPage() {
     { key: 'seqNo', label: 'Code', width: '120px', render: v => <span className="font-mono text-xs text-gray-500">{v || '—'}</span> },
     { key: 'name', label: 'Project Name', sortable: true, render: v => <span className="font-medium text-gray-800">{v}</span> },
     { key: 'description', label: 'Description', render: v => <span className="text-gray-500 text-xs">{v || '—'}</span> },
-    { key: 'startDate', label: 'Start Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
-    { key: 'endDate', label: 'End Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
+    { key: 'startDate', label: 'Start Date', width: '110px', render: v => v ? formatDate(v) : '—' },
+    { key: 'endDate', label: 'End Date', width: '110px', render: v => v ? formatDate(v) : '—' },
     { key: 'status', label: 'Status', width: '110px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${v === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{v}</span> },
   ]
 

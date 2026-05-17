@@ -9,6 +9,8 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_OPPORTUNITIES, CREATE_OPPORTUNITY, UPDATE_OPPORTUNITY, DELETE_OPPORTUNITY, GET_USERS } from '@/gql/queries'
 import { Trash2, Edit, X, Save, TrendingUp, DollarSign } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
+import { formatMoney } from '@/lib/format-money'
 
 const EMPTY_FORM = {
   name: '',
@@ -126,8 +128,8 @@ export default function OpportunityManagementPage() {
     { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
     { key: 'name', label: 'Opportunity Name', sortable: true, render: v => <span className="font-medium">{v}</span> },
     { key: 'accountName', label: 'Account', render: v => <span className="text-xs">{v || '—'}</span> },
-    { key: 'amount', label: 'Amount', width: '120px', render: v => v ? `$${v.toLocaleString()}` : '—' },
-    { key: 'closeDate', label: 'Close Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
+    { key: 'amount', label: 'Amount', width: '120px', render: v => v ? formatMoney(v) : '—' },
+    { key: 'closeDate', label: 'Close Date', width: '110px', render: v => v ? formatDate(v) : '—' },
     { key: 'stage', label: 'Stage', width: '130px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${stageColor[v]}`}>{v.replace('-', ' ')}</span> },
     { key: 'probability', label: 'Probability', width: '100px', render: v => `${v || 0}%` },
   ]
@@ -142,7 +144,7 @@ export default function OpportunityManagementPage() {
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Total Opportunities', value: opportunities.length, icon: TrendingUp, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Total Value', value: `$${totalValue.toLocaleString()}`, icon: DollarSign, cls: 'text-green-600 bg-green-50' },
+          { label: 'Total Value', value: formatMoney(totalValue), icon: DollarSign, cls: 'text-green-600 bg-green-50' },
           { label: 'Avg Probability', value: `${avgProbability}%`, icon: TrendingUp, cls: 'text-purple-600 bg-purple-50' },
           { label: 'Closed Won', value: opportunities.filter((o: any) => o.stage === 'closed-won').length, icon: TrendingUp, cls: 'text-green-600 bg-green-50' },
         ].map(({ label, value, icon: Icon, cls }) => (

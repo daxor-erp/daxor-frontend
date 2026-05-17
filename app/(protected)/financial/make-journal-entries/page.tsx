@@ -7,7 +7,10 @@ import { DataTable, Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import { GET_JOURNAL_ENTRIES, CREATE_JOURNAL_ENTRY, POST_JOURNAL_ENTRY, DELETE_JOURNAL_ENTRY, GET_CHART_OF_ACCOUNTS } from '@/gql/queries'
-import { Trash2, X, Save, Plus, Minus, CheckCircle } from 'lucide-react'
+import { Trash2, X, Save, Plus, Minus, CheckCircle, Download } from 'lucide-react'
+import { downloadDocumentPdf } from '@/lib/pdf-download'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const EMPTY_LINE = { accountCode: '', accountName: '', debit: '', credit: '', description: '' }
 
@@ -129,10 +132,10 @@ export default function MakeJournalEntriesPage() {
   const columns: Column[] = [
     { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
     { key: 'entryNumber', label: 'Entry #', sortable: true, render: v => <span className="font-medium">{v}</span> },
-    { key: 'entryDate', label: 'Date', width: '110px', render: v => new Date(v).toLocaleDateString() },
+    { key: 'entryDate', label: 'Date', width: '110px', render: v => formatDate(v) },
     { key: 'description', label: 'Description', render: v => <span className="text-xs">{v}</span> },
-    { key: 'totalDebit', label: 'Debit', width: '100px', render: v => `$${v.toLocaleString()}` },
-    { key: 'totalCredit', label: 'Credit', width: '100px', render: v => `$${v.toLocaleString()}` },
+    { key: 'totalDebit', label: 'Debit', width: '100px', render: v => formatMoney(v) },
+    { key: 'totalCredit', label: 'Credit', width: '100px', render: v => formatMoney(v) },
     { key: 'status', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${statusColor[v]}`}>{v}</span> },
   ]
 
@@ -192,8 +195,8 @@ export default function MakeJournalEntriesPage() {
 
               <div className="flex justify-between items-center pt-2 border-t">
                 <div className="flex gap-4">
-                  <span className="text-sm">Total Debit: <strong>${totalDebit.toFixed(2)}</strong></span>
-                  <span className="text-sm">Total Credit: <strong>${totalCredit.toFixed(2)}</strong></span>
+                  <span className="text-sm">Total Debit: <strong>{formatMoney(totalDebit)}</strong></span>
+                  <span className="text-sm">Total Credit: <strong>{formatMoney(totalCredit)}</strong></span>
                   {isBalanced ? (
                     <span className="text-green-600 text-sm flex items-center gap-1"><CheckCircle className="h-4 w-4" />Balanced</span>
                   ) : (
@@ -227,6 +230,7 @@ export default function MakeJournalEntriesPage() {
         emptyMessage="No journal entries yet. Click 'New Entry' to create one."
         actions={[
           { label: 'Post', icon: <CheckCircle className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Post this entry?')) postEntry({ variables: { id: row.id } }) }, variant: 'ghost', show: (row: any) => row.status === 'draft' },
+          { label: 'Download PDF', icon: <Download className="h-3.5 w-3.5" />, onClick: row => downloadDocumentPdf('journal-entry', row.id, row.entryNumber || row.seqNo).catch(() => {}), variant: 'ghost' },
           { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this entry?')) deleteEntry({ variables: { id: row.id } }) }, variant: 'ghost', show: (row: any) => row.status === 'draft' },
         ]}
       />

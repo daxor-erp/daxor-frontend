@@ -5,8 +5,12 @@ import { useQuery, useMutation } from '@apollo/client'
 import { GET_PURCHASE_ORDERS, CREATE_PURCHASE_ORDER, GET_VENDORS, GET_PROJECTS, GET_ITEMS } from '@/gql/queries'
 import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
+import { CellInput } from '@/components/ui/cell-input'
+import { CellSelect } from '@/components/ui/cell-select'
 import { Plus, X, Save, Trash2, ClipboardList, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -19,8 +23,6 @@ const PRIORITY = ['Low', 'Normal', 'High', 'Urgent']
 interface Line { desc: string; qty: string; unit: string; reason: string; price: string }
 const emptyLine = (): Line => ({ desc: '', qty: '', unit: 'pcs', reason: '', price: '0' })
 const today = () => new Date().toISOString().split('T')[0]
-const cell = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 h-7 w-full rounded-sm'
-const cellErr = 'border border-red-400 bg-red-50 outline-none text-xs px-2 h-7 w-full rounded-sm'
 
 export default function PurchaseRequisitionPage() {
   const { user } = useAuth()
@@ -130,18 +132,22 @@ export default function PurchaseRequisitionPage() {
               <div key={key} className="border-r border-gray-200 last:border-r-0 p-2">
                 <p className={`text-xs mb-1 font-medium ${errors[key] ? 'text-red-500' : 'text-gray-500'}`}>{label}{errors[key] ? ` — ${errors[key]}` : ''}</p>
                 {type === 'select' ? (
-                  <select value={(form as any)[key]} onChange={e => setF(key, e.target.value)} className={cell}>
-                    <option value="">— select —</option>
-                    {opts.map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
-                  </select>
+                  <CellSelect
+                    value={(form as any)[key]}
+                    onChange={e => setF(key, e.target.value)}
+                    placeholder="— select —"
+                    options={opts.map((o: any) => ({ value: o.id, label: o.name }))}
+                  />
                 ) : type === 'priority' ? (
-                  <select value={form.priority} onChange={e => setF('priority', e.target.value)} className={cell}>
-                    {PRIORITY.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  <CellSelect
+                    value={form.priority}
+                    onChange={e => setF('priority', e.target.value)}
+                    options={PRIORITY.map(p => ({ value: p, label: p }))}
+                  />
                 ) : type === 'date' ? (
-                  <input type="date" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} className={errors[key] ? cellErr : cell} />
+                  <CellInput type="date" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} invalid={!!errors[key]} />
                 ) : (
-                  <input type="text" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} placeholder="Optional notes…" className={cell} />
+                  <CellInput type="text" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} placeholder="Optional notes…" />
                 )}
               </div>
             ))}
@@ -159,25 +165,27 @@ export default function PurchaseRequisitionPage() {
                 <div key={i} className="grid border-b border-gray-200 last:border-b-0 hover:bg-blue-50/20" style={{ gridTemplateColumns: '2rem 3rem 1fr 5rem 5rem 6rem 1fr 2rem' }}>
                   <div className="border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-1">{i + 1}</div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <select onChange={e => pickItem(i, e.target.value)} className={`${cell} px-1`}>
-                      <option value="">…</option>
-                      {items.map((it: any) => <option key={it.id} value={it.id}>{it.name}</option>)}
-                    </select>
+                    <CellSelect
+                      className="px-1"
+                      onChange={e => pickItem(i, e.target.value)}
+                      placeholder="…"
+                      options={items.map((it: any) => ({ value: it.id, label: it.name }))}
+                    />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <input value={l.desc} onChange={e => setL(i, 'desc', e.target.value)} placeholder="Item description" className={errors[`d${i}`] ? cellErr : cell} />
+                    <CellInput value={l.desc} onChange={e => setL(i, 'desc', e.target.value)} placeholder="Item description" invalid={!!errors[`d${i}`]} />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <input type="number" min="0" value={l.qty} onChange={e => setL(i, 'qty', e.target.value)} placeholder="0" className={errors[`q${i}`] ? cellErr : cell} />
+                    <CellInput type="number" min="0" value={l.qty} onChange={e => setL(i, 'qty', e.target.value)} placeholder="0" invalid={!!errors[`q${i}`]} />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <input value={l.unit} onChange={e => setL(i, 'unit', e.target.value)} placeholder="pcs" className={cell} />
+                    <CellInput value={l.unit} onChange={e => setL(i, 'unit', e.target.value)} placeholder="pcs" />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <input type="number" min="0" step="0.01" value={l.price} onChange={e => setL(i, 'price', e.target.value)} placeholder="0.00" className={cell} />
+                    <CellInput type="number" min="0" step="0.01" value={l.price} onChange={e => setL(i, 'price', e.target.value)} placeholder="0.00" />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <input value={l.reason} onChange={e => setL(i, 'reason', e.target.value)} placeholder="Why is this needed?" className={cell} />
+                    <CellInput value={l.reason} onChange={e => setL(i, 'reason', e.target.value)} placeholder="Why is this needed?" />
                   </div>
                   <div className="flex items-center justify-center py-1">
                     {lines.length > 1 && (
@@ -243,12 +251,12 @@ export default function PurchaseRequisitionPage() {
               <div className="w-24 border-r border-gray-200 px-2 py-2 font-mono text-gray-400">{r.seqNo || '—'}</div>
               <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800">{projectName}</div>
               <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-600">{r.vendorName || '—'}</div>
-              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{r.orderDate ? new Date(r.orderDate).toLocaleDateString() : '—'}</div>
+              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{r.orderDate ? formatDate(r.orderDate) : '—'}</div>
               <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-600">{itemCount > 0 ? `${itemCount} item${itemCount > 1 ? 's' : ''}` : '—'}</div>
               <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">
                 {(() => {
                   const total = r.totalAmount || r.items?.reduce((s: number, i: any) => s + ((i.quantity || 0) * (i.unitPrice || 0)), 0) || 0
-                  return total > 0 ? `$${Number(total).toFixed(2)}` : '—'
+                  return total > 0 ? `${formatMoney(total)}` : '—'
                 })()}
               </div>
               <div className="w-24 px-2 py-2"><span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span></div>

@@ -13,6 +13,7 @@ import {
 import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
 import { Calculator, CheckCircle, RefreshCw, Percent, FileSpreadsheet } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function AssessFinanceChargesPage() {
   const { user } = useAuth()
@@ -311,7 +312,7 @@ export default function AssessFinanceChargesPage() {
                 <tr key={a.id} className="hover:bg-gray-50">
                   <td className={`${wsCell} font-mono`}>{a.assessmentNumber}</td>
                   <td className={wsCell}>
-                    {a.asOfDate ? new Date(a.asOfDate).toLocaleDateString() : '—'}
+                    {a.asOfDate ? formatDate(a.asOfDate) : '—'}
                   </td>
                   <td className={wsCell}>{Number(a.annualRatePercent).toFixed(2)}%</td>
                   <td className={wsCell}>

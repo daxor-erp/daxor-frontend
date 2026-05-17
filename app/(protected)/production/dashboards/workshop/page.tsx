@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { GET_PRODUCTION_PLANNINGS } from '@/gql/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Wrench, Users, Clock, CheckCircle } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function WorkshopDashboard() {
   const { user } = useAuth()
@@ -94,7 +95,7 @@ export default function WorkshopDashboard() {
                       <td className="p-2">{task.name}</td>
                       <td className="p-2"><span className={`px-2 py-0.5 rounded ${task.status === 'completed' ? 'bg-green-100 text-green-800' : task.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{task.status}</span></td>
                       <td className="p-2"><span className="capitalize">{task.priority}</span></td>
-                      <td className="p-2">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '—'}</td>
+                      <td className="p-2">{task.dueDate ? formatDate(task.dueDate) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -7,6 +7,8 @@ import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, CheckCircle2, Clock, FileCheck, Package, Building2, FolderKanban, CalendarDays, DollarSign, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -71,8 +73,8 @@ export default function OrderRequisitionPage() {
               <td className="px-3 py-2 font-mono text-gray-400 border-r border-gray-200">{o.seqNo || '—'}</td>
               <td className="px-3 py-2 font-medium text-gray-800 border-r border-gray-200">{o.vendorId ? getName(o.vendorId, vendors) : <span className="text-gray-400 italic">Not assigned</span>}</td>
               <td className="px-3 py-2 text-gray-500 border-r border-gray-200">{o.projectId ? getName(o.projectId, projects) : '—'}</td>
-              <td className="px-3 py-2 text-gray-600 border-r border-gray-200">{o.orderDate ? new Date(o.orderDate).toLocaleDateString() : '—'}</td>
-              <td className="px-3 py-2 font-semibold text-gray-800 border-r border-gray-200">${Number(o.totalAmount).toFixed(2)}</td>
+              <td className="px-3 py-2 text-gray-600 border-r border-gray-200">{o.orderDate ? formatDate(o.orderDate) : '—'}</td>
+              <td className="px-3 py-2 font-semibold text-gray-800 border-r border-gray-200">{formatMoney(o.totalAmount)}</td>
               <td className="px-3 py-2 border-r border-gray-200">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
               </td>
@@ -155,11 +157,11 @@ export default function OrderRequisitionPage() {
                 </div>
                 <div className="flex items-start gap-2">
                   <CalendarDays className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-                  <div><p className="text-xs text-gray-400">Order Date</p><p className="text-sm text-gray-700">{selected.orderDate ? new Date(selected.orderDate).toLocaleDateString() : '—'}</p></div>
+                  <div><p className="text-xs text-gray-400">Order Date</p><p className="text-sm text-gray-700">{selected.orderDate ? formatDate(selected.orderDate) : '—'}</p></div>
                 </div>
                 <div className="flex items-start gap-2">
                   <DollarSign className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
-                  <div><p className="text-xs text-gray-400">Amount</p><p className="text-base font-bold text-gray-800">${Number(selected.totalAmount).toFixed(2)}</p></div>
+                  <div><p className="text-xs text-gray-400">Amount</p><p className="text-base font-bold text-gray-800">{formatMoney(selected.totalAmount)}</p></div>
                 </div>
               </div>
 

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, Column } from '@/components/DataTable'
 import { useRouter } from 'next/navigation'
 import { DollarSign, BookOpen, Calendar } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function GeneralLedgerPage() {
   const { user } = useAuth()
@@ -32,7 +33,7 @@ export default function GeneralLedgerPage() {
 
   const columns: Column[] = [
     { key: 'transactionNumber', label: 'Transaction #', sortable: true, render: v => <span className="font-mono text-xs font-medium">{v}</span> },
-    { key: 'transactionDate', label: 'Date', width: '110px', render: v => new Date(v).toLocaleDateString() },
+    { key: 'transactionDate', label: 'Date', width: '110px', render: v => formatDate(v) },
     { key: 'transactionType', label: 'Type', width: '120px', render: v => <span className="text-xs capitalize">{v}</span> },
     { key: 'debitAccount', label: 'Debit Account', render: v => <span className="text-xs">{v}</span> },
     { key: 'creditAccount', label: 'Credit Account', render: v => <span className="text-xs">{v}</span> },

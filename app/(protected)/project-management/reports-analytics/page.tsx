@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { GET_PRODUCTION_PLANNINGS, GET_PROJECTS } from '@/gql/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart3, TrendingUp, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function ReportsAnalyticsPage() {
   const { user } = useAuth()
@@ -206,7 +207,7 @@ export default function ReportsAnalyticsPage() {
                   {plans.slice(0, 5).map((plan: any) => (
                     <tr key={plan.id} className="border-b hover:bg-gray-50">
                       <td className="p-2 font-mono">{plan.docNumber}</td>
-                      <td className="p-2">{new Date(plan.docDate).toLocaleDateString()}</td>
+                      <td className="p-2">{formatDate(plan.docDate)}</td>
                       <td className="p-2">{plan.progress || 0}%</td>
                       <td className="p-2">${(plan.budget || 0).toLocaleString()}</td>
                       <td className="p-2">${(plan.actualCost || 0).toLocaleString()}</td>

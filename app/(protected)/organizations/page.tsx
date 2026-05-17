@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Plus } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function OrganizationsPage() {
   const { data, loading } = useQuery(GET_ORGANIZATIONS, {
@@ -51,7 +52,7 @@ export default function OrganizationsPage() {
                         {org.status}
                       </span>
                     </TableCell>
-                    <TableCell>{new Date(org.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDate(org.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -1,5 +1,859 @@
 import { gql } from '@apollo/client'
 
+// ===========================================================================
+// Notifications (backend-persisted, see backend modules/notification)
+// ===========================================================================
+export const GET_MY_NOTIFICATIONS = gql`
+  query MyNotifications($unreadOnly: Boolean, $limit: Int, $skip: Int) {
+    myNotifications(unreadOnly: $unreadOnly, limit: $limit, skip: $skip) {
+      id
+      organizationId
+      recipientUserId
+      actorUserId
+      kind
+      severity
+      title
+      message
+      link
+      referenceModule
+      referenceId
+      moduleKey
+      isRead
+      readAt
+      archivedAt
+      createdAt
+    }
+  }
+`
+
+export const GET_MY_UNREAD_NOTIFICATION_COUNT = gql`
+  query MyUnreadNotificationCount {
+    myUnreadNotificationCount
+  }
+`
+
+export const MARK_NOTIFICATION_READ = gql`
+  mutation MarkNotificationRead($id: ID!) {
+    markNotificationRead(id: $id) {
+      id
+      isRead
+      readAt
+    }
+  }
+`
+
+export const MARK_ALL_NOTIFICATIONS_READ = gql`
+  mutation MarkAllNotificationsRead {
+    markAllNotificationsRead
+  }
+`
+
+export const ARCHIVE_NOTIFICATION = gql`
+  mutation ArchiveNotification($id: ID!) {
+    archiveNotification(id: $id) {
+      id
+      archivedAt
+    }
+  }
+`
+
+export const ARCHIVE_ALL_NOTIFICATIONS = gql`
+  mutation ArchiveAllNotifications {
+    archiveAllNotifications
+  }
+`
+
+// ===========================================================================
+// Tax Rates
+// ===========================================================================
+export const GET_TAX_RATES = gql`
+  query GetTaxRates($organizationId: ID!, $status: String, $appliesTo: String, $search: String) {
+    taxRates(organizationId: $organizationId, status: $status, appliesTo: $appliesTo, search: $search) {
+      id
+      name
+      code
+      ratePercent
+      taxType
+      appliesTo
+      hsnSacCode
+      description
+      isCompound
+      isInclusive
+      status
+      effectiveFrom
+      effectiveTo
+      createdAt
+    }
+  }
+`
+
+export const CREATE_TAX_RATE = gql`
+  mutation CreateTaxRate($input: CreateTaxRateInput!) {
+    createTaxRate(input: $input) {
+      id
+      name
+      code
+      ratePercent
+    }
+  }
+`
+
+export const UPDATE_TAX_RATE = gql`
+  mutation UpdateTaxRate($id: ID!, $input: UpdateTaxRateInput!) {
+    updateTaxRate(id: $id, input: $input) {
+      id
+      name
+      ratePercent
+      status
+    }
+  }
+`
+
+export const DELETE_TAX_RATE = gql`
+  mutation DeleteTaxRate($id: ID!) {
+    deleteTaxRate(id: $id) {
+      id
+    }
+  }
+`
+
+// ===========================================================================
+// Fixed Assets
+// ===========================================================================
+export const GET_FIXED_ASSETS = gql`
+  query GetFixedAssets($organizationId: ID!, $status: String, $category: String, $search: String) {
+    fixedAssets(organizationId: $organizationId, status: $status, category: $category, search: $search) {
+      id
+      assetCode
+      name
+      category
+      status
+      purchaseDate
+      acquisitionCost
+      accumulatedDepreciation
+      bookValue
+      usefulLifeMonths
+      depreciationMethod
+      depreciationRatePercent
+      serialNumber
+      barcode
+      assignedToUserId
+      siteLocationId
+      vendorId
+      warrantyExpiryDate
+      createdAt
+    }
+  }
+`
+
+export const GET_FIXED_ASSET = gql`
+  query GetFixedAsset($id: ID!) {
+    fixedAsset(id: $id) {
+      id
+      organizationId
+      assetCode
+      name
+      description
+      category
+      status
+      assignedToUserId
+      siteLocationId
+      vendorId
+      purchaseDate
+      commissionedDate
+      disposalDate
+      acquisitionCost
+      salvageValue
+      usefulLifeMonths
+      depreciationMethod
+      depreciationRatePercent
+      accumulatedDepreciation
+      bookValue
+      serialNumber
+      barcode
+      warrantyExpiryDate
+      depreciationHistory {
+        periodEndDate
+        amount
+        accumulatedDepreciation
+        bookValue
+        method
+        notes
+        postedAt
+      }
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const GET_FIXED_ASSET_SUMMARY = gql`
+  query GetFixedAssetSummary($organizationId: ID!) {
+    fixedAssetSummaryByCategory(organizationId: $organizationId) {
+      category
+      count
+      acquisitionCost
+      accumulatedDepreciation
+      bookValue
+    }
+  }
+`
+
+export const CREATE_FIXED_ASSET = gql`
+  mutation CreateFixedAsset($input: CreateFixedAssetInput!) {
+    createFixedAsset(input: $input) {
+      id
+      assetCode
+      name
+    }
+  }
+`
+
+export const UPDATE_FIXED_ASSET = gql`
+  mutation UpdateFixedAsset($id: ID!, $input: UpdateFixedAssetInput!) {
+    updateFixedAsset(id: $id, input: $input) {
+      id
+      name
+      status
+    }
+  }
+`
+
+export const DELETE_FIXED_ASSET = gql`
+  mutation DeleteFixedAsset($id: ID!) {
+    deleteFixedAsset(id: $id) {
+      id
+    }
+  }
+`
+
+export const POST_FIXED_ASSET_DEPRECIATION = gql`
+  mutation PostFixedAssetDepreciation($id: ID!, $input: PostDepreciationInput!) {
+    postFixedAssetDepreciation(id: $id, input: $input) {
+      id
+      accumulatedDepreciation
+      bookValue
+    }
+  }
+`
+
+export const DISPOSE_FIXED_ASSET = gql`
+  mutation DisposeFixedAsset($id: ID!, $disposalDate: String!, $notes: String) {
+    disposeFixedAsset(id: $id, disposalDate: $disposalDate, notes: $notes) {
+      id
+      status
+      disposalDate
+    }
+  }
+`
+
+// ===========================================================================
+// Global search
+// ===========================================================================
+export const GLOBAL_SEARCH = gql`
+  query GlobalSearch($organizationId: ID!, $query: String!, $limitPerKind: Int) {
+    globalSearch(organizationId: $organizationId, query: $query, limitPerKind: $limitPerKind) {
+      id
+      kind
+      title
+      subtitle
+      link
+      matchedField
+    }
+  }
+`
+
+// ===========================================================================
+// HR Master (generic) + Employee Master + Delivery Order + Intercompany + QC + Maintenance
+// ===========================================================================
+export const GET_HR_MASTERS = gql`
+  query GetHrMasters($organizationId: ID!, $kind: String!, $active: Boolean, $search: String) {
+    hrMasters(organizationId: $organizationId, kind: $kind, active: $active, search: $search) {
+      id
+      code
+      name
+      description
+      metadataJson
+      active
+      sortOrder
+      createdAt
+    }
+  }
+`
+export const CREATE_HR_MASTER = gql`
+  mutation CreateHrMaster($input: CreateHrMasterInput!) {
+    createHrMaster(input: $input) { id code name }
+  }
+`
+export const UPDATE_HR_MASTER = gql`
+  mutation UpdateHrMaster($id: ID!, $input: UpdateHrMasterInput!) {
+    updateHrMaster(id: $id, input: $input) { id code name active }
+  }
+`
+export const DELETE_HR_MASTER = gql`
+  mutation DeleteHrMaster($id: ID!) {
+    deleteHrMaster(id: $id) { id }
+  }
+`
+
+export const GET_EMPLOYEE_MASTERS = gql`
+  query GetEmployeeMasters($organizationId: ID!, $status: String, $department: String, $search: String) {
+    employeeMasters(organizationId: $organizationId, status: $status, department: $department, search: $search) {
+      id
+      employeeCode
+      firstName
+      lastName
+      designation
+      department
+      workEmail
+      phone
+      dateOfJoining
+      employmentType
+      basicSalary
+      status
+      createdAt
+    }
+  }
+`
+export const GET_EMPLOYEE_MASTER = gql`
+  query GetEmployeeMaster($id: ID!) {
+    employeeMaster(id: $id) {
+      id
+      employeeCode
+      firstName
+      lastName
+      dateOfBirth
+      gender
+      bloodGroup
+      nationality
+      maritalStatus
+      personalEmail
+      workEmail
+      phone
+      alternatePhone
+      address
+      city
+      state
+      country
+      pincode
+      designation
+      department
+      reportsToUserId
+      dateOfJoining
+      dateOfConfirmation
+      dateOfRelieving
+      employmentType
+      workLocation
+      basicSalary
+      currency
+      panNumber
+      aadhaarNumber
+      uanNumber
+      esiNumber
+      bankDetails { bankName accountNumber ifscCode branchName }
+      emergencyContact { name relation phone }
+      status
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`
+export const CREATE_EMPLOYEE_MASTER = gql`
+  mutation CreateEmployeeMaster($input: CreateEmployeeMasterInput!) {
+    createEmployeeMaster(input: $input) { id employeeCode firstName lastName }
+  }
+`
+export const UPDATE_EMPLOYEE_MASTER = gql`
+  mutation UpdateEmployeeMaster($id: ID!, $input: UpdateEmployeeMasterInput!) {
+    updateEmployeeMaster(id: $id, input: $input) { id status }
+  }
+`
+export const DELETE_EMPLOYEE_MASTER = gql`
+  mutation DeleteEmployeeMaster($id: ID!) {
+    deleteEmployeeMaster(id: $id) { id }
+  }
+`
+
+export const GET_DELIVERY_ORDERS = gql`
+  query GetDeliveryOrders($organizationId: ID!, $status: String, $customerId: ID, $salesOrderId: ID, $search: String) {
+    deliveryOrders(organizationId: $organizationId, status: $status, customerId: $customerId, salesOrderId: $salesOrderId, search: $search) {
+      id
+      docNumber
+      customerName
+      deliveryDate
+      carrier
+      trackingNumber
+      totalQuantity
+      status
+      createdAt
+    }
+  }
+`
+export const CREATE_DELIVERY_ORDER = gql`
+  mutation CreateDeliveryOrder($input: CreateDeliveryOrderInput!) {
+    createDeliveryOrder(input: $input) { id docNumber }
+  }
+`
+export const UPDATE_DELIVERY_ORDER = gql`
+  mutation UpdateDeliveryOrder($id: ID!, $input: UpdateDeliveryOrderInput!) {
+    updateDeliveryOrder(id: $id, input: $input) { id status }
+  }
+`
+export const DELETE_DELIVERY_ORDER = gql`
+  mutation DeleteDeliveryOrder($id: ID!) {
+    deleteDeliveryOrder(id: $id) { id }
+  }
+`
+export const TRANSITION_DELIVERY_STATUS = gql`
+  mutation TransitionDeliveryOrderStatus($id: ID!, $status: String!, $signedBy: String) {
+    transitionDeliveryOrderStatus(id: $id, status: $status, signedBy: $signedBy) { id status }
+  }
+`
+
+export const GET_INTERCOMPANY_ALLOCATIONS = gql`
+  query GetIntercompanyAllocations($organizationId: ID!, $status: String, $search: String) {
+    intercompanyAllocations(organizationId: $organizationId, status: $status, search: $search) {
+      id
+      scheduleCode
+      name
+      sourceAccount
+      basisAmount
+      basisDate
+      allocationMethod
+      totalAllocated
+      status
+      lines {
+        targetOrganizationId
+        targetOrganizationName
+        percentage
+        amount
+      }
+      createdAt
+    }
+  }
+`
+export const CREATE_INTERCOMPANY_ALLOCATION = gql`
+  mutation CreateIntercompanyAllocation($input: CreateIntercompanyAllocationInput!) {
+    createIntercompanyAllocation(input: $input) { id scheduleCode }
+  }
+`
+export const UPDATE_INTERCOMPANY_ALLOCATION = gql`
+  mutation UpdateIntercompanyAllocation($id: ID!, $input: UpdateIntercompanyAllocationInput!) {
+    updateIntercompanyAllocation(id: $id, input: $input) { id status }
+  }
+`
+export const DELETE_INTERCOMPANY_ALLOCATION = gql`
+  mutation DeleteIntercompanyAllocation($id: ID!) {
+    deleteIntercompanyAllocation(id: $id) { id }
+  }
+`
+export const POST_INTERCOMPANY_ALLOCATION = gql`
+  mutation PostIntercompanyAllocation($id: ID!) {
+    postIntercompanyAllocation(id: $id) { id status postedAt }
+  }
+`
+
+export const GET_INTERCOMPANY_JOURNALS = gql`
+  query GetIntercompanyJournals($originatingOrganizationId: ID!, $status: String, $search: String) {
+    intercompanyJournalEntries(originatingOrganizationId: $originatingOrganizationId, status: $status, search: $search) {
+      id
+      docNumber
+      entryDate
+      description
+      totalDebit
+      totalCredit
+      status
+      postedAt
+      lines {
+        organizationId
+        account
+        debit
+        credit
+      }
+      createdAt
+    }
+  }
+`
+export const CREATE_INTERCOMPANY_JOURNAL = gql`
+  mutation CreateIntercompanyJournal($input: CreateIntercompanyJournalInput!) {
+    createIntercompanyJournalEntry(input: $input) { id docNumber }
+  }
+`
+export const POST_INTERCOMPANY_JOURNAL = gql`
+  mutation PostIntercompanyJournal($id: ID!) {
+    postIntercompanyJournalEntry(id: $id) { id status postedAt }
+  }
+`
+export const REVERSE_INTERCOMPANY_JOURNAL = gql`
+  mutation ReverseIntercompanyJournal($id: ID!) {
+    reverseIntercompanyJournalEntry(id: $id) { id status }
+  }
+`
+
+export const GET_QC_INSPECTIONS = gql`
+  query GetQCInspections($organizationId: ID!, $outcome: String, $sourceModule: String, $search: String) {
+    qcInspections(organizationId: $organizationId, outcome: $outcome, sourceModule: $sourceModule, search: $search) {
+      id
+      docNumber
+      inspectionDate
+      sourceModule
+      itemName
+      batchNumber
+      quantityInspected
+      quantityPassed
+      quantityFailed
+      outcome
+      defects { code severity quantity }
+      createdAt
+    }
+  }
+`
+export const GET_QC_OUTCOME_SUMMARY = gql`
+  query GetQCOutcomeSummary($organizationId: ID!) {
+    qcOutcomeSummary(organizationId: $organizationId) {
+      outcome
+      count
+      quantityInspected
+      quantityPassed
+      quantityFailed
+    }
+  }
+`
+export const CREATE_QC_INSPECTION = gql`
+  mutation CreateQCInspection($input: CreateQCInspectionInput!) {
+    createQCInspection(input: $input) { id docNumber outcome }
+  }
+`
+export const SET_QC_OUTCOME = gql`
+  mutation SetQCInspectionOutcome($id: ID!, $outcome: String!, $notes: String) {
+    setQCInspectionOutcome(id: $id, outcome: $outcome, notes: $notes) { id outcome }
+  }
+`
+export const DELETE_QC_INSPECTION = gql`
+  mutation DeleteQCInspection($id: ID!) {
+    deleteQCInspection(id: $id) { id }
+  }
+`
+
+export const GET_ASSET_MAINTENANCES = gql`
+  query GetAssetMaintenances($organizationId: ID!, $status: String, $assetId: ID, $maintenanceType: String, $search: String) {
+    assetMaintenances(organizationId: $organizationId, status: $status, assetId: $assetId, maintenanceType: $maintenanceType, search: $search) {
+      id
+      docNumber
+      assetId
+      assetName
+      maintenanceType
+      priority
+      scheduledDate
+      completedAt
+      description
+      partsCost
+      laborCost
+      totalCost
+      status
+      createdAt
+    }
+  }
+`
+export const GET_UPCOMING_MAINTENANCE = gql`
+  query GetUpcomingMaintenance($organizationId: ID!, $days: Int) {
+    upcomingMaintenance(organizationId: $organizationId, days: $days) {
+      id
+      docNumber
+      assetName
+      maintenanceType
+      priority
+      scheduledDate
+      status
+    }
+  }
+`
+export const CREATE_ASSET_MAINTENANCE = gql`
+  mutation CreateAssetMaintenance($input: CreateAssetMaintenanceInput!) {
+    createAssetMaintenance(input: $input) { id docNumber }
+  }
+`
+export const UPDATE_ASSET_MAINTENANCE = gql`
+  mutation UpdateAssetMaintenance($id: ID!, $input: UpdateAssetMaintenanceInput!) {
+    updateAssetMaintenance(id: $id, input: $input) { id status }
+  }
+`
+export const DELETE_ASSET_MAINTENANCE = gql`
+  mutation DeleteAssetMaintenance($id: ID!) {
+    deleteAssetMaintenance(id: $id) { id }
+  }
+`
+export const START_ASSET_MAINTENANCE = gql`
+  mutation StartAssetMaintenance($id: ID!) {
+    startAssetMaintenance(id: $id) { id status startedAt }
+  }
+`
+export const COMPLETE_ASSET_MAINTENANCE = gql`
+  mutation CompleteAssetMaintenance($id: ID!, $input: CompleteMaintenanceInput!) {
+    completeAssetMaintenance(id: $id, input: $input) { id status completedAt }
+  }
+`
+
+// ===========================================================================
+// Documents (attachments on any parent entity)
+// ===========================================================================
+export const GET_DOCUMENTS = gql`
+  query GetDocuments($parentModule: String!, $parentId: ID!) {
+    documents(parentModule: $parentModule, parentId: $parentId) {
+      id
+      filename
+      mimeType
+      sizeBytes
+      category
+      description
+      downloadUrl
+      uploadedByUserId
+      createdAt
+    }
+  }
+`
+
+export const GET_ORG_DOCUMENTS = gql`
+  query GetOrgDocuments($organizationId: ID!, $parentModule: String) {
+    organizationDocuments(organizationId: $organizationId, parentModule: $parentModule) {
+      id
+      filename
+      mimeType
+      sizeBytes
+      parentModule
+      parentId
+      category
+      downloadUrl
+      createdAt
+    }
+  }
+`
+
+export const DELETE_DOCUMENT = gql`
+  mutation DeleteDocument($id: ID!) {
+    deleteDocument(id: $id) {
+      id
+    }
+  }
+`
+
+// ===========================================================================
+// Timesheets
+// ===========================================================================
+export const GET_TIMESHEETS = gql`
+  query GetTimesheets($organizationId: ID!, $employeeUserId: ID, $projectId: ID, $status: String, $startDate: String, $endDate: String, $billable: Boolean) {
+    timesheetEntries(
+      organizationId: $organizationId
+      employeeUserId: $employeeUserId
+      projectId: $projectId
+      status: $status
+      startDate: $startDate
+      endDate: $endDate
+      billable: $billable
+    ) {
+      id
+      employeeUserId
+      projectId
+      workOrderId
+      taskName
+      entryDate
+      hours
+      billable
+      billRate
+      costRate
+      notes
+      status
+      submittedAt
+      approvedAt
+      approvedByUserId
+      rejectionReason
+      createdAt
+    }
+  }
+`
+
+export const GET_TIMESHEET_WEEKLY_SUMMARY = gql`
+  query GetTimesheetWeeklySummary($organizationId: ID!, $employeeUserId: ID!, $weekStart: String!, $weekEnd: String!) {
+    timesheetWeeklySummary(
+      organizationId: $organizationId
+      employeeUserId: $employeeUserId
+      weekStart: $weekStart
+      weekEnd: $weekEnd
+    ) {
+      totalHours
+      billableHours
+      approvedHours
+      pending
+      draft
+    }
+  }
+`
+
+export const CREATE_TIMESHEET_ENTRY = gql`
+  mutation CreateTimesheetEntry($input: CreateTimesheetEntryInput!) {
+    createTimesheetEntry(input: $input) {
+      id
+      hours
+      status
+    }
+  }
+`
+
+export const UPDATE_TIMESHEET_ENTRY = gql`
+  mutation UpdateTimesheetEntry($id: ID!, $input: UpdateTimesheetEntryInput!) {
+    updateTimesheetEntry(id: $id, input: $input) {
+      id
+      hours
+      status
+    }
+  }
+`
+
+export const DELETE_TIMESHEET_ENTRY = gql`
+  mutation DeleteTimesheetEntry($id: ID!) {
+    deleteTimesheetEntry(id: $id) {
+      id
+    }
+  }
+`
+
+export const SUBMIT_TIMESHEET_ENTRY = gql`
+  mutation SubmitTimesheetEntry($id: ID!) {
+    submitTimesheetEntry(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const RESOLVE_TIMESHEET_ENTRY = gql`
+  mutation ResolveTimesheetEntry($id: ID!, $decision: String!, $reason: String) {
+    resolveTimesheetEntry(id: $id, decision: $decision, reason: $reason) {
+      id
+      status
+    }
+  }
+`
+
+// ===========================================================================
+// Bill of Materials
+// ===========================================================================
+export const GET_BOMS = gql`
+  query GetBOMs($organizationId: ID!, $status: String, $parentItemId: ID, $search: String) {
+    billsOfMaterials(organizationId: $organizationId, status: $status, parentItemId: $parentItemId, search: $search) {
+      id
+      parentItemId
+      parentItemName
+      bomCode
+      version
+      quantityProduced
+      unit
+      laborCost
+      overheadCost
+      totalMaterialCost
+      totalCost
+      status
+      components {
+        itemId
+        itemName
+        quantity
+        unit
+        scrapPercent
+        standardCost
+      }
+      createdAt
+    }
+  }
+`
+
+export const GET_BOM = gql`
+  query GetBOM($id: ID!) {
+    billOfMaterials(id: $id) {
+      id
+      organizationId
+      parentItemId
+      parentItemName
+      bomCode
+      version
+      description
+      quantityProduced
+      unit
+      laborCost
+      overheadCost
+      totalMaterialCost
+      totalCost
+      status
+      notes
+      components {
+        itemId
+        itemName
+        quantity
+        unit
+        scrapPercent
+        standardCost
+        notes
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const CREATE_BOM = gql`
+  mutation CreateBOM($input: CreateBOMInput!) {
+    createBillOfMaterials(input: $input) {
+      id
+      bomCode
+      totalCost
+    }
+  }
+`
+
+export const UPDATE_BOM = gql`
+  mutation UpdateBOM($id: ID!, $input: UpdateBOMInput!) {
+    updateBillOfMaterials(id: $id, input: $input) {
+      id
+      totalCost
+      status
+    }
+  }
+`
+
+export const DELETE_BOM = gql`
+  mutation DeleteBOM($id: ID!) {
+    deleteBillOfMaterials(id: $id) {
+      id
+    }
+  }
+`
+
+// ===========================================================================
+// Audit Log
+// ===========================================================================
+export const GET_AUDIT_LOGS = gql`
+  query GetAuditLogs($entityType: String, $entityId: ID, $userId: ID, $action: String, $page: Int, $limit: Int) {
+    auditLogs(entityType: $entityType, entityId: $entityId, userId: $userId, action: $action, page: $page, limit: $limit) {
+      data {
+        id
+        userId
+        action
+        entityType
+        entityId
+        oldValuesJson
+        newValuesJson
+        ipAddress
+        userAgent
+        createdAt
+      }
+      total
+      page
+      pages
+    }
+  }
+`
+
 // Auth
 export const REGISTER = gql`
   mutation Register($input: RegisterInput!) {
@@ -62,6 +916,42 @@ export const ME = gql`
         canUpdate
         canDelete
         canView
+      }
+      dashboardPreferences {
+        erp {
+          hiddenWidgets
+          widgetOrder
+        }
+        admin {
+          hiddenWidgets
+          widgetOrder
+        }
+        orgAdmin {
+          hiddenWidgets
+          widgetOrder
+        }
+      }
+    }
+  }
+`
+
+export const UPDATE_MY_DASHBOARD_PREFERENCES = gql`
+  mutation UpdateMyDashboardPreferences($dashboard: String!, $input: DashboardWidgetPreferencesInput!) {
+    updateMyDashboardPreferences(dashboard: $dashboard, input: $input) {
+      id
+      dashboardPreferences {
+        erp {
+          hiddenWidgets
+          widgetOrder
+        }
+        admin {
+          hiddenWidgets
+          widgetOrder
+        }
+        orgAdmin {
+          hiddenWidgets
+          widgetOrder
+        }
       }
     }
   }
@@ -258,6 +1148,13 @@ export const DELETE_ORGANIZATION = gql`
   }
 `
 
+// Manual notification compose (super admin → org admins, org admin → org users)
+export const SEND_NOTIFICATION = gql`
+  mutation SendNotification($input: SendNotificationInput!) {
+    sendNotification(input: $input)
+  }
+`
+
 // Approvals (workflow inbox — see org-admin routing)
 export const MY_PENDING_APPROVAL_REQUESTS = gql`
   query MyPendingApprovalRequests {
@@ -281,6 +1178,33 @@ export const RESOLVE_APPROVAL_REQUEST = gql`
       id
       status
       decidedAt
+    }
+  }
+`
+
+export const MY_APPROVAL_REQUESTS = gql`
+  query MyApprovalRequests(
+    $status: ApprovalRequestStatus
+    $role: ApprovalRequestRole
+    $limit: Int
+    $skip: Int
+  ) {
+    myApprovalRequests(status: $status, role: $role, limit: $limit, skip: $skip) {
+      id
+      organizationId
+      moduleKey
+      entityType
+      entityId
+      title
+      status
+      requesterUserId
+      requesterDisplayName
+      assigneeApproverUserId
+      resolutionNote
+      decidedByUserId
+      decidedAt
+      createdAt
+      updatedAt
     }
   }
 `
@@ -983,11 +1907,13 @@ export const GET_CHART_OF_ACCOUNTS = gql`
     chartOfAccounts(organizationId: $organizationId, accountType: $accountType) {
       id
       accountCode
+      accountNumber
       accountName
       accountType
       parentAccount
       level
       isActive
+      description
       createdAt
     }
   }
@@ -1008,6 +1934,7 @@ export const CREATE_CHART_OF_ACCOUNT = gql`
     createChartOfAccount(input: $input) {
       id
       accountCode
+      accountNumber
       accountName
     }
   }

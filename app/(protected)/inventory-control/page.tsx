@@ -14,12 +14,8 @@ import { Button } from '@/components/ui/button'
 import { AdjustInventoryQuickSection } from '@/components/inventory/AdjustInventoryQuickSection'
 import { AdjustInventoryWorksheetSection } from '@/components/inventory/AdjustInventoryWorksheetSection'
 import { Package, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
-
-/** Same worksheet cell styling as purchases / quotations line grids */
-const cell =
-  'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 h-7 w-full rounded-sm'
-const cellErr =
-  'border border-red-400 bg-red-50 outline-none focus:ring-1 focus:ring-red-400 text-xs px-2 h-7 w-full rounded-sm'
+import { CellInput } from '@/components/ui/cell-input'
+import { CellSelect } from '@/components/ui/cell-select'
 
 const STOCK_STATUS_OPTS = [
   { value: '', label: 'All statuses' },
@@ -262,32 +258,24 @@ export default function InventoryControlPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
-          <select
-            className={cell + ' w-[196px]'}
+          <CellSelect
+            className="w-[196px]"
             value={warehouseFilter}
             onChange={(e) => setWarehouseFilter(e.target.value)}
             aria-label="Warehouse filter"
-          >
-            <option value="">All warehouses</option>
-            {warehouses.map((w: { id: string; warehouseCode?: string; warehouseName?: string }) => (
-              <option key={w.id} value={w.id}>
-                {w.warehouseCode ? `${w.warehouseCode} — ` : ''}
-                {w.warehouseName}
-              </option>
-            ))}
-          </select>
-          <select
-            className={cell + ' w-[168px]'}
+            placeholder="All warehouses"
+            options={warehouses.map((w: { id: string; warehouseCode?: string; warehouseName?: string }) => ({
+              value: w.id,
+              label: `${w.warehouseCode ? `${w.warehouseCode} — ` : ''}${w.warehouseName}`,
+            }))}
+          />
+          <CellSelect
+            className="w-[168px]"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Stock status filter"
-          >
-            {STOCK_STATUS_OPTS.map((o) => (
-              <option key={o.value || 'all'} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            options={STOCK_STATUS_OPTS}
+          />
           <Button type="button" variant="outline" size="sm" onClick={() => refetch()} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -339,89 +327,76 @@ export default function InventoryControlPage() {
                   {i + 1}
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <select
-                    className={errors[`item${i}`] ? cellErr : cell}
+                  <CellSelect
+                    invalid={!!errors[`item${i}`]}
                     value={row.itemId}
                     onChange={(e) => pickItem(i, e.target.value)}
-                  >
-                    <option value="">— item —</option>
-                    {items.map((it: { id: string; name: string }) => (
-                      <option key={it.id} value={it.id}>
-                        {it.name}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="— item —"
+                    options={items.map((it: { id: string; name: string }) => ({ value: it.id, label: it.name }))}
+                  />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
-                    className={errors[`bin${i}`] ? cellErr : cell}
+                  <CellInput
+                    invalid={!!errors[`bin${i}`]}
                     value={row.binLocation}
                     onChange={(e) => setRow(i, { binLocation: e.target.value })}
                     placeholder="Bin"
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
+                  <CellInput
                     type="number"
                     min={0}
                     step="any"
-                    className={cell}
                     value={row.quantity}
                     onChange={(e) => setRow(i, { quantity: e.target.value })}
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
-                    className={cell}
+                  <CellInput
                     value={row.unit}
                     onChange={(e) => setRow(i, { unit: e.target.value })}
                     placeholder="pcs"
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
+                  <CellInput
                     type="number"
                     min={0}
                     step="any"
-                    className={cell}
                     value={row.minStockLevel}
                     onChange={(e) => setRow(i, { minStockLevel: e.target.value })}
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
+                  <CellInput
                     type="number"
                     min={0}
                     step="any"
-                    className={cell}
                     value={row.maxStockLevel}
                     onChange={(e) => setRow(i, { maxStockLevel: e.target.value })}
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
+                  <CellInput
                     type="number"
                     min={0}
                     step="any"
-                    className={cell}
                     value={row.reorderPoint}
                     onChange={(e) => setRow(i, { reorderPoint: e.target.value })}
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <select
-                    className={errors[`wh${i}`] ? cellErr : cell}
+                  <CellSelect
+                    invalid={!!errors[`wh${i}`]}
                     value={row.warehouseId}
                     onChange={(e) => setRow(i, { warehouseId: e.target.value })}
-                  >
-                    <option value="">—</option>
-                    {warehouses.map((w: { id: string; warehouseCode?: string; warehouseName?: string }) => (
-                      <option key={w.id} value={w.id}>
-                        {w.warehouseCode ? `${w.warehouseCode} — ` : ''}
-                        {w.warehouseName}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="—"
+                    options={warehouses.map((w: { id: string; warehouseCode?: string; warehouseName?: string }) => ({
+                      value: w.id,
+                      label: `${w.warehouseCode ? `${w.warehouseCode} — ` : ''}${w.warehouseName}`,
+                    }))}
+                  />
                 </div>
                 <div className="border-b border-r border-gray-200 px-2 py-1.5 flex items-center">
                   {row.isNew ? (

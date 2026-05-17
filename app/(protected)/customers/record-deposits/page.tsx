@@ -17,6 +17,7 @@ import { CUSTOMER_PAYMENT_METHOD_OPTIONS } from '@/lib/customer-payment-methods'
 import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
 import { PiggyBank, RefreshCw, XCircle } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const labelCell = wsLabelCell
 const cell = wsCell
@@ -270,7 +271,7 @@ export default function RecordCustomerDepositsPage() {
                       ) : null}
                     </td>
                     <td className={`${cell} font-mono`}>
-                      {d.depositDate ? new Date(d.depositDate).toLocaleDateString() : '—'}
+                      {d.depositDate ? formatDate(d.depositDate) : '—'}
                     </td>
                     <td className={cell}>{d.depositMethod.replace(/_/g, ' ')}</td>
                     <td className={`${cell} ${moneyClass}`}>{formatMoney(Number(d.amount ?? 0))}</td>

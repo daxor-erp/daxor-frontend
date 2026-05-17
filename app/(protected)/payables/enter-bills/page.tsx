@@ -6,12 +6,17 @@ import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
+import { CellInput } from '@/components/ui/cell-input'
+import { CellSelect } from '@/components/ui/cell-select'
 import { Button } from '@/components/ui/button'
 import {
   GET_VENDOR_BILLS, CREATE_VENDOR_BILL, UPDATE_VENDOR_BILL,
   APPROVE_VENDOR_BILL, SUBMIT_VENDOR_BILL_FOR_APPROVAL, DELETE_VENDOR_BILL, GET_VENDORS, GET_ITEMS
 } from '@/gql/queries'
-import { Trash2, Edit, X, Save, Plus, CheckCircle, FileText, Clock, DollarSign } from 'lucide-react'
+import { Trash2, Edit, X, Save, Plus, CheckCircle, FileText, Clock, DollarSign, Download } from 'lucide-react'
+import { downloadDocumentPdf } from '@/lib/pdf-download'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const EMPTY_LINE = { itemId: '', description: '', quantity: 1, unitPrice: 0, discount: 0, tax: 0, total: 0 }
 
@@ -192,11 +197,11 @@ export default function EnterBillsPage() {
   const columns: Column[] = [
     { key: 'billNumber', label: 'Bill #', width: '130px', render: v => <span className="font-mono text-xs text-gray-600">{v}</span> },
     { key: 'vendor', label: 'Vendor', render: (_v, row) => <span className="font-medium">{row.vendor?.name || '—'}</span> },
-    { key: 'billDate', label: 'Bill Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
-    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
-    { key: 'totalAmount', label: 'Total', width: '110px', align: 'right', render: v => <span className="font-semibold">${Number(v).toFixed(2)}</span> },
-    { key: 'paidAmount', label: 'Paid', width: '100px', align: 'right', render: v => <span className="text-green-600">${Number(v).toFixed(2)}</span> },
-    { key: 'outstandingAmount', label: 'Outstanding', width: '110px', align: 'right', render: v => <span className="font-semibold text-red-600">${Number(v).toFixed(2)}</span> },
+    { key: 'billDate', label: 'Bill Date', width: '110px', render: v => v ? formatDate(v) : '—' },
+    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => v ? formatDate(v) : '—' },
+    { key: 'totalAmount', label: 'Total', width: '110px', align: 'right', render: v => <span className="font-semibold">{formatMoney(v)}</span> },
+    { key: 'paidAmount', label: 'Paid', width: '100px', align: 'right', render: v => <span className="text-green-600">{formatMoney(v)}</span> },
+    { key: 'outstandingAmount', label: 'Outstanding', width: '110px', align: 'right', render: v => <span className="font-semibold text-red-600">{formatMoney(v)}</span> },
     {
       key: 'status', label: 'Status', width: '130px',
       render: (v) => (
@@ -215,19 +220,19 @@ export default function EnterBillsPage() {
         return (
           <div className="flex flex-col gap-1 min-w-[140px]">
             {showSubmit ? (
-              <select
+              <CellSelect
                 aria-label="Vendor bill approval action"
-                className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2"
                 defaultValue=""
                 onChange={(e) => {
                   const val = e.target.value
                   e.target.value = ''
                   if (val === 'submit') submitBillForApproval({ variables: { id: row.id } })
                 }}
-              >
-                <option value="">Change status…</option>
-                <option value="submit">Send for approval</option>
-              </select>
+                options={[
+                  { value: '', label: 'Change status…' },
+                  { value: 'submit', label: 'Send for approval' },
+                ]}
+              />
             ) : (
               <span className="text-xs text-gray-400">—</span>
             )}
@@ -250,7 +255,7 @@ export default function EnterBillsPage() {
           { label: 'Total Bills', value: stats.total, icon: FileText, cls: 'text-blue-600 bg-blue-50' },
           { label: 'Outstanding', value: stats.outstanding, icon: Clock, cls: 'text-yellow-600 bg-yellow-50' },
           { label: 'Paid', value: stats.paid, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'Total Owed', value: `$${stats.totalOwed.toFixed(2)}`, icon: DollarSign, cls: 'text-red-600 bg-red-50' },
+          { label: 'Total Owed', value: `${formatMoney(stats.totalOwed)}`, icon: DollarSign, cls: 'text-red-600 bg-red-50' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
             <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
@@ -304,23 +309,19 @@ export default function EnterBillsPage() {
                   {lineItems.map((line, i) => (
                     <tr key={i} className="border-t border-gray-100">
                       <td className="p-1">
-                        <select
-                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs bg-white"
+                        <CellSelect
                           value={line.itemId}
                           onChange={e => handleItemSelect(i, e.target.value)}
-                        >
-                          <option value="">— select item —</option>
-                          {items.map((item: any) => (
-                            <option key={item.id} value={item.id}>{item.name}</option>
-                          ))}
-                        </select>
+                          placeholder="— select item —"
+                          options={items.map((item: any) => ({ value: item.id, label: item.name }))}
+                        />
                       </td>
-                      <td className="p-1"><input className="w-full border border-gray-200 rounded px-2 py-1 text-xs" value={line.description} onChange={e => updateLine(i, 'description', e.target.value)} placeholder="Description" /></td>
-                      <td className="p-1"><input className="w-full border border-gray-200 rounded px-2 py-1 text-xs text-right" type="number" value={line.quantity} onChange={e => updateLine(i, 'quantity', e.target.value)} /></td>
-                      <td className="p-1"><input className="w-full border border-gray-200 rounded px-2 py-1 text-xs text-right" type="number" value={line.unitPrice} onChange={e => updateLine(i, 'unitPrice', e.target.value)} /></td>
-                      <td className="p-1"><input className="w-full border border-gray-200 rounded px-2 py-1 text-xs text-right" type="number" value={line.discount} onChange={e => updateLine(i, 'discount', e.target.value)} /></td>
-                      <td className="p-1"><input className="w-full border border-gray-200 rounded px-2 py-1 text-xs text-right" type="number" value={line.tax} onChange={e => updateLine(i, 'tax', e.target.value)} /></td>
-                      <td className="p-1 text-right font-semibold pr-2">${line.total.toFixed(2)}</td>
+                      <td className="p-1"><CellInput value={line.description} onChange={e => updateLine(i, 'description', e.target.value)} placeholder="Description" /></td>
+                      <td className="p-1"><CellInput type="number" className="text-right" value={line.quantity} onChange={e => updateLine(i, 'quantity', e.target.value)} /></td>
+                      <td className="p-1"><CellInput type="number" className="text-right" value={line.unitPrice} onChange={e => updateLine(i, 'unitPrice', e.target.value)} /></td>
+                      <td className="p-1"><CellInput type="number" className="text-right" value={line.discount} onChange={e => updateLine(i, 'discount', e.target.value)} /></td>
+                      <td className="p-1"><CellInput type="number" className="text-right" value={line.tax} onChange={e => updateLine(i, 'tax', e.target.value)} /></td>
+                      <td className="p-1 text-right font-semibold pr-2">{formatMoney(line.total)}</td>
                       <td className="p-1"><button onClick={() => removeLine(i)} className="text-red-400 hover:text-red-600"><X className="h-3.5 w-3.5" /></button></td>
                     </tr>
                   ))}
@@ -334,10 +335,10 @@ export default function EnterBillsPage() {
             {/* Totals */}
             <div className="flex justify-end">
               <div className="w-64 space-y-1 text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>${totals.subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Discount</span><span>-${totals.discount.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Tax</span><span>${totals.tax.toFixed(2)}</span></div>
-                <div className="flex justify-between font-bold text-sm border-t pt-1"><span>Total</span><span>${totals.total.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatMoney(totals.subtotal)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Discount</span><span>-{formatMoney(totals.discount)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Tax</span><span>{formatMoney(totals.tax)}</span></div>
+                <div className="flex justify-between font-bold text-sm border-t pt-1"><span>Total</span><span>{formatMoney(totals.total)}</span></div>
               </div>
             </div>
 
@@ -372,6 +373,12 @@ export default function EnterBillsPage() {
             variant: 'ghost',
           },
           { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => { setEditing(row.id); setAdding(true) }, variant: 'ghost' },
+          {
+            label: 'Download PDF',
+            icon: <Download className="h-3.5 w-3.5" />,
+            onClick: row => downloadDocumentPdf('vendor-bill', row.id, row.billNumber || row.seqNo).catch(() => {}),
+            variant: 'ghost',
+          },
           {
             label: 'Delete',
             icon: <Trash2 className="h-3.5 w-3.5" />,

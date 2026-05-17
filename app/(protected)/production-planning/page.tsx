@@ -9,6 +9,7 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_PRODUCTION_PLANNINGS, CREATE_PRODUCTION_PLANNING, UPDATE_PRODUCTION_PLANNING, DELETE_PRODUCTION_PLANNING, GET_PROJECTS, GET_USERS } from '@/gql/queries'
 import { Trash2, Edit, X, Save, FolderKanban, Plus, Minus } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const EMPTY_FORM = {
   docDate: new Date().toISOString().split('T')[0],
@@ -147,7 +148,7 @@ export default function ProductionPlanningPage() {
 
   const columns: Column[] = [
     { key: 'docNumber', label: 'Doc #', width: '150px', render: v => <span className="font-mono text-xs">{v}</span> },
-    { key: 'docDate', label: 'Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
+    { key: 'docDate', label: 'Date', width: '110px', render: v => v ? formatDate(v) : '—' },
     { key: 'progress', label: 'Progress', width: '100px', render: v => <span>{v || 0}%</span> },
     { key: 'budget', label: 'Budget', width: '120px', render: v => v ? `$${v.toLocaleString()}` : '—' },
     { key: 'actualCost', label: 'Actual Cost', width: '120px', render: v => v ? `$${v.toLocaleString()}` : '—' },

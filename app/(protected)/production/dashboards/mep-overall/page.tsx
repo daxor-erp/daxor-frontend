@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { GET_PRODUCTION_PLANNINGS, GET_WORK_ORDERS } from '@/gql/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Factory, TrendingUp, Clock, CheckCircle, AlertCircle, DollarSign } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
+import { formatMoney } from '@/lib/format-money'
 
 export default function MEPOverallDashboard() {
   const { user } = useAuth()
@@ -64,7 +66,7 @@ export default function MEPOverallDashboard() {
               <div>
                 <div className="flex justify-between text-xs mb-1">
                   <span>Budget</span>
-                  <span className="font-semibold">${stats.totalBudget.toLocaleString()}</span>
+                  <span className="font-semibold">{formatMoney(stats.totalBudget)}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div className="bg-blue-500 h-3 rounded-full" style={{ width: '100%' }} />
@@ -73,7 +75,7 @@ export default function MEPOverallDashboard() {
               <div>
                 <div className="flex justify-between text-xs mb-1">
                   <span>Actual Cost</span>
-                  <span className="font-semibold">${stats.totalCost.toLocaleString()}</span>
+                  <span className="font-semibold">{formatMoney(stats.totalCost)}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div className={`h-3 rounded-full ${stats.totalCost > stats.totalBudget ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${stats.totalBudget > 0 ? Math.min((stats.totalCost / stats.totalBudget) * 100, 100) : 0}%` }} />
@@ -142,10 +144,10 @@ export default function MEPOverallDashboard() {
                   {plans.slice(0, 5).map((plan: any) => (
                     <tr key={plan.id} className="border-b hover:bg-gray-50">
                       <td className="p-2 font-mono">{plan.docNumber}</td>
-                      <td className="p-2">{new Date(plan.docDate).toLocaleDateString()}</td>
+                      <td className="p-2">{formatDate(plan.docDate)}</td>
                       <td className="p-2">{plan.progress || 0}%</td>
-                      <td className="p-2">${(plan.budget || 0).toLocaleString()}</td>
-                      <td className="p-2">${(plan.actualCost || 0).toLocaleString()}</td>
+                      <td className="p-2">{formatMoney(plan.budget || 0)}</td>
+                      <td className="p-2">{formatMoney(plan.actualCost || 0)}</td>
                       <td className="p-2"><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">{plan.status}</span></td>
                     </tr>
                   ))}
