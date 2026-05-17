@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, Download, Eye } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function ProjectDocumentsPage() {
   const documents = [
@@ -41,7 +42,7 @@ export default function ProjectDocumentsPage() {
                       {doc.name}
                     </td>
                     <td className="p-2">{doc.type}</td>
-                    <td className="p-2">{new Date(doc.date).toLocaleDateString()}</td>
+                    <td className="p-2">{formatDate(doc.date)}</td>
                     <td className="p-2">{doc.size}</td>
                     <td className="p-2">
                       <div className="flex gap-2">

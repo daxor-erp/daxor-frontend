@@ -12,6 +12,10 @@ import {
   SUBMIT_GRN_FOR_APPROVAL,
 } from '@/gql/queries'
 import { Button } from '@/components/ui/button'
+import { CellInput } from '@/components/ui/cell-input'
+import { CellSelect } from '@/components/ui/cell-select'
+import { InputFloating } from '@/components/ui/input-floating'
+import { SelectFloating } from '@/components/ui/select-floating'
 import { FileText, Plus, Minus, Save, X, Trash2, Send, Clock, CheckCircle } from 'lucide-react'
 
 type GrnRow = {
@@ -269,19 +273,20 @@ export default function GRNPage() {
         return (
           <div className="flex flex-col gap-1 min-w-[140px]">
             {showSubmit ? (
-              <select
+              <CellSelect
                 aria-label="GRN approval action"
-                className="h-7 text-xs rounded-md border border-gray-300 bg-white px-2 max-w-[160px]"
+                className="max-w-[160px]"
                 defaultValue=""
                 onChange={(e) => {
                   const val = e.target.value
                   e.target.value = ''
                   if (val === 'submit' && row.id) void submitGrnForApproval({ variables: { id: row.id } })
                 }}
-              >
-                <option value="">Change status…</option>
-                <option value="submit">Send for approval</option>
-              </select>
+                options={[
+                  { value: '', label: 'Change status…' },
+                  { value: 'submit', label: 'Send for approval' },
+                ]}
+              />
             ) : (
               <span className="text-xs text-gray-400">—</span>
             )}
@@ -347,54 +352,40 @@ export default function GRNPage() {
           </div>
           <div className="p-4 space-y-4 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <label className="flex flex-col gap-1">
-                <span className="font-semibold text-gray-600">Purchase order (optional)</span>
-                <select
-                  value={poId}
-                  onChange={(e) => applyFromPo(e.target.value)}
-                  className="h-9 border border-gray-300 rounded px-2 bg-white"
-                >
-                  <option value="">— Ad hoc / no PO —</option>
-                  {receivablePos.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.seqNo ?? p.id} · {p.vendorName ?? 'Vendor'} ({p.status})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="font-semibold text-gray-600">Received date</span>
-                <input
-                  type="date"
-                  value={receivedDate}
-                  onChange={(e) => setReceivedDate(e.target.value)}
-                  className="h-9 border border-gray-300 rounded px-2"
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="font-semibold text-gray-600">Vendor name</span>
-                <input
-                  type="text"
-                  value={vendorName}
-                  onChange={(e) => setVendorName(e.target.value)}
-                  placeholder="As on documents"
-                  className="h-9 border border-gray-300 rounded px-2"
-                />
-              </label>
+              <SelectFloating
+                label="Purchase order (optional)"
+                value={poId}
+                onChange={(e) => applyFromPo(typeof e === 'string' ? e : e.target.value)}
+                placeholder="— Ad hoc / no PO —"
+                options={receivablePos.map((p) => ({
+                  value: p.id,
+                  label: `${p.seqNo ?? p.id} · ${p.vendorName ?? 'Vendor'} (${p.status})`,
+                }))}
+              />
+              <InputFloating
+                label="Received date"
+                type="date"
+                value={receivedDate}
+                onChange={(e) => setReceivedDate(e.target.value)}
+              />
+              <InputFloating
+                label="Vendor name"
+                type="text"
+                value={vendorName}
+                onChange={(e) => setVendorName(e.target.value)}
+                placeholder="As on documents"
+              />
             </div>
             <p className="text-gray-500 text-[11px]">
               New GRNs save as <strong>draft</strong>. Use <strong>Send for approval</strong> in the list so the purchases approver can post them as confirmed.
             </p>
-            <label className="flex flex-col gap-1">
-              <span className="font-semibold text-gray-600">Notes</span>
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="h-9 border border-gray-300 rounded px-2"
-                placeholder="Delivery reference, gate pass, etc."
-              />
-            </label>
+            <InputFloating
+              label="Notes"
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Delivery reference, gate pass, etc."
+            />
 
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -417,41 +408,40 @@ export default function GRNPage() {
                     className="grid grid-cols-[1.5fr_5rem_5rem_5rem_2rem] gap-0 border-b border-gray-200 last:border-b-0 bg-white"
                   >
                     <div className="px-1 py-1 border-r border-gray-200">
-                      <input
+                      <CellInput
                         value={line.itemDescription}
                         onChange={(e) => setLine(i, 'itemDescription', e.target.value)}
-                        className="w-full h-8 px-2 border border-gray-300 rounded text-xs"
                         placeholder="Item / material"
                       />
                     </div>
                     <div className="px-1 py-1 border-r border-gray-200">
-                      <input
+                      <CellInput
                         type="number"
                         min={0}
                         step="any"
                         value={line.orderedQty}
                         onChange={(e) => setLine(i, 'orderedQty', e.target.value)}
-                        className="w-full h-8 px-1 border border-gray-300 rounded text-xs text-right"
+                        className="text-right"
                       />
                     </div>
                     <div className="px-1 py-1 border-r border-gray-200">
-                      <input
+                      <CellInput
                         type="number"
                         min={0}
                         step="any"
                         value={line.receivedQty}
                         onChange={(e) => setLine(i, 'receivedQty', e.target.value)}
-                        className="w-full h-8 px-1 border border-gray-300 rounded text-xs text-right"
+                        className="text-right"
                       />
                     </div>
                     <div className="px-1 py-1 border-r border-gray-200">
-                      <input
+                      <CellInput
                         type="number"
                         min={0}
                         step="any"
                         value={line.unitPrice}
                         onChange={(e) => setLine(i, 'unitPrice', e.target.value)}
-                        className="w-full h-8 px-1 border border-gray-300 rounded text-xs text-right"
+                        className="text-right"
                       />
                     </div>
                     <div className="flex items-center justify-center py-1">

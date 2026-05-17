@@ -12,12 +12,9 @@ import {
 } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
+import { CellInput } from '@/components/ui/cell-input'
+import { CellSelect } from '@/components/ui/cell-select'
 import { Layers, MapPin, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
-
-const cell =
-  'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 h-7 w-full rounded-sm'
-const cellErr =
-  'border border-red-400 bg-red-50 outline-none focus:ring-1 focus:ring-red-400 text-xs px-2 h-7 w-full rounded-sm'
 
 const WH_TYPES = [
   'main',
@@ -447,86 +444,74 @@ export default function WarehousesPage() {
                   )}
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
-                    className={whErrors[`wn${i}`] ? cellErr : cell}
+                  <CellInput
+                    invalid={!!whErrors[`wn${i}`]}
                     value={row.warehouseName}
                     onChange={(e) => setWhRow(i, { warehouseName: e.target.value })}
                     placeholder="Main DC"
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
-                    className={whErrors[`loc${i}`] ? cellErr : cell}
+                  <CellInput
+                    invalid={!!whErrors[`loc${i}`]}
                     value={row.location}
                     onChange={(e) => setWhRow(i, { location: e.target.value })}
                     placeholder="City / zone"
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
-                    className={cell}
+                  <CellInput
                     value={row.address}
                     onChange={(e) => setWhRow(i, { address: e.target.value })}
                     placeholder="Street address"
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
+                  <CellInput
                     type="number"
                     min={0}
                     step="any"
-                    className={cell}
                     value={row.capacity}
                     onChange={(e) => setWhRow(i, { capacity: e.target.value })}
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
+                  <CellInput
                     type="number"
                     min={0}
                     step="any"
-                    className={cell}
                     value={row.currentUtilization}
                     onChange={(e) => setWhRow(i, { currentUtilization: e.target.value })}
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
-                    className={whErrors[`mgr${i}`] ? cellErr : cell}
+                  <CellInput
+                    invalid={!!whErrors[`mgr${i}`]}
                     value={row.managerName}
                     onChange={(e) => setWhRow(i, { managerName: e.target.value })}
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <input
-                    className={whErrors[`ph${i}`] ? cellErr : cell}
+                  <CellInput
+                    invalid={!!whErrors[`ph${i}`]}
                     value={row.contactNumber}
                     onChange={(e) => setWhRow(i, { contactNumber: e.target.value })}
                     placeholder="Phone"
                   />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <select
-                    className={cell}
+                  <CellSelect
                     value={row.warehouseType}
                     onChange={(e) => setWhRow(i, { warehouseType: e.target.value })}
-                  >
-                    {WH_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+                    options={WH_TYPES.map((t) => ({ value: t, label: t }))}
+                  />
                 </div>
                 <div className="border-b border-r border-gray-200 p-0">
-                  <select
-                    className={cell}
+                  <CellSelect
                     value={row.isActive}
                     onChange={(e) => setWhRow(i, { isActive: e.target.value })}
-                  >
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
+                    options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]}
+                  />
                 </div>
                 <div className="border-b border-r border-gray-200 px-2 py-1.5 text-xs text-gray-600">
                   {fmtDate(row.createdAt)}
@@ -578,19 +563,17 @@ export default function WarehousesPage() {
             </span>
           </div>
           <div className="flex flex-wrap gap-2 items-center">
-            <select
-              className={cell + ' min-w-[220px]'}
+            <CellSelect
+              className="min-w-[220px]"
               value={binWarehouseId}
               onChange={(e) => setBinWarehouseId(e.target.value)}
               aria-label="Warehouse for bins"
-            >
-              <option value="">— select warehouse —</option>
-              {warehouses.map((w: { id: string; warehouseCode?: string; warehouseName?: string }) => (
-                <option key={w.id} value={w.id}>
-                  {(w.warehouseCode ? `${w.warehouseCode} — ` : '') + (w.warehouseName ?? w.id)}
-                </option>
-              ))}
-            </select>
+              placeholder="— select warehouse —"
+              options={warehouses.map((w: { id: string; warehouseCode?: string; warehouseName?: string }) => ({
+                value: w.id,
+                label: (w.warehouseCode ? `${w.warehouseCode} — ` : '') + (w.warehouseName ?? w.id),
+              }))}
+            />
             <Button
               type="button"
               variant="outline"
@@ -633,40 +616,33 @@ export default function WarehousesPage() {
                       {i + 1}
                     </div>
                     <div className="border-b border-r border-gray-200 p-0">
-                      <input
-                        className={binErrors[`bc${i}`] ? cellErr : cell}
+                      <CellInput
+                        invalid={!!binErrors[`bc${i}`]}
                         value={row.binCode}
                         onChange={(e) => setBinRow(i, { binCode: e.target.value })}
                         placeholder="A-01-02"
                       />
                     </div>
                     <div className="border-b border-r border-gray-200 p-0">
-                      <input
-                        className={binErrors[`bl${i}`] ? cellErr : cell}
+                      <CellInput
+                        invalid={!!binErrors[`bl${i}`]}
                         value={row.binLocation}
                         onChange={(e) => setBinRow(i, { binLocation: e.target.value })}
                         placeholder="Aisle / slot"
                       />
                     </div>
                     <div className="border-b border-r border-gray-200 p-0">
-                      <select
-                        className={cell}
+                      <CellSelect
                         value={row.binType}
                         onChange={(e) => setBinRow(i, { binType: e.target.value })}
-                      >
-                        {BIN_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
+                        options={BIN_TYPES.map((t) => ({ value: t, label: t }))}
+                      />
                     </div>
                     <div className="border-b border-r border-gray-200 p-0">
-                      <input
+                      <CellInput
                         type="number"
                         min={0}
                         step="any"
-                        className={cell}
                         value={row.capacity}
                         onChange={(e) => setBinRow(i, { capacity: e.target.value })}
                       />
@@ -675,14 +651,11 @@ export default function WarehousesPage() {
                       {row.isNew ? '—' : row.currentStock ?? 0}
                     </div>
                     <div className="border-b border-r border-gray-200 p-0">
-                      <select
-                        className={cell}
+                      <CellSelect
                         value={row.isAvailable}
                         onChange={(e) => setBinRow(i, { isAvailable: e.target.value })}
-                      >
-                        <option value="true">Yes</option>
-                        <option value="false">No</option>
-                      </select>
+                        options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]}
+                      />
                     </div>
                     <div className="border-b border-r border-gray-200 px-2 py-1.5 text-xs text-gray-600">
                       {fmtDate(row.createdAt)}

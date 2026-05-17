@@ -8,6 +8,8 @@ import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import { GET_BUDGETS, CREATE_BUDGET, ACTIVATE_BUDGET, DELETE_BUDGET, GET_CHART_OF_ACCOUNTS } from '@/gql/queries'
 import { Trash2, X, Save, Plus, Minus, CheckCircle } from 'lucide-react'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const EMPTY_LINE = { accountCode: '', accountName: '', period: '', amount: '' }
 
@@ -118,8 +120,8 @@ export default function SetUpBudgetsPage() {
     { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
     { key: 'budgetName', label: 'Budget Name', sortable: true, render: v => <span className="font-medium">{v}</span> },
     { key: 'fiscalYear', label: 'Fiscal Year', width: '110px' },
-    { key: 'startDate', label: 'Start Date', width: '110px', render: v => new Date(v).toLocaleDateString() },
-    { key: 'endDate', label: 'End Date', width: '110px', render: v => new Date(v).toLocaleDateString() },
+    { key: 'startDate', label: 'Start Date', width: '110px', render: v => formatDate(v) },
+    { key: 'endDate', label: 'End Date', width: '110px', render: v => formatDate(v) },
     { key: 'totalAmount', label: 'Total Amount', width: '120px', render: v => `$${v.toLocaleString()}` },
     { key: 'status', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${statusColor[v]}`}>{v}</span> },
   ]
@@ -176,7 +178,7 @@ export default function SetUpBudgetsPage() {
               ))}
 
               <div className="flex justify-between items-center pt-2 border-t">
-                <span className="text-sm font-semibold">Total Budget: ${totalAmount.toFixed(2)}</span>
+                <span className="text-sm font-semibold">Total Budget: {formatMoney(totalAmount)}</span>
               </div>
             </div>
 

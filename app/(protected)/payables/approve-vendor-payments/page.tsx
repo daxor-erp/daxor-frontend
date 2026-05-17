@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, Column } from '@/components/DataTable'
 import { GET_VENDOR_BILLS, APPROVE_VENDOR_BILL, DELETE_VENDOR_BILL } from '@/gql/queries'
 import { CheckCircle, XCircle, Clock, FileText } from 'lucide-react'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 export default function ApproveVendorPaymentsPage() {
   const { user } = useAuth()
@@ -55,15 +57,15 @@ export default function ApproveVendorPaymentsPage() {
     },
     {
       key: 'billDate', label: 'Bill Date', width: '110px',
-      render: v => v ? new Date(v).toLocaleDateString() : '—'
+      render: v => v ? formatDate(v) : '—'
     },
     {
       key: 'dueDate', label: 'Due Date', width: '110px',
-      render: v => v ? new Date(v).toLocaleDateString() : '—'
+      render: v => v ? formatDate(v) : '—'
     },
     {
       key: 'totalAmount', label: 'Amount', width: '120px', align: 'right',
-      render: v => <span className="font-bold text-gray-800">${Number(v || 0).toFixed(2)}</span>
+      render: v => <span className="font-bold text-gray-800">{formatMoney(v || 0)}</span>
     },
     {
       key: 'notes', label: 'Notes',
@@ -91,7 +93,7 @@ export default function ApproveVendorPaymentsPage() {
         {[
           { label: 'Pending Approval', value: stats.pending, icon: Clock, cls: 'text-yellow-600 bg-yellow-50' },
           { label: 'Approved', value: stats.approved, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'Pending Value', value: `$${stats.totalPendingValue.toFixed(2)}`, icon: FileText, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Pending Value', value: `${formatMoney(stats.totalPendingValue)}`, icon: FileText, cls: 'text-blue-600 bg-blue-50' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
             <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
@@ -113,7 +115,7 @@ export default function ApproveVendorPaymentsPage() {
             label: 'Approve',
             icon: <CheckCircle className="h-3.5 w-3.5" />,
             onClick: row => {
-              if (confirm(`Approve bill ${row.billNumber} for $${Number(row.totalAmount).toFixed(2)}?`)) {
+              if (confirm(`Approve bill ${row.billNumber} for ${formatMoney(row.totalAmount)}?`)) {
                 approveBill({ variables: { id: row.id } })
               }
             },

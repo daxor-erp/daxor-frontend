@@ -27,6 +27,7 @@ import {
   Minus,
   CalendarDays,
 } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const STATUS_MAP: Record<string, string> = {
   draft: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -205,7 +206,7 @@ export default function StockAdjustmentsPage() {
       key: 'adjDate',
       label: 'Date',
       width: '110px',
-      render: v => <span className="text-xs text-gray-600">{v ? new Date(v).toLocaleDateString() : '—'}</span>,
+      render: v => <span className="text-xs text-gray-600">{v ? formatDate(v) : '—'}</span>,
     },
     {
       key: 'warehouseName',
@@ -240,7 +241,7 @@ export default function StockAdjustmentsPage() {
       key: 'createdAt',
       label: 'Created',
       width: '110px',
-      render: v => <span className="text-xs text-gray-500">{v ? new Date(v).toLocaleDateString() : '—'}</span>,
+      render: v => <span className="text-xs text-gray-500">{v ? formatDate(v) : '—'}</span>,
     },
   ]
 

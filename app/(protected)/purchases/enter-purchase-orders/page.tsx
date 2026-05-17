@@ -5,8 +5,13 @@ import { useQuery, useMutation } from '@apollo/client'
 import { GET_PURCHASE_ORDERS, CREATE_PURCHASE_ORDER, GET_VENDORS, GET_PROJECTS, GET_ITEMS, SUBMIT_PURCHASE_ORDER, RECEIVE_PURCHASE_ORDER } from '@/gql/queries'
 import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
-import { Plus, X, Save, Trash2, ShoppingCart, Clock, CheckCircle2, Send, PackageCheck } from 'lucide-react'
+import { CellInput } from '@/components/ui/cell-input'
+import { CellSelect } from '@/components/ui/cell-select'
+import { Plus, X, Save, Trash2, ShoppingCart, Clock, CheckCircle2, Send, PackageCheck, Download } from 'lucide-react'
+import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const PO_STATUS: Record<string, { label: string; cls: string }> = {
   draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -21,8 +26,6 @@ const PO_STATUS: Record<string, { label: string; cls: string }> = {
 interface Line { desc: string; qty: string; price: string }
 const emptyLine = (): Line => ({ desc: '', qty: '', price: '' })
 const today = () => new Date().toISOString().split('T')[0]
-const cell = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 h-7 w-full rounded-sm'
-const cellErr = 'border border-red-400 bg-red-50 outline-none focus:ring-1 focus:ring-red-400 text-xs px-2 h-7 w-full rounded-sm'
 
 export default function EnterPurchaseOrdersPage() {
   const { user } = useAuth()
@@ -143,14 +146,17 @@ export default function EnterPurchaseOrdersPage() {
               <div key={key} className="border-r border-gray-200 last:border-r-0 p-2">
                 <p className={`text-xs mb-1 font-medium ${err ? 'text-red-500' : 'text-gray-500'}`}>{label}{err ? ` — ${err}` : ''}</p>
                 {type === 'select' ? (
-                  <select value={(form as any)[key]} onChange={e => setF(key, e.target.value)} className={err ? cellErr : cell}>
-                    <option value="">— select —</option>
-                    {opts.map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
-                  </select>
+                  <CellSelect
+                    value={(form as any)[key]}
+                    onChange={e => setF(key, e.target.value)}
+                    invalid={!!err}
+                    placeholder="— select —"
+                    options={opts.map((o: any) => ({ value: o.id, label: o.name }))}
+                  />
                 ) : type === 'text' ? (
-                  <input type="text" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} placeholder="Optional notes…" className={cell} />
+                  <CellInput type="text" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} placeholder="Optional notes…" />
                 ) : (
-                  <input type="date" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} className={err ? cellErr : cell} />
+                  <CellInput type="date" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} invalid={!!err} />
                 )}
               </div>
             ))}
@@ -168,19 +174,21 @@ export default function EnterPurchaseOrdersPage() {
                 <div key={i} className="grid border-b border-gray-200 last:border-b-0 hover:bg-blue-50/20" style={{ gridTemplateColumns: '2rem 3rem 1fr 6rem 8rem 7rem 2rem' }}>
                   <div className="border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-1">{i + 1}</div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <select onChange={e => pickItem(i, e.target.value)} className={`${cell} px-1`}>
-                      <option value="">…</option>
-                      {items.map((it: any) => <option key={it.id} value={it.id}>{it.name}</option>)}
-                    </select>
+                    <CellSelect
+                      onChange={e => pickItem(i, e.target.value)}
+                      className="px-1"
+                      placeholder="…"
+                      options={items.map((it: any) => ({ value: it.id, label: it.name }))}
+                    />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <input value={l.desc} onChange={e => setL(i, 'desc', e.target.value)} placeholder="Item description" className={errors[`d${i}`] ? cellErr : cell} />
+                    <CellInput value={l.desc} onChange={e => setL(i, 'desc', e.target.value)} placeholder="Item description" invalid={!!errors[`d${i}`]} />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <input type="number" min="0" value={l.qty} onChange={e => setL(i, 'qty', e.target.value)} placeholder="0" className={errors[`q${i}`] ? cellErr : cell} />
+                    <CellInput type="number" min="0" value={l.qty} onChange={e => setL(i, 'qty', e.target.value)} placeholder="0" invalid={!!errors[`q${i}`]} />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
-                    <input type="number" min="0" step="0.01" value={l.price} onChange={e => setL(i, 'price', e.target.value)} placeholder="0.00" className={errors[`p${i}`] ? cellErr : cell} />
+                    <CellInput type="number" min="0" step="0.01" value={l.price} onChange={e => setL(i, 'price', e.target.value)} placeholder="0.00" invalid={!!errors[`p${i}`]} />
                   </div>
                   <div className="border-r border-gray-200 px-2 py-1 flex items-center">
                     <span className="text-xs font-medium text-gray-700">${((parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0)).toFixed(2)}</span>
@@ -205,8 +213,8 @@ export default function EnterPurchaseOrdersPage() {
               <div>{saveError && <p className="text-xs text-red-500">{saveError.message}</p>}</div>
               <div className="flex items-center gap-6">
                 <div className="text-right space-y-1">
-                  <div className="flex gap-8 text-xs text-gray-500"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                  <div className="flex gap-8 text-sm font-bold text-gray-800 border-t border-gray-300 pt-1"><span>Total</span><span>${subtotal.toFixed(2)}</span></div>
+                  <div className="flex gap-8 text-xs text-gray-500"><span>Subtotal</span><span>{formatMoney(subtotal)}</span></div>
+                  <div className="flex gap-8 text-sm font-bold text-gray-800 border-t border-gray-300 pt-1"><span>Total</span><span>{formatMoney(subtotal)}</span></div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => { setAdding(false); reset() }} className="h-8 text-xs">Cancel</Button>
@@ -249,12 +257,12 @@ export default function EnterPurchaseOrdersPage() {
               <div className="w-8 border-r border-gray-200 flex items-center justify-center text-gray-300 py-2">{idx + 1}</div>
               <div className="w-24 border-r border-gray-200 px-2 py-2 font-mono text-gray-400">{o.seqNo || '—'}</div>
               <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800 truncate">{o.projectName || (o.projectId ? getProject(o.projectId) : '—')}</div>
-              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{o.orderDate ? new Date(o.orderDate).toLocaleDateString() : '—'}</div>
-              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{o.deliveryDate ? new Date(o.deliveryDate).toLocaleDateString() : '—'}</div>
+              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{o.orderDate ? formatDate(o.orderDate) : '—'}</div>
+              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{o.deliveryDate ? formatDate(o.deliveryDate) : '—'}</div>
               <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">
                 {(() => {
                   const calc = o.totalAmount || o.items?.reduce((s: number, i: any) => s + ((i.quantity || 0) * (i.unitPrice || 0)), 0) || 0
-                  return calc > 0 ? `$${Number(calc).toFixed(2)}` : `${o.items?.length || 0} item(s)`
+                  return calc > 0 ? `${formatMoney(calc)}` : `${o.items?.length || 0} item(s)`
                 })()}
               </div>
               <div className="w-36 border-r border-gray-200 px-2 py-2 text-gray-500 truncate">{o.notes || '—'}</div>
@@ -280,6 +288,14 @@ export default function EnterPurchaseOrdersPage() {
                 {(o.status === 'approved' || o.status === 'sent') && (
                   <Button size="sm" onClick={() => receivePO({ variables: { id: o.id } })} className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2">Receive</Button>
                 )}
+                <button
+                  type="button"
+                  title="Download PDF"
+                  onClick={() => downloadDocumentPdf('purchase-order', o.id, o.seqNo).catch(() => {})}
+                  className="p-1 rounded text-gray-500 hover:text-blue-700 hover:bg-blue-50"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           )

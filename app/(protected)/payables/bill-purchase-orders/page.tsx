@@ -8,6 +8,8 @@ import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import { GET_PURCHASE_ORDERS_FOR_BILLING, BILL_PURCHASE_ORDER, GET_VENDOR_BILLS } from '@/gql/queries'
 import { FileText, X, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 export default function BillPurchaseOrdersPage() {
   const { user } = useAuth()
@@ -31,7 +33,7 @@ export default function BillPurchaseOrdersPage() {
 
   const [billPO, { loading: saving }] = useMutation(BILL_PURCHASE_ORDER, {
     onCompleted: (data) => {
-      setSuccess(`Bill ${data.billPurchaseOrder.billNumber} created successfully for $${Number(data.billPurchaseOrder.totalAmount).toFixed(2)}`)
+      setSuccess(`Bill ${data.billPurchaseOrder.billNumber} created successfully for ${formatMoney(data.billPurchaseOrder.totalAmount)}`)
       setBillingPO(null)
       setDueDate('')
       setErrors({})
@@ -70,8 +72,8 @@ export default function BillPurchaseOrdersPage() {
     { key: 'seqNo', label: 'PO #', width: '130px', render: v => <span className="font-mono text-xs text-gray-600">{v || '—'}</span> },
     { key: 'vendorName', label: 'Vendor', render: v => <span className="font-medium">{v || '—'}</span> },
     { key: 'projectName', label: 'Project', render: v => <span className="text-gray-600">{v || '—'}</span> },
-    { key: 'orderDate', label: 'Order Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
-    { key: 'totalAmount', label: 'PO Amount', width: '110px', align: 'right', render: v => <span className="font-bold">${Number(v || 0).toFixed(2)}</span> },
+    { key: 'orderDate', label: 'Order Date', width: '110px', render: v => v ? formatDate(v) : '—' },
+    { key: 'totalAmount', label: 'PO Amount', width: '110px', align: 'right', render: v => <span className="font-bold">{formatMoney(v || 0)}</span> },
     {
       key: 'status', label: 'PO Status', width: '110px',
       render: v => <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[v] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>{v}</span>
@@ -118,7 +120,7 @@ export default function BillPurchaseOrdersPage() {
             <div className="grid grid-cols-3 gap-3 bg-gray-50 rounded p-3 text-xs">
               <div><span className="text-gray-400">PO Number</span><p className="font-bold">{billingPO.seqNo}</p></div>
               <div><span className="text-gray-400">Vendor</span><p className="font-bold text-blue-700">{billingPO.vendorName || '—'}</p></div>
-              <div><span className="text-gray-400">PO Amount</span><p className="font-bold">${Number(billingPO.totalAmount || 0).toFixed(2)}</p></div>
+              <div><span className="text-gray-400">PO Amount</span><p className="font-bold">{formatMoney(billingPO.totalAmount || 0)}</p></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <InputFloating label="Bill Date *" type="date" value={billDate} onChange={e => setBillDate(e.target.value)} error={errors.billDate} className="h-7 text-xs" />

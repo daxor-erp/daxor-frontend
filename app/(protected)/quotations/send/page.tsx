@@ -9,6 +9,8 @@ import { Send, Eye, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const GET_QUOTATIONS = gql`
   query GetQuotationsForSend($organizationId: ID) {
@@ -202,9 +204,9 @@ export default function SendQuotationsPage() {
                       <TableCell>{quotation.clientId.name}</TableCell>
                       <TableCell className="text-sm text-gray-600">{clientEmail || '—'}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{quotation.subject}</TableCell>
-                      <TableCell>{new Date(quotation.quotationDate).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(quotation.validUntil).toLocaleDateString()}</TableCell>
-                      <TableCell className="font-semibold">${Number(quotation.totalAmount).toFixed(2)}</TableCell>
+                      <TableCell>{formatDate(quotation.quotationDate)}</TableCell>
+                      <TableCell>{formatDate(quotation.validUntil)}</TableCell>
+                      <TableCell className="font-semibold">{formatMoney(quotation.totalAmount)}</TableCell>
                       <TableCell>
                         <Badge className={getStatusStyle(quotation.status)}>{quotation.status}</Badge>
                       </TableCell>
@@ -258,7 +260,7 @@ export default function SendQuotationsPage() {
                     <TableCell className="font-medium font-mono text-xs">{quotation.quotationNumber}</TableCell>
                     <TableCell>{quotation.clientId.name}</TableCell>
                     <TableCell className="max-w-[220px] truncate">{quotation.subject}</TableCell>
-                    <TableCell className="font-semibold">${Number(quotation.totalAmount).toFixed(2)}</TableCell>
+                    <TableCell className="font-semibold">{formatMoney(quotation.totalAmount)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusStyle(quotation.status)}>{quotation.status}</Badge>
                     </TableCell>
@@ -318,9 +320,9 @@ export default function SendQuotationsPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Quotation date</p>
-                    <p className="font-semibold">{new Date(selectedQuotation.quotationDate).toLocaleDateString()}</p>
+                    <p className="font-semibold">{formatDate(selectedQuotation.quotationDate)}</p>
                     <p className="text-sm text-gray-500 mt-2">Valid until</p>
-                    <p className="font-semibold">{new Date(selectedQuotation.validUntil).toLocaleDateString()}</p>
+                    <p className="font-semibold">{formatDate(selectedQuotation.validUntil)}</p>
                   </div>
                 </div>
 
@@ -345,9 +347,9 @@ export default function SendQuotationsPage() {
                         <TableRow key={index}>
                           <TableCell>{item.description}</TableCell>
                           <TableCell className="text-center">{item.quantity}</TableCell>
-                          <TableCell className="text-right">${Number(item.unitPrice).toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{formatMoney(item.unitPrice)}</TableCell>
                           <TableCell className="text-right">{item.discount ?? 0}%</TableCell>
-                          <TableCell className="text-right font-semibold">${Number(item.total).toFixed(2)}</TableCell>
+                          <TableCell className="text-right font-semibold">{formatMoney(item.total)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -357,19 +359,19 @@ export default function SendQuotationsPage() {
                 <div className="bg-gray-50 p-4 rounded space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span className="font-semibold">${Number(selectedQuotation.subtotal).toFixed(2)}</span>
+                    <span className="font-semibold">{formatMoney(selectedQuotation.subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Discount:</span>
-                    <span className="font-semibold">-${Number(selectedQuotation.discountAmount).toFixed(2)}</span>
+                    <span className="font-semibold">-{formatMoney(selectedQuotation.discountAmount)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tax:</span>
-                    <span className="font-semibold">${Number(selectedQuotation.taxAmount).toFixed(2)}</span>
+                    <span className="font-semibold">{formatMoney(selectedQuotation.taxAmount)}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
                     <span>Total amount:</span>
-                    <span className="text-blue-600">${Number(selectedQuotation.totalAmount).toFixed(2)}</span>
+                    <span className="text-blue-600">{formatMoney(selectedQuotation.totalAmount)}</span>
                   </div>
                 </div>
 

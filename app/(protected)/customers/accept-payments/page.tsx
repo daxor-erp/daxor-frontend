@@ -17,6 +17,7 @@ import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styl
 import { formatMoney } from '@/lib/format-money'
 import { Banknote, Save, RefreshCw, FileSpreadsheet } from 'lucide-react'
 import { CUSTOMER_PAYMENT_METHOD_OPTIONS } from '@/lib/customer-payment-methods'
+import { formatDate } from '@/lib/format-date'
 
 const PAYMENT_METHODS = CUSTOMER_PAYMENT_METHOD_OPTIONS
 
@@ -342,7 +343,7 @@ export default function AcceptCustomerPaymentsPage() {
                 <tr key={inv.id} className="hover:bg-[#fafafa]">
                   <td className={`${cell} font-mono font-medium`}>{inv.seqNo}</td>
                   <td className={cell}>
-                    {inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : '—'}
+                    {inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}
                   </td>
                   <td className={`${cell} ${moneyClass}`}>{formatMoney(inv.totalAmount ?? 0)}</td>
                   <td className={`${cell} ${moneyClass} text-green-700`}>
@@ -444,7 +445,7 @@ export default function AcceptCustomerPaymentsPage() {
                 <tr key={p.id} className="hover:bg-gray-50">
                   <td className={`${cell} font-mono`}>{p.paymentNumber}</td>
                   <td className={cell}>
-                    {p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : '—'}
+                    {p.paymentDate ? formatDate(p.paymentDate) : '—'}
                   </td>
                   <td className={cell}>{p.customer?.name ?? '—'}</td>
                   <td className={cell}>{p.paymentMethod?.replace('_', ' ')}</td>

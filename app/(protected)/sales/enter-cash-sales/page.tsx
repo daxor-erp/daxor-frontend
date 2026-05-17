@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { Plus, Trash2, ShoppingBag, DollarSign, Receipt, TrendingUp } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -129,7 +131,7 @@ export default function EnterCashSalesPage() {
         {[
           { label: 'Total Sales',   value: stats.total,   icon: ShoppingBag, color: 'text-blue-600',    bg: 'bg-blue-50',    fmt: (v: number) => String(v) },
           { label: "Today's Sales", value: stats.today,   icon: TrendingUp,  color: 'text-emerald-600', bg: 'bg-emerald-50', fmt: (v: number) => String(v) },
-          { label: 'Total Revenue', value: stats.revenue, icon: DollarSign,  color: 'text-indigo-600',  bg: 'bg-indigo-50',  fmt: (v: number) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+          { label: 'Total Revenue', value: stats.revenue, icon: DollarSign,  color: 'text-indigo-600',  bg: 'bg-indigo-50',  fmt: (v: number) => formatMoney(v) },
         ].map(({ label, value, icon: Icon, color, bg, fmt }) => (
           <Card key={label} className="border shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
@@ -178,8 +180,8 @@ export default function EnterCashSalesPage() {
                       <TableCell className="pl-6 font-mono text-xs text-gray-400">{s.seqNo || '—'}</TableCell>
                       <TableCell className="text-sm font-medium text-gray-800">{org?.name ?? s.customerId}</TableCell>
                       <TableCell className="text-sm text-gray-500">{proj?.name ?? '—'}</TableCell>
-                      <TableCell className="text-sm text-gray-600">{s.orderDate ? new Date(s.orderDate).toLocaleDateString() : '—'}</TableCell>
-                      <TableCell className="text-sm font-semibold text-gray-800">${Number(s.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-sm text-gray-600">{s.orderDate ? formatDate(s.orderDate) : '—'}</TableCell>
+                      <TableCell className="text-sm font-semibold text-gray-800">{formatMoney(s.totalAmount)}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>{cfg.label}</span>
                       </TableCell>
@@ -284,7 +286,7 @@ export default function EnterCashSalesPage() {
                     </div>
                     <div className="col-span-1 flex items-center justify-end gap-1 pt-2">
                       <span className="text-xs text-gray-600 font-medium">
-                        ${((parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0)).toFixed(2)}
+                        {formatMoney((parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0))}
                       </span>
                       {lines.length > 1 && (
                         <button type="button" onClick={() => setLines(p => p.filter((_, idx) => idx !== i))}
@@ -304,11 +306,11 @@ export default function EnterCashSalesPage() {
             <div className="flex justify-end">
               <div className="w-52 space-y-2">
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+                  <span>Subtotal</span><span>{formatMoney(subtotal)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-base font-bold text-gray-800">
-                  <span>Total</span><span>${subtotal.toFixed(2)}</span>
+                  <span>Total</span><span>{formatMoney(subtotal)}</span>
                 </div>
               </div>
             </div>

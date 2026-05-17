@@ -11,7 +11,7 @@ import { GET_CHART_OF_ACCOUNTS, CREATE_CHART_OF_ACCOUNT, UPDATE_CHART_OF_ACCOUNT
 import { Trash2, Edit, X, Save } from 'lucide-react'
 
 const EMPTY_FORM = {
-  accountCode: '',
+  accountNumber: '',
   accountName: '',
   accountType: 'asset',
   parentAccount: '',
@@ -54,7 +54,6 @@ export default function ChartOfAccountsPage() {
 
   const validate = () => {
     const e: Record<string, string> = {}
-    if (!form.accountCode.trim()) e.accountCode = 'Required'
     if (!form.accountName.trim()) e.accountName = 'Required'
     setErrors(e)
     return !Object.keys(e).length
@@ -77,7 +76,7 @@ export default function ChartOfAccountsPage() {
 
   const handleEdit = (account: any) => {
     setForm({
-      accountCode: account.accountCode || '',
+      accountNumber: account.accountNumber || '',
       accountName: account.accountName || '',
       accountType: account.accountType || 'asset',
       parentAccount: account.parentAccount || '',
@@ -100,7 +99,8 @@ export default function ChartOfAccountsPage() {
   }
 
   const columns: Column[] = [
-    { key: 'accountCode', label: 'Code', width: '120px', sortable: true, render: v => <span className="font-mono text-xs font-medium">{v}</span> },
+    { key: 'accountCode', label: 'Code', width: '100px', sortable: true, render: v => <span className="font-mono text-xs font-medium">{v}</span> },
+    { key: 'accountNumber', label: 'Account #', width: '120px', sortable: true, render: v => <span className="font-mono text-xs text-gray-600">{v || '—'}</span> },
     { key: 'accountName', label: 'Account Name', sortable: true, render: v => <span className="font-medium">{v}</span> },
     { key: 'accountType', label: 'Type', width: '110px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${typeColor[v]}`}>{v}</span> },
     { key: 'level', label: 'Level', width: '80px', render: v => <span className="text-xs">{v}</span> },
@@ -122,7 +122,7 @@ export default function ChartOfAccountsPage() {
           </div>
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-3 gap-3">
-              <InputFloating label="Account Code *" value={form.accountCode} onChange={e => setF('accountCode', e.target.value)} error={errors.accountCode} className="h-7 text-xs" />
+              <InputFloating label="Account Number" value={form.accountNumber} onChange={e => setF('accountNumber', e.target.value)} className="h-7 text-xs" />
               <InputFloating label="Account Name *" value={form.accountName} onChange={e => setF('accountName', e.target.value)} error={errors.accountName} className="h-7 text-xs" />
               <SelectFloating label="Account Type" value={form.accountType} onChange={e => setF('accountType', typeof e === 'string' ? e : e.target.value)} options={[
                 { value: 'asset', label: 'Asset' },

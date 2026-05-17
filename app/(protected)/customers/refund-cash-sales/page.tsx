@@ -13,6 +13,7 @@ import { CUSTOMER_PAYMENT_METHOD_OPTIONS } from '@/lib/customer-payment-methods'
 import { wsCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
 import { Banknote, RefreshCw } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const labelCell = wsLabelCell
 const cell = wsCell
@@ -248,7 +249,7 @@ export default function RefundCashSalesPage() {
               <tr>
                 <td className={labelCell}>Order date</td>
                 <td className={`${cell} font-mono`}>
-                  {selected.orderDate ? new Date(selected.orderDate).toLocaleDateString() : '—'}
+                  {selected.orderDate ? formatDate(selected.orderDate) : '—'}
                 </td>
               </tr>
             </tbody>

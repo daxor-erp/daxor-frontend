@@ -4,6 +4,7 @@ import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, Column } from '@/components/DataTable'
 import { GET_PROJECTS } from '@/gql/queries'
+import { formatDate } from '@/lib/format-date'
 
 export default function ProductionProjectMastersPage() {
   const { user } = useAuth()
@@ -20,8 +21,8 @@ export default function ProductionProjectMastersPage() {
     { key: 'seqNo', label: 'Code', width: '120px', render: v => <span className="font-mono text-xs">{v || '—'}</span> },
     { key: 'name', label: 'Project Name', sortable: true },
     { key: 'description', label: 'Description', render: v => <span className="text-xs text-gray-500">{v || '—'}</span> },
-    { key: 'startDate', label: 'Start Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
-    { key: 'endDate', label: 'End Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
+    { key: 'startDate', label: 'Start Date', width: '110px', render: v => v ? formatDate(v) : '—' },
+    { key: 'endDate', label: 'End Date', width: '110px', render: v => v ? formatDate(v) : '—' },
     { key: 'status', label: 'Status', width: '100px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${v === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{v}</span> },
   ]
 

@@ -10,6 +10,7 @@ import { GET_BANK_ACCOUNTS, GET_CASH_BANKS, TRANSFER_BANK_FUNDS } from '@/gql/qu
 import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
 import { ArrowLeftRight, RefreshCw } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const labelCell = wsLabelCell
 const cell = wsCell
@@ -326,7 +327,7 @@ export default function TransferFundsPage() {
                     <div>{p.fromLine.referenceId}</div>
                     <div className="text-gray-500">
                       {p.fromLine.transactionDate
-                        ? new Date(p.fromLine.transactionDate).toLocaleDateString()
+                        ? formatDate(p.fromLine.transactionDate)
                         : '—'}
                     </div>
                   </td>

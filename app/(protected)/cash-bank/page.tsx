@@ -159,6 +159,7 @@ export default function CashBankPage() {
             branchName: acctForm.branchName || 'Main',
             accountType: acctForm.accountType || 'current',
             currency: acctForm.currency || 'INR',
+            openingBalance: acctForm.openingBalance ? parseFloat(acctForm.openingBalance) : 0,
             organizationId: orgId,
           },
         },

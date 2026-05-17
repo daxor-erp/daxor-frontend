@@ -4,10 +4,15 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/sidebar'
+import { TopNavbar } from '@/components/top-navbar'
 import { ErpAppHeader } from '@/components/erp-app-header'
 import { ModulePastEntriesFab } from '@/components/module-past-entries-fab'
 import { MeSync } from '@/components/me-sync'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { canViewPath } from '@/lib/erp-module-access'
+import { useLayoutPreference } from '@/hooks/use-layout-preference'
+
+const SIDEBAR_KEY = 'daxor:sidebar:collapsed'
 
 function useRoleRedirects(user: ReturnType<typeof useAuth>['user'], hydrated: boolean) {
   const router = useRouter()
@@ -19,22 +24,6 @@ function useRoleRedirects(user: ReturnType<typeof useAuth>['user'], hydrated: bo
     const isPlatform = roles.includes('SUPER_ADMIN') || roles.includes('ERP_ADMIN')
     const isOrgAdmin = roles.includes('ORG_ADMIN')
 
-    if (pathname === '/dashboard') {
-      if (isPlatform) {
-        router.replace('/admin/dashboard')
-        return
-      }
-      const onlyOrgAdmin =
-        isOrgAdmin &&
-        !isPlatform &&
-        roles.length > 0 &&
-        roles.every((r) => r === 'ORG_ADMIN')
-      if (onlyOrgAdmin) {
-        router.replace('/org-admin/dashboard')
-        return
-      }
-    }
-
     if (pathname.startsWith('/admin')) {
       if (!isPlatform) {
         router.replace(isOrgAdmin ? '/org-admin/dashboard' : '/dashboard')
@@ -42,11 +31,7 @@ function useRoleRedirects(user: ReturnType<typeof useAuth>['user'], hydrated: bo
       return
     }
     if (pathname.startsWith('/org-admin')) {
-      if (isPlatform) {
-        router.replace('/admin/dashboard')
-        return
-      }
-      if (!isOrgAdmin) {
+      if (!isOrgAdmin && !isPlatform) {
         router.replace('/dashboard')
       }
     }
@@ -58,10 +43,28 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname() ?? ''
   const [hydrated, setHydrated] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [layout] = useLayoutPreference()
 
   useEffect(() => {
     setHydrated(true)
+    try {
+      const raw = localStorage.getItem(SIDEBAR_KEY)
+      if (raw === '1') setCollapsed(true)
+    } catch { /* localStorage unavailable */ }
   }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
+    try {
+      localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0')
+    } catch { /* localStorage write blocked */ }
+  }, [collapsed, hydrated])
+
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     if (hydrated && !isAuthenticated) router.replace('/login')
@@ -80,18 +83,57 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   if (!hydrated || !isAuthenticated) return null
 
-  const hideMainSidebar =
+  const hideMainChrome =
     pathname.startsWith('/admin') || pathname.startsWith('/org-admin')
 
-  return (
-    <div className="flex h-screen bg-gray-50">
-      <MeSync />
-      {!hideMainSidebar && <Sidebar />}
-      <main className={`flex flex-1 min-h-0 min-w-0 flex-col ${hideMainSidebar ? 'overflow-auto' : 'overflow-hidden bg-gray-50'}`}>
-        {!hideMainSidebar && <ErpAppHeader />}
-        <div className={hideMainSidebar ? '' : 'flex-1 overflow-y-auto min-h-0 relative'}>
+  if (hideMainChrome) {
+    return (
+      <div className="flex h-screen bg-background">
+        <MeSync />
+        <main className="flex flex-1 min-h-0 min-w-0 flex-col overflow-auto">{children}</main>
+      </div>
+    )
+  }
+
+  // ─── Navbar layout ───────────────────────────────────────────────
+  if (layout === 'navbar') {
+    return (
+      <div className="flex h-screen flex-col bg-background">
+        <MeSync />
+        <ErpAppHeader onMenuClick={() => setMobileOpen(true)} />
+        <div className="hidden md:block">
+          <TopNavbar />
+        </div>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="left" className="p-0 w-72 border-none">
+            <Sidebar mobile onMobileClose={() => setMobileOpen(false)} />
+          </SheetContent>
+        </Sheet>
+        <main className="flex-1 overflow-y-auto bg-secondary/30 min-h-0 relative">
           {children}
-          {!hideMainSidebar && <ModulePastEntriesFab />}
+          <ModulePastEntriesFab />
+        </main>
+      </div>
+    )
+  }
+
+  // ─── Sidebar layout (default) ────────────────────────────────────
+  return (
+    <div className="flex h-screen bg-background">
+      <MeSync />
+      <div className="hidden lg:block shrink-0">
+        <Sidebar collapsed={collapsed} onCollapseToggle={() => setCollapsed((v) => !v)} />
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="p-0 w-72 border-none">
+          <Sidebar mobile onMobileClose={() => setMobileOpen(false)} />
+        </SheetContent>
+      </Sheet>
+      <main className="flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden bg-secondary/30">
+        <ErpAppHeader onMenuClick={() => setMobileOpen(true)} />
+        <div className="flex-1 overflow-y-auto min-h-0 relative">
+          {children}
+          <ModulePastEntriesFab />
         </div>
       </main>
     </div>

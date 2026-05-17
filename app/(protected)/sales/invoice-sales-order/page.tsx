@@ -10,6 +10,7 @@ import {
   FileText, CheckCircle2, Clock, AlertCircle,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
 
 const GET_CLIENTS = gql`
   query GetClientsForInvoiceView($organizationId: ID) {
@@ -127,10 +128,10 @@ export default function InvoiceSalesOrderPage() {
                         <td className="px-3 py-2 border-r border-gray-200">{formatDate(inv.invoiceDate)}</td>
                         <td className="px-3 py-2 border-r border-gray-200">{formatDate(inv.dueDate)}</td>
                         <td className="px-3 py-2 border-r border-gray-200 font-semibold">
-                          ${Number(inv.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatMoney(inv.totalAmount)}
                         </td>
                         <td className="px-3 py-2 border-r border-gray-200">
-                          ${Number(inv.paidAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatMoney(inv.paidAmount ?? 0)}
                         </td>
                         <td className="px-3 py-2">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.className}`}>{s.label}</span>

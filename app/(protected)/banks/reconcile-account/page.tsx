@@ -9,6 +9,7 @@ import { GET_CASH_BANKS, GET_BANK_ACCOUNTS, RECONCILE_CASH_BANK } from '@/gql/qu
 import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
 import { CheckCircle, ClipboardList, RefreshCw } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const labelCell = wsLabelCell
 const cell = wsCell
@@ -251,7 +252,7 @@ export default function ReconcileAccountStatementPage() {
                     <tr key={d.id} className="hover:bg-gray-50">
                       <td className={`${cell} font-mono`}>{d.transactionNumber}</td>
                       <td className={`${cell} font-mono`}>
-                        {d.transactionDate ? new Date(d.transactionDate).toLocaleDateString() : '—'}
+                        {d.transactionDate ? formatDate(d.transactionDate) : '—'}
                       </td>
                       <td className={cell}>{d.transactionType}</td>
                       <td className={cell}>{d.description}</td>
@@ -316,7 +317,7 @@ export default function ReconcileAccountStatementPage() {
                     <tr key={d.id} className="hover:bg-gray-50">
                       <td className={`${cell} font-mono`}>{d.transactionNumber}</td>
                       <td className={`${cell} font-mono`}>
-                        {d.transactionDate ? new Date(d.transactionDate).toLocaleDateString() : '—'}
+                        {d.transactionDate ? formatDate(d.transactionDate) : '—'}
                       </td>
                       <td className={cell}>{d.description}</td>
                       <td className={`${cell} ${moneyClass} text-slate-800`}>

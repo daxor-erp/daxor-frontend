@@ -18,6 +18,7 @@ import { CUSTOMER_PAYMENT_METHOD_OPTIONS } from '@/lib/customer-payment-methods'
 import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
 import { Banknote, RefreshCw, Undo2 } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const labelCell = wsLabelCell
 const cell = wsCell
@@ -340,7 +341,7 @@ export default function IssueCustomerRefundPage() {
                       ) : null}
                     </td>
                     <td className={`${cell} font-mono`}>
-                      {r.refundDate ? new Date(r.refundDate).toLocaleDateString() : '—'}
+                      {r.refundDate ? formatDate(r.refundDate) : '—'}
                     </td>
                     <td className={cell}>{r.refundMethod.replace(/_/g, ' ')}</td>
                     <td className={`${cell} ${moneyClass}`}>{formatMoney(Number(r.amount ?? 0))}</td>

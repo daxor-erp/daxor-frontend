@@ -7,6 +7,8 @@ import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
 import { PackageCheck, Clock, CheckCircle2, X, Inbox } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const cell = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 h-7 w-full rounded-sm'
 const cellErr = 'border border-red-400 bg-red-50 outline-none focus:ring-1 focus:ring-red-400 text-xs px-2 h-7 w-full rounded-sm'
@@ -97,8 +99,8 @@ export default function ReceiveOrdersPage() {
                 {selected.projectId && (
                   <div className="flex justify-between"><span className="text-gray-500">Project</span><span className="text-gray-700">{selected.projectName || getProject(selected.projectId)}</span></div>
                 )}
-                <div className="flex justify-between"><span className="text-gray-500">PO Total</span><span className="font-semibold text-gray-800">${Number(selected.totalAmount).toFixed(2)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Order Date</span><span className="text-gray-600">{selected.orderDate ? new Date(selected.orderDate).toLocaleDateString() : '—'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">PO Total</span><span className="font-semibold text-gray-800">{formatMoney(selected.totalAmount)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Order Date</span><span className="text-gray-600">{selected.orderDate ? formatDate(selected.orderDate) : '—'}</span></div>
               </div>
               <div>
                 <p className={`text-xs mb-1 font-medium ${dateErr ? 'text-red-500' : 'text-gray-500'}`}>
@@ -149,8 +151,8 @@ export default function ReceiveOrdersPage() {
             <div className="w-8 border-r border-gray-200 flex items-center justify-center text-gray-300 py-2">{idx + 1}</div>
             <div className="w-24 border-r border-gray-200 px-2 py-2 font-mono text-gray-400">{o.seqNo || '—'}</div>
             <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800 truncate">{o.projectName || (o.projectId ? getProject(o.projectId) : '—')}</div>
-            <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{o.orderDate ? new Date(o.orderDate).toLocaleDateString() : '—'}</div>
-            <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">${Number(o.totalAmount).toFixed(2)}</div>
+            <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{o.orderDate ? formatDate(o.orderDate) : '—'}</div>
+            <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">{formatMoney(o.totalAmount)}</div>
             <div className="w-24 border-r border-gray-200 px-2 py-2">
               <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${STATUS_BADGE[o.status] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                 {o.status}

@@ -15,6 +15,7 @@ import {
 import { buildBillToOptions } from '@/lib/bill-to-options'
 import { wsCell, wsHeaderCell, wsLabelCell } from '@/lib/worksheet-styles'
 import { ClipboardList, Plus, Trash2, Send } from 'lucide-react'
+import { formatMoney } from '@/lib/format-money'
 
 const labelCell = wsLabelCell
 const cell = wsCell
@@ -218,7 +219,7 @@ export default function IssueReturnAuthorizationsPage() {
                     <option value="">— Optional —</option>
                     {ordersForCustomer.map((so: { id: string; seqNo?: string; totalAmount?: number }) => (
                       <option key={so.id} value={so.id}>
-                        {so.seqNo ?? so.id} — {so.totalAmount != null ? `$${Number(so.totalAmount).toFixed(2)}` : ''}
+                        {so.seqNo ?? so.id} — {so.totalAmount != null ? `${formatMoney(so.totalAmount)}` : ''}
                       </option>
                     ))}
                   </select>

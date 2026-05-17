@@ -43,7 +43,7 @@ export const ERP_MODULE_DEFINITIONS: ReadonlyArray<{ key: ErpModuleKey; label: s
 
 /** URL prefixes → module (some URLs intentionally overlap, e.g. /grn). */
 export const ERP_MODULE_PATH_RULES: ReadonlyArray<{ key: ErpModuleKey; prefixes: readonly string[] }> = [
-  { key: 'dashboard', prefixes: ['/dashboard'] },
+  { key: 'dashboard', prefixes: ['/dashboard', '/documents', '/notifications', '/settings'] },
   { key: 'crm', prefixes: ['/clients', '/crm'] },
   { key: 'quotations', prefixes: ['/quotations'] },
   {
@@ -65,6 +65,9 @@ export const ERP_MODULE_PATH_RULES: ReadonlyArray<{ key: ErpModuleKey; prefixes:
       '/goods-receipt',
       '/grn',
       '/inventory',
+      '/production',
+      '/production-planning',
+      '/work-orders',
     ],
   },
   { key: 'products', prefixes: ['/products'] },
@@ -73,7 +76,7 @@ export const ERP_MODULE_PATH_RULES: ReadonlyArray<{ key: ErpModuleKey; prefixes:
     key: 'payroll',
     prefixes: ['/payroll-management', '/salary-processing', '/payroll'],
   },
-  { key: 'hr', prefixes: ['/hr'] },
+  { key: 'hr', prefixes: ['/hr', '/timesheets'] },
   { key: 'customers', prefixes: ['/customers'] },
   { key: 'banks', prefixes: ['/banks'] },
   { key: 'reports', prefixes: ['/reports'] },

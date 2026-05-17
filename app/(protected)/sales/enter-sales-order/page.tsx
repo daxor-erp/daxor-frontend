@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { CheckCircle2, Send } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { CREATE_SALES_ORDER, GET_SALES_ORDERS, SUBMIT_SALES_ORDER } from '@/gql/queries'
+import { formatMoney } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
 
 const GET_QUOTATIONS = gql`
   query GetQuotationsForSalesOrder($organizationId: ID) {
@@ -217,7 +219,7 @@ export default function EnterSalesOrderPage() {
                     </option>
                     {filteredQuotations.map((q: any) => (
                       <option key={q.id} value={q.id}>
-                        {q.quotationNumber} - ${Number(q.totalAmount || 0).toFixed(2)}
+                        {q.quotationNumber} - {formatMoney(q.totalAmount || 0)}
                       </option>
                     ))}
                   </select>
@@ -349,9 +351,9 @@ export default function EnterSalesOrderPage() {
                       <td className="px-3 py-2 border-r border-gray-200">{order.quotationStatus || '—'}</td>
                       <td className="px-3 py-2 border-r border-gray-200 font-mono text-[11px]">{order.customerId || '—'}</td>
                       <td className="px-3 py-2 border-r border-gray-200 font-mono text-[11px]">{order.projectId || '—'}</td>
-                      <td className="px-3 py-2 border-r border-gray-200">${Number(order.totalAmount || 0).toFixed(2)}</td>
+                      <td className="px-3 py-2 border-r border-gray-200">{formatMoney(order.totalAmount || 0)}</td>
                       <td className="px-3 py-2 border-r border-gray-200">
-                        {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '—'}
+                        {order.orderDate ? formatDate(order.orderDate) : '—'}
                       </td>
                       <td className="px-3 py-2 border-r border-gray-200 align-top">
                         {(() => {

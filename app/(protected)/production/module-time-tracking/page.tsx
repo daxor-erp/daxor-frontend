@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { GET_PRODUCTION_PLANNINGS } from '@/gql/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Clock, TrendingUp } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 export default function ModuleTimeTrackingPage() {
   const { user } = useAuth()
@@ -64,7 +65,7 @@ export default function ModuleTimeTrackingPage() {
                 {plans.map((plan: any) => (
                   <tr key={plan.id} className="border-b hover:bg-gray-50">
                     <td className="p-2 font-mono">{plan.docNumber}</td>
-                    <td className="p-2">{new Date(plan.docDate).toLocaleDateString()}</td>
+                    <td className="p-2">{formatDate(plan.docDate)}</td>
                     <td className="p-2">{(plan.tasks || []).length}</td>
                     <td className="p-2">
                       <div className="flex items-center gap-2">

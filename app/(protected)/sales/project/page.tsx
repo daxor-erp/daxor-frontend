@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Plus, X, Save, FolderKanban, CheckCircle2, Clock, Archive } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatDate } from '@/lib/format-date'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   active:    { label: 'Active',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -198,8 +199,8 @@ export default function SalesProjectPage() {
                 <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-400">{p.seqNo || '—'}</div>
                 <div className="w-48 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{p.name}</div>
                 <div className="flex-1 border-r border-gray-200 px-2 py-2 text-xs text-gray-500 truncate">{p.description || '—'}</div>
-                <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{p.startDate ? new Date(p.startDate).toLocaleDateString() : '—'}</div>
-                <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{p.endDate ? new Date(p.endDate).toLocaleDateString() : '—'}</div>
+                <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{p.startDate ? formatDate(p.startDate) : '—'}</div>
+                <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{p.endDate ? formatDate(p.endDate) : '—'}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
                 </div>

@@ -9,6 +9,7 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_PRODUCTION_PLANNINGS, UPDATE_PRODUCTION_PLANNING } from '@/gql/queries'
 import { Trash2, Edit, X, Save, Flag, CheckCircle } from 'lucide-react'
+import { formatDate } from '@/lib/format-date'
 
 const EMPTY_FORM = {
   name: '',
@@ -135,7 +136,7 @@ export default function MilestonesPage() {
     { key: 'name', label: 'Milestone Name', sortable: true, render: v => <span className="font-medium">{v}</span> },
     { key: 'planDocNumber', label: 'Plan #', width: '120px', render: v => <span className="font-mono text-xs">{v}</span> },
     { key: 'description', label: 'Description', render: v => <span className="text-xs text-gray-500">{v || '—'}</span> },
-    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => v ? new Date(v).toLocaleDateString() : '—' },
+    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => v ? formatDate(v) : '—' },
     { key: 'status', label: 'Status', width: '110px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${statusColor[v]}`}>{v}</span> },
   ]
 

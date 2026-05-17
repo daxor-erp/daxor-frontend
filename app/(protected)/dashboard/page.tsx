@@ -1,348 +1,751 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { TrendingUp, TrendingDown, DollarSign, Users, ShoppingCart, Target } from 'lucide-react'
+import Link from 'next/link'
+import { Fragment, useMemo } from 'react'
+import { useQuery } from '@apollo/client'
+import {
+  DollarSign,
+  Users,
+  ShoppingCart,
+  Target,
+  Package,
+  Warehouse,
+  TrendingUp,
+  FileText,
+  AlertTriangle,
+  ArrowUpRight,
+  CheckCircle2,
+  ClipboardCheck,
+  Truck,
+  Receipt,
+  ArrowRight,
+  Activity,
+  CircleDollarSign,
+} from 'lucide-react'
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+  CartesianGrid,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts'
 import { useAuth } from '@/contexts/AuthContext'
+import { useDashboardPreferences } from '@/hooks/use-dashboard-preferences'
+import {
+  GET_CUSTOMER_INVOICES,
+  GET_PURCHASE_ORDERS,
+  GET_SALES_ORDERS,
+  GET_CUSTOMERS,
+  GET_LEADS,
+  GET_LOW_STOCK_ITEMS,
+  GET_VENDOR_BILLS,
+  GET_QUOTATIONS_BY_ORGANIZATION,
+  MY_PENDING_APPROVAL_REQUESTS,
+  GET_ITEMS,
+  GET_VENDORS,
+} from '@/gql/queries'
+import { StatCard } from '@/components/dashboard/stat-card'
+import { SectionCard, PageHeader } from '@/components/dashboard/section-card'
+import { HeroGreeting, ModuleTile } from '@/components/dashboard/hero-greeting'
+import { cn } from '@/lib/utils'
+import { formatMoney, formatMoneyCompact, formatNumber } from '@/lib/format-money'
+import { formatDate } from '@/lib/format-date'
+
+const fmtMoney = (n: number) => formatMoneyCompact(n)
+const fmtMoneyFull = (n: number) => formatMoney(n)
+const fmtCount = (n: number) => formatNumber(n)
+
+const STATUS_TONE: Record<string, string> = {
+  DRAFT: 'bg-slate-100 text-slate-700 border-slate-200',
+  PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+  SUBMITTED: 'bg-amber-50 text-amber-700 border-amber-200',
+  APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
+  CANCELLED: 'bg-rose-50 text-rose-700 border-rose-200',
+  OVERDUE: 'bg-rose-50 text-rose-700 border-rose-200',
+  PARTIAL: 'bg-sky-50 text-sky-700 border-sky-200',
+  SENT: 'bg-sky-50 text-sky-700 border-sky-200',
+}
+
+function StatusBadge({ status }: { status?: string }) {
+  const s = (status || 'DRAFT').toUpperCase()
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide',
+        STATUS_TONE[s] || 'bg-slate-100 text-slate-700 border-slate-200',
+      )}
+    >
+      {s}
+    </span>
+  )
+}
+
+function buildMonthlyBuckets(rows: Array<{ date?: string; amount?: number }>) {
+  const now = new Date()
+  const buckets: { key: string; label: string; total: number }[] = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    buckets.push({
+      key,
+      label: d.toLocaleDateString(undefined, { month: 'short' }),
+      total: 0,
+    })
+  }
+  const map = new Map(buckets.map((b) => [b.key, b]))
+  for (const r of rows) {
+    if (!r.date) continue
+    const dt = new Date(r.date)
+    if (Number.isNaN(dt.getTime())) continue
+    const key = `${dt.getFullYear()}-${dt.getMonth()}`
+    const b = map.get(key)
+    if (b) b.total += Number(r.amount ?? 0)
+  }
+  return buckets
+}
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const orgId = user?.organizationId ?? ''
+  const skip = !orgId
+  const prefs = useDashboardPreferences('erp')
+
+  const invoicesQ = useQuery(GET_CUSTOMER_INVOICES, {
+    variables: { organizationId: orgId, page: 1, limit: 100 },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const purchasesQ = useQuery(GET_PURCHASE_ORDERS, {
+    variables: { organizationId: orgId, page: 1, limit: 100 },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const salesQ = useQuery(GET_SALES_ORDERS, {
+    variables: { organizationId: orgId, page: 1, limit: 100 },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const customersQ = useQuery(GET_CUSTOMERS, {
+    variables: { organizationId: orgId },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const leadsQ = useQuery(GET_LEADS, {
+    variables: { organizationId: orgId },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const lowStockQ = useQuery(GET_LOW_STOCK_ITEMS, {
+    variables: { organizationId: orgId },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const billsQ = useQuery(GET_VENDOR_BILLS, {
+    variables: { organizationId: orgId, page: 1, limit: 50 },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const quotationsQ = useQuery(GET_QUOTATIONS_BY_ORGANIZATION, {
+    variables: { organizationId: orgId },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const itemsQ = useQuery(GET_ITEMS, {
+    variables: { organizationId: orgId, page: 1, limit: 1 },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const vendorsQ = useQuery(GET_VENDORS, {
+    variables: { organizationId: orgId, page: 1, limit: 1 },
+    skip,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+  const approvalsQ = useQuery(MY_PENDING_APPROVAL_REQUESTS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'ignore',
+  })
+
+  const invoices: any[] = invoicesQ.data?.customerinvoices ?? []
+  const purchases: any[] = purchasesQ.data?.purchaseorders ?? []
+  const sales: any[] = salesQ.data?.salesorders ?? []
+  const customers: any[] = customersQ.data?.customers ?? []
+  const leads: any[] = leadsQ.data?.leads ?? []
+  const lowStock: any[] = lowStockQ.data?.lowStockItems ?? []
+  const bills: any[] = billsQ.data?.vendorBills ?? []
+  const quotations: any[] = quotationsQ.data?.quotationsByOrganization ?? []
+  const approvals: any[] = approvalsQ.data?.myPendingApprovalRequests ?? []
+
+  const totalRevenue = useMemo(
+    () => invoices.reduce((s, i) => s + Number(i?.totalAmount ?? 0), 0),
+    [invoices],
+  )
+  const outstanding = useMemo(
+    () => invoices.reduce((s, i) => s + Number(i?.outstandingAmount ?? 0), 0),
+    [invoices],
+  )
+  const payable = useMemo(
+    () => bills.reduce((s, b) => s + Number(b?.outstandingAmount ?? 0), 0),
+    [bills],
+  )
+  const openPos = purchases.filter((p) => !['CLOSED', 'CANCELLED'].includes(String(p?.status || '').toUpperCase())).length
+  const openSos = sales.filter((s) => !['CLOSED', 'CANCELLED', 'COMPLETED'].includes(String(s?.status || '').toUpperCase())).length
+  const newLeads = leads.filter((l) => ['NEW', 'CONTACTED'].includes(String(l?.status || '').toUpperCase())).length
+
+  const revenueChart = useMemo(
+    () =>
+      buildMonthlyBuckets(
+        invoices.map((i: any) => ({ date: i.invoiceDate, amount: i.totalAmount })),
+      ),
+    [invoices],
+  )
+
+  const salesPurchaseChart = useMemo(() => {
+    const salesBuckets = buildMonthlyBuckets(sales.map((s: any) => ({ date: s.orderDate, amount: s.totalAmount })))
+    const purchaseBuckets = buildMonthlyBuckets(
+      purchases.map((p: any) => ({ date: p.orderDate, amount: p.totalAmount })),
+    )
+    return salesBuckets.map((b, i) => ({
+      month: b.label,
+      sales: b.total,
+      purchases: purchaseBuckets[i]?.total ?? 0,
+    }))
+  }, [sales, purchases])
+
+  const invoiceStatusBreakdown = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const inv of invoices) {
+      const k = String(inv?.status || 'DRAFT').toUpperCase()
+      counts[k] = (counts[k] ?? 0) + 1
+    }
+    const palette = [
+      'hsl(158 64% 36%)',
+      'hsl(168 84% 39%)',
+      'hsl(38 92% 50%)',
+      'hsl(0 70% 60%)',
+      'hsl(217 91% 60%)',
+      'hsl(265 80% 60%)',
+    ]
+    return Object.entries(counts).map(([name, value], i) => ({
+      name,
+      value,
+      color: palette[i % palette.length],
+    }))
+  }, [invoices])
+
+  const recentInvoices = useMemo(
+    () =>
+      [...invoices]
+        .sort((a: any, b: any) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')))
+        .slice(0, 5),
+    [invoices],
+  )
+
+  const conversionRate = useMemo(() => {
+    if (leads.length === 0) return 0
+    const converted = leads.filter((l) => String(l.status || '').toUpperCase() === 'CONVERTED').length
+    return Math.round((converted / leads.length) * 100)
+  }, [leads])
+
+  const loading =
+    invoicesQ.loading ||
+    purchasesQ.loading ||
+    salesQ.loading ||
+    customersQ.loading ||
+    leadsQ.loading
+
+  const kpiCards: Record<string, React.ReactNode> = {
+    'kpi-revenue': (
+      <StatCard
+        label="Revenue"
+        value={fmtMoney(totalRevenue)}
+        hint={`${invoices.length} invoices`}
+        icon={<CircleDollarSign className="h-5 w-5" />}
+        tone="brand"
+        loading={loading}
+        spark={revenueChart.map((b) => b.total)}
+      />
+    ),
+    'kpi-receivable': (
+      <StatCard
+        label="Receivable"
+        value={fmtMoney(outstanding)}
+        hint="Outstanding from customers"
+        icon={<Receipt className="h-5 w-5" />}
+        tone="emerald"
+        loading={loading}
+      />
+    ),
+    'kpi-payable': (
+      <StatCard
+        label="Payable"
+        value={fmtMoney(payable)}
+        hint="Vendor bills due"
+        icon={<DollarSign className="h-5 w-5" />}
+        tone="rose"
+        loading={loading}
+      />
+    ),
+    'kpi-sales-orders': (
+      <StatCard
+        label="Sales orders"
+        value={fmtCount(openSos)}
+        hint={`${sales.length} total`}
+        icon={<ShoppingCart className="h-5 w-5" />}
+        tone="sky"
+        loading={loading}
+        href="/sales-orders"
+      />
+    ),
+    'kpi-purchase-orders': (
+      <StatCard
+        label="Purchase orders"
+        value={fmtCount(openPos)}
+        hint={`${purchases.length} total`}
+        icon={<Truck className="h-5 w-5" />}
+        tone="violet"
+        loading={loading}
+        href="/purchases/enter-purchase-orders"
+      />
+    ),
+    'kpi-conversion': (
+      <StatCard
+        label="Conversion"
+        value={`${conversionRate}%`}
+        hint={`${newLeads} new leads`}
+        icon={<Target className="h-5 w-5" />}
+        tone="warn"
+        loading={loading}
+      />
+    ),
+  }
+
+  const renderSection = (id: string, spanClass: string): React.ReactNode => {
+    switch (id) {
+      case 'section-revenue-trend':
+        return (
+          <SectionCard
+            className={spanClass}
+            title="Revenue trend"
+          description="Last 6 months of invoiced revenue"
+          action={
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="inline-block h-2 w-2 rounded-full bg-primary" /> Revenue
+            </div>
+          }
+        >
+          <div className="h-64 sm:h-72 -mx-2">
+            <ResponsiveContainer>
+              <AreaChart data={revenueChart} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(158 64% 36%)" stopOpacity={0.45} />
+                    <stop offset="100%" stopColor="hsl(158 64% 36%)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(220 13% 91%)" />
+                <XAxis dataKey="label" stroke="hsl(220 9% 46%)" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis
+                  stroke="hsl(220 9% 46%)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  width={42}
+                  tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
+                />
+                <RTooltip
+                  contentStyle={{
+                    background: 'white',
+                    border: '1px solid hsl(220 13% 91%)',
+                    borderRadius: 10,
+                    fontSize: 12,
+                    boxShadow: '0 8px 24px hsl(222 47% 11% / 0.08)',
+                  }}
+                  formatter={(v: any) => fmtMoney(Number(v))}
+                />
+                <Area type="monotone" dataKey="total" stroke="hsl(158 64% 36%)" strokeWidth={2.5} fill="url(#rev)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </SectionCard>
+        )
+      case 'section-invoice-status':
+        return (
+        <SectionCard className={spanClass} title="Invoice status" description={`${invoices.length} total invoices`}>
+          {invoiceStatusBreakdown.length === 0 ? (
+            <EmptyState icon={<Receipt className="h-5 w-5" />} title="No invoices yet" />
+          ) : (
+            <>
+              <div className="h-48">
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={invoiceStatusBreakdown}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={2}
+                      stroke="white"
+                    >
+                      {invoiceStatusBreakdown.map((s) => (
+                        <Cell key={s.name} fill={s.color} />
+                      ))}
+                    </Pie>
+                    <RTooltip contentStyle={{ fontSize: 12, borderRadius: 10 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-1.5">
+                {invoiceStatusBreakdown.map((s) => (
+                  <div key={s.name} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+                      <span className="capitalize">{s.name.toLowerCase()}</span>
+                    </span>
+                    <span className="font-medium tabular-nums">{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </SectionCard>
+        )
+      case 'section-sales-vs-purchases':
+        return (
+        <SectionCard
+          className={spanClass}
+          title="Sales vs purchases"
+          description="Monthly comparison"
+          action={
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />Sales</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-teal-500" />Purchases</span>
+            </div>
+          }
+        >
+          <div className="h-64 -mx-2">
+            <ResponsiveContainer>
+              <BarChart data={salesPurchaseChart} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(220 13% 91%)" />
+                <XAxis dataKey="month" stroke="hsl(220 9% 46%)" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis
+                  stroke="hsl(220 9% 46%)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  width={42}
+                  tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
+                />
+                <RTooltip
+                  contentStyle={{
+                    background: 'white',
+                    border: '1px solid hsl(220 13% 91%)',
+                    borderRadius: 10,
+                    fontSize: 12,
+                  }}
+                  formatter={(v: any) => fmtMoney(Number(v))}
+                />
+                <Bar dataKey="sales" fill="hsl(158 64% 36%)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="purchases" fill="hsl(168 84% 39%)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </SectionCard>
+        )
+      case 'section-low-stock':
+        return (
+        <SectionCard
+          className={spanClass}
+          title="Low stock alerts"
+          description={lowStock.length ? `${lowStock.length} items need attention` : 'All items stocked'}
+          action={
+            <Link href="/inventory/review-negative-inventory" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+              View <ArrowRight className="h-3 w-3" />
+            </Link>
+          }
+          bodyClassName="p-0"
+        >
+          {lowStock.length === 0 ? (
+            <div className="p-5">
+              <EmptyState
+                icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+                title="No low stock items"
+                description="All inventory above reorder point."
+              />
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {lowStock.slice(0, 6).map((it: any) => (
+                <li key={it.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{it.itemName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Qty: <span className="tabular-nums">{it.quantity}</span> · Reorder: <span className="tabular-nums">{it.reorderPoint}</span>
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase',
+                      String(it.stockStatus).toUpperCase() === 'OUT_OF_STOCK'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200',
+                    )}
+                  >
+                    {String(it.stockStatus ?? 'low').replace('_', ' ')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+        )
+      case 'section-recent-invoices':
+        return (
+        <SectionCard
+          className={spanClass}
+          title="Recent invoices"
+          description="Latest customer invoices"
+          action={
+            <Link href="/sales/create-invoices" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+              All invoices <ArrowRight className="h-3 w-3" />
+            </Link>
+          }
+          bodyClassName="p-0"
+        >
+          {recentInvoices.length === 0 ? (
+            <div className="p-5">
+              <EmptyState
+                icon={<Receipt className="h-5 w-5" />}
+                title="No invoices yet"
+                description="Create your first invoice to see it here."
+                ctaLabel="Create invoice"
+                ctaHref="/sales/create-invoices"
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                    <th className="px-5 py-3 font-medium">Invoice</th>
+                    <th className="px-3 py-3 font-medium">Date</th>
+                    <th className="px-3 py-3 font-medium text-right">Total</th>
+                    <th className="px-3 py-3 font-medium text-right">Due</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentInvoices.map((inv: any) => (
+                    <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                      <td className="px-5 py-3 font-medium">#{inv.seqNo ?? inv.id?.slice(-6)}</td>
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}
+                      </td>
+                      <td className="px-3 py-3 text-right tabular-nums font-medium">
+                        {fmtMoneyFull(Number(inv.totalAmount ?? 0))}
+                      </td>
+                      <td className="px-3 py-3 text-right tabular-nums text-rose-600">
+                        {fmtMoneyFull(Number(inv.outstandingAmount ?? 0))}
+                      </td>
+                      <td className="px-5 py-3">
+                        <StatusBadge status={inv.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SectionCard>
+        )
+      case 'section-my-approvals':
+        return (
+        <SectionCard
+          className={spanClass}
+          title="My approvals"
+          description={approvals.length ? `${approvals.length} pending` : 'Nothing waiting'}
+          action={
+            <span className={cn(
+              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase',
+              approvals.length ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+            )}>
+              <ClipboardCheck className="h-3 w-3" />
+              {approvals.length ? 'Action needed' : 'Clear'}
+            </span>
+          }
+        >
+          {approvals.length === 0 ? (
+            <EmptyState
+              icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+              title="You're all caught up"
+              description="No approval requests waiting for you."
+            />
+          ) : (
+            <ul className="space-y-2.5">
+              {approvals.slice(0, 5).map((a: any) => (
+                <li key={a.id} className="rounded-xl border border-border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium leading-tight line-clamp-2">{a.title ?? 'Approval request'}</p>
+                    <span className="text-[10px] uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 shrink-0">
+                      Pending
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="capitalize">{a.moduleKey ?? '—'}</span>
+                    {a.createdAt && <span>{formatDate(a.createdAt)}</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+        )
+      case 'section-quick-access':
+        return (
+        <SectionCard
+          className={spanClass}
+          title="Quick access"
+          description="Jump into a module"
+          action={
+            <Link href="/settings?tab=preferences" className="text-xs font-medium text-primary hover:underline">
+              Customize
+            </Link>
+          }
+        >
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <ModuleTile label="Customers" icon={<Users className="h-4 w-4" />} count={fmtCount(customers.length)} href="/customers" tone="brand" />
+          <ModuleTile label="Vendors" icon={<Truck className="h-4 w-4" />} count={fmtCount(vendorsQ.data?.vendors?.length ?? 0)} href="/vendors" tone="violet" />
+          <ModuleTile label="Items" icon={<Package className="h-4 w-4" />} count={fmtCount(itemsQ.data?.items?.length ?? 0)} href="/inventory/items" tone="emerald" />
+          <ModuleTile label="Warehouses" icon={<Warehouse className="h-4 w-4" />} href="/warehouse" tone="sky" />
+          <ModuleTile label="Quotations" icon={<FileText className="h-4 w-4" />} count={fmtCount(quotations.length)} href="/quotations" tone="warn" />
+          <ModuleTile label="Reports" icon={<TrendingUp className="h-4 w-4" />} href="/reports/financial/income-statement" tone="accent" />
+          <ModuleTile label="Cash & Bank" icon={<DollarSign className="h-4 w-4" />} href="/cash-bank" tone="emerald" />
+          <ModuleTile label="Inventory" icon={<Activity className="h-4 w-4" />} href="/inventory-control" tone="rose" />
+          <ModuleTile label="Payroll" icon={<Users className="h-4 w-4" />} href="/payroll-management" tone="violet" />
+          <ModuleTile label="HR" icon={<Users className="h-4 w-4" />} href="/hr/masters/employee-master" tone="sky" />
+          <ModuleTile label="Banks" icon={<DollarSign className="h-4 w-4" />} href="/banks/make-deposits" tone="brand" />
+          <ModuleTile label="Leads" icon={<Target className="h-4 w-4" />} count={fmtCount(leads.length)} href="/crm/lead-management" tone="warn" />
+        </div>
+      </SectionCard>
+        )
+      default:
+        return null
+    }
+  }
+
+  const spanClassFor = (span: 1 | 2 | 3 | undefined): string => {
+    if (span === 3) return 'lg:col-span-3'
+    if (span === 2) return 'lg:col-span-2'
+    return ''
+  }
+
+  const visibleKpis = prefs.visibleWidgets('kpi')
+  const visibleSections = prefs.visibleWidgets('section')
+
+  const ctaRegistry: Record<string, { label: string; href: string }> = {
+    'cta-new-invoice': { label: 'New invoice', href: '/sales/create-invoices' },
+    'cta-new-quotation': { label: 'New quotation', href: '/quotations' },
+    'cta-new-sales-order': { label: 'New sales order', href: '/sales-orders' },
+    'cta-new-purchase-order': { label: 'New purchase order', href: '/purchases/enter-purchase-orders' },
+    'cta-new-customer': { label: 'New customer', href: '/customers' },
+    'cta-new-vendor': { label: 'New vendor', href: '/vendors' },
+    'cta-new-item': { label: 'New item', href: '/inventory/items' },
+    'cta-new-payment': { label: 'Receive payment', href: '/sales/receive-payments' },
+    'cta-new-bill': { label: 'New vendor bill', href: '/purchases/enter-bills' },
+    'cta-new-lead': { label: 'New lead', href: '/crm/lead-management' },
+  }
+  const heroCtas = prefs
+    .visibleWidgets('heroCta')
+    .map((w) => ctaRegistry[w.id])
+    .filter(Boolean)
 
   return (
-    <div className="p-6 space-y-6">
-        <p className="text-sm text-gray-500">
-          Overview highlights for{' '}
-          <span className="font-medium text-gray-700">{user?.firstName ?? 'your account'}</span>.
-        </p>
+    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+      <HeroGreeting name={user?.firstName} ctas={heroCtas} />
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <DollarSign className="h-8 w-8 text-blue-600" />
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              </div>
-              <div className="text-2xl font-bold">$3,468</div>
-              <div className="text-xs text-gray-500">Revenue</div>
-              <div className="text-xs text-green-600 mt-1">+12.5%</div>
-            </CardContent>
-          </Card>
+      <PageHeader
+        title="Operational overview"
+        description="Real-time KPIs and activity across your organization."
+        actions={
+          <Link
+            href="/reports/financial/income-statement"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            View reports
+          </Link>
+        }
+      />
 
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Users className="h-8 w-8 text-purple-600" />
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              </div>
-              <div className="text-2xl font-bold">1,245</div>
-              <div className="text-xs text-gray-500">Customers</div>
-              <div className="text-xs text-green-600 mt-1">+8.2%</div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <ShoppingCart className="h-8 w-8 text-green-600" />
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              </div>
-              <div className="text-2xl font-bold">892</div>
-              <div className="text-xs text-gray-500">Orders</div>
-              <div className="text-xs text-green-600 mt-1">+15.3%</div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Target className="h-8 w-8 text-orange-600" />
-                <TrendingDown className="h-4 w-4 text-red-600" />
-              </div>
-              <div className="text-2xl font-bold">67%</div>
-              <div className="text-xs text-gray-500">Conversion</div>
-              <div className="text-xs text-red-600 mt-1">-2.4%</div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="h-8 w-8 text-cyan-600 flex items-center justify-center text-xl">📊</div>
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              </div>
-              <div className="text-2xl font-bold">234</div>
-              <div className="text-xs text-gray-500">Leads</div>
-              <div className="text-xs text-green-600 mt-1">+22.1%</div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="h-8 w-8 text-pink-600 flex items-center justify-center text-xl">💼</div>
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              </div>
-              <div className="text-2xl font-bold">45</div>
-              <div className="text-xs text-gray-500">Deals Closed</div>
-              <div className="text-xs text-green-600 mt-1">+18.7%</div>
-            </CardContent>
-          </Card>
+      {visibleKpis.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
+          {visibleKpis.map((w) => (
+            <div key={w.id}>{kpiCards[w.id]}</div>
+          ))}
         </div>
+      )}
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Sales Overview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <svg className="w-full h-full" viewBox="0 0 600 200" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="salesGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" style={{ stopColor: '#3b82f6', stopOpacity: 0.3 }} />
-                      <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 0 }} />
-                    </linearGradient>
-                  </defs>
-                  <path d="M0,150 L50,140 L100,120 L150,130 L200,100 L250,110 L300,80 L350,90 L400,60 L450,70 L500,40 L550,50 L600,30" fill="url(#salesGrad)" />
-                  <path d="M0,150 L50,140 L100,120 L150,130 L200,100 L250,110 L300,80 L350,90 L400,60 L450,70 L500,40 L550,50 L600,30" fill="none" stroke="#3b82f6" strokeWidth="3" />
-                </svg>
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>Jan</span>
-                  <span>Feb</span>
-                  <span>Mar</span>
-                  <span>Apr</span>
-                  <span>May</span>
-                  <span>Jun</span>
-                  <span>Jul</span>
-                  <span>Aug</span>
-                  <span>Sep</span>
-                  <span>Oct</span>
-                  <span>Nov</span>
-                  <span>Dec</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Lead Sources</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center mb-4">
-                <svg className="w-32 h-32" viewBox="0 0 36 36">
-                  <circle cx="18" cy="18" r="16" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                  <circle cx="18" cy="18" r="16" fill="none" stroke="#3b82f6" strokeWidth="3" strokeDasharray="40 60" strokeDashoffset="25" />
-                  <circle cx="18" cy="18" r="16" fill="none" stroke="#10b981" strokeWidth="3" strokeDasharray="30 70" strokeDashoffset="-15" />
-                  <circle cx="18" cy="18" r="16" fill="none" stroke="#f59e0b" strokeWidth="3" strokeDasharray="20 80" strokeDashoffset="-45" />
-                  <circle cx="18" cy="18" r="16" fill="none" stroke="#8b5cf6" strokeWidth="3" strokeDasharray="10 90" strokeDashoffset="-65" />
-                </svg>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-600 rounded-full" />
-                    <span>Website</span>
-                  </div>
-                  <span className="font-semibold">40%</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-600 rounded-full" />
-                    <span>Referral</span>
-                  </div>
-                  <span className="font-semibold">30%</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full" />
-                    <span>Social Media</span>
-                  </div>
-                  <span className="font-semibold">20%</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-purple-600 rounded-full" />
-                    <span>Direct</span>
-                  </div>
-                  <span className="font-semibold">10%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {visibleSections.length > 0 && (
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+          {visibleSections.map((w) => (
+            <Fragment key={w.id}>{renderSection(w.id, spanClassFor(w.colSpan))}</Fragment>
+          ))}
         </div>
+      )}
+    </div>
+  )
+}
 
-        <div className="grid lg:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-            <CardContent className="p-4">
-              <div className="text-sm mb-2">Monthly Revenue</div>
-              <div className="text-2xl font-bold mb-2">$45,231</div>
-              <div className="flex gap-1 items-end h-12">
-                {[60, 80, 70, 90, 75, 85, 95].map((h, i) => (
-                  <div key={i} className="flex-1 bg-white/40 rounded-t" style={{ height: `${h}%` }} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-            <CardContent className="p-4">
-              <div className="text-sm mb-2">New Customers</div>
-              <div className="text-2xl font-bold mb-2">+156</div>
-              <div className="flex gap-1 items-end h-12">
-                {[50, 70, 60, 85, 70, 90, 100].map((h, i) => (
-                  <div key={i} className="flex-1 bg-white/40 rounded-t" style={{ height: `${h}%` }} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-            <CardContent className="p-4">
-              <div className="text-sm mb-2">Active Deals</div>
-              <div className="text-2xl font-bold mb-2">89</div>
-              <div className="flex gap-1 items-end h-12">
-                {[70, 60, 80, 70, 85, 75, 90].map((h, i) => (
-                  <div key={i} className="flex-1 bg-white/40 rounded-t" style={{ height: `${h}%` }} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-            <CardContent className="p-4">
-              <div className="text-sm mb-2">Conversion Rate</div>
-              <div className="text-2xl font-bold mb-2">67.8%</div>
-              <svg className="w-full h-12" viewBox="0 0 200 40" preserveAspectRatio="none">
-                <path d="M0,30 Q25,20 50,25 T100,15 T150,20 T200,10" fill="none" stroke="white" strokeWidth="2" opacity="0.8" />
-              </svg>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Sales Pipeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[
-                  { stage: 'Prospecting', count: 45, value: '$125K', color: 'bg-blue-500', width: '90%' },
-                  { stage: 'Qualification', count: 32, value: '$98K', color: 'bg-cyan-500', width: '70%' },
-                  { stage: 'Proposal', count: 18, value: '$67K', color: 'bg-green-500', width: '50%' },
-                  { stage: 'Negotiation', count: 12, value: '$45K', color: 'bg-yellow-500', width: '35%' },
-                  { stage: 'Closed Won', count: 8, value: '$32K', color: 'bg-purple-600', width: '25%' },
-                ].map((item, i) => (
-                  <div key={i}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium">{item.stage}</span>
-                      <span className="text-gray-600">{item.count} deals • {item.value}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className={`${item.color} h-2 rounded-full`} style={{ width: item.width }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Top Performing Products</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[
-                  { name: 'Enterprise Plan', sales: 234, revenue: '$45,600', trend: '+12%', color: 'text-green-600' },
-                  { name: 'Professional Plan', sales: 189, revenue: '$28,350', trend: '+8%', color: 'text-green-600' },
-                  { name: 'Basic Plan', sales: 156, revenue: '$15,600', trend: '+5%', color: 'text-green-600' },
-                  { name: 'Consulting Services', sales: 89, revenue: '$89,000', trend: '+18%', color: 'text-green-600' },
-                  { name: 'Training Package', sales: 67, revenue: '$20,100', trend: '-3%', color: 'text-red-600' },
-                ].map((product, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{product.name}</div>
-                      <div className="text-xs text-gray-500">{product.sales} sales</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-sm">{product.revenue}</div>
-                      <div className={`text-xs ${product.color}`}>{product.trend}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Recent Activities</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { user: 'John Doe', action: 'Closed deal with Acme Corp', time: '5 mins ago', color: 'bg-green-500' },
-                { user: 'Sarah Smith', action: 'Added new lead', time: '12 mins ago', color: 'bg-blue-500' },
-                { user: 'Mike Johnson', action: 'Updated proposal', time: '1 hour ago', color: 'bg-orange-500' },
-                { user: 'Emily Davis', action: 'Scheduled meeting', time: '2 hours ago', color: 'bg-purple-500' },
-              ].map((activity, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className={`w-8 h-8 ${activity.color} rounded-full flex items-center justify-center text-white text-xs font-medium`}>
-                    {activity.user[0]}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{activity.user}</div>
-                    <div className="text-xs text-gray-500">{activity.action}</div>
-                  </div>
-                  <div className="text-xs text-gray-400">{activity.time}</div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Recent Deals</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-medium">Company</th>
-                      <th className="px-4 py-2 text-left font-medium">Contact</th>
-                      <th className="px-4 py-2 text-left font-medium">Value</th>
-                      <th className="px-4 py-2 text-left font-medium">Stage</th>
-                      <th className="px-4 py-2 text-left font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { company: 'Acme Corp', contact: 'John Smith', value: '$45,000', stage: 'Negotiation', status: 'Hot', statusColor: 'bg-red-500' },
-                      { company: 'TechStart Inc', contact: 'Sarah Lee', value: '$32,000', stage: 'Proposal', status: 'Warm', statusColor: 'bg-orange-500' },
-                      { company: 'Global Solutions', contact: 'Mike Brown', value: '$67,000', stage: 'Qualification', status: 'Cold', statusColor: 'bg-blue-500' },
-                      { company: 'Innovation Labs', contact: 'Emma Wilson', value: '$28,000', stage: 'Closed Won', status: 'Won', statusColor: 'bg-green-500' },
-                    ].map((deal, i) => (
-                      <tr key={i} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium">{deal.company}</td>
-                        <td className="px-4 py-3">{deal.contact}</td>
-                        <td className="px-4 py-3 font-semibold">{deal.value}</td>
-                        <td className="px-4 py-3">{deal.stage}</td>
-                        <td className="px-4 py-3">
-                          <span className={`${deal.statusColor} text-white px-2 py-1 rounded text-xs`}>
-                            {deal.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+function EmptyState({
+  icon,
+  title,
+  description,
+  ctaLabel,
+  ctaHref,
+}: {
+  icon: React.ReactNode
+  title: string
+  description?: string
+  ctaLabel?: string
+  ctaHref?: string
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+      <div className="h-10 w-10 rounded-full bg-secondary text-muted-foreground flex items-center justify-center">
+        {icon}
+      </div>
+      <p className="text-sm font-medium">{title}</p>
+      {description && <p className="text-xs text-muted-foreground max-w-xs">{description}</p>}
+      {ctaLabel && ctaHref && (
+        <Link
+          href={ctaHref}
+          className="mt-2 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+        >
+          {ctaLabel}
+          <ArrowUpRight className="h-3 w-3" />
+        </Link>
+      )}
     </div>
   )
 }
