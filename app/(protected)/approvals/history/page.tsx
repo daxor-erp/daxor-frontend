@@ -94,7 +94,7 @@ export default function ApprovalsHistoryPage() {
   const { user } = useAuth()
   const myUid = String(user?.id ?? '')
   const [status, setStatus] = useState<Status>('ALL')
-  const [role, setRole] = useState<Role>('ANY')
+  const [role, setRole] = useState<Role>('APPROVER')
   const [page, setPage] = useState(0)
 
   const { data, loading, refetch } = useQuery(MY_APPROVAL_REQUESTS, {
@@ -118,7 +118,7 @@ export default function ApprovalsHistoryPage() {
     <div className="mx-auto w-full max-w-[1200px] p-4 sm:p-6 lg:p-8 space-y-6">
       <PageHeader
         title="Approval history"
-        description="All approval requests you sent or were asked to decide on."
+        description="Approval requests assigned to you. Switch the role filter to also see requests you sent."
         actions={
           <Button variant="outline" onClick={() => refetch()} disabled={loading}>
             Refresh

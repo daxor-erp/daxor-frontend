@@ -35,8 +35,9 @@ const SIDE_RAIL_WIDTH = 68 // px, must match w-[68px] below
 export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname() ?? ''
   const { user } = useAuth()
-  // Accordion: only one section open at a time in expanded mode.
+  // Accordion: top-level is single-open; nested keys (parent::child) can also be open.
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [openNested, setOpenNested] = useState<Set<string>>(new Set())
   // Flyout (collapsed/icon-only mode): which top-level section is hovered.
   const [flyoutName, setFlyoutName] = useState<string | null>(null)
   const [flyoutTop, setFlyoutTop] = useState(0)
@@ -52,18 +53,50 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
     [user?.modulePermissions, user?.roles],
   )
 
+  // Find the single best matching leaf for the current route (longest prefix wins),
+  // so siblings whose hrefs share a prefix don't both light up.
+  const activeHref = useMemo(() => {
+    const leaves: string[] = []
+    const collect = (items: NavItem[]) => {
+      for (const it of items) {
+        if (it.href) leaves.push(it.href)
+        if (it.subItems?.length) collect(it.subItems)
+      }
+    }
+    collect(visibleNavigation)
+    let best: string | null = null
+    for (const href of leaves) {
+      if (pathname === href || pathname.startsWith(href + '/')) {
+        if (!best || href.length > best.length) best = href
+      }
+    }
+    return best
+  }, [pathname, visibleNavigation])
+
   const isItemActive = (item: NavItem): boolean => {
-    if (item.href && (pathname === item.href || pathname.startsWith(item.href + '/'))) return true
+    if (item.href) return item.href === activeHref
     if (item.subItems) return item.subItems.some((s) => isItemActive(s))
     return false
   }
 
-  // Auto-open the active section in expanded mode.
+  // Auto-open the active section (top + nested groups) in expanded mode.
   useEffect(() => {
     if (!pathname || collapsed) return
     const activeTop = visibleNavigation.find((it) => isItemActive(it))
     if (activeTop?.subItems?.length) setOpenMenu(activeTop.name)
-    // intentionally not depending on isItemActive (stable enough)
+    if (!activeTop) return
+    const toOpen = new Set<string>()
+    const walk = (items: NavItem[], parentKey: string) => {
+      for (const it of items) {
+        if (it.subItems?.length && isItemActive(it)) {
+          const key = `${parentKey}::${it.name}`
+          toOpen.add(key)
+          walk(it.subItems, key)
+        }
+      }
+    }
+    walk(activeTop.subItems ?? [], activeTop.name)
+    if (toOpen.size) setOpenNested((prev) => new Set([...prev, ...toOpen]))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, collapsed, visibleNavigation])
 
@@ -131,6 +164,87 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
 
   /* ---------- render: expanded sections ---------- */
 
+  const renderNestedSub = (sub: NavItem, parentKey: string) => {
+    const subActive = isItemActive(sub)
+    const hasChildren = !!sub.subItems?.length
+    const nestedKey = `${parentKey}::${sub.name}`
+    const nestedOpen = openNested.has(nestedKey)
+
+    if (hasChildren) {
+      return (
+        <li key={sub.name}>
+          <button
+            type="button"
+            onClick={() =>
+              setOpenNested((prev) => {
+                const next = new Set(prev)
+                if (next.has(nestedKey)) next.delete(nestedKey)
+                else next.add(nestedKey)
+                return next
+              })
+            }
+            aria-expanded={nestedOpen}
+            className={cn(
+              'group flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-[12.5px] transition-colors',
+              subActive
+                ? 'text-white font-medium'
+                : 'text-[hsl(var(--sidebar-muted))] hover:bg-[hsl(var(--sidebar-accent))]/70 hover:text-white',
+            )}
+          >
+            <span
+              className={cn(
+                'h-1.5 w-1.5 shrink-0 rounded-full transition-colors',
+                subActive ? 'bg-white' : 'bg-[hsl(var(--sidebar-muted))] group-hover:bg-white',
+              )}
+            />
+            <span className="flex-1 truncate text-left">{sub.name}</span>
+            <ChevronDown
+              className={cn(
+                'h-3.5 w-3.5 shrink-0 opacity-80 transition-transform duration-200',
+                nestedOpen ? 'rotate-0' : '-rotate-90',
+              )}
+            />
+          </button>
+          <div
+            className={cn(
+              'grid transition-[grid-template-rows] duration-200 ease-out',
+              nestedOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+            )}
+          >
+            <div className="overflow-hidden">
+              <ul className="mt-0.5 space-y-0.5 pb-1 pl-4">
+                {sub.subItems!.map((leaf) => renderNestedSub(leaf, nestedKey))}
+              </ul>
+            </div>
+          </div>
+        </li>
+      )
+    }
+
+    return (
+      <li key={sub.name}>
+        <Link
+          href={sub.href ?? '#'}
+          onClick={() => mobile && onMobileClose?.()}
+          className={cn(
+            'group flex h-8 items-center gap-2.5 rounded-md px-2 text-[12.5px] transition-colors',
+            subActive
+              ? 'bg-[hsl(var(--sidebar-primary))]/85 text-white font-medium'
+              : 'text-[hsl(var(--sidebar-muted))] hover:bg-[hsl(var(--sidebar-accent))]/70 hover:text-white',
+          )}
+        >
+          <span
+            className={cn(
+              'h-1.5 w-1.5 shrink-0 rounded-full transition-colors',
+              subActive ? 'bg-white' : 'bg-[hsl(var(--sidebar-muted))] group-hover:bg-white',
+            )}
+          />
+          <span className="truncate">{sub.name}</span>
+        </Link>
+      </li>
+    )
+  }
+
   const renderExpandedItem = (item: NavItem) => {
     const Icon = item.icon
     const hasSub = !!item.subItems?.length
@@ -169,9 +283,7 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
             'relative flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-[13px] transition-colors',
             isOpen
               ? 'bg-[hsl(var(--sidebar-accent))] text-white font-medium'
-              : active
-                ? 'text-white font-medium hover:bg-[hsl(var(--sidebar-accent))]'
-                : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-white',
+              : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-white',
           )}
         >
           {active && !isOpen && (
@@ -194,33 +306,7 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
         >
           <div className="overflow-hidden">
             <ul className="mt-0.5 space-y-0.5 pb-1 pl-7 pr-1">
-              {item.subItems!.map((sub) => {
-                const subActive = isItemActive(sub)
-                return (
-                  <li key={sub.name}>
-                    <Link
-                      href={sub.href ?? '#'}
-                      onClick={() => mobile && onMobileClose?.()}
-                      className={cn(
-                        'group flex h-8 items-center gap-2.5 rounded-md px-2 text-[12.5px] transition-colors',
-                        subActive
-                          ? 'bg-[hsl(var(--sidebar-primary))]/85 text-white font-medium'
-                          : 'text-[hsl(var(--sidebar-muted))] hover:bg-[hsl(var(--sidebar-accent))]/70 hover:text-white',
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'h-1.5 w-1.5 shrink-0 rounded-full transition-colors',
-                          subActive
-                            ? 'bg-white'
-                            : 'bg-[hsl(var(--sidebar-muted))] group-hover:bg-white',
-                        )}
-                      />
-                      <span className="truncate">{sub.name}</span>
-                    </Link>
-                  </li>
-                )
-              })}
+              {item.subItems!.map((sub) => renderNestedSub(sub, item.name))}
             </ul>
           </div>
         </div>
@@ -336,9 +422,47 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
               {flyoutItem.name}
             </p>
             <ul className="space-y-0.5">
-              {flyoutItem.subItems.map((sub) => {
+              {flyoutItem.subItems.flatMap((sub) => {
+                if (sub.subItems?.length) {
+                  return [
+                    <li
+                      key={`${sub.name}-label`}
+                      className="px-2 pb-1 pt-2 text-[10px] uppercase tracking-wider text-[hsl(var(--sidebar-muted))]"
+                    >
+                      {sub.name}
+                    </li>,
+                    ...sub.subItems.map((leaf) => {
+                      const leafActive = isItemActive(leaf)
+                      return (
+                        <li key={`${sub.name}-${leaf.name}`}>
+                          <Link
+                            href={leaf.href ?? '#'}
+                            onClick={() => {
+                              setFlyoutName(null)
+                              if (mobile) onMobileClose?.()
+                            }}
+                            className={cn(
+                              'flex h-8 items-center gap-2 rounded-md px-2 text-[12.5px] transition-colors',
+                              leafActive
+                                ? 'bg-[hsl(var(--sidebar-primary))] font-medium text-white'
+                                : 'text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-white',
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'h-1.5 w-1.5 shrink-0 rounded-full',
+                                leafActive ? 'bg-white' : 'bg-[hsl(var(--sidebar-muted))]',
+                              )}
+                            />
+                            <span className="truncate">{leaf.name}</span>
+                          </Link>
+                        </li>
+                      )
+                    }),
+                  ]
+                }
                 const subActive = isItemActive(sub)
-                return (
+                return [
                   <li key={sub.name}>
                     <Link
                       href={sub.href ?? '#'}
@@ -361,8 +485,8 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
                       />
                       <span className="truncate">{sub.name}</span>
                     </Link>
-                  </li>
-                )
+                  </li>,
+                ]
               })}
             </ul>
           </div>
