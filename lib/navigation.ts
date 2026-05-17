@@ -17,6 +17,7 @@ import {
   Building2,
   FileText,
   Factory,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -30,6 +31,20 @@ export interface NavItem {
 
 export const NAVIGATION: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
+  {
+    name: 'AI Assistant',
+    icon: Sparkles,
+    moduleKey: 'dashboard',
+    subItems: [
+      { name: 'AI Overview', href: '/ai-assistant' },
+      { name: 'CRM Assistant', href: '/ai-assistant/crm' },
+      { name: 'Finance Assistant', href: '/ai-assistant/finance' },
+      { name: 'HR Assistant', href: '/ai-assistant/hr' },
+      { name: 'Inventory Assistant', href: '/ai-assistant/inventory' },
+      { name: 'Payroll Assistant', href: '/ai-assistant/payroll' },
+      { name: 'Sales Assistant', href: '/ai-assistant/sales' },
+    ],
+  },
   {
     name: 'Production',
     icon: Factory,
