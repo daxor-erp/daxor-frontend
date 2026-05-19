@@ -3,7 +3,6 @@
 import { Bell, CheckCheck, Inbox, X, AlertTriangle, ShoppingCart, Receipt, ClipboardCheck, TrendingUp, Sparkles, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useNotifications } from '@/hooks/use-notifications'
 import { cn } from '@/lib/utils'
 import type { NotificationItem } from '@/lib/notifications'
@@ -85,7 +84,7 @@ export function NotificationsDropdown() {
           </div>
         </div>
 
-        <ScrollArea className="max-h-[26rem]">
+        <div className="max-h-[26rem] overflow-y-auto overscroll-contain">
           {isLoading && items.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
           ) : items.length === 0 ? (
@@ -161,7 +160,7 @@ export function NotificationsDropdown() {
               })}
             </ul>
           )}
-        </ScrollArea>
+        </div>
 
         <div className="flex items-center justify-between border-t px-3 py-2">
           <Link href="/notifications" className="text-[11px] font-medium text-primary hover:underline">
