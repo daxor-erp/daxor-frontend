@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CalendarRange, Plus, CheckCircle2, XCircle, CheckCircle, User } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { GET_USERS } from '@/gql/queries'
+import { GET_EMPLOYEE_MASTERS } from '@/gql/queries'
 import {
   GET_LEAVE_TYPES,
   GET_LEAVE_APPLICATIONS,
@@ -58,9 +58,10 @@ export default function LeaveApplicationPage() {
     reason: '',
   })
 
-  const { data: usersData } = useQuery(GET_USERS, {
-    variables: { organizationId: orgId, page: 1, limit: 500 },
+  const { data: empData } = useQuery(GET_EMPLOYEE_MASTERS, {
+    variables: { organizationId: orgId },
     skip: !orgId,
+    fetchPolicy: 'network-only',
   })
   const { data: ltData } = useQuery(GET_LEAVE_TYPES, {
     variables: { organizationId: orgId, activeOnly: true },
@@ -113,17 +114,26 @@ export default function LeaveApplicationPage() {
     onError: (e) => setBanner({ ok: false, text: e.message }),
   })
 
-  const users = usersData?.usersByOrganization?.users ?? []
+  const employees = (empData?.employeeMasters ?? []) as Array<{
+    id: string
+    userId?: string | null
+    firstName: string
+    lastName: string
+    employeeCode: string
+  }>
   const leaveTypes = ltData?.leaveTypes ?? []
   const rows = data?.leaveApplications ?? []
 
+  // Map userId → "First Last (EMP-XXXX)" for display in the table
   const userMap = useMemo(() => {
     const m = new Map<string, string>()
-    users.forEach((u: { id: string; firstName: string; lastName: string }) => {
-      m.set(u.id, `${u.firstName} ${u.lastName}`.trim())
+    employees.forEach((e) => {
+      if (e.userId) m.set(String(e.userId), `${e.firstName} ${e.lastName} (${e.employeeCode})`.trim())
     })
     return m
-  }, [users])
+  }, [employees])
+  // Employees eligible to apply leave (must have a linked user account)
+  const eligibleEmployees = useMemo(() => employees.filter((e) => e.userId), [employees])
   const ltMap = useMemo(() => {
     const m = new Map<string, string>()
     leaveTypes.forEach((t: { id: string; code: string; name: string }) => m.set(t.id, `${t.code} — ${t.name}`))
@@ -294,13 +304,24 @@ export default function LeaveApplicationPage() {
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((u: { id: string; firstName: string; lastName: string }) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.firstName} {u.lastName}
+                  {eligibleEmployees.length === 0 ? (
+                    <SelectItem value="__none__" disabled>
+                      No employees with linked user account
                     </SelectItem>
-                  ))}
+                  ) : (
+                    eligibleEmployees.map((e) => (
+                      <SelectItem key={e.id} value={String(e.userId)}>
+                        {e.firstName} {e.lastName} ({e.employeeCode})
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+              {eligibleEmployees.length < employees.length ? (
+                <p className="text-xs text-amber-700 mt-1">
+                  {employees.length - eligibleEmployees.length} employee(s) hidden — no linked user account.
+                </p>
+              ) : null}
             </div>
             <div>
               <Label className="text-xs">Leave type</Label>

@@ -8,6 +8,7 @@ import {
   Shield,
   LayoutDashboard,
   Building2,
+  Building,
   Users,
   Activity,
   Settings,
@@ -41,6 +42,7 @@ import { NotificationsDropdown } from '@/components/notifications-dropdown'
 const nav = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/organizations', label: 'Organizations', icon: Building2 },
+  { href: '/admin/sub-tenants', label: 'Sub-tenants', icon: Building },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/notifications', label: 'Send notification', icon: Megaphone },
   { href: '/admin/audit-log', label: 'Audit log', icon: Activity },

@@ -13,6 +13,7 @@ import {
   GET_BANK_ACCOUNTS,
   CREATE_BANK_ACCOUNT,
 } from '@/gql/queries'
+import { formatMoney, formatMoneyCompact } from '@/lib/format-money'
 import {
   Wallet,
   TrendingUp,
@@ -237,7 +238,7 @@ export default function CashBankPage() {
           row.transactionType === 'payment' ? 'text-red-600' :
           'text-gray-700'
         }`}>
-          ₹{Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          {formatMoney(Number(v))}
         </span>
       ),
     },
@@ -345,8 +346,8 @@ export default function CashBankPage() {
           <div className="grid grid-cols-4 gap-3">
             {[
               { label: 'Total Transactions', value: transactions.length, icon: Wallet, cls: 'text-blue-600 bg-blue-50' },
-              { label: 'Total Receipts', value: `₹${totalReceipts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: TrendingUp, cls: 'text-green-600 bg-green-50' },
-              { label: 'Total Payments', value: `₹${totalPayments.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: TrendingDown, cls: 'text-red-600 bg-red-50' },
+              { label: 'Total Receipts', value: formatMoneyCompact(totalReceipts), icon: TrendingUp, cls: 'text-green-600 bg-green-50' },
+              { label: 'Total Payments', value: formatMoneyCompact(totalPayments), icon: TrendingDown, cls: 'text-red-600 bg-red-50' },
               { label: 'Bank Accounts', value: bankAccounts.length, icon: Building2, cls: 'text-purple-600 bg-purple-50' },
             ].map(({ label, value, icon: Icon, cls }) => (
               <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">

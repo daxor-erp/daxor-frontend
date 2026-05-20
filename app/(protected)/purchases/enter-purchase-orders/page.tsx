@@ -191,7 +191,7 @@ export default function EnterPurchaseOrdersPage() {
                     <CellInput type="number" min="0" step="0.01" value={l.price} onChange={e => setL(i, 'price', e.target.value)} placeholder="0.00" invalid={!!errors[`p${i}`]} />
                   </div>
                   <div className="border-r border-gray-200 px-2 py-1 flex items-center">
-                    <span className="text-xs font-medium text-gray-700">${((parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0)).toFixed(2)}</span>
+                    <span className="text-xs font-medium text-gray-700">{formatMoney((parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0))}</span>
                   </div>
                   <div className="flex items-center justify-center py-1">
                     {lines.length > 1 && (

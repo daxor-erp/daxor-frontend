@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { GET_CURRENCY_REVALUATIONS, CREATE_CURRENCY_REVALUATION, POST_CURRENCY_REVALUATION, DELETE_CURRENCY_REVALUATION } from '@/gql/queries'
 import { Trash2, X, Save, CheckCircle } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+import { formatMoney } from '@/lib/format-money'
 
 export default function RevalueCurrencyBalancesPage() {
   const { user } = useAuth()
@@ -68,7 +69,7 @@ export default function RevalueCurrencyBalancesPage() {
     { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
     { key: 'revaluationDate', label: 'Date', width: '110px', render: v => formatDate(v) },
     { key: 'baseCurrency', label: 'Base Currency', width: '120px' },
-    { key: 'totalGainLoss', label: 'Gain/Loss', width: '120px', render: v => <span className={v >= 0 ? 'text-green-600' : 'text-red-600'}>${v.toLocaleString()}</span> },
+    { key: 'totalGainLoss', label: 'Gain/Loss', width: '120px', render: v => <span className={v >= 0 ? 'text-green-600' : 'text-red-600'}>{formatMoney(v)}</span> },
     { key: 'status', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${statusColor[v]}`}>{v}</span> },
     { key: 'createdAt', label: 'Created', width: '110px', render: v => formatDate(v) },
   ]

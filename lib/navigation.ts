@@ -324,4 +324,12 @@ export const NAVIGATION: NavItem[] = [
       },
     ],
   },
+  {
+    name: 'Tenants',
+    icon: Building2,
+    moduleKey: 'dashboard',
+    subItems: [
+      { name: 'Sub-tenants', href: '/admin/sub-tenants' },
+    ],
+  },
 ]

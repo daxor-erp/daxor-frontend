@@ -18,7 +18,7 @@ import {
   Building2, CalendarDays, DollarSign, Hash, Info,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { formatMoney } from '@/lib/format-money'
+import { formatMoney, getCurrencySymbol } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
 
 const CREDIT_REASONS = [
@@ -295,7 +295,7 @@ export default function IssueCreditMemosPage() {
                     Credit Amount <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{getCurrencySymbol()}</span>
                     <Input
                       type="number"
                       min="0.01"
