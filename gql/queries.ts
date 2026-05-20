@@ -912,6 +912,7 @@ export const ME = gql`
       organizationId
       modulePermissions {
         moduleKey
+        submoduleKey
         canCreate
         canUpdate
         canDelete
@@ -999,6 +1000,7 @@ export const GET_USER = gql`
       organizationId
       modulePermissions {
         moduleKey
+        submoduleKey
         canCreate
         canUpdate
         canDelete
@@ -1015,6 +1017,7 @@ export const SET_USER_MODULE_PERMISSIONS = gql`
       id
       modulePermissions {
         moduleKey
+        submoduleKey
         canCreate
         canUpdate
         canDelete
@@ -1053,6 +1056,40 @@ export const DELETE_USER = gql`
     deleteUser(id: $id) {
       id
     }
+  }
+`
+
+export const GET_ROLES_BY_ORGANIZATION = gql`
+  query RolesByOrganization($organizationId: ID!) {
+    rolesByOrganization(organizationId: $organizationId) {
+      id
+      name
+      displayName
+      description
+      isSystemRole
+      organizationId
+      permissions {
+        resource
+        actions
+      }
+    }
+  }
+`
+
+export const CREATE_ROLE = gql`
+  mutation CreateRole($input: CreateRoleInput!) {
+    createRole(input: $input) {
+      id
+      name
+      displayName
+      isSystemRole
+    }
+  }
+`
+
+export const DELETE_ROLE = gql`
+  mutation DeleteRole($id: ID!) {
+    deleteRole(id: $id)
   }
 `
 

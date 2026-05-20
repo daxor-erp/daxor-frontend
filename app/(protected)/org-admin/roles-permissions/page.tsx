@@ -4,67 +4,87 @@ import Link from 'next/link'
 import { useMutation, useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { GET_USERS, GET_USER, SET_USER_MODULE_PERMISSIONS } from '@/gql/queries'
-import { ERP_MODULE_DEFINITIONS, type ModulePermissionRow } from '@/lib/erp-module-access'
-import { useEffect, useMemo, useState } from 'react'
+import type { ModulePermissionRow } from '@/contexts/AuthContext'
+import { getPermissionModuleGroups, type ErpPermissionModuleGroup } from '@/lib/erp-submodule-keys'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { ArrowLeft } from 'lucide-react'
+import { ModulePermissionCard } from '@/components/org-admin/permissions/ModulePermissionCard'
+import { UserPermissionSelector } from '@/components/org-admin/permissions/RoleSelector'
+import type { SubmoduleCell } from '@/components/org-admin/permissions/permission-types'
+import { permKey } from '@/components/org-admin/permissions/permission-types'
 
-function mergeRowsFromApi(apiRows: ModulePermissionRow[] | undefined): ModulePermissionRow[] {
-  const map = new Map(apiRows?.map((r) => [r.moduleKey, r]) ?? [])
-  return ERP_MODULE_DEFINITIONS.map((def) => {
-    const r = map.get(def.key)
-    if (!r) {
-      return {
-        moduleKey: def.key,
-        canCreate: true,
-        canUpdate: true,
-        canDelete: true,
-        canView: true,
-      }
-    }
-    return {
-      moduleKey: def.key,
-      canCreate: !!r.canCreate,
-      canUpdate: !!r.canUpdate,
-      canDelete: !!r.canDelete,
-      canView: !!r.canView,
-    }
-  })
+const FULL: SubmoduleCell = {
+  canCreate: true,
+  canUpdate: true,
+  canDelete: true,
+  canView: true,
 }
 
-function isFullyOpen(rows: ModulePermissionRow[]): boolean {
-  return rows.every((r) => r.canCreate && r.canUpdate && r.canDelete && r.canView)
+function buildDefaultFull(groups: ErpPermissionModuleGroup[]): Record<string, SubmoduleCell> {
+  const o: Record<string, SubmoduleCell> = {}
+  for (const g of groups) {
+    for (const s of g.submodules) {
+      o[permKey(g.moduleKey, s.submoduleKey)] = { ...FULL }
+    }
+  }
+  return o
+}
+
+function mergeApiIntoState(
+  apiRows: ModulePermissionRow[] | undefined,
+  groups: ErpPermissionModuleGroup[],
+): Record<string, SubmoduleCell> {
+  const base = buildDefaultFull(groups)
+  if (!apiRows?.length) return base
+  const hasGranular = apiRows.some((r) => r.submoduleKey)
+  if (!hasGranular) {
+    const byMod = new Map(
+      apiRows.filter((r) => !r.submoduleKey).map((r) => [r.moduleKey, r]),
+    )
+    for (const g of groups) {
+      const m = byMod.get(g.moduleKey)
+      if (!m) continue
+      for (const s of g.submodules) {
+        const k = permKey(g.moduleKey, s.submoduleKey)
+        base[k] = {
+          canCreate: !!m.canCreate,
+          canUpdate: !!m.canUpdate,
+          canDelete: !!m.canDelete,
+          canView: !!m.canView,
+        }
+      }
+    }
+    return base
+  }
+  const byKey = new Map(
+    apiRows
+      .filter((r) => r.submoduleKey)
+      .map((r) => [permKey(r.moduleKey, String(r.submoduleKey)), r]),
+  )
+  for (const g of groups) {
+    for (const s of g.submodules) {
+      const k = permKey(g.moduleKey, s.submoduleKey)
+      const r = byKey.get(k)
+      if (r) {
+        base[k] = {
+          canCreate: !!r.canCreate,
+          canUpdate: !!r.canUpdate,
+          canDelete: !!r.canDelete,
+          canView: !!r.canView,
+        }
+      }
+    }
+  }
+  return base
 }
 
 export default function OrgAdminRolesPermissionsPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId ?? ''
-  const [selectedUserId, setSelectedUserId] = useState<string>('')
-  const [rows, setRows] = useState<ModulePermissionRow[]>(() =>
-    ERP_MODULE_DEFINITIONS.map((d) => ({
-      moduleKey: d.key,
-      canCreate: true,
-      canUpdate: true,
-      canDelete: true,
-      canView: true,
-    })),
-  )
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const groups = useMemo(() => getPermissionModuleGroups(new Set(['dashboard'])), [])
+  const [matrix, setMatrix] = useState<Record<string, SubmoduleCell>>(() => buildDefaultFull(groups))
   const [banner, setBanner] = useState<{ ok: boolean; text: string } | null>(null)
 
   const { data: usersData, loading: usersLoading } = useQuery(GET_USERS, {
@@ -91,164 +111,140 @@ export default function OrgAdminRolesPermissionsPage() {
   )
 
   useEffect(() => {
-    if (!selectedUserId) return
-    const apiRows = userDetail?.user?.modulePermissions as ModulePermissionRow[] | undefined
-    if (!apiRows?.length) {
-      setRows(mergeRowsFromApi(undefined))
-    } else {
-      setRows(mergeRowsFromApi(apiRows))
+    if (!selectedUserId) {
+      setMatrix(buildDefaultFull(groups))
+      return
     }
-  }, [selectedUserId, userDetail?.user])
+    const apiRows = userDetail?.user?.modulePermissions as ModulePermissionRow[] | undefined
+    setMatrix(mergeApiIntoState(apiRows, groups))
+  }, [selectedUserId, userDetail?.user, groups])
+
+  const setCell = useCallback((moduleKey: string, submoduleKey: string, next: SubmoduleCell) => {
+    const k = permKey(moduleKey, submoduleKey)
+    setMatrix((prev) => ({ ...prev, [k]: next }))
+  }, [])
+
+  const selectAllModule = useCallback(
+    (moduleKey: string, value: boolean) => {
+      const g = groups.find((x) => x.moduleKey === moduleKey)
+      if (!g) return
+      const fix: SubmoduleCell = value
+        ? { ...FULL }
+        : { canCreate: false, canUpdate: false, canDelete: false, canView: false }
+      setMatrix((prev) => {
+        const n = { ...prev }
+        for (const s of g.submodules) {
+          n[permKey(moduleKey, s.submoduleKey)] = { ...fix }
+        }
+        return n
+      })
+    },
+    [groups],
+  )
 
   const [savePermissions, { loading: saving }] = useMutation(SET_USER_MODULE_PERMISSIONS, {
     onCompleted: () => {
-      setBanner({ ok: true, text: 'Permissions saved.' })
-      setTimeout(() => setBanner(null), 4000)
+      setBanner({ ok: true, text: 'Permissions saved. Navigation and API access update on next sync.' })
+      setTimeout(() => setBanner(null), 5000)
     },
     onError: (e) => setBanner({ ok: false, text: e.message }),
   })
 
-  const updateCell = (
-    moduleKey: string,
-    field: keyof Pick<ModulePermissionRow, 'canCreate' | 'canUpdate' | 'canDelete' | 'canView'>,
-    value: boolean,
-  ) => {
-    setRows((prev) =>
-      prev.map((row) => {
-        if (row.moduleKey !== moduleKey) return row
-        let next = { ...row, [field]: value }
-        if (field === 'canView' && !value) {
-          next = { ...next, canCreate: false, canUpdate: false, canDelete: false }
-        }
-        if (field !== 'canView' && value) {
-          next = { ...next, canView: true }
-        }
-        return next
-      }),
-    )
-  }
-
   const handleSave = () => {
     if (!selectedUserId) return
-    const payload = isFullyOpen(rows) ? [] : rows
-    void savePermissions({ variables: { userId: selectedUserId, permissions: payload } })
+    const permissions = groups.flatMap((g) =>
+      g.submodules.map((s) => {
+        const c = matrix[permKey(g.moduleKey, s.submoduleKey)] ?? FULL
+        return {
+          moduleKey: g.moduleKey,
+          submoduleKey: s.submoduleKey,
+          canCreate: c.canCreate,
+          canUpdate: c.canUpdate,
+          canDelete: c.canDelete,
+          canView: c.canView,
+        }
+      }),
+    )
+    void savePermissions({ variables: { userId: selectedUserId, permissions } })
   }
 
   const loadingDetail = detailLoading && !!selectedUserId
 
+  if (!orgId) {
+    return (
+      <div className="p-8 text-slate-400 text-sm">No organization on this account.</div>
+    )
+  }
+
   return (
-    <div className="max-w-6xl mx-auto p-6 md:p-8 space-y-6">
-      <div className="flex items-start gap-4">
-        <Button variant="ghost" size="sm" asChild className="mt-0.5 shrink-0">
-          <Link href="/org-admin/dashboard" className="gap-1 inline-flex items-center">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Roles & permissions</h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Select a user from your organization, then set per-module access. View-only prevents create, update, and
-            delete. Turning on create, update, or delete automatically enables view for that module.
-          </p>
-        </div>
-      </div>
-
-      {banner ? (
-        <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
-            banner.ok ? 'border-teal-200 bg-teal-50 text-teal-900' : 'border-red-200 bg-red-50 text-red-800'
-          }`}
-        >
-          {banner.text}
-        </div>
-      ) : null}
-
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-wrap items-end gap-4">
-          <div className="min-w-[240px] flex-1 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">User</p>
-            <Select
-              value={selectedUserId || undefined}
-              onValueChange={(v) => setSelectedUserId(v)}
-              disabled={usersLoading || !orgId}
+    <div className="min-h-full bg-slate-950 text-slate-100">
+      <div className="max-w-6xl mx-auto p-6 md:p-8 space-y-6">
+        <div className="flex flex-wrap items-start gap-4 justify-between">
+          <div>
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="gap-1 -ml-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800"
             >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={usersLoading ? 'Loading users…' : 'Select a user'} />
-              </SelectTrigger>
-              <SelectContent>
-                {selectableUsers.map((u: { id: string; email: string; firstName: string; lastName: string }) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.firstName} {u.lastName} ({u.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Link href="/org-admin/dashboard">
+                <ArrowLeft className="h-4 w-4" />
+                Dashboard
+              </Link>
+            </Button>
+            <h1 className="text-xl font-bold text-slate-50 mt-1 tracking-tight">Roles &amp; permissions</h1>
+            <p className="text-sm text-slate-400 mt-1 max-w-2xl">
+              Module → submodule → action matrix. View gates sidebar and read APIs; create / update / delete gate
+              write operations. Disabled View hides the menu item and blocks deep links for that submodule.
+            </p>
           </div>
-          <Button
-            type="button"
-            className="bg-teal-600 hover:bg-teal-700"
-            disabled={!selectedUserId || saving || loadingDetail}
-            onClick={handleSave}
-          >
-            {saving ? 'Saving…' : 'Save permissions'}
-          </Button>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50">
-              <TableHead className="w-[220px] font-semibold">Module</TableHead>
-              <TableHead className="text-center font-semibold">Create</TableHead>
-              <TableHead className="text-center font-semibold">Update</TableHead>
-              <TableHead className="text-center font-semibold">Delete</TableHead>
-              <TableHead className="text-center font-semibold">View</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {ERP_MODULE_DEFINITIONS.map((def) => {
-              const row = rows.find((r) => r.moduleKey === def.key)
-              if (!row) return null
-              return (
-                <TableRow key={def.key}>
-                  <TableCell className="font-medium text-slate-900">{def.label}</TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={row.canCreate}
-                      disabled={!selectedUserId || loadingDetail || !row.canView}
-                      onCheckedChange={(v) => updateCell(def.key, 'canCreate', v === true)}
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={row.canUpdate}
-                      disabled={!selectedUserId || loadingDetail || !row.canView}
-                      onCheckedChange={(v) => updateCell(def.key, 'canUpdate', v === true)}
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={row.canDelete}
-                      disabled={!selectedUserId || loadingDetail || !row.canView}
-                      onCheckedChange={(v) => updateCell(def.key, 'canDelete', v === true)}
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={row.canView}
-                      disabled={!selectedUserId || loadingDetail}
-                      onCheckedChange={(v) => updateCell(def.key, 'canView', v === true)}
-                    />
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-
-        {!selectedUserId ? (
-          <p className="text-sm text-slate-500 px-4 py-6 border-t border-slate-100">Select a user to edit permissions.</p>
+        {banner ? (
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm ${
+              banner.ok
+                ? 'border-emerald-800/80 bg-emerald-950/50 text-emerald-200'
+                : 'border-red-800/80 bg-red-950/40 text-red-200'
+            }`}
+          >
+            {banner.text}
+          </div>
         ) : null}
+
+        <div className="rounded-xl border border-slate-700/80 bg-slate-900/50 p-4 space-y-4">
+          <UserPermissionSelector
+            users={selectableUsers}
+            value={selectedUserId}
+            onChange={setSelectedUserId}
+            loading={usersLoading}
+          />
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              disabled={!selectedUserId || saving || loadingDetail}
+              onClick={handleSave}
+              className="bg-teal-600 hover:bg-teal-500 text-white"
+            >
+              {saving ? 'Saving…' : 'Save permissions'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {groups.map((g, idx) => (
+            <ModulePermissionCard
+              key={g.moduleKey}
+              moduleLabel={g.label}
+              moduleKey={g.moduleKey}
+              submodules={g.submodules}
+              defaultOpen={idx < 2}
+              state={matrix}
+              onChangeRow={(sk, next) => setCell(g.moduleKey, sk, next)}
+              onSelectAllModule={(v) => selectAllModule(g.moduleKey, v)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )
