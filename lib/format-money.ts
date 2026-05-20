@@ -1,43 +1,84 @@
 /**
- * Currency formatting helpers. App-wide default is INR (₹) using the en-IN locale,
- * which formats large numbers in the Indian numbering system (lakhs/crores).
+ * Currency formatting helpers. Active currency comes from user preferences
+ * (`localStorage['daxor:preferences'].currency`). Defaults to INR.
  */
 
-export const APP_CURRENCY = 'INR' as const
-export const APP_LOCALE = 'en-IN' as const
+export type CurrencyCode = 'INR' | 'USD' | 'SGD' | 'MYR'
 
-/** Formats a number as INR currency, e.g. 1,23,456.78 → ₹1,23,456.78 */
+interface CurrencyMeta {
+  code: CurrencyCode
+  symbol: string
+  locale: string
+  compact: 'INDIAN' | 'WESTERN'
+}
+
+const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
+  INR: { code: 'INR', symbol: '₹', locale: 'en-IN', compact: 'INDIAN' },
+  USD: { code: 'USD', symbol: '$', locale: 'en-US', compact: 'WESTERN' },
+  SGD: { code: 'SGD', symbol: 'S$', locale: 'en-SG', compact: 'WESTERN' },
+  MYR: { code: 'MYR', symbol: 'RM', locale: 'en-MY', compact: 'WESTERN' },
+}
+
+const PREFS_KEY = 'daxor:preferences'
+const DEFAULT_CURRENCY: CurrencyCode = 'INR'
+
+export function getActiveCurrency(): CurrencyMeta {
+  if (typeof window === 'undefined') return CURRENCY_META[DEFAULT_CURRENCY]
+  try {
+    const raw = window.localStorage.getItem(PREFS_KEY)
+    const code = raw ? (JSON.parse(raw) as { currency?: string }).currency : undefined
+    if (code && code in CURRENCY_META) return CURRENCY_META[code as CurrencyCode]
+  } catch { /* fall through */ }
+  return CURRENCY_META[DEFAULT_CURRENCY]
+}
+
+export const APP_CURRENCY: CurrencyCode = DEFAULT_CURRENCY
+export const APP_LOCALE = CURRENCY_META[DEFAULT_CURRENCY].locale
+
+/** Formats a number using the active currency. */
 export function formatMoney(n: number | null | undefined, opts?: Intl.NumberFormatOptions): string {
   const value = Number.isFinite(Number(n)) ? Number(n) : 0
-  return new Intl.NumberFormat(APP_LOCALE, {
+  const m = getActiveCurrency()
+  return new Intl.NumberFormat(m.locale, {
     style: 'currency',
-    currency: APP_CURRENCY,
+    currency: m.code,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
     ...opts,
   }).format(value)
 }
 
-/** Compact currency formatter for KPI tiles. Examples: ₹1.2L, ₹3.4Cr. */
+/** Compact currency formatter for KPI tiles. INR → L/Cr, others → K/M/B. */
 export function formatMoneyCompact(n: number | null | undefined): string {
   const value = Number.isFinite(Number(n)) ? Number(n) : 0
+  const m = getActiveCurrency()
   const abs = Math.abs(value)
-  if (abs >= 1_00_00_000) return `₹${(value / 1_00_00_000).toFixed(2).replace(/\.?0+$/, '')}Cr`
-  if (abs >= 1_00_000) return `₹${(value / 1_00_000).toFixed(2).replace(/\.?0+$/, '')}L`
-  if (abs >= 1_000) return `₹${(value / 1_000).toFixed(1).replace(/\.?0+$/, '')}K`
-  return `₹${value.toFixed(0)}`
+  if (m.compact === 'INDIAN') {
+    if (abs >= 1_00_00_000) return `${m.symbol}${(value / 1_00_00_000).toFixed(2).replace(/\.?0+$/, '')}Cr`
+    if (abs >= 1_00_000) return `${m.symbol}${(value / 1_00_000).toFixed(2).replace(/\.?0+$/, '')}L`
+    if (abs >= 1_000) return `${m.symbol}${(value / 1_000).toFixed(1).replace(/\.?0+$/, '')}K`
+    return `${m.symbol}${value.toFixed(0)}`
+  }
+  if (abs >= 1_000_000_000) return `${m.symbol}${(value / 1_000_000_000).toFixed(2).replace(/\.?0+$/, '')}B`
+  if (abs >= 1_000_000) return `${m.symbol}${(value / 1_000_000).toFixed(2).replace(/\.?0+$/, '')}M`
+  if (abs >= 1_000) return `${m.symbol}${(value / 1_000).toFixed(1).replace(/\.?0+$/, '')}K`
+  return `${m.symbol}${value.toFixed(0)}`
 }
 
-/** Plain numeric formatter using en-IN grouping (1,23,456). */
+/** Plain numeric formatter using the active locale grouping. */
 export function formatNumber(n: number | null | undefined, opts?: Intl.NumberFormatOptions): string {
   const value = Number.isFinite(Number(n)) ? Number(n) : 0
-  return new Intl.NumberFormat(APP_LOCALE, opts).format(value)
+  return new Intl.NumberFormat(getActiveCurrency().locale, opts).format(value)
 }
 
-/** Bare number (no currency symbol, 2 decimals) — kept for back-compat. */
 export function formatAmount(n: number | null | undefined): string {
   const value = Number.isFinite(Number(n)) ? Number(n) : 0
-  return value.toLocaleString(APP_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return value.toLocaleString(getActiveCurrency().locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+export function getCurrencySymbol(): string {
+  return getActiveCurrency().symbol
+}
+
+/** @deprecated kept for back-compat — use getCurrencySymbol() instead. */
 export const CURRENCY_SYMBOL = '₹'

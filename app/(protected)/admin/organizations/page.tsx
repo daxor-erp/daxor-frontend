@@ -50,6 +50,8 @@ interface OrgRow {
   email?: string | null
   phone?: string | null
   status: string
+  parentOrganizationId?: string | null
+  allowSubTenants?: boolean
   createdAt: string
 }
 
@@ -330,9 +332,9 @@ function EditOrgDialog({
   org: OrgRow | null
   saving: boolean
   onClose: () => void
-  onSave: (input: { name?: string; email?: string; phone?: string; status?: string; address?: string }) => void
+  onSave: (input: { name?: string; email?: string; phone?: string; status?: string; address?: string; allowSubTenants?: boolean }) => void
 }) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', status: 'ACTIVE', address: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', status: 'ACTIVE', address: '', allowSubTenants: false })
 
   // Sync form when org changes
   if (org && form.name !== org.name && !saving) {
@@ -344,6 +346,7 @@ function EditOrgDialog({
         phone: org.phone ?? '',
         status: String(org.status || 'ACTIVE').toUpperCase(),
         address: '',
+        allowSubTenants: Boolean(org.allowSubTenants),
       }),
     )
   }
@@ -383,12 +386,27 @@ function EditOrgDialog({
               <option value="INACTIVE">Inactive</option>
             </select>
           </div>
+          <label className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer bg-secondary/30 hover:bg-secondary/50">
+            <input
+              type="checkbox"
+              checked={form.allowSubTenants}
+              onChange={(e) => setForm((f) => ({ ...f, allowSubTenants: e.target.checked }))}
+              className="mt-0.5 h-4 w-4 rounded border-border"
+            />
+            <div>
+              <p className="text-sm font-medium">Allow multi-tenant (sub-tenants)</p>
+              <p className="text-xs text-muted-foreground">
+                When enabled, this organization's ORG_ADMIN can create child tenant organizations
+                from <code>/admin/sub-tenants</code>.
+              </p>
+            </div>
+          </label>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button
             disabled={saving}
-            onClick={() => onSave({ name: form.name, email: form.email, phone: form.phone, status: form.status })}
+            onClick={() => onSave({ name: form.name, email: form.email, phone: form.phone, status: form.status, allowSubTenants: form.allowSubTenants })}
             className="bg-grad-brand text-white border-none"
           >
             {saving ? 'Saving…' : 'Save changes'}

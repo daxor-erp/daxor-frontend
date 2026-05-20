@@ -332,7 +332,7 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
   const orgName = orgData?.organization?.name as string | undefined
 
   return (
-    <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+    <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="flex h-16 items-center gap-2 px-3 sm:px-4 lg:px-6">
         {/* Mobile menu — visible on <lg in sidebar mode, <md in navbar mode */}
         {onMenuClick && !hideMobileMenu && (
@@ -366,7 +366,7 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
         </div>
 
         {/* Search */}
-        <div className="flex-1 flex justify-center max-w-xl mx-auto px-2">
+        <div className="flex-1 min-w-0 flex justify-center max-w-xl mx-auto px-2">
           <GlobalSearch />
         </div>
 

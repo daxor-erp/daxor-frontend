@@ -6,6 +6,7 @@ import { GET_PRODUCTION_PLANNINGS } from '@/gql/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Activity, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+import { formatMoney } from '@/lib/format-money'
 
 export default function StatusAllModulesPage() {
   const { user } = useAuth()
@@ -98,7 +99,7 @@ export default function StatusAllModulesPage() {
                   </div>
                   <div>
                     <p className="text-gray-400">Budget</p>
-                    <p className="font-semibold">${(plan.budget || 0).toLocaleString()}</p>
+                    <p className="font-semibold">{formatMoney(plan.budget || 0)}</p>
                   </div>
                 </div>
               </div>

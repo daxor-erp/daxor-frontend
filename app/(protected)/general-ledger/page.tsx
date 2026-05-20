@@ -7,6 +7,7 @@ import { DataTable, Column } from '@/components/DataTable'
 import { useRouter } from 'next/navigation'
 import { DollarSign, BookOpen, Calendar } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+import { formatMoney } from '@/lib/format-money'
 
 export default function GeneralLedgerPage() {
   const { user } = useAuth()
@@ -37,7 +38,7 @@ export default function GeneralLedgerPage() {
     { key: 'transactionType', label: 'Type', width: '120px', render: v => <span className="text-xs capitalize">{v}</span> },
     { key: 'debitAccount', label: 'Debit Account', render: v => <span className="text-xs">{v}</span> },
     { key: 'creditAccount', label: 'Credit Account', render: v => <span className="text-xs">{v}</span> },
-    { key: 'amount', label: 'Amount', width: '120px', render: v => `$${v.toLocaleString()}` },
+    { key: 'amount', label: 'Amount', width: '120px', render: v => formatMoney(v) },
     { key: 'status', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${statusColor[v] || 'bg-gray-100 text-gray-700'}`}>{v}</span> },
   ]
 

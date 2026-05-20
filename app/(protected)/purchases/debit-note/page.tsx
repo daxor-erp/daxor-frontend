@@ -7,7 +7,7 @@ import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
 import { FileText, X, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { formatMoney } from '@/lib/format-money'
+import { formatMoney, getCurrencySymbol } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
 
 const cell = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 h-7 w-full rounded-sm'
@@ -115,7 +115,7 @@ export default function DebitNotePage() {
                   Debit Amount *{errors.amount ? ` — ${errors.amount}` : ''}
                 </p>
                 <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">{getCurrencySymbol()}</span>
                   <input type="number" min="0" step="0.01" value={form.amount} onChange={e => setF('amount', e.target.value)}
                     placeholder="0.00" className={`${errors.amount ? cellErr : cell} pl-5`} />
                 </div>
