@@ -6,6 +6,7 @@ import { GET_PRODUCTION_PLANNINGS, GET_PROJECTS } from '@/gql/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart3, TrendingUp, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+import { formatMoney, formatMoneyCompact } from '@/lib/format-money'
 
 export default function ReportsAnalyticsPage() {
   const { user } = useAuth()
@@ -64,8 +65,8 @@ export default function ReportsAnalyticsPage() {
       {/* Key Metrics */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Total Budget', value: `$${totalBudget.toLocaleString()}`, icon: DollarSign, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Actual Cost', value: `$${totalActualCost.toLocaleString()}`, icon: TrendingUp, cls: 'text-green-600 bg-green-50' },
+          { label: 'Total Budget', value: formatMoneyCompact(totalBudget), icon: DollarSign, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Actual Cost', value: formatMoneyCompact(totalActualCost), icon: TrendingUp, cls: 'text-green-600 bg-green-50' },
           { label: 'Budget Variance', value: `${budgetVariance > 0 ? '+' : ''}${budgetVariance}%`, icon: BarChart3, cls: budgetVariance > 0 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50' },
           { label: 'Avg Progress', value: `${avgProgress}%`, icon: CheckCircle, cls: 'text-purple-600 bg-purple-50' },
         ].map(({ label, value, icon: Icon, cls }) => (
@@ -209,8 +210,8 @@ export default function ReportsAnalyticsPage() {
                       <td className="p-2 font-mono">{plan.docNumber}</td>
                       <td className="p-2">{formatDate(plan.docDate)}</td>
                       <td className="p-2">{plan.progress || 0}%</td>
-                      <td className="p-2">${(plan.budget || 0).toLocaleString()}</td>
-                      <td className="p-2">${(plan.actualCost || 0).toLocaleString()}</td>
+                      <td className="p-2">{formatMoney(plan.budget || 0)}</td>
+                      <td className="p-2">{formatMoney(plan.actualCost || 0)}</td>
                       <td className="p-2"><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">{plan.status}</span></td>
                     </tr>
                   ))}

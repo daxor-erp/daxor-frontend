@@ -23,6 +23,7 @@ import {
   GET_USERS,
 } from '@/gql/queries'
 import { Trash2, Edit, X, Save, TrendingUp, Eye } from 'lucide-react'
+import { formatMoney } from '@/lib/format-money'
 import { useRouter } from 'next/navigation'
 
 const EMPTY_FORM = {
@@ -171,7 +172,7 @@ export default function LeadManagementPage() {
     { key: 'phone', label: 'Phone', width: '120px' },
     { key: 'status', label: 'Status', width: '110px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${statusColor[v]}`}>{v}</span> },
     { key: 'rating', label: 'Rating', width: '80px', render: v => v ? <span className={`px-2 py-0.5 rounded text-xs ${ratingColor[v]}`}>{v}</span> : '—' },
-    { key: 'estimatedValue', label: 'Value', width: '100px', render: v => v ? `$${v.toLocaleString()}` : '—' },
+    { key: 'estimatedValue', label: 'Value', width: '120px', render: v => v ? formatMoney(v) : '—' },
   ]
 
   return (
@@ -298,7 +299,7 @@ export default function LeadManagementPage() {
                 <p className="text-sm font-medium">{convertModal.lead.firstName} {convertModal.lead.lastName}</p>
                 {convertModal.lead.company && <p className="text-xs text-gray-600">{convertModal.lead.company}</p>}
                 {convertModal.lead.email && <p className="text-xs text-gray-600">{convertModal.lead.email}</p>}
-                {convertModal.lead.estimatedValue && <p className="text-xs text-gray-600">Value: ${convertModal.lead.estimatedValue.toLocaleString()}</p>}
+                {convertModal.lead.estimatedValue && <p className="text-xs text-gray-600">Value: {formatMoney(convertModal.lead.estimatedValue)}</p>}
               </div>
               <p className="text-xs text-gray-500">
                 This will create a new opportunity and mark the lead as converted.

@@ -8,6 +8,7 @@ import {
   Package, DollarSign, FileText, CreditCard, BarChart2, AlertCircle,
 } from 'lucide-react'
 import type { WorkflowNode, WorkflowEdge } from '@/components/workflow/WorkflowGraph'
+import { formatMoneyCompact } from '@/lib/format-money'
 
 const WorkflowGraph = dynamic(
   () => import('@/components/workflow/WorkflowGraph').then((m) => ({ default: m.WorkflowGraph })),
@@ -87,7 +88,7 @@ function StatCard({ k, v }: { k: string; v: number }) {
   const isMoney = k.includes('amount') || k.includes('value')
   const isAlert = k === 'outstanding_amount'
   const label = STAT_LABELS[k] ?? k.replace(/_/g, ' ')
-  const display = isMoney ? `$${v.toLocaleString()}` : v.toLocaleString()
+  const display = isMoney ? formatMoneyCompact(v) : v.toLocaleString()
 
   return (
     <div className={`rounded-lg border p-3 flex items-center gap-3 shadow-sm ${

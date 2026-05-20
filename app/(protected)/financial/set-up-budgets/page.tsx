@@ -122,7 +122,7 @@ export default function SetUpBudgetsPage() {
     { key: 'fiscalYear', label: 'Fiscal Year', width: '110px' },
     { key: 'startDate', label: 'Start Date', width: '110px', render: v => formatDate(v) },
     { key: 'endDate', label: 'End Date', width: '110px', render: v => formatDate(v) },
-    { key: 'totalAmount', label: 'Total Amount', width: '120px', render: v => `$${v.toLocaleString()}` },
+    { key: 'totalAmount', label: 'Total Amount', width: '120px', render: v => formatMoney(v) },
     { key: 'status', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${statusColor[v]}`}>{v}</span> },
   ]
 

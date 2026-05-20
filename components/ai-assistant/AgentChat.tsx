@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, ReactNode } from 'react'
 import { Send, Bot, User, Loader2, Sparkles, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { formatMoney } from '@/lib/format-money'
 
 /**
  * PaginatedTable — renders a markdown table with:
@@ -94,6 +95,11 @@ const NUMERIC_KEYS = new Set([
   'amount', 'price', 'qty', 'lineTotal', 'unitPrice',
 ])
 
+const MONEY_KEYS = new Set([
+  'totalAmount', 'subtotal', 'taxAmount', 'paidAmount', 'outstandingAmount',
+  'amount', 'price', 'lineTotal', 'unitPrice',
+])
+
 function StatusPill({ value }: { value: string }) {
   const v = String(value || '').toUpperCase()
   const color =
@@ -128,6 +134,9 @@ function VisualizationTable({ viz, colorHex }: { viz: VizTable; colorHex: string
     const v = row[col.key]
     if (v == null || v === '') return <span className="text-gray-300">—</span>
     if (col.key === 'stock_status' || col.key === 'status') return <StatusPill value={v} />
+    if (MONEY_KEYS.has(col.key) && typeof v === 'number') {
+      return <span className="tabular-nums">{formatMoney(v)}</span>
+    }
     if (NUMERIC_KEYS.has(col.key) && typeof v === 'number') {
       return <span className="tabular-nums">{v.toLocaleString()}</span>
     }

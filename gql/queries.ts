@@ -301,6 +301,7 @@ export const GET_EMPLOYEE_MASTERS = gql`
   query GetEmployeeMasters($organizationId: ID!, $status: String, $department: String, $search: String) {
     employeeMasters(organizationId: $organizationId, status: $status, department: $department, search: $search) {
       id
+      userId
       employeeCode
       firstName
       lastName
@@ -1044,6 +1045,7 @@ export const UPDATE_USER = gql`
       firstName
       lastName
       status
+      currency
     }
   }
 `
@@ -1068,6 +1070,8 @@ export const GET_ORGANIZATIONS = gql`
       phone
       email
       status
+      parentOrganizationId
+      allowSubTenants
       createdAt
     }
   }
@@ -1084,6 +1088,8 @@ export const GET_ORGANIZATION = gql`
       phone
       email
       status
+      parentOrganizationId
+      allowSubTenants
       moduleApprovers {
         moduleKey
         approverUserId
@@ -4745,5 +4751,238 @@ export const POST_CURRENCY_REVALUATION = gql`
 export const DELETE_CURRENCY_REVALUATION = gql`
   mutation DeleteCurrencyRevaluation($id: ID!) {
     deleteCurrencyRevaluation(id: $id)
+  }
+`
+
+// Payslip / Payroll calculation engine
+export const COMPUTE_PAYROLL_RUN = gql`
+  mutation ComputePayrollRun($payrollRunId: ID!) {
+    computePayrollRun(payrollRunId: $payrollRunId) {
+      id
+      employeeCode
+      employeeName
+      grossEarnings
+      totalDeductions
+      netPay
+      paidDays
+      lopDays
+    }
+  }
+`
+
+export const GET_PAYSLIPS_BY_RUN = gql`
+  query GetPayslipsByRun($payrollRunId: String!) {
+    payslipsByRun(payrollRunId: $payrollRunId) {
+      id
+      employeeCode
+      employeeName
+      payPeriodStart
+      payPeriodEnd
+      workingDays
+      paidDays
+      lopDays
+      grossEarnings
+      totalDeductions
+      pfEmployee
+      esiEmployee
+      tds
+      netPay
+      status
+      earnings {
+        code
+        name
+        amount
+      }
+      deductions {
+        code
+        name
+        amount
+      }
+    }
+  }
+`
+
+export const GET_PAYSLIPS_BY_EMPLOYEE = gql`
+  query GetPayslipsByEmployee($employeeId: String!) {
+    payslipsByEmployee(employeeId: $employeeId) {
+      id
+      payPeriodStart
+      payPeriodEnd
+      grossEarnings
+      totalDeductions
+      netPay
+      status
+    }
+  }
+`
+
+// Employee Salary Structure
+export const GET_EMPLOYEE_SALARY_STRUCTURES = gql`
+  query GetEmployeeSalaryStructures($organizationId: String!) {
+    employeeSalaryStructures(organizationId: $organizationId) {
+      id
+      employeeId
+      effectiveFrom
+      effectiveTo
+      ctcAnnual
+      basicMonthly
+      status
+      components {
+        payComponentId
+        amount
+      }
+      statutory {
+        pfOptIn
+        pfRate
+        pfWageCeiling
+        esiOptIn
+        tdsRegime
+        oldRegimeDeductions
+        tdsMonthlyOverride
+      }
+    }
+  }
+`
+
+export const CREATE_EMPLOYEE_SALARY_STRUCTURE = gql`
+  mutation CreateEmployeeSalaryStructure($input: EmployeeSalaryStructureInput!) {
+    createEmployeeSalaryStructure(input: $input) {
+      id
+      employeeId
+      basicMonthly
+    }
+  }
+`
+
+export const UPDATE_EMPLOYEE_SALARY_STRUCTURE = gql`
+  mutation UpdateEmployeeSalaryStructure($id: ID!, $input: EmployeeSalaryStructureInput!) {
+    updateEmployeeSalaryStructure(id: $id, input: $input) {
+      id
+      basicMonthly
+    }
+  }
+`
+
+export const DELETE_EMPLOYEE_SALARY_STRUCTURE = gql`
+  mutation DeleteEmployeeSalaryStructure($id: ID!) {
+    deleteEmployeeSalaryStructure(id: $id)
+  }
+`
+
+// Onboarding
+export const GET_ONBOARDINGS = gql`
+  query GetOnboardings($organizationId: String!) {
+    onboardings(organizationId: $organizationId) {
+      id
+      employeeId
+      startedAt
+      expectedCompletionDate
+      completedAt
+      status
+      tasks {
+        title
+        done
+        doneAt
+        notes
+      }
+    }
+  }
+`
+export const CREATE_ONBOARDING = gql`
+  mutation CreateOnboarding($input: OnboardingInput!) {
+    createOnboarding(input: $input) {
+      id
+      employeeId
+    }
+  }
+`
+export const TOGGLE_ONBOARDING_TASK = gql`
+  mutation ToggleOnboardingTask($id: ID!, $index: Int!, $done: Boolean!) {
+    toggleOnboardingTask(id: $id, index: $index, done: $done) {
+      id
+      status
+      tasks {
+        title
+        done
+        doneAt
+      }
+    }
+  }
+`
+
+// Appraisal
+export const GET_APPRAISALS = gql`
+  query GetAppraisals($organizationId: String!) {
+    appraisals(organizationId: $organizationId) {
+      id
+      employeeId
+      cycle
+      periodStart
+      periodEnd
+      status
+      overallRating
+      recommendedHikePercent
+    }
+  }
+`
+export const CREATE_APPRAISAL = gql`
+  mutation CreateAppraisal($input: AppraisalInput!) {
+    createAppraisal(input: $input) {
+      id
+      cycle
+    }
+  }
+`
+export const UPDATE_APPRAISAL = gql`
+  mutation UpdateAppraisal($id: ID!, $input: AppraisalInput!) {
+    updateAppraisal(id: $id, input: $input) {
+      id
+      status
+    }
+  }
+`
+export const TRANSITION_APPRAISAL = gql`
+  mutation TransitionAppraisal($id: ID!, $status: String!) {
+    transitionAppraisal(id: $id, status: $status) {
+      id
+      status
+    }
+  }
+`
+
+// Multi-tenancy
+export const GET_SUB_TENANTS = gql`
+  query GetSubTenants($parentOrganizationId: ID!) {
+    subTenants(parentOrganizationId: $parentOrganizationId) {
+      id
+      name
+      code
+      email
+      phone
+      status
+      parentOrganizationId
+      allowSubTenants
+      createdAt
+    }
+  }
+`
+
+export const CREATE_SUB_TENANT_WITH_ADMIN = gql`
+  mutation CreateSubTenantWithAdmin($input: CreateOrganizationWithOrgAdminInput!) {
+    createSubTenantWithAdmin(input: $input) {
+      id
+      name
+      code
+      parentOrganizationId
+    }
+  }
+`
+
+export const UPDATE_ORGANIZATION_ALLOW_SUB_TENANTS = gql`
+  mutation UpdateOrganizationAllowSubTenants($id: ID!, $allowSubTenants: Boolean!) {
+    updateOrganization(id: $id, input: { allowSubTenants: $allowSubTenants }) {
+      id
+      allowSubTenants
+    }
   }
 `

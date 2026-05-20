@@ -39,6 +39,7 @@ import { NotificationsDropdown } from '@/components/notifications-dropdown'
 const nav = [
   { href: '/org-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/org-admin/users', label: 'Users', icon: Users },
+  { href: '/org-admin/sub-tenants', label: 'Sub-tenants', icon: Building2 },
   { href: '/org-admin/roles-permissions', label: 'Roles & permissions', icon: ShieldCheck },
   { href: '/org-admin/approvals', label: 'Approvals', icon: CheckSquare },
   { href: '/org-admin/notifications', label: 'Send notification', icon: Megaphone },
