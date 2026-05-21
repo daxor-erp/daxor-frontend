@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { InputFloating } from '@/components/ui/input-floating'
-import { SelectFloating } from '@/components/ui/select-floating'
-import { Plus, Search, Filter, Download, Trash2, Edit, Eye } from 'lucide-react'
+import { Plus, Search, Filter, Download, Trash2, Edit, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   sendForApprovalDataTableAction,
   type SendForApprovalDataTablePresetOptions,
@@ -164,131 +163,80 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* Table */}
-      <div>
-        {/* Header Row */}
-        <div className="flex bg-[#f0f0f0] border-b border-gray-300">
-          <div className="w-8 border-r border-gray-300 py-2 flex items-center justify-center text-xs text-gray-400">#</div>
-          {columns.map((column, idx) => (
-            <div
-              key={column.key}
-              className={`border-r border-gray-300 last:border-r-0 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide ${
-                column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
-              }`}
-              style={{ width: column.width, flex: column.width ? undefined : 1 }}
-              onClick={() => column.sortable && handleSort(column.key)}
-            >
-              <div className="flex items-center gap-1">
-                {column.label}
-                {column.sortable && sortConfig?.key === column.key && (
-                  <span className="text-blue-600 text-xs">
-                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-          {actions.length > 0 && (
-            <div className="min-w-[10rem] px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide text-right">
-              Actions
-            </div>
-          )}
-        </div>
-
-        {/* Body */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-gray-400 text-sm">Loading…</div>
-        ) : sortedData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-            {emptyIcon || <Filter className="h-8 w-8 mb-2 opacity-30" />}
-            <p className="text-xs">{emptyMessage}</p>
-          </div>
-        ) : (
-          sortedData.map((row, rowIdx) => (
-            <div
-              key={row[rowKey] || rowIdx}
-              className={`flex border-b border-gray-200 last:border-b-0 ${
-                striped && rowIdx % 2 === 1 ? 'bg-gray-50/50' : 'bg-white'
-              } ${hoverable ? 'hover:bg-blue-50/30 transition-colors' : ''}`}
-            >
-              <div className="w-8 border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-2">
-                {rowIdx + 1}
-              </div>
-              {columns.map((column) => (
+      <div className="overflow-x-auto">
+        <table className={`w-full border-collapse text-xs ${bordered ? 'border border-gray-200' : ''}`}>
+          <thead>
+            <tr className="bg-[#f0f0f0] border-b border-gray-300">
+              <th className="border-r border-gray-300 py-2 w-8 text-center font-semibold text-gray-400">#</th>
+              {columns.map(column => (
                 <th
                   key={column.key}
-                  className={`border-r border-gray-300 last:border-r-0 px-3 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide text-left whitespace-nowrap ${
+                  className={`border-r border-gray-300 last:border-r-0 px-3 py-2 font-semibold text-gray-600 uppercase tracking-wide text-left whitespace-nowrap ${
                     column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
                   }`}
+                  style={{ width: column.width }}
                   onClick={() => column.sortable && handleSort(column.key)}
                 >
                   <div className="flex items-center gap-1">
                     {column.label}
                     {column.sortable && sortConfig?.key === column.key && (
-                      <span className="text-blue-600 text-xs">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                      <span className="text-blue-600">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                     )}
                   </div>
                 </th>
               ))}
               {actions.length > 0 && (
-                <div className="min-w-[10rem] px-2 py-2 flex items-center justify-end gap-1 flex-wrap">
-                  {actions.map((action, actionIdx) => {
-                    if (action.show && !action.show(row)) return null
-                    const disabled =
-                      typeof action.disabled === 'function' ? action.disabled(row) : Boolean(action.disabled)
-                    const tip =
-                      (typeof action.tooltip === 'function' ? action.tooltip(row) : action.tooltip) ??
-                      action.label
-                    return (
-                      <Button
-                        key={actionIdx}
-                        variant={action.variant || 'ghost'}
-                        size="sm"
-                        disabled={disabled}
-                        title={tip}
-                        onClick={() => !disabled && action.onClick(row)}
-                        className={`h-6 px-2 text-xs ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        {action.icon ?? action.label}
-                      </Button>
-                    )
-                  })}
-                </div>
+                <th className="min-w-[10rem] px-2 py-2 font-semibold text-gray-600 uppercase tracking-wide text-right">
+                  Actions
+                </th>
               )}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length + 2} className="text-center py-12 text-gray-400 text-sm">Loading…</td>
+                <td
+                  colSpan={columns.length + 1 + (actions.length > 0 ? 1 : 0)}
+                  className="py-12 text-center text-gray-400 text-sm"
+                >
+                  Loading…
+                </td>
               </tr>
             ) : sortedData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + 2} className="text-center py-12 text-gray-400">
-                  {emptyIcon || <Filter className="h-8 w-8 mb-2 opacity-30 mx-auto" />}
-                  <p className="text-xs">{emptyMessage}</p>
+                <td
+                  colSpan={columns.length + 1 + (actions.length > 0 ? 1 : 0)}
+                  className="py-12 text-center text-gray-400"
+                >
+                  <div className="flex flex-col items-center">
+                    {emptyIcon || <Filter className="h-8 w-8 mb-2 opacity-30" />}
+                    <p className="text-xs">{emptyMessage}</p>
+                  </div>
                 </td>
               </tr>
             ) : (
               pagedData.map((row, rowIdx) => (
                 <tr
                   key={row[rowKey] || rowIdx}
-                  className={`border-b border-gray-200 last:border-b-0 ${
-                    striped && rowIdx % 2 === 1 ? 'bg-gray-50/50' : 'bg-white'
-                  } ${hoverable ? 'hover:bg-blue-50/30 transition-colors' : ''}`}
+                  className={`border-b border-gray-200 ${striped && rowIdx % 2 === 1 ? 'bg-gray-50/50' : 'bg-white'} ${
+                    hoverable ? 'hover:bg-blue-50/30 transition-colors' : ''
+                  }`}
                 >
-                  <td className="border-r border-gray-200 text-center text-xs text-gray-300 py-2 w-8">
+                  <td className="border-r border-gray-200 text-center text-gray-300 py-2 w-8">
                     {safePage * pageSize + rowIdx + 1}
                   </td>
-                  {columns.map((column) => (
+                  {columns.map(column => (
                     <td
                       key={column.key}
-                      className={`border-r border-gray-200 last:border-r-0 px-3 py-2 text-xs overflow-hidden ${
-                        column.align === 'center' ? 'text-center' : column.align === 'right' ? 'text-right' : 'text-left'
-                      }`}
+                      className={`border-r border-gray-200 last:border-r-0 px-3 py-2 overflow-hidden ${
+                        column.align === 'center'
+                          ? 'text-center'
+                          : column.align === 'right'
+                            ? 'text-right'
+                            : 'text-left'
+                      } ${compact ? 'py-1' : ''}`}
                     >
-                      <div className="truncate">
-                        {column.render ? column.render(row[column.key], row) : row[column.key]}
-                      </div>
+                      <div className="truncate">{column.render ? column.render(row[column.key], row) : row[column.key]}</div>
                     </td>
                   ))}
                   {actions.length > 0 && (
@@ -296,14 +244,20 @@ export function DataTable<T extends Record<string, any>>({
                       <div className="flex items-center justify-end gap-1 flex-wrap min-w-[7.5rem]">
                         {actions.map((action, actionIdx) => {
                           if (action.show && !action.show(row)) return null
+                          const disabled =
+                            typeof action.disabled === 'function' ? action.disabled(row) : Boolean(action.disabled)
+                          const tip =
+                            (typeof action.tooltip === 'function' ? action.tooltip(row) : action.tooltip) ??
+                            action.label
                           return (
                             <Button
                               key={actionIdx}
                               variant={action.variant || 'ghost'}
                               size="sm"
-                              onClick={() => action.onClick(row)}
-                              title={action.label}
-                              className="h-6 px-2 text-xs"
+                              disabled={disabled}
+                              title={tip}
+                              onClick={() => !disabled && action.onClick(row)}
+                              className={`h-6 px-2 text-xs ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               {action.icon ?? action.label}
                             </Button>
@@ -318,7 +272,6 @@ export function DataTable<T extends Record<string, any>>({
           </tbody>
         </table>
       </div>
-
       {/* Pagination footer */}
       {!loading && sortedData.length > 0 && (
         <div className="flex items-center justify-between px-3 py-2 border-t border-gray-200 bg-gray-50">
