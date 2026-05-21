@@ -111,12 +111,12 @@ export default function VendorsPage() {
   }
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '110px', render: v => <span className="font-mono text-gray-500 text-xs">{v || '—'}</span> },
-    { key: 'name', label: 'Vendor Name', sortable: true, render: v => <span className="font-medium text-gray-800">{v}</span> },
-    { key: 'contactPerson', label: 'Contact', render: v => <span className="text-gray-600">{v || '—'}</span> },
-    { key: 'email', label: 'Email', render: v => <span className="text-gray-600">{v || '—'}</span> },
-    { key: 'phone', label: 'Phone', width: '130px', render: v => <span className="text-gray-600">{v || '—'}</span> },
-    { key: 'paymentTerms', label: 'Payment Terms', width: '130px', render: v => <span className="text-gray-600">{v || '—'}</span> },
+    { key: 'seqNo', label: 'Code', width: '140px', render: v => <span className="font-mono text-gray-500 text-xs">{v || '—'}</span> },
+    { key: 'name', label: 'Vendor Name', width: '200px', sortable: true, render: v => <span className="font-medium text-gray-800">{v}</span> },
+    { key: 'contactPerson', label: 'Contact', width: '150px', render: v => <span className="text-gray-600">{v || '—'}</span> },
+    { key: 'email', label: 'Email', width: '200px', render: v => <span className="text-gray-600">{v || '—'}</span> },
+    { key: 'phone', label: 'Phone', width: '150px', render: v => <span className="text-gray-600">{v || '—'}</span> },
+    { key: 'paymentTerms', label: 'Payment Terms', width: '140px', render: v => <span className="text-gray-600">{v || '—'}</span> },
     {
       key: 'status', label: 'Status', width: '100px',
       render: v => (

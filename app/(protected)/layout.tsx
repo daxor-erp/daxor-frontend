@@ -7,10 +7,13 @@ import { Sidebar } from '@/components/sidebar'
 import { TopNavbar } from '@/components/top-navbar'
 import { ErpAppHeader } from '@/components/erp-app-header'
 import { ModulePastEntriesFab } from '@/components/module-past-entries-fab'
+import { AiPane } from '@/components/ai-pane/AiPane'
 import { MeSync } from '@/components/me-sync'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { cn } from '@/lib/utils'
 import { canViewPath } from '@/lib/erp-module-access'
 import { useLayoutPreference } from '@/hooks/use-layout-preference'
+import { useAiPane } from '@/contexts/AiPaneContext'
 
 const SIDEBAR_KEY = 'daxor:sidebar:collapsed'
 
@@ -46,6 +49,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [layout] = useLayoutPreference()
+  const { isOpen: aiOpen } = useAiPane()
 
   useEffect(() => {
     setHydrated(true)
@@ -98,7 +102,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   // ─── Navbar layout ───────────────────────────────────────────────
   if (layout === 'navbar') {
     return (
-      <div className="flex h-screen flex-col bg-background">
+      <div className="flex h-screen flex-col bg-background relative overflow-hidden">
         <MeSync />
         <ErpAppHeader onMenuClick={() => setMobileOpen(true)} />
         <div className="hidden md:block">
@@ -109,10 +113,14 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
             <Sidebar mobile onMobileClose={() => setMobileOpen(false)} />
           </SheetContent>
         </Sheet>
-        <main className="flex-1 overflow-y-auto bg-secondary/30 min-h-0 relative">
+        <main className={cn(
+          "flex-1 overflow-y-auto overflow-x-hidden bg-secondary/30 min-h-0 relative transition-[padding] duration-300 ease-in-out",
+          aiOpen && "pr-80"
+        )}>
           {children}
           <ModulePastEntriesFab />
         </main>
+        <AiPane />
       </div>
     )
   }
@@ -129,12 +137,16 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
           <Sidebar mobile onMobileClose={() => setMobileOpen(false)} />
         </SheetContent>
       </Sheet>
-      <main className="flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden bg-secondary/30">
+      <main className={cn(
+        "flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden bg-secondary/30 relative transition-[padding] duration-300 ease-in-out",
+        aiOpen && "pr-80"
+      )}>
         <ErpAppHeader onMenuClick={() => setMobileOpen(true)} />
         <div className="flex-1 overflow-y-auto min-h-0 relative">
           {children}
           <ModulePastEntriesFab />
         </div>
+        <AiPane />
       </main>
     </div>
   )

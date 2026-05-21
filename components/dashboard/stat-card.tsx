@@ -67,14 +67,14 @@ export function StatCard({
     <Wrapper
       href={href}
       className={cn(
-        'relative overflow-hidden rounded-2xl border transition-all',
+        'relative overflow-hidden rounded-2xl border transition-all flex h-full',
         filled
           ? cn('border-transparent text-white elev-2', TONE_BG[tone])
           : 'border-border bg-card elev-1 hover:elev-2',
         href && 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0',
       )}
     >
-      <div className="p-4 sm:p-5">
+      <div className="p-4 sm:p-5 flex flex-col flex-1 w-full">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p
@@ -85,10 +85,10 @@ export function StatCard({
             >
               {label}
             </p>
-            <div className="mt-1.5 flex items-baseline gap-2">
+            <div className="mt-1.5 flex items-baseline gap-2 min-w-0">
               <p
                 className={cn(
-                  'text-2xl sm:text-[26px] font-bold leading-none tabular-nums',
+                  'text-lg sm:text-xl xl:text-[22px] font-bold leading-tight tabular-nums min-w-0',
                   filled ? 'text-white' : 'text-foreground',
                   loading && 'animate-pulse bg-muted text-transparent rounded',
                 )}
@@ -119,7 +119,7 @@ export function StatCard({
           )}
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="mt-auto pt-3 flex items-center justify-between gap-3 min-h-[28px]">
           {typeof delta === 'number' ? (
             <span
               className={cn(

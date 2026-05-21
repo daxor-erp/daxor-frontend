@@ -47,6 +47,7 @@ interface Preferences {
   density: 'compact' | 'comfortable'
   dateFormat: 'dd-mm-yyyy' | 'mm-dd-yyyy' | 'iso'
   language: 'en' | 'hi'
+  currency: 'INR' | 'USD' | 'SGD' | 'MYR'
   showSparklines: boolean
   showDeltas: boolean
 }
@@ -55,6 +56,7 @@ const DEFAULT_PREFS: Preferences = {
   density: 'comfortable',
   dateFormat: 'dd-mm-yyyy',
   language: 'en',
+  currency: 'INR',
   showSparklines: true,
   showDeltas: true,
 }
@@ -377,6 +379,42 @@ export default function SettingsPage() {
                   ))}
                 </RadioGroup>
                 <p className="text-xs text-muted-foreground">UI translation coming soon.</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <RadioGroup
+                  value={prefs.currency}
+                  onValueChange={(v) => {
+                    updatePrefs({ currency: v as Preferences['currency'] })
+                    if (user?.id) {
+                      updateUser({ variables: { id: user.id, input: { currency: v } } })
+                    }
+                    if (typeof window !== 'undefined') window.location.reload()
+                  }}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  {[
+                    { v: 'INR', label: '₹ Rupee (INR)' },
+                    { v: 'USD', label: '$ US Dollar (USD)' },
+                    { v: 'SGD', label: 'S$ Singapore Dollar (SGD)' },
+                    { v: 'MYR', label: 'RM Malaysian Ringgit (MYR)' },
+                  ].map((o) => (
+                    <label
+                      key={o.v}
+                      className={cn(
+                        'flex items-center gap-2 rounded-lg border p-2.5 cursor-pointer text-sm',
+                        prefs.currency === o.v ? 'border-primary bg-primary-soft/40' : 'hover:bg-secondary',
+                      )}
+                    >
+                      <RadioGroupItem value={o.v} className="sr-only" />
+                      <div className={cn('h-2 w-2 rounded-full', prefs.currency === o.v ? 'bg-primary' : 'bg-border')} />
+                      {o.label}
+                    </label>
+                  ))}
+                </RadioGroup>
+                <p className="text-xs text-muted-foreground">
+                  Applies to all monetary fields. Changing reloads the page.
+                </p>
               </div>
               <div className="space-y-3">
                 <Label>Stat card decorations</Label>

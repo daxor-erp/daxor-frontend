@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { ApolloPermissionRejectionBridge } from '@/components/apollo-permission-rejection-bridge'
 import { apolloClient } from '@/utils/apollo-client'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { AiPaneProvider } from '@/contexts/AiPaneContext'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -13,8 +14,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ApolloPermissionRejectionBridge />
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <AuthProvider>
-          {children}
-          <Toaster />
+          <AiPaneProvider>
+            {children}
+            <Toaster />
+          </AiPaneProvider>
         </AuthProvider>
       </ThemeProvider>
     </ApolloProvider>

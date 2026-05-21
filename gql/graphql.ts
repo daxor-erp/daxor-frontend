@@ -123,6 +123,57 @@ export type ApplicantInput = {
   source: Scalars['String']['input'];
 };
 
+export type Appraisal = {
+  __typename?: 'Appraisal';
+  createdAt: Scalars['String']['output'];
+  cycle: Scalars['String']['output'];
+  employeeId: Scalars['String']['output'];
+  finalizedAt?: Maybe<Scalars['String']['output']>;
+  goals: Array<AppraisalGoal>;
+  id: Scalars['ID']['output'];
+  managerReview?: Maybe<Scalars['String']['output']>;
+  organizationId: Scalars['String']['output'];
+  overallRating?: Maybe<Scalars['Float']['output']>;
+  periodEnd: Scalars['String']['output'];
+  periodStart: Scalars['String']['output'];
+  recommendedHikePercent?: Maybe<Scalars['Float']['output']>;
+  reviewerId?: Maybe<Scalars['String']['output']>;
+  selfReview?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+};
+
+export type AppraisalGoal = {
+  __typename?: 'AppraisalGoal';
+  comments?: Maybe<Scalars['String']['output']>;
+  managerRating?: Maybe<Scalars['Float']['output']>;
+  selfRating?: Maybe<Scalars['Float']['output']>;
+  title: Scalars['String']['output'];
+  weight: Scalars['Float']['output'];
+};
+
+export type AppraisalGoalInput = {
+  comments?: InputMaybe<Scalars['String']['input']>;
+  managerRating?: InputMaybe<Scalars['Float']['input']>;
+  selfRating?: InputMaybe<Scalars['Float']['input']>;
+  title: Scalars['String']['input'];
+  weight?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export type AppraisalInput = {
+  cycle: Scalars['String']['input'];
+  employeeId: Scalars['String']['input'];
+  goals?: InputMaybe<Array<AppraisalGoalInput>>;
+  managerReview?: InputMaybe<Scalars['String']['input']>;
+  organizationId: Scalars['String']['input'];
+  overallRating?: InputMaybe<Scalars['Float']['input']>;
+  periodEnd: Scalars['String']['input'];
+  periodStart: Scalars['String']['input'];
+  recommendedHikePercent?: InputMaybe<Scalars['Float']['input']>;
+  reviewerId?: InputMaybe<Scalars['String']['input']>;
+  selfReview?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type ApprovalDecision =
   | 'APPROVED'
   | 'REJECTED';
@@ -765,7 +816,7 @@ export type CreateEmployeeMasterInput = {
   department?: InputMaybe<Scalars['String']['input']>;
   designation?: InputMaybe<Scalars['String']['input']>;
   emergencyContact?: InputMaybe<EmployeeEmergencyContactInput>;
-  employeeCode: Scalars['String']['input'];
+  employeeCode?: InputMaybe<Scalars['String']['input']>;
   employmentType?: InputMaybe<Scalars['String']['input']>;
   esiNumber?: InputMaybe<Scalars['String']['input']>;
   firstName: Scalars['String']['input'];
@@ -1658,6 +1709,33 @@ export type EmployeeMaster = {
   workLocation?: Maybe<Scalars['String']['output']>;
 };
 
+export type EmployeeSalaryStructure = {
+  __typename?: 'EmployeeSalaryStructure';
+  basicMonthly: Scalars['Float']['output'];
+  components: Array<StructureComponent>;
+  createdAt: Scalars['String']['output'];
+  ctcAnnual: Scalars['Float']['output'];
+  effectiveFrom: Scalars['String']['output'];
+  effectiveTo?: Maybe<Scalars['String']['output']>;
+  employeeId: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  organizationId: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  statutory: StatutoryOverrides;
+};
+
+export type EmployeeSalaryStructureInput = {
+  basicMonthly?: InputMaybe<Scalars['Float']['input']>;
+  components?: InputMaybe<Array<StructureComponentInput>>;
+  ctcAnnual?: InputMaybe<Scalars['Float']['input']>;
+  effectiveFrom: Scalars['String']['input'];
+  effectiveTo?: InputMaybe<Scalars['String']['input']>;
+  employeeId: Scalars['String']['input'];
+  organizationId: Scalars['String']['input'];
+  status?: InputMaybe<Scalars['String']['input']>;
+  statutory?: InputMaybe<StatutoryOverridesInput>;
+};
+
 export type ExciseInvoice = {
   __typename?: 'ExciseInvoice';
   createdAt: Scalars['String']['output'];
@@ -2462,6 +2540,7 @@ export type Mutation = {
   cancelStockAdjustment: StockAdjustment;
   cancelStockTransfer: StockTransfer;
   completeAssetMaintenance: AssetMaintenance;
+  computePayrollRun: Array<Payslip>;
   confirmIntercompanyTransfer: IntercompanyTransfer;
   confirmMaterialReceipt: MaterialReceipt;
   confirmStockAdjustment: StockAdjustment;
@@ -2469,6 +2548,7 @@ export type Mutation = {
   convertLeadToOpportunity: Scalars['ID']['output'];
   createAllocationSchedule: AllocationSchedule;
   createApplicant: Applicant;
+  createAppraisal: Appraisal;
   createAsset: Asset;
   createAssetMaintenance: AssetMaintenance;
   createAttendance: Attendance;
@@ -2492,6 +2572,7 @@ export type Mutation = {
   createDeliveryOrder: DeliveryOrder;
   createEPM: Epm;
   createEmployeeMaster: EmployeeMaster;
+  createEmployeeSalaryStructure: EmployeeSalaryStructure;
   createExciseInvoice: ExciseInvoice;
   createExtraction: Extraction;
   createFixedAsset: FixedAsset;
@@ -2516,6 +2597,7 @@ export type Mutation = {
   createLoanRepayment: LoanRepayment;
   createMaterialReceipt: MaterialReceipt;
   createModuleWorkspaceRecord: ModuleWorkspaceRecord;
+  createOnboarding: Onboarding;
   createOpportunity: Opportunity;
   createOrganization: Organization;
   createOrganizationWithOrgAdmin: Organization;
@@ -2541,6 +2623,8 @@ export type Mutation = {
   createStockAdjustment: StockAdjustment;
   createStockMovement: StockMovement;
   createStockTransfer: StockTransfer;
+  /** ORG_ADMIN of a tenant with allowSubTenants creates a child tenant + its admin. */
+  createSubTenantWithAdmin: Organization;
   createTaxRate: TaxRate;
   createTimesheetEntry: TimesheetEntry;
   createUser: User;
@@ -2554,6 +2638,7 @@ export type Mutation = {
   createWorkOrder: WorkOrder;
   deleteAllocationSchedule: Scalars['Boolean']['output'];
   deleteApplicant: Scalars['Boolean']['output'];
+  deleteAppraisal: Scalars['Boolean']['output'];
   deleteAsset: Scalars['Boolean']['output'];
   deleteAssetMaintenance: AssetMaintenance;
   deleteAttendance: Attendance;
@@ -2574,6 +2659,7 @@ export type Mutation = {
   deleteDocument: Document;
   deleteEPM: Scalars['Boolean']['output'];
   deleteEmployeeMaster: EmployeeMaster;
+  deleteEmployeeSalaryStructure: Scalars['Boolean']['output'];
   deleteExciseInvoice: Scalars['Boolean']['output'];
   deleteExtraction: Scalars['Boolean']['output'];
   deleteFinanceChargeAssessment: Scalars['Boolean']['output'];
@@ -2597,10 +2683,12 @@ export type Mutation = {
   deleteLeaveType: LeaveType;
   deleteLoanRepayment: Scalars['Boolean']['output'];
   deleteMaterialReceipt: Scalars['Boolean']['output'];
+  deleteOnboarding: Scalars['Boolean']['output'];
   deleteOpportunity: Scalars['Boolean']['output'];
   deleteOrganization: Organization;
   deletePayrollManagement: Scalars['Boolean']['output'];
   deletePayrollUiRecord: Scalars['Boolean']['output'];
+  deletePayslip: Scalars['Boolean']['output'];
   deleteProduct: Scalars['Boolean']['output'];
   deleteProductionPlanning: Scalars['Boolean']['output'];
   deleteProject: Project;
@@ -2629,6 +2717,7 @@ export type Mutation = {
   deleteWorkOrder: Scalars['Boolean']['output'];
   disposeFixedAsset: FixedAsset;
   draftFinanceChargeAssessment: FinanceChargeAssessment;
+  exportPayrollRunNeft: Scalars['String']['output'];
   generatePriceList: PriceList;
   login: AuthPayload;
   markAllNotificationsRead: Scalars['Int']['output'];
@@ -2690,10 +2779,13 @@ export type Mutation = {
    * Otherwise only the selected IDs are used (must be a subset of org-configured vendors approvers).
    */
   submitVendorForApproval: Vendor;
+  toggleOnboardingTask: Onboarding;
   transferBankFunds: BankTransferResult;
+  transitionAppraisal: Appraisal;
   transitionDeliveryOrderStatus: DeliveryOrder;
   updateAllocationSchedule: AllocationSchedule;
   updateApplicant: Applicant;
+  updateAppraisal: Appraisal;
   updateAsset: Asset;
   updateAssetMaintenance: AssetMaintenance;
   updateAttendance: Attendance;
@@ -2712,6 +2804,7 @@ export type Mutation = {
   updateDeliveryOrder: DeliveryOrder;
   updateEPM: Epm;
   updateEmployeeMaster: EmployeeMaster;
+  updateEmployeeSalaryStructure: EmployeeSalaryStructure;
   updateExciseInvoice: ExciseInvoice;
   updateExtraction: Extraction;
   updateFixedAsset: FixedAsset;
@@ -2736,6 +2829,7 @@ export type Mutation = {
   updateMaterialReceipt: MaterialReceipt;
   updateModuleWorkspaceRecord: ModuleWorkspaceRecord;
   updateMyDashboardPreferences: User;
+  updateOnboarding: Onboarding;
   updateOpportunity: Opportunity;
   updateOrganization: Organization;
   updatePayrollManagement: PayrollManagement;
@@ -2870,6 +2964,11 @@ export type MutationCompleteAssetMaintenanceArgs = {
 };
 
 
+export type MutationComputePayrollRunArgs = {
+  payrollRunId: Scalars['ID']['input'];
+};
+
+
 export type MutationConfirmIntercompanyTransferArgs = {
   id: Scalars['ID']['input'];
 };
@@ -2902,6 +3001,11 @@ export type MutationCreateAllocationScheduleArgs = {
 
 export type MutationCreateApplicantArgs = {
   input: ApplicantInput;
+};
+
+
+export type MutationCreateAppraisalArgs = {
+  input: AppraisalInput;
 };
 
 
@@ -3017,6 +3121,11 @@ export type MutationCreateEpmArgs = {
 
 export type MutationCreateEmployeeMasterArgs = {
   input: CreateEmployeeMasterInput;
+};
+
+
+export type MutationCreateEmployeeSalaryStructureArgs = {
+  input: EmployeeSalaryStructureInput;
 };
 
 
@@ -3137,6 +3246,11 @@ export type MutationCreateMaterialReceiptArgs = {
 
 export type MutationCreateModuleWorkspaceRecordArgs = {
   input: CreateModuleWorkspaceRecordInput;
+};
+
+
+export type MutationCreateOnboardingArgs = {
+  input: OnboardingInput;
 };
 
 
@@ -3265,6 +3379,11 @@ export type MutationCreateStockTransferArgs = {
 };
 
 
+export type MutationCreateSubTenantWithAdminArgs = {
+  input: CreateOrganizationWithOrgAdminInput;
+};
+
+
 export type MutationCreateTaxRateArgs = {
   input: CreateTaxRateInput;
 };
@@ -3326,6 +3445,11 @@ export type MutationDeleteAllocationScheduleArgs = {
 
 
 export type MutationDeleteApplicantArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteAppraisalArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -3426,6 +3550,11 @@ export type MutationDeleteEpmArgs = {
 
 
 export type MutationDeleteEmployeeMasterArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteEmployeeSalaryStructureArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -3545,6 +3674,11 @@ export type MutationDeleteMaterialReceiptArgs = {
 };
 
 
+export type MutationDeleteOnboardingArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteOpportunityArgs = {
   id: Scalars['ID']['input'];
 };
@@ -3561,6 +3695,11 @@ export type MutationDeletePayrollManagementArgs = {
 
 
 export type MutationDeletePayrollUiRecordArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeletePayslipArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -3704,6 +3843,11 @@ export type MutationDisposeFixedAssetArgs = {
 
 export type MutationDraftFinanceChargeAssessmentArgs = {
   input: DraftFinanceChargeAssessmentInput;
+};
+
+
+export type MutationExportPayrollRunNeftArgs = {
+  payrollRunId: Scalars['ID']['input'];
 };
 
 
@@ -3952,8 +4096,21 @@ export type MutationSubmitVendorForApprovalArgs = {
 };
 
 
+export type MutationToggleOnboardingTaskArgs = {
+  done: Scalars['Boolean']['input'];
+  id: Scalars['ID']['input'];
+  index: Scalars['Int']['input'];
+};
+
+
 export type MutationTransferBankFundsArgs = {
   input: BankTransferInput;
+};
+
+
+export type MutationTransitionAppraisalArgs = {
+  id: Scalars['ID']['input'];
+  status: Scalars['String']['input'];
 };
 
 
@@ -3973,6 +4130,12 @@ export type MutationUpdateAllocationScheduleArgs = {
 export type MutationUpdateApplicantArgs = {
   id: Scalars['ID']['input'];
   input: ApplicantInput;
+};
+
+
+export type MutationUpdateAppraisalArgs = {
+  id: Scalars['ID']['input'];
+  input: AppraisalInput;
 };
 
 
@@ -4081,6 +4244,12 @@ export type MutationUpdateEpmArgs = {
 export type MutationUpdateEmployeeMasterArgs = {
   id: Scalars['ID']['input'];
   input: UpdateEmployeeMasterInput;
+};
+
+
+export type MutationUpdateEmployeeSalaryStructureArgs = {
+  id: Scalars['ID']['input'];
+  input: EmployeeSalaryStructureInput;
 };
 
 
@@ -4227,6 +4396,12 @@ export type MutationUpdateModuleWorkspaceRecordArgs = {
 export type MutationUpdateMyDashboardPreferencesArgs = {
   dashboard: Scalars['String']['input'];
   input: DashboardWidgetPreferencesInput;
+};
+
+
+export type MutationUpdateOnboardingArgs = {
+  id: Scalars['ID']['input'];
+  input: OnboardingInput;
 };
 
 
@@ -4474,6 +4649,42 @@ export type NotificationSeverity =
   | 'SUCCESS'
   | 'WARNING';
 
+export type Onboarding = {
+  __typename?: 'Onboarding';
+  completedAt?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  employeeId: Scalars['String']['output'];
+  expectedCompletionDate?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  organizationId: Scalars['String']['output'];
+  startedAt: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  tasks: Array<OnboardingTask>;
+};
+
+export type OnboardingInput = {
+  employeeId: Scalars['String']['input'];
+  expectedCompletionDate?: InputMaybe<Scalars['String']['input']>;
+  organizationId: Scalars['String']['input'];
+  startedAt?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+  tasks?: InputMaybe<Array<OnboardingTaskInput>>;
+};
+
+export type OnboardingTask = {
+  __typename?: 'OnboardingTask';
+  done: Scalars['Boolean']['output'];
+  doneAt?: Maybe<Scalars['String']['output']>;
+  notes?: Maybe<Scalars['String']['output']>;
+  title: Scalars['String']['output'];
+};
+
+export type OnboardingTaskInput = {
+  done?: InputMaybe<Scalars['Boolean']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  title: Scalars['String']['input'];
+};
+
 export type Opportunity = {
   __typename?: 'Opportunity';
   accountName?: Maybe<Scalars['String']['output']>;
@@ -4515,12 +4726,14 @@ export type OpportunityInput = {
 export type Organization = {
   __typename?: 'Organization';
   address?: Maybe<Scalars['String']['output']>;
+  allowSubTenants: Scalars['Boolean']['output'];
   code?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
   email?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   moduleApprovers: Array<OrganizationModuleApprover>;
   name: Scalars['String']['output'];
+  parentOrganizationId?: Maybe<Scalars['ID']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
   seqNo: Scalars['String']['output'];
   status: Scalars['String']['output'];
@@ -4602,6 +4815,43 @@ export type PayrollUiRecordInput = {
   code?: InputMaybe<Scalars['String']['input']>;
   data: Scalars['String']['input'];
   organizationId: Scalars['String']['input'];
+};
+
+export type Payslip = {
+  __typename?: 'Payslip';
+  createdAt: Scalars['String']['output'];
+  deductions: Array<PayslipLine>;
+  earnings: Array<PayslipLine>;
+  employeeCode: Scalars['String']['output'];
+  employeeId: Scalars['String']['output'];
+  employeeName: Scalars['String']['output'];
+  esiEmployee: Scalars['Float']['output'];
+  esiEmployer: Scalars['Float']['output'];
+  grossEarnings: Scalars['Float']['output'];
+  id: Scalars['ID']['output'];
+  lopDays: Scalars['Float']['output'];
+  netPay: Scalars['Float']['output'];
+  organizationId: Scalars['String']['output'];
+  paidDays: Scalars['Float']['output'];
+  payPeriodEnd: Scalars['String']['output'];
+  payPeriodStart: Scalars['String']['output'];
+  payoutId?: Maybe<Scalars['String']['output']>;
+  payoutStatus?: Maybe<Scalars['String']['output']>;
+  payrollRunId: Scalars['String']['output'];
+  pfEmployee: Scalars['Float']['output'];
+  pfEmployer: Scalars['Float']['output'];
+  status: Scalars['String']['output'];
+  tds: Scalars['Float']['output'];
+  totalDeductions: Scalars['Float']['output'];
+  workingDays: Scalars['Float']['output'];
+};
+
+export type PayslipLine = {
+  __typename?: 'PayslipLine';
+  amount: Scalars['Float']['output'];
+  code: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type Permission = {
@@ -4790,10 +5040,13 @@ export type QcOutcomeSummary = {
 export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
+  activeSalaryStructureForEmployee?: Maybe<EmployeeSalaryStructure>;
   allocationSchedule?: Maybe<AllocationSchedule>;
   allocationSchedules: Array<AllocationSchedule>;
   applicant?: Maybe<Applicant>;
   applicants: Array<Applicant>;
+  appraisal?: Maybe<Appraisal>;
+  appraisals: Array<Appraisal>;
   asset?: Maybe<Asset>;
   assetMaintenance?: Maybe<AssetMaintenance>;
   assetMaintenances: Array<AssetMaintenance>;
@@ -4846,6 +5099,8 @@ export type Query = {
   dvsRecords: Array<Dvs>;
   employeeMaster?: Maybe<EmployeeMaster>;
   employeeMasters: Array<EmployeeMaster>;
+  employeeSalaryStructure?: Maybe<EmployeeSalaryStructure>;
+  employeeSalaryStructures: Array<EmployeeSalaryStructure>;
   epm?: Maybe<Epm>;
   epms: Array<Epm>;
   exciseinvoice?: Maybe<ExciseInvoice>;
@@ -4920,6 +5175,9 @@ export type Query = {
   myPendingApprovalRequests: Array<ApprovalRequest>;
   /** Unread count for the current user. */
   myUnreadNotificationCount: Scalars['Int']['output'];
+  onboarding?: Maybe<Onboarding>;
+  onboardingForEmployee?: Maybe<Onboarding>;
+  onboardings: Array<Onboarding>;
   opportunities: Array<Opportunity>;
   opportunity?: Maybe<Opportunity>;
   organization?: Maybe<Organization>;
@@ -4930,6 +5188,9 @@ export type Query = {
   payrollmanagements: Array<PayrollManagement>;
   payrolluirecord?: Maybe<PayrollUiRecord>;
   payrolluirecords: Array<PayrollUiRecord>;
+  payslip?: Maybe<Payslip>;
+  payslipsByEmployee: Array<Payslip>;
+  payslipsByRun: Array<Payslip>;
   priceList?: Maybe<PriceList>;
   priceLists: Array<PriceList>;
   product?: Maybe<Product>;
@@ -4985,6 +5246,8 @@ export type Query = {
   stockadjustments: Array<StockAdjustment>;
   stocktransfer?: Maybe<StockTransfer>;
   stocktransfers: Array<StockTransfer>;
+  /** Direct child tenants of a parent (one level deep). */
+  subTenants: Array<Organization>;
   systemRoles: Array<Role>;
   taxRate?: Maybe<TaxRate>;
   taxRates: Array<TaxRate>;
@@ -5021,6 +5284,11 @@ export type Query = {
 };
 
 
+export type QueryActiveSalaryStructureForEmployeeArgs = {
+  employeeId: Scalars['String']['input'];
+};
+
+
 export type QueryAllocationScheduleArgs = {
   id: Scalars['ID']['input'];
 };
@@ -5041,6 +5309,16 @@ export type QueryApplicantsArgs = {
   organizationId: Scalars['String']['input'];
   page?: InputMaybe<Scalars['Int']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryAppraisalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAppraisalsArgs = {
+  organizationId: Scalars['String']['input'];
 };
 
 
@@ -5373,6 +5651,16 @@ export type QueryEmployeeMastersArgs = {
   organizationId: Scalars['ID']['input'];
   search?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryEmployeeSalaryStructureArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryEmployeeSalaryStructuresArgs = {
+  organizationId: Scalars['String']['input'];
 };
 
 
@@ -5766,6 +6054,21 @@ export type QueryMyNotificationsArgs = {
 };
 
 
+export type QueryOnboardingArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryOnboardingForEmployeeArgs = {
+  employeeId: Scalars['String']['input'];
+};
+
+
+export type QueryOnboardingsArgs = {
+  organizationId: Scalars['String']['input'];
+};
+
+
 export type QueryOpportunitiesArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   organizationId: Scalars['String']['input'];
@@ -5822,6 +6125,21 @@ export type QueryPayrolluirecordArgs = {
 export type QueryPayrolluirecordsArgs = {
   category: Scalars['String']['input'];
   organizationId: Scalars['String']['input'];
+};
+
+
+export type QueryPayslipArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPayslipsByEmployeeArgs = {
+  employeeId: Scalars['String']['input'];
+};
+
+
+export type QueryPayslipsByRunArgs = {
+  payrollRunId: Scalars['String']['input'];
 };
 
 
@@ -6141,6 +6459,11 @@ export type QueryStocktransfersArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   organizationId: Scalars['ID']['input'];
   page?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QuerySubTenantsArgs = {
+  parentOrganizationId: Scalars['ID']['input'];
 };
 
 
@@ -6823,6 +7146,27 @@ export type SiteLocationInput = {
   zipCode?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type StatutoryOverrides = {
+  __typename?: 'StatutoryOverrides';
+  esiOptIn: Scalars['Boolean']['output'];
+  oldRegimeDeductions?: Maybe<Scalars['Float']['output']>;
+  pfOptIn: Scalars['Boolean']['output'];
+  pfRate: Scalars['Float']['output'];
+  pfWageCeiling?: Maybe<Scalars['Float']['output']>;
+  tdsMonthlyOverride?: Maybe<Scalars['Float']['output']>;
+  tdsRegime: Scalars['String']['output'];
+};
+
+export type StatutoryOverridesInput = {
+  esiOptIn?: InputMaybe<Scalars['Boolean']['input']>;
+  oldRegimeDeductions?: InputMaybe<Scalars['Float']['input']>;
+  pfOptIn?: InputMaybe<Scalars['Boolean']['input']>;
+  pfRate?: InputMaybe<Scalars['Float']['input']>;
+  pfWageCeiling?: InputMaybe<Scalars['Float']['input']>;
+  tdsMonthlyOverride?: InputMaybe<Scalars['Float']['input']>;
+  tdsRegime?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type StockAdjustment = {
   __typename?: 'StockAdjustment';
   adjDate: Scalars['String']['output'];
@@ -6885,6 +7229,17 @@ export type StockTransfer = {
   transferDate: Scalars['String']['output'];
   transferNumber: Scalars['String']['output'];
   updatedAt?: Maybe<Scalars['String']['output']>;
+};
+
+export type StructureComponent = {
+  __typename?: 'StructureComponent';
+  amount: Scalars['Float']['output'];
+  payComponentId: Scalars['String']['output'];
+};
+
+export type StructureComponentInput = {
+  amount: Scalars['Float']['input'];
+  payComponentId: Scalars['String']['input'];
 };
 
 export type Task = {
@@ -7235,6 +7590,7 @@ export type UpdateMaterialReceiptInput = {
 
 export type UpdateOrganizationInput = {
   address?: InputMaybe<Scalars['String']['input']>;
+  allowSubTenants?: InputMaybe<Scalars['Boolean']['input']>;
   email?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
@@ -7406,6 +7762,7 @@ export type UpdateTimesheetEntryInput = {
 };
 
 export type UpdateUserInput = {
+  currency?: InputMaybe<Scalars['String']['input']>;
   firstName?: InputMaybe<Scalars['String']['input']>;
   lastName?: InputMaybe<Scalars['String']['input']>;
   roles?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -7472,6 +7829,7 @@ export type UpsertIndividualPriceListInput = {
 export type User = {
   __typename?: 'User';
   createdAt: Scalars['String']['output'];
+  currency?: Maybe<Scalars['String']['output']>;
   dashboardPreferences?: Maybe<DashboardPreferences>;
   email: Scalars['String']['output'];
   firstName: Scalars['String']['output'];

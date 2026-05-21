@@ -33,6 +33,7 @@ import {
   Send,
 } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+import { formatMoney } from '@/lib/format-money'
 
 interface LineItem {
   itemDescription: string
@@ -346,7 +347,7 @@ export default function MaterialReceiptPage() {
       width: '110px',
       render: v => (
         <span className="font-medium">
-          {typeof v === 'number' ? `₹${v.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+          {typeof v === 'number' ? formatMoney(v) : '—'}
         </span>
       ),
     },
@@ -624,7 +625,7 @@ export default function MaterialReceiptPage() {
               <div className="text-right">
                 <p className="text-xs text-gray-500 mb-1">Total Amount</p>
                 <p className="text-xl font-bold text-gray-800">
-                  ₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  {formatMoney(totalAmount)}
                 </p>
               </div>
             </div>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Plus } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatMoney } from '@/lib/format-money'
 
 export default function ItemsPage() {
   const { user } = useAuth()
@@ -51,7 +52,7 @@ export default function ItemsPage() {
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.category}</TableCell>
                     <TableCell>{item.unit}</TableCell>
-                    <TableCell>${item.rate}</TableCell>
+                    <TableCell>{formatMoney(Number(item.rate) || 0)}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs ${
                         item.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'

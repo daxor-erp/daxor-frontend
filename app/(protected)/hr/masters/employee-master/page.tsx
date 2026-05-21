@@ -14,8 +14,8 @@ import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
 import { StatCard } from '@/components/dashboard/stat-card'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { InputFloating } from '@/components/ui/input-floating'
+import { SelectFloating } from '@/components/ui/select-floating'
 import { toast } from 'sonner'
 import {
   UserPlus, Pencil, Trash2, Search, Users, Building2, Briefcase, IdCard,
@@ -178,13 +178,12 @@ export default function EmployeeMasterPage() {
   }
 
   const submit = () => {
-    if (!form.employeeCode.trim() || !form.firstName.trim() || !form.lastName.trim()) {
-      return toast.error('Code + first + last name are required')
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      return toast.error('First + last name are required')
     }
     if (!form.dateOfJoining) return toast.error('Date of joining is required')
 
     const payload: any = {
-      employeeCode: form.employeeCode.trim().toUpperCase(),
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       dateOfBirth: form.dateOfBirth || undefined,
@@ -231,7 +230,10 @@ export default function EmployeeMasterPage() {
       notes: form.notes || undefined,
     }
     if (form.id) {
-      updateMutation({ variables: { id: form.id, input: payload } })
+      const editPayload = form.employeeCode.trim()
+        ? { ...payload, employeeCode: form.employeeCode.trim().toUpperCase() }
+        : payload
+      updateMutation({ variables: { id: form.id, input: editPayload } })
     } else {
       createMutation({ variables: { input: { ...payload, organizationId: orgId } } })
     }
@@ -359,7 +361,9 @@ export default function EmployeeMasterPage() {
       >
         <FormSection title="Identification">
           <FieldGrid cols={3}>
-            <Field label="Employee code *" value={form.employeeCode} onChange={(v) => setForm({ ...form, employeeCode: v.toUpperCase() })} mono />
+            {form.id ? (
+              <Field label="Employee code" value={form.employeeCode} onChange={(v) => setForm({ ...form, employeeCode: v.toUpperCase() })} mono />
+            ) : null}
             <Field label="First name *" value={form.firstName} onChange={(v) => setForm({ ...form, firstName: v })} />
             <Field label="Last name *" value={form.lastName} onChange={(v) => setForm({ ...form, lastName: v })} />
             <Field label="Date of birth" type="date" value={form.dateOfBirth} onChange={(v) => setForm({ ...form, dateOfBirth: v })} />
@@ -438,21 +442,25 @@ export default function EmployeeMasterPage() {
 
 function Field({ label, value, onChange, type, placeholder, mono }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; mono?: boolean }) {
   return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} type={type ?? 'text'} placeholder={placeholder} className={mono ? 'font-mono' : ''} />
-    </div>
+    <InputFloating
+      label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      type={type ?? 'text'}
+      placeholder={placeholder}
+      className={mono ? 'font-mono' : ''}
+    />
   )
 }
 
 function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
   return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-        {options.map((o) => <option key={o} value={o}>{o ? o.replace('_', ' ') : '—'}</option>)}
-      </select>
-    </div>
+    <SelectFloating
+      label={label}
+      value={value}
+      onChange={(v) => onChange(typeof v === 'string' ? v : v.target.value)}
+      options={options.map((o) => ({ value: o, label: o ? o.replace(/_/g, ' ') : '—' }))}
+    />
   )
 }
 

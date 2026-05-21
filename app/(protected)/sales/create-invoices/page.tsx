@@ -219,7 +219,7 @@ export default function CreateInvoicesPage() {
                   </div>
                   <div className="border-r border-gray-200 px-2 py-1 flex items-center">
                     <span className="text-xs font-medium text-gray-700">
-                      ${((parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0)).toFixed(2)}
+                      {formatMoney((parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0))}
                     </span>
                   </div>
                   <div className="flex items-center justify-center py-1">
