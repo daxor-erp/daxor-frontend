@@ -20,6 +20,7 @@ import {
   MODULE_KEY_PURCHASES,
   MODULE_KEY_QUOTATIONS,
   MODULE_KEY_SALES,
+  MODULE_KEY_VENDORS,
 } from '@/services/approvalService'
 
 export type PastEntryApprovalKind =
@@ -207,7 +208,7 @@ export const PAST_ENTRY_APPROVAL_DEFS: Record<
   },
   vendor: {
     entityType: APPROVAL_ENTITY_VENDOR,
-    moduleKey: MODULE_KEY_PURCHASES,
+    moduleKey: MODULE_KEY_VENDORS,
     normalize: normalizeOrgApprovalField,
     canSubmit: (raw) => {
       const ap = gs(raw, 'orgApprovalStatus').toLowerCase()

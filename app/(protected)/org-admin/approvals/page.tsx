@@ -15,12 +15,32 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-function approverMapFromOrg(rows: { moduleKey: string; approverUserId?: string | null }[] | undefined) {
-  const m: Record<string, string | null> = {}
+type OrgApproverRow = {
+  moduleKey: string
+  approverUserId?: string | null
+  approverUserIds?: string[] | null
+}
+
+function idsFromApproverRow(r?: OrgApproverRow | null): string[] {
+  if (!r) return []
+  const arr = [...(r.approverUserIds ?? [])].filter(Boolean).map(String)
+  if (arr.length) return [...new Set(arr)]
+  if (r.approverUserId != null && String(r.approverUserId).trim()) return [String(r.approverUserId)]
+  return []
+}
+
+function approverListsFromOrg(rows: OrgApproverRow[] | undefined): Record<string, string[]> {
+  const m: Record<string, string[]> = {}
   for (const r of rows ?? []) {
-    if (r?.moduleKey) m[r.moduleKey] = r.approverUserId ?? null
+    if (r.moduleKey) m[r.moduleKey] = idsFromApproverRow(r)
   }
   return m
 }
@@ -28,7 +48,9 @@ function approverMapFromOrg(rows: { moduleKey: string; approverUserId?: string |
 export default function OrgAdminApprovalsPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId ?? ''
-  const [selection, setSelection] = useState<Record<string, string | undefined>>({})
+  const [selection, setSelection] = useState<Record<string, string[]>>({})
+  const [vendorsPopoverOpen, setVendorsPopoverOpen] = useState(false)
+  const [vendorsPickerSearch, setVendorsPickerSearch] = useState('')
   const [banner, setBanner] = useState<{ ok: boolean; text: string } | null>(null)
 
   const {
@@ -58,21 +80,19 @@ export default function OrgAdminApprovalsPage() {
 
   const orgModuleRows = orgData?.organization?.moduleApprovers
 
-  const approverSig = useMemo(
-    () =>
-      (orgModuleRows ?? [])
-        .map((r: { moduleKey: string; approverUserId?: string | null }) => `${r.moduleKey}:${r.approverUserId ?? ''}`)
-        .sort()
-        .join('|'),
-    [orgModuleRows],
-  )
+  const approverSig = useMemo(() => {
+    const rows = (orgModuleRows ?? []) as OrgApproverRow[]
+    return rows
+      .map((r) => `${r.moduleKey}:${idsFromApproverRow(r).sort().join(',')}`)
+      .sort()
+      .join('|')
+  }, [orgModuleRows])
 
   useEffect(() => {
-    const fromApi = approverMapFromOrg(orgModuleRows)
-    const next: Record<string, string | undefined> = {}
+    const fromApi = approverListsFromOrg(orgModuleRows as OrgApproverRow[] | undefined)
+    const next: Record<string, string[]> = {}
     for (const mod of ERP_APPROVAL_MODULES) {
-      const uid = fromApi[mod.key]
-      next[mod.key] = uid ?? undefined
+      next[mod.key] = [...(fromApi[mod.key] ?? [])]
     }
     setSelection(next)
   }, [approverSig, orgModuleRows])
@@ -96,7 +116,7 @@ export default function OrgAdminApprovalsPage() {
         organizationId: orgId,
         assignments: ERP_APPROVAL_MODULES.map((m) => ({
           moduleKey: m.key,
-          approverUserId: selection[m.key] ?? null,
+          approverUserIds: [...(selection[m.key] ?? [])],
         })),
       },
     })
@@ -147,39 +167,112 @@ export default function OrgAdminApprovalsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ERP_APPROVAL_MODULES.map((mod) => (
-                <TableRow key={mod.key}>
-                  <TableCell className="font-medium text-slate-900">{mod.label}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="font-normal text-amber-900 bg-amber-50 border-amber-200">
-                      Awaiting approval (queue)
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={selection[mod.key] ?? '__none__'}
-                      onValueChange={(v) =>
-                        setSelection((prev) => ({
-                          ...prev,
-                          [mod.key]: v === '__none__' ? undefined : v,
-                        }))
-                      }
-                    >
-                      <SelectTrigger className="max-w-md h-10">
-                        <SelectValue placeholder="Select user…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">— None —</SelectItem>
-                        {userOptions.map((u: { id: string; email: string; firstName: string; lastName: string }) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.firstName} {u.lastName} ({u.email})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {ERP_APPROVAL_MODULES.map((mod) => {
+                const ids = [...(selection[mod.key] ?? [])]
+                const isVendorsMulti = mod.key === 'vendors'
+                const q = vendorsPickerSearch.trim().toLowerCase()
+                const filteredUsers = q
+                  ? userOptions.filter(
+                      (u: { email: string; firstName: string; lastName: string }) =>
+                        `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(q),
+                    )
+                  : userOptions
+
+                return (
+                  <TableRow key={mod.key}>
+                    <TableCell className="font-medium text-slate-900">{mod.label}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="font-normal text-amber-900 bg-amber-50 border-amber-200">
+                        Awaiting approval (queue)
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {isVendorsMulti ? (
+                        <Popover open={vendorsPopoverOpen} onOpenChange={setVendorsPopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <Button type="button" variant="outline" className="max-w-md h-10 justify-start">
+                              {ids.length === 0
+                                ? 'Select vendors approvers…'
+                                : `${ids.length} approver${ids.length === 1 ? '' : 's'} selected`}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-[min(440px,96vw)] p-0">
+                            <div className="p-2 border-b border-slate-100">
+                              <label className="sr-only" htmlFor="vendors-approver-search">
+                                Search users
+                              </label>
+                              <input
+                                id="vendors-approver-search"
+                                className="w-full h-9 rounded-md border border-slate-200 px-3 text-sm"
+                                placeholder="Search users…"
+                                value={vendorsPickerSearch}
+                                onChange={(e) => setVendorsPickerSearch(e.target.value)}
+                              />
+                            </div>
+                            <div className="max-h-64 overflow-y-auto p-2 space-y-1">
+                              {filteredUsers.map(
+                                (u: { id: string; email: string; firstName: string; lastName: string }) => {
+                                  const checked = ids.includes(u.id)
+                                  return (
+                                    <label
+                                      key={u.id}
+                                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-50 cursor-pointer"
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        onCheckedChange={(cv) =>
+                                          setSelection((prev) => {
+                                            const cur = [...(prev[mod.key] ?? [])]
+                                            const on = cv === true
+                                            if (on && !cur.includes(u.id)) cur.push(u.id)
+                                            else if (!on) {
+                                              const i = cur.indexOf(u.id)
+                                              if (i >= 0) cur.splice(i, 1)
+                                            }
+                                            return { ...prev, [mod.key]: [...new Set(cur)] }
+                                          })
+                                        }
+                                      />
+                                      <span>
+                                        {u.firstName} {u.lastName}
+                                        <span className="text-slate-500"> ({u.email})</span>
+                                      </span>
+                                    </label>
+                                  )
+                                },
+                              )}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        <Select
+                          value={(ids[0] ?? '').trim() !== '' ? ids[0] : '__none__'}
+                          onValueChange={(v) =>
+                            setSelection((prev) => ({
+                              ...prev,
+                              [mod.key]: v === '__none__' ? [] : [v],
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="max-w-md h-10">
+                            <SelectValue placeholder="Select user…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">— None —</SelectItem>
+                            {userOptions.map(
+                              (u: { id: string; email: string; firstName: string; lastName: string }) => (
+                                <SelectItem key={u.id} value={u.id}>
+                                  {u.firstName} {u.lastName} ({u.email})
+                                </SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         )}

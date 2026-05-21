@@ -1124,6 +1124,7 @@ export const GET_ORGANIZATION = gql`
       moduleApprovers {
         moduleKey
         approverUserId
+        approverUserIds
       }
       createdAt
     }
@@ -1140,6 +1141,7 @@ export const SET_ORGANIZATION_MODULE_APPROVERS = gql`
       moduleApprovers {
         moduleKey
         approverUserId
+        approverUserIds
       }
     }
   }
@@ -1203,8 +1205,11 @@ export const MY_PENDING_APPROVAL_REQUESTS = gql`
       entityId
       title
       status
+      requesterUserId
       requesterDisplayName
+      assigneeApproverUserId
       createdAt
+      updatedAt
     }
   }
 `
@@ -1473,10 +1478,52 @@ export const GET_VENDOR = gql`
       email
       phone
       address
+      city
+      state
+      country
+      zipCode
+      taxNumber
+      paymentTerms
+      notes
       organizationId
       orgApprovalStatus
       status
       createdAt
+      updatedAt
+      createdBy {
+        id
+        firstName
+        lastName
+        email
+      }
+    }
+  }
+`
+
+export const GET_VENDOR_ELIGIBLE_APPROVERS = gql`
+  query VendorEligibleApprovers($organizationId: ID!) {
+    vendorEligibleApprovers(organizationId: $organizationId) {
+      id
+      firstName
+      lastName
+      email
+    }
+  }
+`
+
+export const GET_VENDOR_APPROVAL_REQUESTS = gql`
+  query VendorApprovalRequests($vendorId: ID!, $limit: Int = 50) {
+    vendorApprovalRequests(vendorId: $vendorId, limit: $limit) {
+      id
+      title
+      status
+      assigneeApproverUserId
+      assigneeDisplayName
+      requesterDisplayName
+      createdAt
+      decidedAt
+      resolutionNote
+      moduleKey
     }
   }
 `
@@ -1504,8 +1551,8 @@ export const UPDATE_VENDOR = gql`
 `
 
 export const SUBMIT_VENDOR_FOR_APPROVAL = gql`
-  mutation SubmitVendorForApproval($id: ID!) {
-    submitVendorForApproval(id: $id) {
+  mutation SubmitVendorForApproval($id: ID!, $assigneeApproverUserIds: [ID!]) {
+    submitVendorForApproval(id: $id, assigneeApproverUserIds: $assigneeApproverUserIds) {
       id
       seqNo
       orgApprovalStatus

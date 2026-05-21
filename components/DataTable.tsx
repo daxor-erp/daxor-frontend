@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Plus, Search, Filter, Download, Trash2, Edit, Eye } from 'lucide-react'
+import {
+  sendForApprovalDataTableAction,
+  type SendForApprovalDataTablePresetOptions,
+  type SendForApprovalOrgStatusRow,
+} from '@/lib/send-for-approval'
 
 export interface Column<T = any> {
   key: string
@@ -21,6 +26,9 @@ export interface Action<T = any> {
   onClick: (row: T) => void
   variant?: 'default' | 'destructive' | 'outline' | 'ghost'
   show?: (row: T) => boolean
+  disabled?: boolean | ((row: T) => boolean)
+  /** Accessible hover text (falls back to `label`). */
+  tooltip?: string | ((row: T) => string | undefined)
 }
 
 export interface DataTableProps<T = any> {
@@ -176,7 +184,7 @@ export function DataTable<T extends Record<string, any>>({
             </div>
           ))}
           {actions.length > 0 && (
-            <div className="min-w-[7.5rem] px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide text-right">
+            <div className="min-w-[10rem] px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide text-right">
               Actions
             </div>
           )}
@@ -213,17 +221,23 @@ export function DataTable<T extends Record<string, any>>({
                 </div>
               ))}
               {actions.length > 0 && (
-                <div className="min-w-[7.5rem] px-2 py-2 flex items-center justify-end gap-1 flex-wrap">
+                <div className="min-w-[10rem] px-2 py-2 flex items-center justify-end gap-1 flex-wrap">
                   {actions.map((action, actionIdx) => {
                     if (action.show && !action.show(row)) return null
+                    const disabled =
+                      typeof action.disabled === 'function' ? action.disabled(row) : Boolean(action.disabled)
+                    const tip =
+                      (typeof action.tooltip === 'function' ? action.tooltip(row) : action.tooltip) ??
+                      action.label
                     return (
                       <Button
                         key={actionIdx}
                         variant={action.variant || 'ghost'}
                         size="sm"
-                        title={action.label}
-                        onClick={() => action.onClick(row)}
-                        className="h-6 px-2 text-xs"
+                        disabled={disabled}
+                        title={tip}
+                        onClick={() => !disabled && action.onClick(row)}
+                        className={`h-6 px-2 text-xs ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         {action.icon ?? action.label}
                       </Button>
@@ -259,4 +273,8 @@ export const commonActions = {
     onClick,
     variant: 'ghost',
   }),
+  /** Row must include `orgApprovalStatus` when using default eligibility checks. */
+  sendForApproval: <R extends SendForApprovalOrgStatusRow>(
+    options: SendForApprovalDataTablePresetOptions<R>,
+  ): Action<R> => sendForApprovalDataTableAction(options),
 }
