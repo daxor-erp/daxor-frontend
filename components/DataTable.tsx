@@ -31,6 +31,13 @@ export interface Action<T = any> {
   tooltip?: string | ((row: T) => string | undefined)
 }
 
+/** Inline `<R …>` on an object property breaks `.tsx` parsing (treated as JSX). */
+export function commonSendForApprovalAction<R extends SendForApprovalOrgStatusRow>(
+  options: SendForApprovalDataTablePresetOptions<R>,
+): Action<R> {
+  return sendForApprovalDataTableAction(options)
+}
+
 export interface DataTableProps<T = any> {
   data: T[]
   columns: Column<T>[]
@@ -372,8 +379,6 @@ export const commonActions = {
     variant: 'ghost',
   }),
   /** Row must include `orgApprovalStatus` when using default eligibility checks. */
-  sendForApproval: <R extends SendForApprovalOrgStatusRow>(
-    options: SendForApprovalDataTablePresetOptions<R>,
-  ): Action<R> => sendForApprovalDataTableAction(options),
+  sendForApproval: commonSendForApprovalAction,
 }
 
