@@ -1,7 +1,5 @@
-/* eslint-disable */
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
-const defaultOptions = {} as const;
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -9,6 +7,7 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: 
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string; output: string; }
@@ -8560,7 +8559,7 @@ export type SendNotificationMutation = { __typename?: 'Mutation', sendNotificati
 export type MyPendingApprovalRequestsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyPendingApprovalRequestsQuery = { __typename?: 'Query', myPendingApprovalRequests: Array<{ __typename?: 'ApprovalRequest', id: string, organizationId: string, moduleKey: string, entityType: string, entityId: string, title: string, status: ApprovalRequestStatus, requesterDisplayName?: string | null, createdAt?: string | null }> };
+export type MyPendingApprovalRequestsQuery = { __typename?: 'Query', myPendingApprovalRequests: Array<{ __typename?: 'ApprovalRequest', id: string, organizationId: string, moduleKey: string, entityType: string, entityId: string, title: string, status: ApprovalRequestStatus, requesterUserId: string, requesterDisplayName?: string | null, assigneeApproverUserId: string, createdAt?: string | null, updatedAt?: string | null }> };
 
 export type ResolveApprovalRequestMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13247,8 +13246,11 @@ export const MyPendingApprovalRequestsDocument = gql`
     entityId
     title
     status
+    requesterUserId
     requesterDisplayName
+    assigneeApproverUserId
     createdAt
+    updatedAt
   }
 }
     `;
