@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 
 export interface ModulePermissionRow {
   moduleKey: string
+  submoduleKey?: string | null
   canCreate: boolean
   canUpdate: boolean
   canDelete: boolean

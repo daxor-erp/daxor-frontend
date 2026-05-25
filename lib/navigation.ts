@@ -48,7 +48,7 @@ export const NAVIGATION: NavItem[] = [
   {
     name: 'Production',
     icon: Factory,
-    moduleKey: 'inventory',
+    moduleKey: 'production',
     subItems: [
       { name: 'Overview', href: '/production' },
       { name: 'Production Planning', href: '/production-planning' },
@@ -153,7 +153,7 @@ export const NAVIGATION: NavItem[] = [
     ],
   },
   { name: 'Products', href: '/products', icon: Package, moduleKey: 'products' },
-  { name: 'Documents', href: '/documents', icon: FileText, moduleKey: 'dashboard' },
+  { name: 'Documents', href: '/documents', icon: FileText, moduleKey: 'documents' },
   {
     name: 'Financial',
     icon: TrendingUp,
