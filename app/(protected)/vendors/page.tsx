@@ -3,12 +3,14 @@
 import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, Column, commonActions } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
-import { GET_VENDORS, CREATE_VENDOR, UPDATE_VENDOR, DELETE_VENDOR, SUBMIT_VENDOR_FOR_APPROVAL } from '@/gql/queries'
-import { Trash2, Edit, X, Save, Building2, Users, CheckCircle, XCircle } from 'lucide-react'
+import { VendorSendForApprovalSheet } from '@/components/vendors/vendor-send-for-approval-sheet'
+import { GET_VENDORS, CREATE_VENDOR, UPDATE_VENDOR, DELETE_VENDOR } from '@/gql/queries'
+import { useSendForApprovalSheet } from '@/hooks/use-send-for-approval-sheet'
+import { Trash2, Edit, X, Save, Building2, CheckCircle, XCircle } from 'lucide-react'
 
 const EMPTY_FORM = {
   name: '',
@@ -34,6 +36,8 @@ export default function VendorsPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const vendorApprovalSheet = useSendForApprovalSheet<string>()
+
   const { data, loading, refetch } = useQuery(GET_VENDORS, {
     variables: { organizationId: orgId, page: 1, limit: 100 },
     skip: !orgId,
@@ -48,10 +52,6 @@ export default function VendorsPage() {
   })
 
   const [deleteVendor] = useMutation(DELETE_VENDOR, {
-    onCompleted: () => refetch(),
-  })
-
-  const [submitVendorForApproval] = useMutation(SUBMIT_VENDOR_FOR_APPROVAL, {
     onCompleted: () => refetch(),
   })
 
@@ -128,10 +128,9 @@ export default function VendorsPage() {
     {
       key: '_orgApproval',
       label: 'Org approval',
-      width: '168px',
-      render: (_v, row: any) => {
-        const ap = String(row.orgApprovalStatus ?? 'approved')
-        const showSubmit = ap === 'draft' || ap === 'approval_declined'
+      width: '128px',
+      render: (_v, row: { orgApprovalStatus?: string }) => {
+        const ap = String(row.orgApprovalStatus ?? 'approved').toLowerCase()
         const label =
           ap === 'draft'
             ? 'Draft'
@@ -141,26 +140,15 @@ export default function VendorsPage() {
                 ? 'Declined'
                 : 'Approved'
         return (
-          <div className="flex flex-col gap-1 min-w-[140px]">
-            <span className="text-xs text-gray-600">{label}</span>
-            {showSubmit ? (
-              <select
-                aria-label="Vendor approval action"
-                className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2"
-                defaultValue=""
-                onChange={(e) => {
-                  const val = e.target.value
-                  e.target.value = ''
-                  if (val === 'submit') void submitVendorForApproval({ variables: { id: row.id } })
-                }}
-              >
-                <option value="">Change status…</option>
-                <option value="submit">Send for approval</option>
-              </select>
-            ) : (
-              <span className="text-xs text-gray-400">—</span>
-            )}
-          </div>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+            ap === 'draft'
+              ? 'bg-slate-50 text-slate-700 border-slate-200'
+              : ap === 'submitted'
+                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                : ap === 'approval_declined'
+                  ? 'bg-red-50 text-red-700 border-red-200'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+          }`}>{label}</span>
         )
       },
     },
@@ -248,9 +236,22 @@ export default function VendorsPage() {
         searchPlaceholder="Search vendors..."
         emptyMessage="No vendors yet. Click 'New Vendor' to add one."
         actions={[
+          commonActions.sendForApproval({
+            entityLabel: 'vendor',
+            eligibleTooltip: 'Open drawer to route this vendor to selected approvers',
+            blockedTooltip: 'A vendor approval request is already pending',
+            onOpenSheet: (row) => vendorApprovalSheet.openFor(row.id),
+          }),
           { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
           { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => handleDelete(row.id), variant: 'ghost' },
         ]}
+      />
+      <VendorSendForApprovalSheet
+        open={vendorApprovalSheet.open}
+        onOpenChange={vendorApprovalSheet.onOpenChange}
+        vendorId={vendorApprovalSheet.entityId}
+        organizationId={orgId}
+        onSubmitted={() => void refetch()}
       />
     </div>
   )

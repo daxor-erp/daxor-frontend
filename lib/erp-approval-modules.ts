@@ -7,6 +7,7 @@ export const ERP_APPROVAL_MODULES = [
   { key: 'quotations', label: 'Quotations' },
   { key: 'sales', label: 'Sales' },
   { key: 'purchases', label: 'Purchases' },
+  { key: 'vendors', label: 'Vendors' },
   { key: 'payables', label: 'Payables' },
   { key: 'inventory', label: 'Inventory' },
   { key: 'products', label: 'Products' },

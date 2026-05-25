@@ -25,6 +25,7 @@ export const MODULE_KEY_QUOTATIONS = 'quotations'
 export const MODULE_KEY_PURCHASES = 'purchases'
 export const MODULE_KEY_PAYABLES = 'payables'
 export const MODULE_KEY_PAYROLL = 'payroll'
+export const MODULE_KEY_VENDORS = 'vendors'
 
 export type PendingApprovalRow = {
   id: string
@@ -48,13 +49,31 @@ export function findPendingApprovalRequestId(
   return row ? String(row.id) : null
 }
 
+function approverIdsForOrgRow(row: {
+  moduleKey?: string | null
+  approverUserId?: string | null
+  approverUserIds?: string[] | null
+}): string[] {
+  const fromArr = [...(row.approverUserIds ?? [])].filter(Boolean).map(String)
+  if (fromArr.length) return [...new Set(fromArr)]
+  if (row.approverUserId != null && String(row.approverUserId).trim()) return [String(row.approverUserId)]
+  return []
+}
+
 export function isApproverForModule(
   moduleKey: string,
   userId: string | undefined,
-  moduleApprovers: Array<{ moduleKey: string; approverUserId?: string | null }> | undefined,
+  moduleApprovers:
+    | Array<{
+        moduleKey: string
+        approverUserId?: string | null
+        approverUserIds?: string[] | null
+      }>
+    | undefined,
 ): boolean {
   if (!userId || !moduleApprovers?.length) return false
-  return moduleApprovers.some(
-    (m) => String(m.moduleKey) === moduleKey && String(m.approverUserId ?? '') === String(userId),
-  )
+  return moduleApprovers.some((m) => {
+    if (String(m.moduleKey) !== moduleKey) return false
+    return approverIdsForOrgRow(m).some((id) => String(id) === String(userId))
+  })
 }

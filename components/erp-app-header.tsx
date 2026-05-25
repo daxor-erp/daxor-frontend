@@ -29,7 +29,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/contexts/AuthContext'
-import { MY_APPROVAL_REQUESTS, RESOLVE_APPROVAL_REQUEST, GET_ORGANIZATION } from '@/gql/queries'
+import { MY_APPROVAL_REQUESTS, MY_PENDING_APPROVAL_REQUESTS, RESOLVE_APPROVAL_REQUEST, GET_ORGANIZATION, GET_VENDOR } from '@/gql/queries'
 import { cn } from '@/lib/utils'
 import { NotificationsDropdown } from '@/components/notifications-dropdown'
 import { useLayoutPreference } from '@/hooks/use-layout-preference'
@@ -50,6 +50,7 @@ function moduleLabel(moduleKey: string) {
     customers: 'Customers',
     banks: 'Banks',
     reports: 'Reports',
+    vendors: 'Vendors',
   }
   return map[moduleKey] ?? moduleKey
 }
@@ -76,11 +77,100 @@ type ApprovalCardRow = {
   title?: string | null
   moduleKey?: string
   entityType?: string
+  entityId?: string
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
   requesterDisplayName?: string | null
   resolutionNote?: string | null
   decidedAt?: string | null
   createdAt?: string
+}
+
+function isVendorMasterRow(row: { entityType?: string; moduleKey?: string; entityId?: string }): boolean {
+  const eid = String(row.entityId ?? '').trim()
+  if (!eid) return false
+  if (String(row.entityType ?? '').toUpperCase() === 'VENDOR') return true
+  return String(row.moduleKey ?? '').toLowerCase() === 'vendors'
+}
+
+function VendorApprovalDetails({ vendorId }: { vendorId: string }) {
+  const { data, loading, error } = useQuery(GET_VENDOR, {
+    variables: { id: vendorId },
+    skip: !vendorId,
+    fetchPolicy: 'cache-first',
+  })
+
+  const v = data?.vendor as
+    | {
+        name?: string | null
+        seqNo?: string | null
+        contactPerson?: string | null
+        email?: string | null
+        phone?: string | null
+        taxNumber?: string | null
+        paymentTerms?: string | null
+        address?: string | null
+        city?: string | null
+        state?: string | null
+        country?: string | null
+        zipCode?: string | null
+        notes?: string | null
+        status?: string | null
+        orgApprovalStatus?: string | null
+      }
+    | undefined
+
+  const cell = (label: string, value?: string | null) => (
+    <div className="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-x-2 gap-y-0.5 text-xs leading-snug">
+      <span className="text-muted-foreground font-medium shrink-0">{label}</span>
+      <span className="text-foreground break-words min-w-0">{value?.trim() ? value : '—'}</span>
+    </div>
+  )
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-muted/25 px-3 py-2.5 text-xs text-muted-foreground">
+        Loading vendor details…
+      </div>
+    )
+  }
+  if (error || !v) {
+    return (
+      <div className="rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2.5 text-[11px] text-amber-950">
+        Full vendor details could not be loaded. You may still approve or decline from the summary.
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-secondary/35 p-3 space-y-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Vendor master data</p>
+      <div className="space-y-1.5">
+        {cell('Vendor name', v.name)}
+        {cell('Code', v.seqNo)}
+        {cell('Contact person', v.contactPerson)}
+        {cell('Email', v.email)}
+        {cell('Phone', v.phone)}
+        {cell('Tax number', v.taxNumber)}
+        {cell('Payment terms', v.paymentTerms)}
+        {cell('Address', v.address)}
+        {cell('City', v.city)}
+        {cell('State', v.state)}
+        {cell('Country', v.country)}
+        {cell('Postal / ZIP', v.zipCode)}
+        {cell('Notes', v.notes)}
+      </div>
+      <div className="pt-2 mt-2 border-t border-border/70 text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
+        <span>
+          <span className="font-medium text-foreground/80">Lifecycle: </span>
+          {String(v.orgApprovalStatus ?? '—').replace(/_/g, ' ')}
+        </span>
+        <span>
+          <span className="font-medium text-foreground/80">Active status: </span>
+          {String(v.status ?? '—')}
+        </span>
+      </div>
+    </div>
+  )
 }
 
 function ApprovalCard({
@@ -155,6 +245,9 @@ function ApprovalCard({
           </div>
         ) : null}
       </dl>
+      {isVendorMasterRow(row) ? (
+        <VendorApprovalDetails vendorId={String(row.entityId)} />
+      ) : null}
       {canDecide ? (
         <>
           <div className="space-y-1.5">
@@ -246,14 +339,32 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
     const uid = user?.id
     if (!uid) return false
     const rows = orgData?.organization?.moduleApprovers ?? []
-    return rows.some(
-      (r: { approverUserId?: string | null }) =>
-        r.approverUserId != null && r.approverUserId !== '' && String(r.approverUserId) === String(uid),
-    )
+    return rows.some((r: { approverUserId?: string | null; approverUserIds?: string[] | null }) => {
+      const fromArr = (r.approverUserIds ?? []).filter(Boolean).map(String)
+      const ids =
+        fromArr.length > 0
+          ? fromArr
+          : r.approverUserId != null && String(r.approverUserId).trim()
+            ? [String(r.approverUserId)]
+            : []
+      return ids.some((id) => String(id) === String(uid))
+    })
   }, [orgData?.organization?.moduleApprovers, user?.id])
 
+  const myUid = String(user?.id ?? '')
+
+  const {
+    data: pendingAssigneeData,
+    loading: pendingAssigneeLoading,
+    refetch: refetchPendingAssignee,
+  } = useQuery(MY_PENDING_APPROVAL_REQUESTS, {
+    fetchPolicy: 'cache-and-network',
+    pollInterval: 45_000,
+    skip: !user?.id,
+  })
+
   const { data, loading, refetch } = useQuery(MY_APPROVAL_REQUESTS, {
-    variables: { role: 'ANY', limit: 30 },
+    variables: { role: 'ANY', limit: 200 },
     fetchPolicy: 'cache-and-network',
     pollInterval: 45_000,
     skip: !user?.id,
@@ -264,6 +375,7 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
     title?: string | null
     moduleKey?: string
     entityType?: string
+    entityId?: string
     status: 'PENDING' | 'APPROVED' | 'REJECTED'
     requesterUserId?: string
     requesterDisplayName?: string | null
@@ -274,27 +386,51 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
     updatedAt?: string
   }
 
-  const allRows: ApprovalRow[] = data?.myApprovalRequests ?? []
-  const myUid = String(user?.id ?? '')
+  /** Every pending row assigned to the current user (no cap — avoids missing approvals when inbox history is truncated). */
+  const pendingForMe = useMemo((): ApprovalRow[] => {
+    const raw = pendingAssigneeData?.myPendingApprovalRequests ?? []
+    return raw.map((r: Record<string, unknown>) => ({
+      id: String(r.id ?? ''),
+      title: (r.title as string | null | undefined) ?? null,
+      moduleKey: r.moduleKey as string | undefined,
+      entityType: r.entityType as string | undefined,
+      entityId: r.entityId != null ? String(r.entityId) : undefined,
+      status: 'PENDING' as const,
+      requesterUserId:
+        r.requesterUserId != null && String(r.requesterUserId).trim()
+          ? String(r.requesterUserId)
+          : undefined,
+      requesterDisplayName: (r.requesterDisplayName as string | null | undefined) ?? null,
+      assigneeApproverUserId:
+        r.assigneeApproverUserId != null ? String(r.assigneeApproverUserId) : myUid,
+      resolutionNote: null,
+      decidedAt: null,
+      createdAt: r.createdAt as string | undefined,
+      updatedAt: r.updatedAt as string | undefined,
+    }))
+  }, [pendingAssigneeData, myUid])
 
-  const pendingForMe = useMemo(
-    () =>
-      allRows.filter(
-        (r) => r.status === 'PENDING' && String(r.assigneeApproverUserId ?? '') === myUid,
-      ),
-    [allRows, myUid],
-  )
+  const pendingForMeIds = useMemo(() => new Set(pendingForMe.map((r) => r.id)), [pendingForMe])
+
+  const allRows: ApprovalRow[] = data?.myApprovalRequests ?? []
+
+  /** Pending I requested: from history feed only; exclude duplicates already listed under pending for assignee (e.g. self-assignment). */
   const pendingSentByMe = useMemo(
     () =>
       allRows.filter(
-        (r) => r.status === 'PENDING' && String(r.requesterUserId ?? '') === myUid,
+        (r) =>
+          r.status === 'PENDING' &&
+          String(r.requesterUserId ?? '') === myUid &&
+          !pendingForMeIds.has(r.id),
       ),
-    [allRows, myUid],
+    [allRows, myUid, pendingForMeIds],
   )
+
   const approvedRows = useMemo(() => allRows.filter((r) => r.status === 'APPROVED'), [allRows])
   const rejectedRows = useMemo(() => allRows.filter((r) => r.status === 'REJECTED'), [allRows])
 
-  const showApprovalsInbox = allRows.length > 0 || isDesignatedApprover
+  const showApprovalsInbox =
+    pendingForMe.length > 0 || allRows.length > 0 || pendingSentByMe.length > 0 || isDesignatedApprover
   const badgeCount = pendingForMe.length
 
   useEffect(() => {
@@ -308,7 +444,10 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
   }, [])
 
   const [resolveApproval] = useMutation(RESOLVE_APPROVAL_REQUEST, {
-    onCompleted: () => refetch(),
+    onCompleted: () => {
+      void refetch()
+      void refetchPendingAssignee()
+    },
     onError: (e) => alert(e.message),
   })
 
@@ -327,6 +466,12 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
       setResolvingId(null)
     }
   }
+
+  const inboxStillLoading =
+    !user?.id
+      ? false
+      : (pendingAssigneeLoading && pendingAssigneeData === undefined) ||
+        (loading && data === undefined)
 
   const initials = ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase() || 'U'
   const orgName = orgData?.organization?.name as string | undefined
@@ -484,7 +629,7 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
                   </div>
                   <div className="flex-1 overflow-y-auto">
                     <TabsContent value="pending" className="m-0 px-4 py-3 space-y-3">
-                      {loading && allRows.length === 0 ? (
+                      {inboxStillLoading && pendingForMe.length === 0 && pendingSentByMe.length === 0 ? (
                         <p className="text-sm text-muted-foreground px-2">Loading requests…</p>
                       ) : pendingForMe.length + pendingSentByMe.length === 0 ? (
                         <div className="rounded-xl border border-dashed bg-secondary/40 px-4 py-12 text-center text-sm text-muted-foreground">
