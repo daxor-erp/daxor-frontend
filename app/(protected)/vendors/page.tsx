@@ -235,6 +235,7 @@ export default function VendorsPage() {
         searchable
         searchPlaceholder="Search vendors..."
         emptyMessage="No vendors yet. Click 'New Vendor' to add one."
+        onRowClick={handleEdit}
         actions={[
           commonActions.sendForApproval({
             entityLabel: 'vendor',

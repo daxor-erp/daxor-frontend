@@ -7,17 +7,11 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { Save, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-
-const GET_CLIENTS = gql`
-  query GetClientsForEnquiry($organizationId: ID) {
-    clients(organizationId: $organizationId) {
-      id
-      name
-      company
-      status
-    }
-  }
-`
+import {
+  GET_CUSTOMERS_FOR_SALES,
+  mapSalesCustomers,
+  customerSelectOptions,
+} from '@/lib/sales-customer-options'
 
 const CREATE_SALES_ENQUIRY = gql`
   mutation CreateSalesEnquiry($input: CreateSalesEnquiryInput!) {
@@ -31,7 +25,7 @@ const CREATE_SALES_ENQUIRY = gql`
 `
 
 const EMPTY_FORM = {
-  clientId: '',
+  customerId: '',
   enquirySource: '',
   subject: '',
   projectType: '',
@@ -92,7 +86,7 @@ export default function SalesEnquiryPage() {
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
 
-  const { data: clientsData, loading: clientsLoading } = useQuery(GET_CLIENTS, {
+  const { data: customersData, loading: customersLoading } = useQuery(GET_CUSTOMERS_FOR_SALES, {
     variables: { organizationId: orgId },
     skip: !orgId,
     fetchPolicy: 'network-only',
@@ -122,21 +116,17 @@ export default function SalesEnquiryPage() {
           ...formData,
           budget: formData.budget ? parseFloat(formData.budget) : undefined,
           assignedTo: formData.assignedTo || undefined,
-          clientId: formData.clientId || undefined,
+          customerId: formData.customerId || undefined,
         },
       },
     })
   }
 
-  const clients = clientsData?.clients ?? []
-
-  const clientOptions = [
-    { value: '', label: clientsLoading ? 'Loading clients…' : 'Select client...' },
-    ...clients.map((c: any) => ({
-      value: c.id,
-      label: `${c.name}${c.company ? ` — ${c.company}` : ''}`,
-    })),
-  ]
+  const customers = mapSalesCustomers(customersData?.customers)
+  const customerOptions = customerSelectOptions(
+    customers,
+    customersLoading ? 'Loading customers…' : 'Select customer…',
+  )
 
   return (
     <div className="p-6 space-y-6">
@@ -166,10 +156,10 @@ export default function SalesEnquiryPage() {
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <SelectFloating
-              label="Client"
-              value={formData.clientId}
-              onChange={(e) => setF('clientId', typeof e === 'string' ? e : e.target.value)}
-              options={clientOptions}
+              label="Customer"
+              value={formData.customerId}
+              onChange={(e) => setF('customerId', typeof e === 'string' ? e : e.target.value)}
+              options={customerOptions}
               className="h-7 text-xs"
             />
             <SelectFloating

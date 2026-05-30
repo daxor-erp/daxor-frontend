@@ -659,6 +659,7 @@ export default function MaterialReceiptPage() {
         searchable
         searchPlaceholder="Search MRNs…"
         emptyMessage="No material receipts yet. Click 'New MRN' to record received goods."
+        onRowClick={handleEdit}
         actions={[
           {
             label: 'Edit',

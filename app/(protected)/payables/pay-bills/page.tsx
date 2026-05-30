@@ -68,6 +68,22 @@ export default function PayBillsPage() {
     setErrors({})
   }
 
+  const tryOpenPayForm = (row: any) => {
+    if (row.status === 'paid') {
+      alert('This bill is already fully paid.')
+      return
+    }
+    if (row.status === 'cancelled') {
+      alert('Cannot pay a cancelled bill.')
+      return
+    }
+    if (['draft', 'submitted', 'approval_declined'].includes(row.status)) {
+      alert('Bill must be approved before recording payment. Use Enter Bills to submit or approve.')
+      return
+    }
+    openPayForm(row)
+  }
+
   const handleSubmit = () => {
     const e: Record<string, string> = {}
     const amount = parseFloat(payAmount)
@@ -266,18 +282,12 @@ export default function PayBillsPage() {
         searchable
         searchPlaceholder="Search bills..."
         emptyMessage="No bills found. Create bills in Payables → Enter Bills first."
+        onRowClick={tryOpenPayForm}
         actions={[
           {
             label: 'Pay',
             icon: <DollarSign className="h-3.5 w-3.5" />,
-            onClick: row => {
-              if (row.status === 'paid') return alert('This bill is already fully paid.')
-              if (row.status === 'cancelled') return alert('Cannot pay a cancelled bill.')
-              if (['draft', 'submitted', 'approval_declined'].includes(row.status)) {
-                return alert('Bill must be approved before recording payment. Use Enter Bills to submit or approve.')
-              }
-              openPayForm(row)
-            },
+            onClick: (row) => tryOpenPayForm(row),
             variant: 'ghost',
           },
         ]}

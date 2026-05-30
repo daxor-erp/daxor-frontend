@@ -364,6 +364,17 @@ export default function EnterBillsPage() {
         searchable
         searchPlaceholder="Search bills..."
         emptyMessage="No bills yet. Click 'New Bill' to record a vendor invoice."
+        onRowClick={(row) => {
+          setForm({
+            vendorId: String(row.vendorId ?? row.vendor?.id ?? ''),
+            billDate: row.billDate ? String(row.billDate).slice(0, 10) : new Date().toISOString().split('T')[0],
+            dueDate: row.dueDate ? String(row.dueDate).slice(0, 10) : '',
+            notes: row.notes ?? '',
+          })
+          setLineItems([{ ...EMPTY_LINE }])
+          setEditing(row.id)
+          setAdding(true)
+        }}
         actions={[
           {
             label: 'Approve',

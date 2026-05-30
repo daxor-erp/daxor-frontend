@@ -7,7 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "codegen": "graphql-codegen --config codegen.ts && node scripts/fix-codegen.js && node -e \"const fs=require('fs');const f='gql/gql.ts';fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace('const documents = [];','const documents: any[] = [];'))\""
+    "codegen": "graphql-codegen --config codegen.ts && node scripts/fix-codegen.js && node -e \"const fs=require('fs');const f='gql/gql.ts';fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace('const documents = [];','const documents: any[] = [];'))\"",
+    "test:e2e": "playwright test",
+    "test:e2e:auth": "playwright test e2e/auth-login.spec.ts",
+    "test:e2e:sales": "playwright test e2e/sales-flow.spec.ts --workers=1",
+    "test:e2e:accounting": "playwright test e2e/accounting-ar.spec.ts --workers=1",
+    "test:e2e:sales-accounting": "playwright test e2e/sales-flow.spec.ts e2e/accounting-ar.spec.ts --workers=1",
+    "test:e2e:payables": "playwright test e2e/payables-flow.spec.ts --workers=1",
+    "test:e2e:flows": "playwright test e2e/sales-flow.spec.ts e2e/accounting-ar.spec.ts e2e/payables-flow.spec.ts --workers=1",
+    "test:e2e:flows:all": "playwright test e2e/auth-login.spec.ts e2e/sales-flow.spec.ts e2e/accounting-ar.spec.ts e2e/payables-flow.spec.ts --workers=1",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "e2e:pdf-images": "node scripts/pdf-flow-to-images.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.11.0",

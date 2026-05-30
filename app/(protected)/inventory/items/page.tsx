@@ -398,6 +398,7 @@ export default function ItemsPage() {
         searchable
         searchPlaceholder="Search items..."
         emptyMessage="No items yet. Click 'New Item' to add one."
+        onRowClick={handleEdit}
         actions={[
           {
             label: 'Edit',

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import { shouldIgnoreRowClick } from '@/lib/data-table-row-click'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Plus, Search, Filter, Download, Trash2, Edit, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
@@ -60,6 +61,10 @@ export interface DataTableProps<T = any> {
   compact?: boolean
   className?: string
   pageSize?: number
+  /** Open edit/view panel when user clicks a row (not action buttons or inputs). */
+  onRowClick?: (row: T) => void
+  /** When false, rows are not clickable even if onRowClick is set. */
+  isRowClickable?: (row: T) => boolean
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -85,6 +90,8 @@ export function DataTable<T extends Record<string, any>>({
   compact = false,
   className = '',
   pageSize = 25,
+  onRowClick,
+  isRowClickable,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
@@ -129,6 +136,12 @@ export function DataTable<T extends Record<string, any>>({
   const pagedData = sortedData.slice(safePage * pageSize, (safePage + 1) * pageSize)
   const from = sortedData.length === 0 ? 0 : safePage * pageSize + 1
   const to = Math.min((safePage + 1) * pageSize, sortedData.length)
+
+  const handleRowClick = (row: T, event: MouseEvent<HTMLTableRowElement>) => {
+    if (!onRowClick || shouldIgnoreRowClick(event, event.currentTarget)) return
+    if (isRowClickable && !isRowClickable(row)) return
+    onRowClick(row)
+  }
 
   return (
     <div className={`bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm ${className}`}>
@@ -220,7 +233,9 @@ export function DataTable<T extends Record<string, any>>({
                   key={row[rowKey] || rowIdx}
                   className={`border-b border-gray-200 ${striped && rowIdx % 2 === 1 ? 'bg-gray-50/50' : 'bg-white'} ${
                     hoverable ? 'hover:bg-blue-50/30 transition-colors' : ''
-                  }`}
+                  } ${onRowClick && (!isRowClickable || isRowClickable(row)) ? 'cursor-pointer' : ''}`}
+                  onClick={onRowClick ? (e) => handleRowClick(row, e) : undefined}
+                  title={onRowClick && (!isRowClickable || isRowClickable(row)) ? 'Click to view or edit' : undefined}
                 >
                   <td className="border-r border-gray-200 text-center text-gray-300 py-2 w-8">
                     {safePage * pageSize + rowIdx + 1}
@@ -256,7 +271,10 @@ export function DataTable<T extends Record<string, any>>({
                               size="sm"
                               disabled={disabled}
                               title={tip}
-                              onClick={() => !disabled && action.onClick(row)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (!disabled) action.onClick(row)
+                              }}
                               className={`h-6 px-2 text-xs ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               {action.icon ?? action.label}

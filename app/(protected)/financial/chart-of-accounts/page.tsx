@@ -161,6 +161,7 @@ export default function ChartOfAccountsPage() {
         searchable
         searchPlaceholder="Search accounts..."
         emptyMessage="No accounts yet. Click 'New Account' to create one."
+        onRowClick={handleEdit}
         actions={[
           { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
           { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this account?')) deleteAccount({ variables: { id: row.id } }) }, variant: 'ghost' },

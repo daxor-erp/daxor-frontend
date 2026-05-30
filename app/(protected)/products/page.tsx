@@ -450,6 +450,7 @@ export default function ProductsPage() {
         searchable
         searchPlaceholder="Search products..."
         emptyMessage="No products yet. Click 'New Product' to add one."
+        onRowClick={handleEdit}
         actions={[
           {
             label: 'Edit',

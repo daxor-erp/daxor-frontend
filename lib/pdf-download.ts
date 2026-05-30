@@ -1,3 +1,5 @@
+import { authHeaders } from '@/lib/api-auth'
+
 /**
  * HTML → PDF download via backend Puppeteer (Chromium) endpoint.
  *
@@ -37,13 +39,9 @@ export type PdfDocumentType =
  * entities, renders the HTML template, and Puppeteer produces the PDF.
  */
 export async function downloadDocumentPdf(type: PdfDocumentType, id: string, filename?: string): Promise<void> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   const res = await fetch(documentPdfEndpoint(), {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ type, id }),
   })
   if (!res.ok) {
@@ -75,7 +73,7 @@ export interface DownloadPdfOptions {
 export async function downloadPdf({ html, filename = 'document', pdfOptions }: DownloadPdfOptions): Promise<void> {
   const res = await fetch(pdfEndpoint(), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ html, filename, options: pdfOptions }),
   })
   if (!res.ok) {

@@ -1,16 +1,20 @@
 'use client'
 
 import { useQuery, useMutation } from '@apollo/client'
-import { useState } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { summarizeJournalEntries } from '@/lib/ledger-totals'
+import { LedgerSummaryCards } from '@/components/financial/ledger-summary-cards'
 import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import { GET_JOURNAL_ENTRIES, CREATE_JOURNAL_ENTRY, POST_JOURNAL_ENTRY, DELETE_JOURNAL_ENTRY, GET_CHART_OF_ACCOUNTS } from '@/gql/queries'
-import { Trash2, X, Save, Plus, Minus, CheckCircle, Download } from 'lucide-react'
+import { Trash2, X, Save, Plus, Minus, CheckCircle, Download, Eye } from 'lucide-react'
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
+import { downloadCsv } from '@/lib/csv-download'
+import { JournalEntryViewPanel, type JournalEntryView } from '@/components/financial/journal-entry-view-panel'
 
 const EMPTY_LINE = { accountCode: '', accountName: '', debit: '', credit: '', description: '' }
 
@@ -19,6 +23,19 @@ export default function MakeJournalEntriesPage() {
   const orgId = user?.organizationId || ''
 
   const [adding, setAdding] = useState(false)
+  const [viewEntry, setViewEntry] = useState<JournalEntryView | null>(null)
+  const viewPanelRef = useRef<HTMLDivElement>(null)
+
+  const openView = (row: JournalEntryView) => {
+    setAdding(false)
+    reset()
+    setViewEntry(row)
+  }
+
+  useEffect(() => {
+    if (!viewEntry) return
+    viewPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [viewEntry])
   const [form, setForm] = useState({
     entryNumber: '',
     entryDate: new Date().toISOString().split('T')[0],
@@ -86,14 +103,14 @@ export default function MakeJournalEntriesPage() {
     const e: Record<string, string> = {}
     if (!form.entryNumber.trim()) e.entryNumber = 'Required'
     if (!form.description.trim()) e.description = 'Required'
-    
+
     const totalDebit = form.lines.reduce((sum, l) => sum + (parseFloat(l.debit) || 0), 0)
     const totalCredit = form.lines.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0)
-    
+
     if (Math.abs(totalDebit - totalCredit) > 0.01) {
       e.balance = 'Debits must equal credits'
     }
-    
+
     setErrors(e)
     return !Object.keys(e).length
   }
@@ -117,8 +134,13 @@ export default function MakeJournalEntriesPage() {
     createEntry({ variables: { input } })
   }
 
-  const entries = data?.journalEntries || []
+  const entries: JournalEntryView[] = data?.journalEntries || []
   const accounts = accountsData?.chartOfAccounts || []
+
+  const summary = useMemo(
+    () => summarizeJournalEntries(entries, accounts, { postedOnly: false }),
+    [entries, accounts],
+  )
 
   const totalDebit = form.lines.reduce((sum, l) => sum + (parseFloat(l.debit) || 0), 0)
   const totalCredit = form.lines.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0)
@@ -139,11 +161,28 @@ export default function MakeJournalEntriesPage() {
     { key: 'status', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${statusColor[v]}`}>{v}</span> },
   ]
 
+  const exportCsv = () => {
+    downloadCsv(
+      'journal-entries',
+      ['Code', 'Entry #', 'Date', 'Reference', 'Description', 'Debit', 'Credit', 'Status'],
+      entries.map((e) => [
+        e.seqNo ?? '',
+        e.entryNumber ?? '',
+        e.entryDate ? formatDate(e.entryDate) : '',
+        e.referenceNumber ?? '',
+        e.description ?? '',
+        String(e.totalDebit ?? 0),
+        String(e.totalCredit ?? 0),
+        e.status ?? '',
+      ]),
+    )
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Make Journal Entries</h1>
-        <p className="text-gray-500">Create manual journal entries</p>
+        <p className="text-gray-500">Create manual journal entries — click a row to view details in the panel above the table</p>
       </div>
 
       {adding && (
@@ -165,7 +204,7 @@ export default function MakeJournalEntriesPage() {
                 <span className="text-sm font-semibold">Journal Lines</span>
                 <Button size="sm" onClick={addLine} className="h-7 text-xs"><Plus className="h-3 w-3 mr-1" />Add Line</Button>
               </div>
-              
+
               {form.lines.map((line, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-start">
                   <div className="col-span-2">
@@ -218,22 +257,41 @@ export default function MakeJournalEntriesPage() {
         </div>
       )}
 
+      {!loading && entries.length > 0 && (
+        <LedgerSummaryCards summary={summary} variant="journal" />
+      )}
+
+      {viewEntry && (
+        <div ref={viewPanelRef}>
+          <JournalEntryViewPanel entry={viewEntry} onClose={() => setViewEntry(null)} />
+        </div>
+      )}
+
       <DataTable
         data={entries}
         columns={columns}
         loading={loading}
         title="All Journal Entries"
-        onAdd={() => { reset(); setAdding(true) }}
+        description={viewEntry ? 'Click another row to switch entry' : 'Click a row to view in the panel above'}
+        onAdd={() => { reset(); setAdding(true); setViewEntry(null) }}
         addLabel="New Entry"
         searchable
         searchPlaceholder="Search entries..."
         emptyMessage="No journal entries yet. Click 'New Entry' to create one."
+        exportable
+        onExport={exportCsv}
+        onRowClick={(row) => openView(row as JournalEntryView)}
         actions={[
+          { label: 'View', icon: <Eye className="h-3.5 w-3.5" />, onClick: row => openView(row as JournalEntryView), variant: 'ghost' },
           { label: 'Post', icon: <CheckCircle className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Post this entry?')) postEntry({ variables: { id: row.id } }) }, variant: 'ghost', show: (row: any) => row.status === 'draft' },
-          { label: 'Download PDF', icon: <Download className="h-3.5 w-3.5" />, onClick: row => downloadDocumentPdf('journal-entry', row.id, row.entryNumber || row.seqNo).catch(() => {}), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this entry?')) deleteEntry({ variables: { id: row.id } }) }, variant: 'ghost', show: (row: any) => row.status === 'draft' },
+          { label: 'Download PDF', icon: <Download className="h-3.5 w-3.5" />, onClick: row => downloadDocumentPdf('journal-entry', row.id, row.entryNumber ?? row.seqNo ?? undefined).catch(() => {}), variant: 'ghost' },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this entry?')) { deleteEntry({ variables: { id: row.id } }); if (viewEntry?.id === row.id) setViewEntry(null) } }, variant: 'ghost', show: (row: any) => row.status === 'draft' },
         ]}
       />
+
+      {accounts.length > 0 && (
+        <p className="text-xs text-gray-400">{accounts.length} chart of accounts loaded for line coding.</p>
+      )}
     </div>
   )
 }

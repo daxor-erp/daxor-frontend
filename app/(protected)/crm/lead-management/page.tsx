@@ -245,6 +245,7 @@ export default function LeadManagementPage() {
         searchable
         searchPlaceholder="Search leads..."
         emptyMessage="No leads yet. Click 'New Lead' to create one."
+        onRowClick={handleEdit}
         actions={[
           {
             label: 'View',

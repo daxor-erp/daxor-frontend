@@ -231,6 +231,7 @@ export default function TasksPage() {
         searchable
         searchPlaceholder="Search tasks..."
         emptyMessage="No tasks yet. Click 'New Task' to create one."
+        onRowClick={handleEdit}
         actions={[
           { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
           { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => handleDelete(row), variant: 'ghost' },

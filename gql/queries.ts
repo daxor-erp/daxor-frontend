@@ -856,29 +856,6 @@ export const GET_AUDIT_LOGS = gql`
 `
 
 // Auth
-export const REGISTER = gql`
-  mutation Register($input: RegisterInput!) {
-    register(input: $input) {
-      token
-      user {
-        id
-        email
-        firstName
-        lastName
-        roles
-        organizationId
-        modulePermissions {
-          moduleKey
-          canCreate
-          canUpdate
-          canDelete
-          canView
-        }
-      }
-    }
-  }
-`
-
 export const LOGIN = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
@@ -4288,10 +4265,17 @@ export const GET_QUOTATIONS = gql`
       id
       seqNo
       quotationNumber
+      customerId {
+        id
+        name
+        email
+        docNumber
+      }
       clientId {
         id
         name
         email
+        docNumber
       }
       subject
       quotationDate
@@ -4326,10 +4310,17 @@ export const GET_QUOTATION = gql`
       id
       seqNo
       quotationNumber
+      customerId {
+        id
+        name
+        email
+        docNumber
+      }
       clientId {
         id
         name
         email
+        docNumber
       }
       subject
       quotationDate
@@ -4363,10 +4354,17 @@ export const GET_QUOTATIONS_BY_ORGANIZATION = gql`
     quotationsByOrganization(organizationId: $organizationId) {
       id
       quotationNumber
+      customerId {
+        id
+        name
+        email
+        docNumber
+      }
       clientId {
         id
         name
         email
+        docNumber
       }
       subject
       quotationDate

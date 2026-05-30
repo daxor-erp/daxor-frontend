@@ -133,6 +133,7 @@ export default function SiteLocationsPage() {
         searchable
         searchPlaceholder="Search locations..."
         emptyMessage="No locations yet."
+        onRowClick={handleEdit}
         actions={[
           { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
           { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete?')) deleteLocation({ variables: { id: row.id } }) }, variant: 'ghost' },

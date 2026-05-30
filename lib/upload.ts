@@ -3,6 +3,8 @@
  * backend express.ts). Returns the created document metadata.
  */
 
+import { authHeaders, withAccessToken } from '@/lib/api-auth'
+
 export interface UploadedDoc {
   id: string
   filename: string
@@ -33,7 +35,7 @@ export async function uploadDocument(params: {
   const base64 = await readAsBase64(file)
   const res = await fetch(`${apiBase()}/api/documents/upload`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       organizationId: params.organizationId,
       parentModule: params.parentModule,
@@ -58,7 +60,7 @@ export function buildDownloadUrl(idOrPath: string): string {
     if (idOrPath.startsWith('/')) return `${apiBase()}${idOrPath}`
     return idOrPath
   }
-  return `${apiBase()}/api/documents/${idOrPath}/download`
+  return withAccessToken(`${apiBase()}/api/documents/${idOrPath}/download`)
 }
 
 export function humanFileSize(bytes: number): string {
