@@ -1704,6 +1704,17 @@ export const CREATE_PURCHASE_ORDER = gql`
   }
 `
 
+export const CREATE_PURCHASE_REQUISITION = gql`
+  mutation CreatePurchaseRequisition($input: CreatePurchaseOrderInput!) {
+    createPurchaseRequisition(input: $input) {
+      id
+      seqNo
+      status
+      totalAmount
+    }
+  }
+`
+
 export const UPDATE_PURCHASE_ORDER = gql`
   mutation UpdatePurchaseOrder($id: ID!, $input: UpdatePurchaseOrderInput!) {
     updatePurchaseOrder(id: $id, input: $input) {
