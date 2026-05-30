@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { filterNavigationByModuleView, type ErpNavItem } from '@/lib/erp-module-access'
+import { filterNavigationByPackageModules } from '@/lib/package-module-access'
 import {
   ChevronDown,
   ChevronsLeft,
@@ -44,13 +45,19 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const visibleNavigation = useMemo(
-    () =>
-      filterNavigationByModuleView(
+    () => {
+      const byRole = filterNavigationByModuleView(
         NAVIGATION as unknown as ErpNavItem[],
         user?.modulePermissions,
         user?.roles,
-      ) as NavItem[],
-    [user?.modulePermissions, user?.roles],
+      ) as NavItem[]
+      return filterNavigationByPackageModules(
+        byRole as ErpNavItem[],
+        user?.packageEnabledModules,
+        user?.roles,
+      ) as NavItem[]
+    },
+    [user?.modulePermissions, user?.packageEnabledModules, user?.roles],
   )
 
   // Find the single best matching leaf for the current route (longest prefix wins),

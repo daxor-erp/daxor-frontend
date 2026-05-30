@@ -18,6 +18,7 @@ export function MeSync() {
     if (!me) return
     mergeUser({
       modulePermissions: me.modulePermissions ?? [],
+      packageEnabledModules: me.packageEnabledModules ?? [],
       dashboardPreferences: me.dashboardPreferences ?? null,
     })
   }, [data?.me, mergeUser])

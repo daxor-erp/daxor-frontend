@@ -16,6 +16,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { filterNavigationByModuleView, type ErpNavItem } from '@/lib/erp-module-access'
+import { filterNavigationByPackageModules } from '@/lib/package-module-access'
 import { NAVIGATION, type NavItem } from '@/lib/navigation'
 import { cn } from '@/lib/utils'
 import {
@@ -49,13 +50,19 @@ export function TopNavbar({ showBrand = true }: TopNavbarProps) {
   const ulRef = useRef<HTMLUListElement>(null)
 
   const visibleNavigation = useMemo(
-    () =>
-      filterNavigationByModuleView(
+    () => {
+      const byRole = filterNavigationByModuleView(
         NAVIGATION as unknown as ErpNavItem[],
         user?.modulePermissions,
         user?.roles,
-      ) as unknown as NavItem[],
-    [user?.modulePermissions, user?.roles],
+      ) as unknown as NavItem[]
+      return filterNavigationByPackageModules(
+        byRole as ErpNavItem[],
+        user?.packageEnabledModules,
+        user?.roles,
+      ) as unknown as NavItem[]
+    },
+    [user?.modulePermissions, user?.packageEnabledModules, user?.roles],
   )
 
   // Close on route change
