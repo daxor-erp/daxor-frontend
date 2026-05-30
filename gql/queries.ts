@@ -919,6 +919,10 @@ export const ME = gql`
         canDelete
         canView
       }
+      packageEnabledModules {
+        moduleKey
+        submoduleKey
+      }
       dashboardPreferences {
         erp {
           hiddenWidgets
@@ -1109,6 +1113,7 @@ export const GET_ORGANIZATIONS = gql`
       status
       parentOrganizationId
       allowSubTenants
+      packageId
       createdAt
     }
   }
@@ -5068,5 +5073,109 @@ export const UPDATE_ORGANIZATION_ALLOW_SUB_TENANTS = gql`
       id
       allowSubTenants
     }
+  }
+`
+
+// Packages (platform admin)
+export const GET_PACKAGES = gql`
+  query GetPackages {
+    packages {
+      id
+      packageName
+      externalName
+      price
+      durationDays
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const CREATE_PACKAGE = gql`
+  mutation CreatePackage($input: CreatePackageInput!) {
+    createPackage(input: $input) {
+      id
+      packageName
+      externalName
+      price
+      durationDays
+      createdAt
+    }
+  }
+`
+
+export const UPDATE_PACKAGE = gql`
+  mutation UpdatePackage($id: ID!, $input: UpdatePackageInput!) {
+    updatePackage(id: $id, input: $input) {
+      id
+      packageName
+      externalName
+      price
+      durationDays
+      updatedAt
+    }
+  }
+`
+
+export const GET_PACKAGE_MODULE_ASSIGNMENT = gql`
+  query GetPackageModuleAssignment($packageId: ID!, $organizationId: ID!) {
+    packageModuleAssignment(packageId: $packageId, organizationId: $organizationId) {
+      id
+      packageId
+      organizationId
+      enabledModules {
+        moduleKey
+        submoduleKey
+      }
+      updatedAt
+      createdAt
+    }
+  }
+`
+
+export const GET_PACKAGE_MODULE_ASSIGNMENTS = gql`
+  query GetPackageModuleAssignments($packageId: ID!) {
+    packageModuleAssignments(packageId: $packageId) {
+      id
+      packageId
+      organizationId
+      organizationName
+      enabledModules {
+        moduleKey
+        submoduleKey
+      }
+      updatedAt
+      createdAt
+    }
+  }
+`
+
+export const SET_PACKAGE_MODULE_ASSIGNMENT = gql`
+  mutation SetPackageModuleAssignment(
+    $packageId: ID!
+    $organizationId: ID!
+    $enabledModules: [PackageEnabledModuleInput!]!
+  ) {
+    setPackageModuleAssignment(
+      packageId: $packageId
+      organizationId: $organizationId
+      enabledModules: $enabledModules
+    ) {
+      id
+      packageId
+      organizationId
+      enabledModules {
+        moduleKey
+        submoduleKey
+      }
+      updatedAt
+      createdAt
+    }
+  }
+`
+
+export const DELETE_PACKAGE_MODULE_ASSIGNMENT = gql`
+  mutation DeletePackageModuleAssignment($packageId: ID!, $organizationId: ID!) {
+    deletePackageModuleAssignment(packageId: $packageId, organizationId: $organizationId)
   }
 `

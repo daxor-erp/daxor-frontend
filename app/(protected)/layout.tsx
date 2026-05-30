@@ -12,6 +12,7 @@ import { MeSync } from '@/components/me-sync'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { canViewPath } from '@/lib/erp-module-access'
+import { canViewPathWithPackage } from '@/lib/package-module-access'
 import { useLayoutPreference } from '@/hooks/use-layout-preference'
 import { useAiPane } from '@/contexts/AiPaneContext'
 
@@ -81,6 +82,10 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     const path = pathname ?? ''
     if (path.startsWith('/admin') || path.startsWith('/org-admin')) return
     if (!canViewPath(path, user.modulePermissions, user.roles)) {
+      router.replace('/dashboard')
+      return
+    }
+    if (!canViewPathWithPackage(path, user.packageEnabledModules, user.roles)) {
       router.replace('/dashboard')
     }
   }, [hydrated, user, pathname, router])

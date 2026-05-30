@@ -24,6 +24,7 @@ import {
   Sparkles,
   Zap,
   Megaphone,
+  Package,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
@@ -43,6 +44,7 @@ const nav = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/organizations', label: 'Organizations', icon: Building2 },
   { href: '/admin/sub-tenants', label: 'Sub-tenants', icon: Building },
+  { href: '/admin/packages', label: 'Packages', icon: Package },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/notifications', label: 'Send notification', icon: Megaphone },
   { href: '/admin/audit-log', label: 'Audit log', icon: Activity },
