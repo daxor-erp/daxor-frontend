@@ -11,6 +11,11 @@ export interface ModulePermissionRow {
   canView: boolean
 }
 
+export interface PackageEnabledModuleRow {
+  moduleKey: string
+  submoduleKey: string
+}
+
 export interface DashboardWidgetPrefs {
   hiddenWidgets: string[]
   widgetOrder: string[]
@@ -30,6 +35,7 @@ interface User {
   roles: string[]
   organizationId?: string | null
   modulePermissions?: ModulePermissionRow[]
+  packageEnabledModules?: PackageEnabledModuleRow[]
   dashboardPreferences?: DashboardPreferences | null
 }
 

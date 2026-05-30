@@ -1012,6 +1012,13 @@ export type CreateOrganizationWithOrgAdminInput = {
   organization: CreateOrganizationInput;
 };
 
+export type CreatePackageInput = {
+  durationDays: Scalars['Int']['input'];
+  externalName: Scalars['String']['input'];
+  packageName: Scalars['String']['input'];
+  price: Scalars['Float']['input'];
+};
+
 export type CreateProductInput = {
   barcode?: InputMaybe<Scalars['String']['input']>;
   brand?: InputMaybe<Scalars['String']['input']>;
@@ -2606,6 +2613,7 @@ export type Mutation = {
   createOpportunity: Opportunity;
   createOrganization: Organization;
   createOrganizationWithOrgAdmin: Organization;
+  createPackage: Package;
   createPayrollManagement: PayrollManagement;
   createPayrollUiRecord: PayrollUiRecord;
   createProduct: Product;
@@ -2691,6 +2699,7 @@ export type Mutation = {
   deleteOnboarding: Scalars['Boolean']['output'];
   deleteOpportunity: Scalars['Boolean']['output'];
   deleteOrganization: Organization;
+  deletePackageModuleAssignment: Scalars['Boolean']['output'];
   deletePayrollManagement: Scalars['Boolean']['output'];
   deletePayrollUiRecord: Scalars['Boolean']['output'];
   deletePayslip: Scalars['Boolean']['output'];
@@ -2757,6 +2766,7 @@ export type Mutation = {
   sendQuotation: SendQuotationResult;
   /** Replace module-level approver assignments for an organization (org admin: own org only). */
   setOrganizationModuleApprovers: Organization;
+  setPackageModuleAssignment: PackageModuleAssignment;
   setQCInspectionOutcome: QcInspection;
   setUserModulePermissions: User;
   startAssetMaintenance: AssetMaintenance;
@@ -2838,6 +2848,7 @@ export type Mutation = {
   updateOnboarding: Onboarding;
   updateOpportunity: Opportunity;
   updateOrganization: Organization;
+  updatePackage: Package;
   updatePayrollManagement: PayrollManagement;
   updatePayrollUiRecord: PayrollUiRecord;
   updateProduct: Product;
@@ -3275,6 +3286,11 @@ export type MutationCreateOrganizationWithOrgAdminArgs = {
 };
 
 
+export type MutationCreatePackageArgs = {
+  input: CreatePackageInput;
+};
+
+
 export type MutationCreatePayrollManagementArgs = {
   input: PayrollManagementInput;
 };
@@ -3695,6 +3711,12 @@ export type MutationDeleteOrganizationArgs = {
 };
 
 
+export type MutationDeletePackageModuleAssignmentArgs = {
+  organizationId: Scalars['ID']['input'];
+  packageId: Scalars['ID']['input'];
+};
+
+
 export type MutationDeletePayrollManagementArgs = {
   id: Scalars['ID']['input'];
 };
@@ -3990,6 +4012,13 @@ export type MutationSendQuotationArgs = {
 export type MutationSetOrganizationModuleApproversArgs = {
   assignments: Array<OrganizationModuleApproverInput>;
   organizationId: Scalars['ID']['input'];
+};
+
+
+export type MutationSetPackageModuleAssignmentArgs = {
+  enabledModules: Array<PackageEnabledModuleInput>;
+  organizationId: Scalars['ID']['input'];
+  packageId: Scalars['ID']['input'];
 };
 
 
@@ -4423,6 +4452,12 @@ export type MutationUpdateOrganizationArgs = {
 };
 
 
+export type MutationUpdatePackageArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdatePackageInput;
+};
+
+
 export type MutationUpdatePayrollManagementArgs = {
   id: Scalars['ID']['input'];
   input: PayrollManagementInput;
@@ -4739,6 +4774,7 @@ export type Organization = {
   id: Scalars['ID']['output'];
   moduleApprovers: Array<OrganizationModuleApprover>;
   name: Scalars['String']['output'];
+  packageId?: Maybe<Scalars['ID']['output']>;
   parentOrganizationId?: Maybe<Scalars['ID']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
   seqNo: Scalars['String']['output'];
@@ -4778,6 +4814,39 @@ export type PoLineItemInput = {
   lineTotal: Scalars['Float']['input'];
   quantity: Scalars['Float']['input'];
   unitPrice: Scalars['Float']['input'];
+};
+
+export type Package = {
+  __typename?: 'Package';
+  createdAt: Scalars['String']['output'];
+  durationDays: Scalars['Int']['output'];
+  externalName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  packageName: Scalars['String']['output'];
+  price: Scalars['Float']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
+export type PackageEnabledModule = {
+  __typename?: 'PackageEnabledModule';
+  moduleKey: Scalars['String']['output'];
+  submoduleKey: Scalars['String']['output'];
+};
+
+export type PackageEnabledModuleInput = {
+  moduleKey: Scalars['String']['input'];
+  submoduleKey: Scalars['String']['input'];
+};
+
+export type PackageModuleAssignment = {
+  __typename?: 'PackageModuleAssignment';
+  createdAt: Scalars['String']['output'];
+  enabledModules: Array<PackageEnabledModule>;
+  id: Scalars['ID']['output'];
+  organizationId: Scalars['ID']['output'];
+  organizationName: Scalars['String']['output'];
+  packageId: Scalars['ID']['output'];
+  updatedAt: Scalars['String']['output'];
 };
 
 export type PayrollManagement = {
@@ -5190,6 +5259,10 @@ export type Query = {
   organizationDocuments: Array<Document>;
   organizations: Array<Organization>;
   outstandingVendorBills: Array<VendorBill>;
+  packageModuleAssignment?: Maybe<PackageModuleAssignment>;
+  /** All tenant/sub-tenant assignments saved for a package. */
+  packageModuleAssignments: Array<PackageModuleAssignment>;
+  packages: Array<Package>;
   payrollmanagement?: Maybe<PayrollManagement>;
   payrollmanagements: Array<PayrollManagement>;
   payrolluirecord?: Maybe<PayrollUiRecord>;
@@ -6109,6 +6182,17 @@ export type QueryOrganizationsArgs = {
 
 export type QueryOutstandingVendorBillsArgs = {
   organizationId: Scalars['ID']['input'];
+};
+
+
+export type QueryPackageModuleAssignmentArgs = {
+  organizationId: Scalars['ID']['input'];
+  packageId: Scalars['ID']['input'];
+};
+
+
+export type QueryPackageModuleAssignmentsArgs = {
+  packageId: Scalars['ID']['input'];
 };
 
 
@@ -7605,6 +7689,13 @@ export type UpdateOrganizationInput = {
   status?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdatePackageInput = {
+  durationDays: Scalars['Int']['input'];
+  externalName: Scalars['String']['input'];
+  packageName: Scalars['String']['input'];
+  price: Scalars['Float']['input'];
+};
+
 export type UpdateProductInput = {
   barcode?: InputMaybe<Scalars['String']['input']>;
   brand?: InputMaybe<Scalars['String']['input']>;
@@ -7847,6 +7938,8 @@ export type User = {
   lastName: Scalars['String']['output'];
   modulePermissions?: Maybe<Array<ModulePermission>>;
   organizationId?: Maybe<Scalars['ID']['output']>;
+  /** Modules enabled for the user's organization via their assigned package. */
+  packageEnabledModules: Array<PackageEnabledModule>;
   roles?: Maybe<Array<Scalars['String']['output']>>;
   seqNo?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
