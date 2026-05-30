@@ -6,7 +6,7 @@ export default function StockTransfersPage() {
   return (
     <StockTransfersView
       title="Stock transfers"
-      description="Move inventory between warehouses with draft → confirm workflow."
+      description="Draft a transfer, then confirm to move qty between bins. GL (INV-ST) posts when from and to differ; same bin moves qty only."
       newPanelHeading="New stock transfer"
       tableTitle="All stock transfers"
       addLabel="New transfer"

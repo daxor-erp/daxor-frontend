@@ -2083,6 +2083,96 @@ export const CREATE_BANK_ACCOUNT = gql`
   }
 `
 
+export const UPDATE_BANK_ACCOUNT = gql`
+  mutation UpdateBankAccount($id: ID!, $input: BankAccountInput!) {
+    updateBankAccount(id: $id, input: $input) {
+      id
+      accountNumber
+      accountName
+      accountHolder
+      bankName
+      isActive
+    }
+  }
+`
+
+export const SYNC_CUSTOMER_INVOICE_ACCOUNTING = gql`
+  mutation SyncCustomerInvoiceAccounting($id: ID!) {
+    syncCustomerInvoiceAccounting(id: $id) {
+      id
+      seqNo
+      status
+      totalAmount
+    }
+  }
+`
+
+export const APPLY_CUSTOMER_CREDIT_MEMO = gql`
+  mutation ApplyCustomerCreditMemo($id: ID!, $creditAmount: Float!, $reason: String) {
+    applyCustomerCreditMemo(id: $id, creditAmount: $creditAmount, reason: $reason) {
+      id
+      seqNo
+      status
+      totalAmount
+      paidAmount
+    }
+  }
+`
+
+export const SYNC_VENDOR_BILL_ACCOUNTING = gql`
+  mutation SyncVendorBillAccounting($id: ID!) {
+    syncVendorBillAccounting(id: $id) {
+      id
+      billNumber
+      status
+      totalAmount
+    }
+  }
+`
+
+export const GET_TRIAL_BALANCE = gql`
+  query GetTrialBalance($organizationId: String!) {
+    trialBalance(organizationId: $organizationId) {
+      accountCode
+      accountName
+      accountType
+      debit
+      credit
+      net
+    }
+  }
+`
+
+export const GET_INCOME_STATEMENT = gql`
+  query GetIncomeStatement($organizationId: String!) {
+    incomeStatement(organizationId: $organizationId) {
+      totalRevenue
+      totalCogs
+      grossProfit
+      totalOperatingExpense
+      netIncome
+      revenueLines { accountCode accountName amount }
+      cogsLines { accountCode accountName amount }
+      expenseLines { accountCode accountName amount }
+    }
+  }
+`
+
+export const GET_BALANCE_SHEET = gql`
+  query GetBalanceSheet($organizationId: String!) {
+    balanceSheet(organizationId: $organizationId) {
+      totalAssets
+      totalLiabilities
+      totalEquity
+      totalLiabilitiesAndEquity
+      balanced
+      assetLines { accountCode accountName amount }
+      liabilityLines { accountCode accountName amount }
+      equityLines { accountCode accountName amount }
+    }
+  }
+`
+
 export const RECONCILE_CASH_BANK = gql`
   mutation ReconcileCashBank($id: ID!) {
     reconcileCashBank(id: $id) {
@@ -2408,6 +2498,10 @@ export const GET_CUSTOMERS = gql`
       zipCode
       taxNumber
       paymentTerms
+      bankName
+      bankAccountNumber
+      bankIfsc
+      bankBranch
       notes
       status
       invoiceBillable
@@ -3049,6 +3143,7 @@ export const GET_VENDOR_BILLS = gql`
       taxAmount
       totalAmount
       paidAmount
+      debitNotesApplied
       outstandingAmount
       notes
       status
@@ -3085,6 +3180,7 @@ export const GET_VENDOR_BILL = gql`
       taxAmount
       totalAmount
       paidAmount
+      debitNotesApplied
       outstandingAmount
       notes
       status
@@ -3107,6 +3203,7 @@ export const GET_OUTSTANDING_VENDOR_BILLS = gql`
       dueDate
       totalAmount
       paidAmount
+      debitNotesApplied
       outstandingAmount
       status
     }
@@ -4554,6 +4651,53 @@ export const CREATE_VENDOR_CREDIT = gql`
 export const DELETE_VENDOR_CREDIT = gql`
   mutation DeleteVendorCredit($id: ID!) {
     deleteVendorCredit(id: $id)
+  }
+`
+
+export const GET_VENDOR_DEBIT_NOTES = gql`
+  query GetVendorDebitNotes($organizationId: ID!, $vendorId: ID) {
+    vendorDebitNotes(organizationId: $organizationId, vendorId: $vendorId) {
+      id
+      debitNumber
+      vendorId
+      purchaseOrderId
+      vendorBillId
+      debitDate
+      totalAmount
+      appliedAmount
+      remainingAmount
+      reason
+      status
+      billAllocations { billId amount appliedAt }
+      createdAt
+    }
+  }
+`
+
+export const APPLY_VENDOR_DEBIT_NOTE_TO_BILL = gql`
+  mutation ApplyVendorDebitNoteToBill($debitNoteId: ID!, $billId: ID!, $amount: Float!) {
+    applyVendorDebitNoteToBill(debitNoteId: $debitNoteId, billId: $billId, amount: $amount) {
+      id
+      appliedAmount
+      remainingAmount
+      status
+      billAllocations { billId amount }
+    }
+  }
+`
+
+export const CREATE_VENDOR_DEBIT_NOTE = gql`
+  mutation CreateVendorDebitNote($input: CreateVendorDebitNoteInput!) {
+    createVendorDebitNote(input: $input) {
+      id
+      debitNumber
+      status
+      totalAmount
+      appliedAmount
+      remainingAmount
+      purchaseOrderId
+      vendorBillId
+    }
   }
 `
 

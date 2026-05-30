@@ -1,3 +1,5 @@
+import { formatMoney } from '@/lib/format-money'
+
 export type ChartAccountLike = {
   accountCode?: string | null
   accountName?: string | null
@@ -26,6 +28,8 @@ export type JournalEntryLike = {
   lines?: JournalLineLike[] | null
 }
 
+const ACCOUNT_TYPES = ['asset', 'liability', 'equity', 'revenue', 'expense', 'other'] as const
+
 export function findAccountCodesByRole(
   accounts: ChartAccountLike[],
   role: 'ar' | 'ap',
@@ -52,22 +56,37 @@ export function findAccountCodesByRole(
   return codes
 }
 
-function roleNameMatch(name: string, isAr: boolean): boolean {
-  if (isAr) return /accounts receivable/i.test(name) || /^ar$/i.test(name)
-  return /accounts payable/i.test(name) || /^ap$/i.test(name)
-}
-
-function journalLineInRole(line: JournalLineLike, role: 'ar' | 'ap', codes: Set<string>): boolean {
+function accountTypeForLine(
+  line: JournalLineLike,
+  typeByCode: Map<string, string>,
+): string {
   const code = String(line.accountCode ?? '').trim()
-  if (code && codes.has(code)) return true
-  const name = String(line.accountName ?? '')
-  return roleNameMatch(name, role === 'ar')
+  if (code && typeByCode.has(code)) return typeByCode.get(code)!
+  const name = String(line.accountName ?? '').toLowerCase()
+  if (/revenue/i.test(name)) return 'revenue'
+  if (/payable/i.test(name)) return 'liability'
+  if (/receivable/i.test(name)) return 'asset'
+  if (/expense/i.test(name)) return 'expense'
+  if (/cash|bank/i.test(name)) return 'asset'
+  return 'other'
 }
 
-/**
- * GL table rows are one amount per balanced Dr/Cr pair (same value on both sides).
- * Use journal entries for true line-level debit vs credit totals.
- */
+function emptyByType(): Record<string, number> {
+  return Object.fromEntries(ACCOUNT_TYPES.map((t) => [t, 0]))
+}
+
+function addToBucket(bucket: Record<string, number>, type: string, amount: number) {
+  const key = ACCOUNT_TYPES.includes(type as (typeof ACCOUNT_TYPES)[number]) ? type : 'other'
+  bucket[key] = (bucket[key] ?? 0) + amount
+}
+
+export function formatTypeBreakdown(byType: Record<string, number>): string {
+  const parts = ACCOUNT_TYPES.filter((t) => (byType[t] ?? 0) > 0.009).map(
+    (t) => `${t.charAt(0).toUpperCase() + t.slice(1)} ${formatMoney(byType[t])}`,
+  )
+  return parts.length ? parts.join(' · ') : '—'
+}
+
 export function summarizeGeneralLedger(
   ledgers: GeneralLedgerRowLike[],
   accounts: ChartAccountLike[],
@@ -111,14 +130,18 @@ export function summarizeJournalEntries(
   accounts: ChartAccountLike[],
   opts?: { postedOnly?: boolean },
 ) {
-  const arCodes = findAccountCodesByRole(accounts, 'ar')
-  const apCodes = findAccountCodesByRole(accounts, 'ap')
+  const typeByCode = new Map<string, string>()
+  for (const a of accounts) {
+    const code = String(a.accountCode ?? '').trim()
+    if (code) typeByCode.set(code, String(a.accountType ?? 'other').toLowerCase())
+  }
+
   const postedOnly = opts?.postedOnly !== false
+  const debitByType = emptyByType()
+  const creditByType = emptyByType()
 
   let journalDebit = 0
   let journalCredit = 0
-  let netReceivable = 0
-  let netPayable = 0
   let entryCount = 0
 
   for (const e of entries) {
@@ -128,10 +151,15 @@ export function summarizeJournalEntries(
     for (const line of e.lines ?? []) {
       const d = Number(line.debit) || 0
       const c = Number(line.credit) || 0
-      journalDebit += d
-      journalCredit += c
-      if (journalLineInRole(line, 'ar', arCodes)) netReceivable += d - c
-      if (journalLineInRole(line, 'ap', apCodes)) netPayable += c - d
+      const t = accountTypeForLine(line, typeByCode)
+      if (d > 0) {
+        journalDebit += d
+        addToBucket(debitByType, t, d)
+      }
+      if (c > 0) {
+        journalCredit += c
+        addToBucket(creditByType, t, c)
+      }
     }
   }
 
@@ -139,22 +167,51 @@ export function summarizeJournalEntries(
     entryCount,
     journalDebit,
     journalCredit,
-    netReceivable,
-    netPayable,
+    debitByType,
+    creditByType,
     balanced: Math.abs(journalDebit - journalCredit) < 0.02,
-    hasArAccount: arCodes.size > 0,
-    hasApAccount: apCodes.size > 0,
+    hasArAccount: findAccountCodesByRole(accounts, 'ar').size > 0,
+    hasApAccount: findAccountCodesByRole(accounts, 'ap').size > 0,
   }
 }
 
-/** Combined summary for General Ledger page (movement + journal line totals). */
+export function sumOutstanding(
+  rows: Array<{ outstandingAmount?: number | null; status?: string | null }>,
+  openStatuses: string[],
+): number {
+  let total = 0
+  for (const r of rows) {
+    const st = String(r.status ?? '').toLowerCase()
+    if (!openStatuses.includes(st)) continue
+    total += Number(r.outstandingAmount) || 0
+  }
+  return Math.round(total * 100) / 100
+}
+
+/** Combined summary for General Ledger page. */
 export function summarizeLedgerPage(
   ledgers: GeneralLedgerRowLike[],
   journals: JournalEntryLike[],
   accounts: ChartAccountLike[],
+  subledger?: {
+    customerInvoices?: Array<{ outstandingAmount?: number | null; status?: string | null }>
+    vendorBills?: Array<{ outstandingAmount?: number | null; status?: string | null }>
+  },
 ) {
   const gl = summarizeGeneralLedger(ledgers, accounts)
   const je = summarizeJournalEntries(journals, accounts, { postedOnly: true })
+
+  const openReceivable = sumOutstanding(subledger?.customerInvoices ?? [], [
+    'approved',
+    'sent',
+    'partially_paid',
+    'overdue',
+  ])
+  const openPayable = sumOutstanding(subledger?.vendorBills ?? [], [
+    'approved',
+    'partially_paid',
+  ])
+
   return {
     transactionCount: gl.transactionCount,
     postedCount: gl.postedCount,
@@ -162,9 +219,44 @@ export function summarizeLedgerPage(
     journalDebit: je.journalDebit,
     journalCredit: je.journalCredit,
     journalBalanced: je.balanced,
-    netReceivable: je.netReceivable,
-    netPayable: je.netPayable,
-    hasArAccount: gl.hasArAccount && je.hasArAccount,
-    hasApAccount: gl.hasApAccount && je.hasApAccount,
+    debitByType: je.debitByType,
+    creditByType: je.creditByType,
+    openReceivable,
+    openPayable,
+    hasArAccount: gl.hasArAccount,
+    hasApAccount: gl.hasApAccount,
+  }
+}
+
+/** Summary for Make Journal Entries page (includes open AR/AP). */
+export function summarizeJournalPage(
+  entries: JournalEntryLike[],
+  accounts: ChartAccountLike[],
+  subledger?: {
+    customerInvoices?: Array<{ outstandingAmount?: number | null; status?: string | null }>
+    vendorBills?: Array<{ outstandingAmount?: number | null; status?: string | null }>
+  },
+  opts?: { postedOnly?: boolean },
+) {
+  const je = summarizeJournalEntries(entries, accounts, opts)
+  const openReceivable = sumOutstanding(subledger?.customerInvoices ?? [], [
+    'approved',
+    'sent',
+    'partially_paid',
+    'overdue',
+  ])
+  const openPayable = sumOutstanding(subledger?.vendorBills ?? [], ['approved', 'partially_paid'])
+
+  return {
+    entryCount: je.entryCount,
+    journalDebit: je.journalDebit,
+    journalCredit: je.journalCredit,
+    journalBalanced: je.balanced,
+    debitByType: je.debitByType,
+    creditByType: je.creditByType,
+    openReceivable,
+    openPayable,
+    hasArAccount: je.hasArAccount,
+    hasApAccount: je.hasApAccount,
   }
 }

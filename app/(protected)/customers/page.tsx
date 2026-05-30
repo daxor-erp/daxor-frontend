@@ -22,6 +22,10 @@ const EMPTY_FORM = {
   zipCode: '',
   taxNumber: '',
   paymentTerms: '',
+  bankName: '',
+  bankAccountNumber: '',
+  bankIfsc: '',
+  bankBranch: '',
   notes: '',
 }
 
@@ -87,6 +91,10 @@ export default function CustomersPage() {
       zipCode: customer.zipCode || '',
       taxNumber: customer.taxNumber || '',
       paymentTerms: customer.paymentTerms || '',
+      bankName: customer.bankName || '',
+      bankAccountNumber: customer.bankAccountNumber || '',
+      bankIfsc: customer.bankIfsc || '',
+      bankBranch: customer.bankBranch || '',
       notes: customer.notes || '',
     })
     setEditing(customer.id)
@@ -172,6 +180,12 @@ export default function CustomersPage() {
                 ]}
                 className="h-7 text-xs"
               />
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              <InputFloating label="Bank name" value={form.bankName} onChange={e => setF('bankName', e.target.value)} className="h-7 text-xs" />
+              <InputFloating label="Account number" value={form.bankAccountNumber} onChange={e => setF('bankAccountNumber', e.target.value)} className="h-7 text-xs" />
+              <InputFloating label="IFSC / routing" value={form.bankIfsc} onChange={e => setF('bankIfsc', e.target.value)} className="h-7 text-xs" />
+              <InputFloating label="Branch" value={form.bankBranch} onChange={e => setF('bankBranch', e.target.value)} className="h-7 text-xs" />
             </div>
             <div className="grid grid-cols-4 gap-3">
               <InputFloating label="Address" value={form.address} onChange={e => setF('address', e.target.value)} className="h-7 text-xs" />

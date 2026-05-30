@@ -1,54 +1,58 @@
 # ERP process flows (source PDFs)
 
-These PDFs are the canonical business flows for Playwright E2E coverage.
+Canonical business flows for Playwright E2E. Convert PDFs to PNG reference images before writing or updating tests.
 
-| PDF | Module |
-|-----|--------|
-| `sales-flow.pdf` | Sales (enquiry → quotation → SO → delivery → invoice → payment) |
-| `crm-flow.pdf` | CRM |
-| `customers-banks-flow.pdf` | Customers & banking |
-| `inventory-flow.pdf` | Inventory |
-| `payroll-flow.pdf` | Payroll |
-| `production-flow.pdf` | Production |
-| `purchases-payables-flow.pdf` | Purchases & payables |
+## PDFs
 
-## Sales flow (`sales-flow.pdf`)
+| PDF | Module | E2E spec |
+|-----|--------|----------|
+| `sales-flow.pdf` | Sales | `e2e/sales-flow.spec.ts` |
+| `crm-flow.pdf` | CRM | `e2e/crm-flow.spec.ts` |
+| `customers-banks-flow.pdf` | Customers & banking | `e2e/customers-banks-flow.spec.ts` |
+| `inventory-flow.pdf` | Inventory | `e2e/inventory-flow.spec.ts` |
+| `inventory-flow.pdf` (payables slice) | GRN + debit note | `e2e/inventory-debit-flow.spec.ts` |
+| `payroll-flow.pdf` | Payroll | `e2e/payroll-flow.spec.ts` |
+| `production-flow.pdf` | Production | `e2e/production-flow.spec.ts` |
+| `purchases-payables-flow.pdf` | Payables | `e2e/payables-flow.spec.ts` |
 
-High-level path:
-
-1. Sales enquiry → optional approval → **won**
-2. Quotation → internal approval → **send to customer** → **accepted**
-3. Sales order → approval (non–cash sale) → active/approved
-4. Delivery order → READY → DISPATCHED → (challan approval) → DELIVERED
-5. Customer invoice → approval → **sent**
-6. Customer payment → invoice paid
-7. Optional branch: sales return & refund (not in default E2E yet)
-
-E2E: `e2e/sales-flow.spec.ts` (run with `npm run test:e2e:sales`).
-
-## Payables flow (`purchases-payables-flow.pdf`)
-
-High-level path:
-
-1. Vendor master
-2. Vendor bill (enter bill) → **approve**
-3. Accounting: **AP-BILL** (Dr Expense, Cr AP)
-4. Pay bill (vendor payment)
-5. Accounting: **AP-PAY** (Dr AP, Cr Cash)
-
-E2E: `e2e/payables-flow.spec.ts` (`npm run test:e2e:payables`).
-
-## Run all flow E2E (one command)
-
-```bash
-npm run test:e2e:flows
-```
-
-Runs: sales → AR accounting → payables (serial, one worker). Include auth with `npm run test:e2e:flows:all`.
-
-Convert PDF pages to PNG for reference:
+## Convert all PDFs to images
 
 ```bash
 npm run e2e:pdf-images
-# default: flows/sales-flow.pdf → e2e/docs/sales-flow/
+# or
+npm run e2e:pdf-images:all
+```
+
+Writes `e2e/docs/<flow-name>/page-*.png` for each PDF in this folder.
+
+Single PDF:
+
+```bash
+npm run e2e:pdf-images -- flows/crm-flow.pdf e2e/docs/crm-flow
+```
+
+Requires **poppler-utils** (`pdftoppm`).
+
+## Run E2E
+
+Prerequisites: API `:4000`, frontend `:3000`, `.env.e2e.local` with org admin credentials.
+
+```bash
+npm run test:e2e:flows          # all flow specs (serial)
+npm run test:e2e:flows:all      # + auth login
+npm run test:e2e:flows:remaining  # CRM, customers, inventory, payroll, production only
+```
+
+Per flow:
+
+```bash
+npm run test:e2e:sales
+npm run test:e2e:crm
+npm run test:e2e:customers-banks
+npm run test:e2e:inventory-flow
+npm run test:e2e:inventory-debit
+npm run test:e2e:payroll
+npm run test:e2e:production
+npm run test:e2e:payables
+npm run test:e2e:accounting
 ```

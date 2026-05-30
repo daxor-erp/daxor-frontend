@@ -2,13 +2,21 @@
 
 import { useQuery, useMutation } from '@apollo/client'
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { summarizeJournalEntries } from '@/lib/ledger-totals'
+import { summarizeJournalPage } from '@/lib/ledger-totals'
 import { LedgerSummaryCards } from '@/components/financial/ledger-summary-cards'
 import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
-import { GET_JOURNAL_ENTRIES, CREATE_JOURNAL_ENTRY, POST_JOURNAL_ENTRY, DELETE_JOURNAL_ENTRY, GET_CHART_OF_ACCOUNTS } from '@/gql/queries'
+import {
+  GET_JOURNAL_ENTRIES,
+  CREATE_JOURNAL_ENTRY,
+  POST_JOURNAL_ENTRY,
+  DELETE_JOURNAL_ENTRY,
+  GET_CHART_OF_ACCOUNTS,
+  GET_CUSTOMER_INVOICES,
+  GET_OUTSTANDING_VENDOR_BILLS,
+} from '@/gql/queries'
 import { Trash2, X, Save, Plus, Minus, CheckCircle, Download, Eye } from 'lucide-react'
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { formatMoney } from '@/lib/format-money'
@@ -53,6 +61,18 @@ export default function MakeJournalEntriesPage() {
   const { data: accountsData } = useQuery(GET_CHART_OF_ACCOUNTS, {
     variables: { organizationId: orgId },
     skip: !orgId,
+  })
+
+  const { data: invoiceData } = useQuery(GET_CUSTOMER_INVOICES, {
+    variables: { organizationId: orgId, page: 1, limit: 500 },
+    skip: !orgId,
+    fetchPolicy: 'cache-first',
+  })
+
+  const { data: vendorBillData } = useQuery(GET_OUTSTANDING_VENDOR_BILLS, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+    fetchPolicy: 'cache-first',
   })
 
   const [createEntry, { loading: saving }] = useMutation(CREATE_JOURNAL_ENTRY, {
@@ -137,9 +157,18 @@ export default function MakeJournalEntriesPage() {
   const entries: JournalEntryView[] = data?.journalEntries || []
   const accounts = accountsData?.chartOfAccounts || []
 
+  const customerInvoices = invoiceData?.customerinvoices ?? []
+  const vendorBills = vendorBillData?.outstandingVendorBills ?? []
+
   const summary = useMemo(
-    () => summarizeJournalEntries(entries, accounts, { postedOnly: false }),
-    [entries, accounts],
+    () =>
+      summarizeJournalPage(
+        entries,
+        accounts,
+        { customerInvoices, vendorBills },
+        { postedOnly: false },
+      ),
+    [entries, accounts, customerInvoices, vendorBills],
   )
 
   const totalDebit = form.lines.reduce((sum, l) => sum + (parseFloat(l.debit) || 0), 0)
@@ -257,7 +286,7 @@ export default function MakeJournalEntriesPage() {
         </div>
       )}
 
-      {!loading && entries.length > 0 && (
+      {orgId && !loading && (
         <LedgerSummaryCards summary={summary} variant="journal" />
       )}
 

@@ -279,27 +279,29 @@ test.describe('Sales flow (flows/sales-flow.pdf)', () => {
 
   // Smoke all sales-related routes from the flow diagram
   test('14 — sales module pages smoke', async ({ page }) => {
-    const routes = [
-      '/sales/sales-enquiry',
-      '/quotations',
-      '/quotations/send',
-      '/sales/enter-sales-order',
-      '/sales/delivery-orders',
-      '/sales/delivery-order',
-      '/delivery-challan',
-      '/sales/create-invoices',
-      '/sales/invoice-sales-order',
-      '/customers/accept-payments',
-      '/sales/enter-cash-sales',
-      '/sales/issue-credit-memos',
-      '/sales-returns',
-      '/sales/project',
-      '/customers',
+    const routes: Array<{ path: string; heading: RegExp }> = [
+      { path: '/sales/sales-enquiry', heading: /Sales Enquiry/i },
+      { path: '/quotations', heading: /Quotation/i },
+      { path: '/quotations/send', heading: /Send quotation/i },
+      { path: '/sales/enter-sales-order', heading: /Sales Order/i },
+      { path: '/sales/delivery-orders', heading: /Delivery Order/i },
+      { path: '/sales/delivery-order', heading: /Delivery Order/i },
+      { path: '/delivery-challan', heading: /Delivery Challan/i },
+      { path: '/sales/create-invoices', heading: /Invoice/i },
+      { path: '/sales/invoice-sales-order', heading: /Invoice Sales Order/i },
+      { path: '/customers/accept-payments', heading: /Accept Customer Payment/i },
+      { path: '/sales/enter-cash-sales', heading: /Cash Sales/i },
+      { path: '/sales/issue-credit-memos', heading: /Credit Memo/i },
+      { path: '/sales-returns', heading: /Sales Return/i },
+      { path: '/sales/project', heading: /Project/i },
+      { path: '/customers', heading: /Customer/i },
     ]
-    for (const route of routes) {
-      await page.goto(route)
+    for (const { path, heading } of routes) {
+      await page.goto(path)
       await expect(page).not.toHaveURL(/\/login/)
-      await expect(page.locator('h1').first()).toBeVisible({ timeout: 20_000 })
+      await expect(page.getByRole('heading', { name: heading }).first()).toBeVisible({
+        timeout: 25_000,
+      })
     }
   })
 })

@@ -50,6 +50,9 @@ const EMPTY_LINE = {
   unit: '',
 }
 
+/** Inventory receipts without a warehouse land in this bin (matches backend default). */
+const MAIN_BIN_OPTION = { value: '__MAIN__', label: 'MAIN (default receipt bin)' }
+
 function formatUiDate(value: string | null | undefined): string {
   if (value == null || value === '') return '—'
   const d = new Date(value)
@@ -187,12 +190,20 @@ export function StockTransfersView({
     setForm((p) => {
       const updated = { ...p, [k]: v }
       if (k === 'fromWarehouseId') {
-        const wh = warehouses.find((w: { id: string }) => w.id === v)
-        updated.fromWarehouseName = (wh as { warehouseName?: string })?.warehouseName || ''
+        if (v === MAIN_BIN_OPTION.value) {
+          updated.fromWarehouseName = 'MAIN'
+        } else {
+          const wh = warehouses.find((w: { id: string }) => w.id === v)
+          updated.fromWarehouseName = (wh as { warehouseName?: string })?.warehouseName || ''
+        }
       }
       if (k === 'toWarehouseId') {
-        const wh = warehouses.find((w: { id: string }) => w.id === v)
-        updated.toWarehouseName = (wh as { warehouseName?: string })?.warehouseName || ''
+        if (v === MAIN_BIN_OPTION.value) {
+          updated.toWarehouseName = 'MAIN'
+        } else {
+          const wh = warehouses.find((w: { id: string }) => w.id === v)
+          updated.toWarehouseName = (wh as { warehouseName?: string })?.warehouseName || ''
+        }
       }
       return updated
     })
@@ -224,12 +235,13 @@ export function StockTransfersView({
     if (requireToWarehouse && !String(form.toWarehouseId ?? '').trim()) {
       e.toWarehouseId = 'Required'
     }
-    if (
-      form.fromWarehouseId &&
-      form.toWarehouseId &&
-      form.fromWarehouseId === form.toWarehouseId
-    ) {
+    const fromKey = form.fromWarehouseId || (form.fromWarehouseName === 'MAIN' ? MAIN_BIN_OPTION.value : '')
+    const toKey = form.toWarehouseId || (form.toWarehouseName === 'MAIN' ? MAIN_BIN_OPTION.value : '')
+    if (fromKey && toKey && fromKey === toKey) {
       e.toWarehouseId = 'Must differ from source'
+    }
+    if (form.fromWarehouseName && form.toWarehouseName && form.fromWarehouseName === form.toWarehouseName) {
+      e.toWarehouseId = 'Must differ from source (same bin = qty only, no GL)'
     }
     setErrors(e)
     return Object.keys(e).length === 0
@@ -252,15 +264,17 @@ export function StockTransfersView({
       })),
     }
     if (form.notes.trim()) input.notes = form.notes.trim()
-    if (form.fromWarehouseId) {
+    if (form.fromWarehouseId && form.fromWarehouseId !== MAIN_BIN_OPTION.value) {
       input.fromWarehouseId = form.fromWarehouseId
-      const n = form.fromWarehouseName?.trim()
-      if (n) input.fromWarehouseName = n
     }
-    if (form.toWarehouseId) {
+    if (form.fromWarehouseName?.trim()) {
+      input.fromWarehouseName = form.fromWarehouseName.trim()
+    }
+    if (form.toWarehouseId && form.toWarehouseId !== MAIN_BIN_OPTION.value) {
       input.toWarehouseId = form.toWarehouseId
-      const n = form.toWarehouseName?.trim()
-      if (n) input.toWarehouseName = n
+    }
+    if (form.toWarehouseName?.trim()) {
+      input.toWarehouseName = form.toWarehouseName.trim()
     }
     createTr({ variables: { input } })
   }
@@ -354,6 +368,7 @@ export function StockTransfersView({
 
   const whOptions = [
     { value: '', label: 'Select warehouse…' },
+    MAIN_BIN_OPTION,
     ...warehouses.map((w: { id: string; warehouseName?: string }) => ({
       value: w.id,
       label: w.warehouseName ?? w.id,
@@ -572,6 +587,10 @@ export function StockTransfersView({
                 </table>
               </div>
             </div>
+
+            <p className="text-xs text-gray-500">
+              Use <strong>MAIN</strong> for stock received without a warehouse. Confirm moves qty; INV-ST posts when from ≠ to.
+            </p>
 
             <div className="flex justify-end gap-2 pt-1 border-t">
               <Button variant="outline" size="sm" type="button" onClick={closeForm} className="h-8 text-xs">

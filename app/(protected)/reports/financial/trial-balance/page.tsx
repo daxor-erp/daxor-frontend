@@ -3,8 +3,8 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
-import { GET_JOURNAL_ENTRIES } from '@/gql/queries'
-import { ReportShell, type ReportPeriod, periodRange, inRange } from '@/components/reports/report-shell'
+import { GET_TRIAL_BALANCE } from '@/gql/queries'
+import { ReportShell, type ReportPeriod } from '@/components/reports/report-shell'
 import { formatMoney } from '@/lib/format-money'
 import { escapeHtml, pdfMoney } from '@/lib/pdf-download'
 
@@ -13,31 +13,25 @@ export default function TrialBalancePage() {
   const orgId = user?.organizationId ?? ''
   const [period, setPeriod] = useState<ReportPeriod>('this_year')
 
-  const { data, loading, refetch } = useQuery(GET_JOURNAL_ENTRIES, {
+  const { data, loading, refetch } = useQuery(GET_TRIAL_BALANCE, {
     variables: { organizationId: orgId },
     skip: !orgId,
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'ignore',
   })
 
-  const journals: any[] = data?.journalEntries ?? []
-  const r = periodRange(period)
-
   const accounts = useMemo(() => {
-    const map = new Map<string, { account: string; debit: number; credit: number }>()
-    for (const je of journals) {
-      if (!inRange(je.date ?? je.transactionDate ?? je.createdAt, r)) continue
-      const lines: any[] = je.lines ?? je.entries ?? []
-      for (const line of lines) {
-        const key = String(line.accountName ?? line.account ?? line.accountId ?? 'Unspecified')
-        if (!map.has(key)) map.set(key, { account: key, debit: 0, credit: 0 })
-        const row = map.get(key)!
-        row.debit += Number(line.debit ?? 0)
-        row.credit += Number(line.credit ?? 0)
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => a.account.localeCompare(b.account))
-  }, [journals, period])
+    const rows: any[] = data?.trialBalance ?? []
+    return rows
+      .map((r) => ({
+        account: `${r.accountCode} — ${r.accountName}`,
+        accountCode: r.accountCode,
+        accountType: r.accountType,
+        debit: Number(r.debit) || 0,
+        credit: Number(r.credit) || 0,
+      }))
+      .sort((a, b) => String(a.accountCode).localeCompare(String(b.accountCode)))
+  }, [data])
 
   const totals = accounts.reduce(
     (s, a) => ({ debit: s.debit + a.debit, credit: s.credit + a.credit }),
@@ -110,7 +104,7 @@ export default function TrialBalancePage() {
           </thead>
           <tbody>
             {accounts.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground text-sm">No journal entries in this period.</td></tr>
+              <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground text-sm">No posted journal activity yet.</td></tr>
             ) : accounts.map((a) => (
               <tr key={a.account} className="border-t hover:bg-secondary/30">
                 <td className="px-4 py-2.5 font-medium">{a.account}</td>

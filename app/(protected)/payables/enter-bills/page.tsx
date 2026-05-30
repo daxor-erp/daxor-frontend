@@ -201,6 +201,17 @@ export default function EnterBillsPage() {
     { key: 'dueDate', label: 'Due Date', width: '110px', render: v => v ? formatDate(v) : '—' },
     { key: 'totalAmount', label: 'Total', width: '110px', align: 'right', render: v => <span className="font-semibold">{formatMoney(v)}</span> },
     { key: 'paidAmount', label: 'Paid', width: '100px', align: 'right', render: v => <span className="text-green-600">{formatMoney(v)}</span> },
+    {
+      key: 'debitNotesApplied',
+      label: 'Debited',
+      width: '90px',
+      align: 'right',
+      render: (v) => (
+        <span className={Number(v) > 0 ? 'text-violet-700 font-medium' : 'text-gray-400'}>
+          {formatMoney(v ?? 0)}
+        </span>
+      ),
+    },
     { key: 'outstandingAmount', label: 'Outstanding', width: '110px', align: 'right', render: v => <span className="font-semibold text-red-600">{formatMoney(v)}</span> },
     {
       key: 'status', label: 'Status', width: '130px',
