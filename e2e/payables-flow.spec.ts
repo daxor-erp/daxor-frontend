@@ -119,6 +119,9 @@ test.describe('Payables flow (purchases-payables-flow.pdf)', () => {
     })
 
     await page.goto('/general-ledger')
-    await expect(page.getByText('Accounts payable')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('heading', { name: /General Ledger/i })).toBeVisible({
+      timeout: 20_000,
+    })
+    await expect(page.getByText('Open payable')).toBeVisible({ timeout: 15_000 })
   })
 })

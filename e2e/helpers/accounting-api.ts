@@ -249,3 +249,124 @@ export async function assertVendorPaymentPosted(
 
   return { ref, journal: je!, glCount: glRows.length }
 }
+
+/** Backend: GRN confirmed → INV-GRN + inventory receipt. */
+export async function assertGrnPosted(
+  request: APIRequestContext,
+  token: string,
+  organizationId: string,
+  grnId: string,
+  grnNumber: string,
+) {
+  const refs = legacyAccountingRefCandidates('INV-GRN', grnNumber, grnId)
+  const entries = await fetchJournalEntries(request, token, organizationId)
+  const found = findJournalByRefs(entries, refs)
+  expect(found, `GRN journal missing (tried ${refs.join(', ')})`).toBeTruthy()
+  const je = found!.je
+  expect(je!.status).toBe('posted')
+
+  const gls = await fetchGeneralLedgers(request, token, organizationId)
+  const glRows = gls.filter((g) => g.referenceModule === 'grn' && g.referenceId === grnId)
+  expect(glRows.length).toBeGreaterThan(0)
+  return { ref: found!.ref, journal: je!, glCount: glRows.length }
+}
+
+/** Backend: vendor debit note → AP-VDN (Dr AP, Cr Expense). */
+export async function assertVendorDebitNotePosted(
+  request: APIRequestContext,
+  token: string,
+  organizationId: string,
+  debitNoteId: string,
+  debitNumber: string,
+) {
+  const refs = legacyAccountingRefCandidates('AP-VDN', debitNumber, debitNoteId)
+  const entries = await fetchJournalEntries(request, token, organizationId)
+  const found = findJournalByRefs(entries, refs)
+  expect(found, `Debit note journal missing (tried ${refs.join(', ')})`).toBeTruthy()
+  const je = found!.je
+  expect(je!.status).toBe('posted')
+  expect(je!.totalDebit).toBeCloseTo(je!.totalCredit, 2)
+
+  const apDebit = je!.lines.some((l) => l.debit > 0 && /payable/i.test(l.accountName))
+  const expCredit = je!.lines.some((l) => l.credit > 0 && /expense/i.test(l.accountName))
+  expect(apDebit).toBe(true)
+  expect(expCredit).toBe(true)
+
+  const gls = await fetchGeneralLedgers(request, token, organizationId)
+  const glRows = gls.filter(
+    (g) => g.referenceModule === 'vendor_debit_note' && g.referenceId === debitNoteId,
+  )
+  expect(glRows.length).toBeGreaterThan(0)
+  return { ref: found!.ref, journal: je!, glCount: glRows.length }
+}
+
+export async function assertStockAdjustmentPosted(
+  request: APIRequestContext,
+  token: string,
+  organizationId: string,
+  adjustmentId: string,
+  adjNumber: string,
+) {
+  const refs = legacyAccountingRefCandidates('INV-SA', adjNumber, adjustmentId)
+  const entries = await fetchJournalEntries(request, token, organizationId)
+  const found = findJournalByRefs(entries, refs)
+  expect(found, `Stock adjustment journal missing (tried ${refs.join(', ')})`).toBeTruthy()
+  const gls = await fetchGeneralLedgers(request, token, organizationId)
+  const glRows = gls.filter(
+    (g) => g.referenceModule === 'stock_adjustment' && g.referenceId === adjustmentId,
+  )
+  expect(glRows.length).toBeGreaterThan(0)
+  return { ref: found!.ref, journal: found!.je! }
+}
+
+export async function assertPayrollRunPosted(
+  request: APIRequestContext,
+  token: string,
+  organizationId: string,
+  payrollRunId: string,
+  docNumber: string,
+) {
+  const refs = legacyAccountingRefCandidates('PR-PAY', docNumber, payrollRunId)
+  const entries = await fetchJournalEntries(request, token, organizationId)
+  const found = findJournalByRefs(entries, refs)
+  expect(found, `Payroll journal missing (tried ${refs.join(', ')})`).toBeTruthy()
+  return { ref: found!.ref, journal: found!.je! }
+}
+
+export async function assertProductionCompletedPosted(
+  request: APIRequestContext,
+  token: string,
+  organizationId: string,
+  planId: string,
+  docNumber: string,
+) {
+  const refs = legacyAccountingRefCandidates('PRD-COMP', docNumber, planId)
+  const entries = await fetchJournalEntries(request, token, organizationId)
+  const found = findJournalByRefs(entries, refs)
+  expect(found, `Production completion journal missing (tried ${refs.join(', ')})`).toBeTruthy()
+  const gls = await fetchGeneralLedgers(request, token, organizationId)
+  const glRows = gls.filter(
+    (g) => g.referenceModule === 'production_planning' && g.referenceId === planId,
+  )
+  expect(glRows.length).toBeGreaterThan(0)
+  return { ref: found!.ref, journal: found!.je! }
+}
+
+export async function assertStockTransferPosted(
+  request: APIRequestContext,
+  token: string,
+  organizationId: string,
+  transferId: string,
+  transferNumber: string,
+) {
+  const refs = legacyAccountingRefCandidates('INV-ST', transferNumber, transferId)
+  const entries = await fetchJournalEntries(request, token, organizationId)
+  const found = findJournalByRefs(entries, refs)
+  expect(found, `Stock transfer journal missing (tried ${refs.join(', ')})`).toBeTruthy()
+  const gls = await fetchGeneralLedgers(request, token, organizationId)
+  const glRows = gls.filter(
+    (g) => g.referenceModule === 'stock_transfer' && g.referenceId === transferId,
+  )
+  expect(glRows.length).toBeGreaterThan(0)
+  return { ref: found!.ref, journal: found!.je! }
+}

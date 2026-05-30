@@ -2,7 +2,11 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_CUSTOMER_INVOICES, UPDATE_CUSTOMER_INVOICE, GET_ORGANIZATIONS } from '@/gql/queries'
+import {
+  GET_CUSTOMER_INVOICES,
+  APPLY_CUSTOMER_CREDIT_MEMO,
+  GET_ORGANIZATIONS,
+} from '@/gql/queries'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -56,8 +60,12 @@ export default function IssueCreditMemosPage() {
   })
   const { data: orgsData } = useQuery(GET_ORGANIZATIONS, { variables: { page: 1, limit: 200 } })
 
-  const [issueMemo, { loading: issuing, error: issueError }] = useMutation(UPDATE_CUSTOMER_INVOICE, {
-    onCompleted: () => { setSelected(null); resetForm(); refetch() },
+  const [issueMemo, { loading: issuing, error: issueError }] = useMutation(APPLY_CUSTOMER_CREDIT_MEMO, {
+    onCompleted: () => {
+      setSelected(null)
+      resetForm()
+      refetch()
+    },
   })
 
   const [selected, setSelected] = useState<any>(null)
@@ -101,13 +109,12 @@ export default function IssueCreditMemosPage() {
     if (!selected || !validate()) return
     const creditAmt = parseFloat(form.creditAmount)
     // Apply credit: reduce paidAmount by credit, mark as cancelled
+    const reason = [form.reason, form.notes].filter(Boolean).join(' — ')
     issueMemo({
       variables: {
         id: selected.id,
-        input: {
-          status: 'cancelled',
-          paidAmount: Math.max(0, (selected.paidAmount ?? 0) - creditAmt),
-        },
+        creditAmount: creditAmt,
+        reason: reason || undefined,
       },
     })
   }

@@ -1,151 +1,109 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
-import {
-  GET_CUSTOMER_INVOICES,
-  GET_VENDOR_BILLS,
-  GET_CASH_BANKS,
-  GET_INVENTORY_CONTROLS,
-} from '@/gql/queries'
+import { GET_BALANCE_SHEET } from '@/gql/queries'
 import { ReportShell, type ReportPeriod } from '@/components/reports/report-shell'
 import { formatMoney } from '@/lib/format-money'
 import { pdfMoney } from '@/lib/pdf-download'
+import { StatementLinesTable, type StatementLine } from '@/lib/financial-statement-lines'
 
 export default function BalanceSheetPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId ?? ''
   const [period, setPeriod] = useState<ReportPeriod>('this_year')
 
-  const invQ = useQuery(GET_CUSTOMER_INVOICES, {
-    variables: { organizationId: orgId, page: 1, limit: 1000 },
-    skip: !orgId,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
-  })
-  const billsQ = useQuery(GET_VENDOR_BILLS, {
-    variables: { organizationId: orgId, page: 1, limit: 1000 },
-    skip: !orgId,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
-  })
-  const cashQ = useQuery(GET_CASH_BANKS, {
+  const { data, loading, error, refetch } = useQuery(GET_BALANCE_SHEET, {
     variables: { organizationId: orgId },
     skip: !orgId,
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
-  })
-  const invCtlQ = useQuery(GET_INVENTORY_CONTROLS, {
-    variables: { organizationId: orgId },
-    skip: !orgId,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
   })
 
-  const invoices: any[] = invQ.data?.customerinvoices ?? []
-  const bills: any[] = billsQ.data?.vendorBills ?? []
-  const cashBanks: any[] = cashQ.data?.cashBanks ?? []
-  const invCtls: any[] = invCtlQ.data?.inventoryControls ?? []
+  const report = data?.balanceSheet
 
-  const totals = useMemo(() => {
-    const receivable = invoices.reduce((s, i) => s + Number(i.outstandingAmount ?? 0), 0)
-    const payable = bills.reduce((s, b) => s + Number(b.outstandingAmount ?? 0), 0)
-    // Cash = net of credit-style (RECEIPT/DEPOSIT/CREDIT) minus debit-style (PAYMENT/WITHDRAWAL/DEBIT) transactions.
-    const cash = cashBanks.reduce((s, c) => {
-      const amt = Number(c?.amount ?? 0)
-      const t = String(c?.transactionType ?? '').toUpperCase()
-      const isInflow = ['RECEIPT', 'DEPOSIT', 'CREDIT', 'IN', 'INFLOW'].includes(t)
-      const isOutflow = ['PAYMENT', 'WITHDRAWAL', 'DEBIT', 'OUT', 'OUTFLOW'].includes(t)
-      if (isInflow) return s + amt
-      if (isOutflow) return s - amt
-      return s + amt
-    }, 0)
-    const inventory = invCtls.reduce(
-      (s, it) => s + Number(it?.quantity ?? 0),
-      0,
-    )
-    const assets = cash + receivable + inventory
-    const liabilities = payable
-    const equity = assets - liabilities
-    return { receivable, payable, cash, inventory, assets, liabilities, equity }
-  }, [invoices, bills, cashBanks, invCtls])
-
-  const buildPdf = () => `
-    <div class="pdf-section">
-      <div class="pdf-section-title">Assets</div>
-      <table>
-        <tbody>
-          <tr><td>Cash &amp; bank</td><td class="num">${pdfMoney(totals.cash)}</td></tr>
-          <tr><td>Accounts receivable</td><td class="num">${pdfMoney(totals.receivable)}</td></tr>
-          <tr><td>Inventory at value</td><td class="num">${pdfMoney(totals.inventory)}</td></tr>
-          <tr style="background:#f3f4f6;"><td><strong>Total assets</strong></td><td class="num"><strong>${pdfMoney(totals.assets)}</strong></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="pdf-section">
-      <div class="pdf-section-title">Liabilities &amp; equity</div>
-      <table>
-        <tbody>
-          <tr><td>Accounts payable</td><td class="num">${pdfMoney(totals.payable)}</td></tr>
-          <tr><td>Equity (assets - liabilities)</td><td class="num">${pdfMoney(totals.equity)}</td></tr>
-          <tr style="background:#ecfdf5;border-top:2px solid #059669;"><td><strong>Total liabilities + equity</strong></td><td class="num"><strong>${pdfMoney(totals.liabilities + totals.equity)}</strong></td></tr>
-        </tbody>
-      </table>
-    </div>
-  `
+  const buildPdf = () => {
+    if (!report) return '<p>No data</p>'
+    const block = (title: string, lines: StatementLine[], total: number) => `
+      <div class="pdf-section">
+        <div class="pdf-section-title">${title}</div>
+        <table><tbody>
+          ${lines.map((l) => `<tr><td>${l.accountCode} ${l.accountName}</td><td class="num">${pdfMoney(l.amount)}</td></tr>`).join('')}
+          <tr style="background:#f3f4f6;font-weight:700;"><td>Total</td><td class="num">${pdfMoney(total)}</td></tr>
+        </tbody></table>
+      </div>`
+    return `
+      ${block('Assets', report.assetLines, report.totalAssets)}
+      ${block('Liabilities', report.liabilityLines, report.totalLiabilities)}
+      ${block('Equity', report.equityLines, report.totalEquity)}
+      <div class="pdf-meta">
+        <strong>Liabilities + equity:</strong> ${pdfMoney(report.totalLiabilitiesAndEquity)}
+        · ${report.balanced ? 'Balanced' : 'Out of balance'}
+      </div>
+    `
+  }
 
   return (
     <ReportShell
       title="Balance Sheet"
-      description="Snapshot of assets, liabilities and equity."
+      description="Assets, liabilities, and equity from posted journals (trial balance)."
       period={period}
       onPeriodChange={setPeriod}
-      onRefresh={() => {
-        invQ.refetch?.()
-        billsQ.refetch?.()
-        cashQ.refetch?.()
-        invCtlQ.refetch?.()
-      }}
-      loading={invQ.loading || billsQ.loading}
+      onRefresh={() => refetch?.()}
+      loading={loading}
       pdfBody={buildPdf}
       pdfFilename="balance-sheet"
     >
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
-          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Assets</p>
-          <Row label="Cash & bank" value={totals.cash} />
-          <Row label="Accounts receivable" value={totals.receivable} hint={`${invoices.length} open invoices`} />
-          <Row label="Inventory (units on hand)" value={totals.inventory} hint={`${invCtls.length} items tracked`} />
-          <Row label="Total assets" value={totals.assets} strong divider />
-        </div>
-        <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
-          <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Liabilities & equity</p>
-          <Row label="Accounts payable" value={totals.payable} hint={`${bills.length} open bills`} />
-          <Row label="Owner's equity" value={totals.equity} hint="Computed: assets − liabilities" />
-          <Row label="Total liabilities + equity" value={totals.liabilities + totals.equity} strong divider accent />
-        </div>
-      </div>
+      {error && (
+        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
+          {error.message}
+        </p>
+      )}
+      {!loading && !error && !report && (
+        <p className="text-sm text-muted-foreground mb-4">No balance sheet data yet. Post journals to the ledger first.</p>
+      )}
+      {report && (
+        <>
+          <div className="flex items-center gap-3 mb-4">
+            <span
+              className={
+                'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase ' +
+                (report.balanced
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-rose-50 text-rose-700 border border-rose-200')
+              }
+            >
+              {report.balanced ? 'Balanced' : 'Assets ≠ Liabilities + Equity'}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Assets {formatMoney(report.totalAssets)} · L+E {formatMoney(report.totalLiabilitiesAndEquity)}
+            </span>
+          </div>
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div>
+              <h3 className="text-sm font-semibold mb-2 flex justify-between">
+                <span>Assets</span>
+                <span className="tabular-nums">{formatMoney(report.totalAssets)}</span>
+              </h3>
+              <StatementLinesTable lines={report.assetLines} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold mb-2 flex justify-between">
+                <span>Liabilities</span>
+                <span className="tabular-nums">{formatMoney(report.totalLiabilities)}</span>
+              </h3>
+              <StatementLinesTable lines={report.liabilityLines} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold mb-2 flex justify-between">
+                <span>Equity</span>
+                <span className="tabular-nums">{formatMoney(report.totalEquity)}</span>
+              </h3>
+              <StatementLinesTable lines={report.equityLines} emptyLabel="No equity accounts" />
+            </div>
+          </div>
+        </>
+      )}
     </ReportShell>
-  )
-}
-
-function Row({
-  label, value, strong, divider, accent, hint,
-}: { label: string; value: number; strong?: boolean; divider?: boolean; accent?: boolean; hint?: string }) {
-  return (
-    <div className={divider ? 'pt-2 mt-2 border-t border-border' : ''}>
-      <div className="flex items-center justify-between gap-2">
-        <span className={'text-sm ' + (strong ? 'font-semibold' : '')}>{label}</span>
-        <span className={
-          'tabular-nums text-sm ' +
-          (strong ? 'font-bold ' : '') +
-          (accent ? 'text-emerald-700' : value < 0 ? 'text-rose-700' : '')
-        }>
-          {value < 0 ? `(${formatMoney(Math.abs(value))})` : formatMoney(value)}
-        </span>
-      </div>
-      {hint && <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>}
-    </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { formatMoney } from '@/lib/format-money'
+import { formatTypeBreakdown } from '@/lib/ledger-totals'
 import { ArrowDownLeft, ArrowUpRight, Scale, Wallet, Landmark, Layers } from 'lucide-react'
 
 export type LedgerSummary = {
@@ -11,12 +12,10 @@ export type LedgerSummary = {
   journalDebit?: number
   journalCredit?: number
   journalBalanced?: boolean
-  /** @deprecated use ledgerMovement / journalDebit */
-  totalDebit?: number
-  /** @deprecated use journalCredit */
-  totalCredit?: number
-  netReceivable: number
-  netPayable: number
+  debitByType?: Record<string, number>
+  creditByType?: Record<string, number>
+  openReceivable?: number
+  openPayable?: number
   hasArAccount?: boolean
   hasApAccount?: boolean
 }
@@ -34,103 +33,125 @@ export function LedgerSummaryCards({
       ? summary.entryCount ?? 0
       : summary.transactionCount ?? 0
 
-  const journalDebit = summary.journalDebit ?? summary.totalDebit ?? 0
-  const journalCredit = summary.journalCredit ?? summary.totalCredit ?? 0
-  const movement = summary.ledgerMovement ?? summary.totalDebit ?? 0
+  const journalDebit = summary.journalDebit ?? 0
+  const journalCredit = summary.journalCredit ?? 0
+  const movement = summary.ledgerMovement ?? 0
+  const debitBreakdown = formatTypeBreakdown(summary.debitByType ?? {})
+  const creditBreakdown = formatTypeBreakdown(summary.creditByType ?? {})
+  const totalsMatch = Math.abs(journalDebit - journalCredit) < 0.02
 
-  const cards =
-    variant === 'ledger'
-      ? [
-          {
-            label: countLabel,
-            value: String(count),
-            sub:
-              summary.postedCount != null ? `${summary.postedCount} posted rows` : undefined,
-            icon: Scale,
-            cls: 'text-slate-600 bg-slate-50',
-          },
-          {
-            label: 'GL movement',
-            value: formatMoney(movement),
-            sub: 'Sum of paired Dr/Cr amounts (equal on both sides per row)',
-            icon: Layers,
-            cls: 'text-violet-600 bg-violet-50',
-          },
-          {
-            label: 'Journal debits',
-            value: formatMoney(journalDebit),
-            sub: 'Sum of all posted journal line debits',
-            icon: ArrowDownLeft,
-            cls: 'text-blue-600 bg-blue-50',
-          },
-          {
-            label: 'Journal credits',
-            value: formatMoney(journalCredit),
-            sub: summary.journalBalanced === false ? 'Out of balance' : 'Should match debits when balanced',
-            icon: ArrowUpRight,
-            cls: 'text-indigo-600 bg-indigo-50',
-          },
-          {
-            label: 'Accounts receivable',
-            value: formatMoney(summary.netReceivable),
-            sub: summary.hasArAccount ? 'Net AR from journal lines' : 'No AR account in chart',
-            icon: Wallet,
-            cls: 'text-emerald-600 bg-emerald-50',
-          },
-          {
-            label: 'Accounts payable',
-            value: formatMoney(summary.netPayable),
-            sub: summary.hasApAccount ? 'Net AP from journal lines' : 'No AP account in chart',
-            icon: Landmark,
-            cls: 'text-amber-600 bg-amber-50',
-          },
-        ]
-      : [
-          {
-            label: countLabel,
-            value: String(count),
-            sub: 'All entries in list',
-            icon: Scale,
-            cls: 'text-slate-600 bg-slate-50',
-          },
-          {
-            label: 'Total debits',
-            value: formatMoney(journalDebit),
-            sub: 'Sum of line debits',
-            icon: ArrowDownLeft,
-            cls: 'text-blue-600 bg-blue-50',
-          },
-          {
-            label: 'Total credits',
-            value: formatMoney(journalCredit),
-            sub: summary.journalBalanced === false ? 'Not balanced' : 'Balanced entries',
-            icon: ArrowUpRight,
-            cls: 'text-indigo-600 bg-indigo-50',
-          },
-          {
-            label: 'Accounts receivable',
-            value: formatMoney(summary.netReceivable),
-            sub: summary.hasArAccount ? 'Net AR lines' : 'No AR account',
-            icon: Wallet,
-            cls: 'text-emerald-600 bg-emerald-50',
-          },
-          {
-            label: 'Accounts payable',
-            value: formatMoney(summary.netPayable),
-            sub: summary.hasApAccount ? 'Net AP lines' : 'No AP account',
-            icon: Landmark,
-            cls: 'text-amber-600 bg-amber-50',
-          },
-        ]
+  if (variant === 'journal') {
+    const cards = [
+      {
+        label: countLabel,
+        value: String(count),
+        sub: 'All entries in list',
+        icon: Scale,
+        cls: 'text-slate-600 bg-slate-50',
+      },
+      {
+        label: totalsMatch ? 'Balanced activity' : 'Total debits',
+        value: formatMoney(journalDebit),
+        sub: totalsMatch
+          ? `Credits match (double-entry) · ${debitBreakdown}`
+          : debitBreakdown,
+        icon: ArrowDownLeft,
+        cls: 'text-blue-600 bg-blue-50',
+      },
+      ...(totalsMatch
+        ? []
+        : [
+            {
+              label: 'Total credits',
+              value: formatMoney(journalCredit),
+              sub: creditBreakdown,
+              icon: ArrowUpRight,
+              cls: 'text-indigo-600 bg-indigo-50',
+            },
+          ]),
+      {
+        label: 'Open receivable',
+        value: formatMoney(summary.openReceivable ?? 0),
+        sub: 'Unpaid customer invoices',
+        icon: Wallet,
+        cls: 'text-emerald-600 bg-emerald-50',
+      },
+      {
+        label: 'Open payable',
+        value: formatMoney(summary.openPayable ?? 0),
+        sub: 'Unpaid vendor bills',
+        icon: Landmark,
+        cls: 'text-amber-600 bg-amber-50',
+      },
+    ]
+    return <CardGrid cards={cards} cols="grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" />
+  }
 
+  const cards = [
+    {
+      label: countLabel,
+      value: String(count),
+      sub: summary.postedCount != null ? `${summary.postedCount} posted GL rows` : undefined,
+      icon: Scale,
+      cls: 'text-slate-600 bg-slate-50',
+    },
+    {
+      label: 'GL movement',
+      value: formatMoney(movement),
+      sub: 'One amount per row (Dr and Cr are paired)',
+      icon: Layers,
+      cls: 'text-violet-600 bg-violet-50',
+    },
+    {
+      label: 'Debit side (journal)',
+      value: formatMoney(journalDebit),
+      sub: debitBreakdown,
+      icon: ArrowDownLeft,
+      cls: 'text-blue-600 bg-blue-50',
+    },
+    {
+      label: 'Credit side (journal)',
+      value: formatMoney(journalCredit),
+      sub: totalsMatch
+        ? `Equals debits (balanced books) · ${creditBreakdown}`
+        : creditBreakdown,
+      icon: ArrowUpRight,
+      cls: 'text-indigo-600 bg-indigo-50',
+    },
+    {
+      label: 'Open receivable',
+      value: formatMoney(summary.openReceivable ?? 0),
+      sub: summary.hasArAccount ? 'Subledger: unpaid invoices' : 'No AR in chart',
+      icon: Wallet,
+      cls: 'text-emerald-600 bg-emerald-50',
+    },
+    {
+      label: 'Open payable',
+      value: formatMoney(summary.openPayable ?? 0),
+      sub: summary.hasApAccount ? 'Subledger: unpaid vendor bills' : 'No AP in chart',
+      icon: Landmark,
+      cls: 'text-amber-600 bg-amber-50',
+    },
+  ]
+
+  return <CardGrid cards={cards} cols="grid-cols-2 sm:grid-cols-3 lg:grid-cols-6" />
+}
+
+function CardGrid({
+  cards,
+  cols,
+}: {
+  cards: Array<{
+    label: string
+    value: string
+    sub?: string
+    icon: typeof Scale
+    cls: string
+  }>
+  cols: string
+}) {
   return (
-    <div
-      className={`grid gap-3 ${
-        variant === 'ledger'
-          ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'
-          : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
-      }`}
-    >
+    <div className={`grid gap-3 ${cols}`}>
       {cards.map(({ label, value, sub, icon: Icon, cls }) => (
         <div
           key={label}

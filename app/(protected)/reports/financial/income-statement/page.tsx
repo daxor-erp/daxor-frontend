@@ -1,136 +1,109 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
-import { GET_CUSTOMER_INVOICES, GET_VENDOR_BILLS } from '@/gql/queries'
-import { ReportShell, type ReportPeriod, periodRange, inRange } from '@/components/reports/report-shell'
+import { GET_INCOME_STATEMENT } from '@/gql/queries'
+import { ReportShell, type ReportPeriod } from '@/components/reports/report-shell'
 import { formatMoney } from '@/lib/format-money'
-import { escapeHtml, pdfMoney } from '@/lib/pdf-download'
+import { pdfMoney } from '@/lib/pdf-download'
+import { StatementLinesTable, type StatementLine } from '@/lib/financial-statement-lines'
 
 export default function IncomeStatementPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId ?? ''
   const [period, setPeriod] = useState<ReportPeriod>('this_year')
 
-  const invQ = useQuery(GET_CUSTOMER_INVOICES, {
-    variables: { organizationId: orgId, page: 1, limit: 1000 },
+  const { data, loading, error, refetch } = useQuery(GET_INCOME_STATEMENT, {
+    variables: { organizationId: orgId },
     skip: !orgId,
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
-  })
-  const billsQ = useQuery(GET_VENDOR_BILLS, {
-    variables: { organizationId: orgId, page: 1, limit: 1000 },
-    skip: !orgId,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
   })
 
-  const invoices: any[] = invQ.data?.customerinvoices ?? []
-  const bills: any[] = billsQ.data?.vendorBills ?? []
-  const r = periodRange(period)
+  const report = data?.incomeStatement
 
-  const filtered = useMemo(() => {
-    const inv = invoices.filter((i) => inRange(i.invoiceDate ?? i.createdAt, r))
-    const bl = bills.filter((b) => inRange(b.billDate ?? b.createdAt, r))
-    return { inv, bl }
-  }, [invoices, bills, period])
-
-  const totals = useMemo(() => {
-    const revenue = filtered.inv.reduce((s, i) => s + Number(i.totalAmount ?? 0), 0)
-    const tax = filtered.inv.reduce((s, i) => s + Number(i.taxAmount ?? 0), 0)
-    const cogs = filtered.bl.reduce((s, b) => s + Number(b.subtotal ?? b.totalAmount ?? 0), 0)
-    const opex = 0 // placeholder until expense module exists
-    const gross = revenue - tax - cogs
-    const net = gross - opex
-    return { revenue, tax, cogs, opex, gross, net }
-  }, [filtered])
-
-  const buildPdf = () => `
-    <div class="pdf-section">
-      <div class="pdf-section-title">Revenue</div>
-      <table>
-        <tbody>
-          <tr><td>Total sales revenue</td><td class="num">${pdfMoney(totals.revenue)}</td></tr>
-          <tr><td>Less: GST / taxes collected</td><td class="num">(${pdfMoney(totals.tax)})</td></tr>
-          <tr style="background:#f3f4f6;"><td><strong>Net revenue</strong></td><td class="num"><strong>${pdfMoney(totals.revenue - totals.tax)}</strong></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="pdf-section">
-      <div class="pdf-section-title">Cost of goods sold</div>
-      <table>
-        <tbody>
-          <tr><td>Vendor bills (procurement)</td><td class="num">${pdfMoney(totals.cogs)}</td></tr>
-          <tr style="background:#f3f4f6;"><td><strong>Gross profit</strong></td><td class="num"><strong>${pdfMoney(totals.gross)}</strong></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="pdf-section">
-      <div class="pdf-section-title">Operating expenses</div>
-      <table>
-        <tbody>
-          <tr><td>Operating expenses</td><td class="num">${pdfMoney(totals.opex)}</td></tr>
-          <tr style="background:#ecfdf5;border-top:2px solid #059669;"><td><strong>Net income</strong></td><td class="num"><strong>${pdfMoney(totals.net)}</strong></td></tr>
-        </tbody>
-      </table>
-    </div>
-  `
+  const buildPdf = () => {
+    if (!report) return '<p>No data</p>'
+    const section = (title: string, lines: StatementLine[], total: number) => `
+      <div class="pdf-section">
+        <div class="pdf-section-title">${title}</div>
+        <table><tbody>
+          ${lines.map((l) => `<tr><td>${l.accountCode} ${l.accountName}</td><td class="num">${pdfMoney(l.amount)}</td></tr>`).join('')}
+          <tr style="background:#f3f4f6;font-weight:700;"><td>Total</td><td class="num">${pdfMoney(total)}</td></tr>
+        </tbody></table>
+      </div>`
+    return `
+      ${section('Revenue', report.revenueLines, report.totalRevenue)}
+      ${section('Cost of goods sold', report.cogsLines, report.totalCogs)}
+      <div class="pdf-meta"><strong>Gross profit:</strong> ${pdfMoney(report.grossProfit)}</div>
+      ${section('Operating expenses', report.expenseLines, report.totalOperatingExpense)}
+      <div class="pdf-meta"><strong>Net income:</strong> ${pdfMoney(report.netIncome)}</div>
+    `
+  }
 
   return (
     <ReportShell
       title="Income Statement"
-      description="Profit & loss summary for the selected period."
+      description="Profit & loss from posted journal entries (trial balance by account type)."
       period={period}
       onPeriodChange={setPeriod}
-      onRefresh={() => {
-        invQ.refetch?.()
-        billsQ.refetch?.()
-      }}
-      loading={invQ.loading || billsQ.loading}
+      onRefresh={() => refetch?.()}
+      loading={loading}
       pdfBody={buildPdf}
       pdfFilename="income-statement"
     >
-      <div className="grid lg:grid-cols-3 gap-6">
-        <Section title="Revenue" rows={[
-          { label: 'Total sales revenue', value: totals.revenue, strong: true },
-          { label: 'Less: taxes collected', value: -totals.tax },
-          { label: 'Net revenue', value: totals.revenue - totals.tax, divider: true, strong: true },
-        ]} />
-        <Section title="Cost of goods sold" rows={[
-          { label: 'Vendor bills', value: totals.cogs },
-          { label: 'Gross profit', value: totals.gross, divider: true, strong: true },
-        ]} />
-        <Section title="Operating expenses" rows={[
-          { label: 'Operating expenses', value: totals.opex, hint: 'No expense module yet' },
-          { label: 'Net income', value: totals.net, divider: true, strong: true, accent: true },
-        ]} />
-      </div>
+      <p className="text-xs text-muted-foreground mb-4">
+        Derived from the trial balance (all posted journals) — revenue, COGS, and expense accounts only.
+        Period filter applies to display only until date-scoped TB is added.
+      </p>
+      {error && (
+        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
+          {error.message}
+        </p>
+      )}
+      {!loading && !error && !report && (
+        <p className="text-sm text-muted-foreground">No income statement data yet. Post journals to the ledger first.</p>
+      )}
+      {report && (
+        <div className="grid lg:grid-cols-3 gap-6">
+          <Section title="Revenue" total={report.totalRevenue}>
+            <StatementLinesTable lines={report.revenueLines} />
+          </Section>
+          <Section title="Cost of goods sold" total={report.totalCogs}>
+            <StatementLinesTable lines={report.cogsLines} emptyLabel="No COGS accounts" />
+            <p className="text-sm font-semibold mt-3 pt-3 border-t">
+              Gross profit: {formatMoney(report.grossProfit)}
+            </p>
+          </Section>
+          <Section title="Operating expenses" total={report.totalOperatingExpense}>
+            <StatementLinesTable lines={report.expenseLines} />
+            <p className="text-sm font-bold mt-3 pt-3 border-t text-emerald-700">
+              Net income: {formatMoney(report.netIncome)}
+            </p>
+          </Section>
+        </div>
+      )}
     </ReportShell>
   )
 }
 
-function Section({ title, rows }: { title: string; rows: Array<{ label: string; value: number; strong?: boolean; divider?: boolean; accent?: boolean; hint?: string }> }) {
+function Section({
+  title,
+  total,
+  children,
+}: {
+  title: string
+  total: number
+  children: ReactNode
+}) {
   return (
-    <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
-      <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{title}</p>
-      <ul className="space-y-1.5">
-        {rows.map((r, i) => (
-          <li key={i} className={r.divider ? 'pt-2 mt-2 border-t border-border' : ''}>
-            <div className="flex items-center justify-between gap-2">
-              <span className={'text-sm ' + (r.strong ? 'font-semibold' : '')}>{r.label}</span>
-              <span className={
-                'tabular-nums text-sm ' +
-                (r.strong ? 'font-bold ' : '') +
-                (r.accent ? 'text-emerald-700' : r.value < 0 ? 'text-rose-700' : '')
-              }>
-                {r.value < 0 ? `(${formatMoney(Math.abs(r.value))})` : formatMoney(r.value)}
-              </span>
-            </div>
-            {r.hint && <p className="text-[11px] text-muted-foreground mt-0.5">{r.hint}</p>}
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-2">
+      <div className="flex justify-between items-baseline">
+        <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+        <span className="text-sm font-bold tabular-nums">{formatMoney(total)}</span>
+      </div>
+      {children}
     </div>
   )
 }

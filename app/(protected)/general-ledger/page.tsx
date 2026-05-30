@@ -1,7 +1,13 @@
 'use client'
 
 import { useQuery } from '@apollo/client'
-import { GET_GENERAL_LEDGERS, GET_CHART_OF_ACCOUNTS, GET_JOURNAL_ENTRIES } from '@/gql/queries'
+import {
+  GET_GENERAL_LEDGERS,
+  GET_CHART_OF_ACCOUNTS,
+  GET_JOURNAL_ENTRIES,
+  GET_CUSTOMER_INVOICES,
+  GET_OUTSTANDING_VENDOR_BILLS,
+} from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, Column } from '@/components/DataTable'
 import { DollarSign, BookOpen, Calendar, Download, Eye } from 'lucide-react'
@@ -47,13 +53,31 @@ export default function GeneralLedgerPage() {
     fetchPolicy: 'cache-first',
   })
 
+  const { data: invoiceData } = useQuery(GET_CUSTOMER_INVOICES, {
+    variables: { organizationId: orgId, page: 1, limit: 500 },
+    skip: !orgId,
+    fetchPolicy: 'cache-first',
+  })
+
+  const { data: vendorBillData } = useQuery(GET_OUTSTANDING_VENDOR_BILLS, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+    fetchPolicy: 'cache-first',
+  })
+
   const ledgers: GeneralLedgerView[] = ledgerData?.generalLedgers || []
   const accounts = accountsData?.chartOfAccounts || []
   const journalEntries: JournalEntryView[] = journalData?.journalEntries || []
+  const customerInvoices = invoiceData?.customerinvoices ?? []
+  const vendorBills = vendorBillData?.outstandingVendorBills ?? []
 
   const summary = useMemo(
-    () => summarizeLedgerPage(ledgers, journalEntries, accounts),
-    [ledgers, journalEntries, accounts],
+    () =>
+      summarizeLedgerPage(ledgers, journalEntries, accounts, {
+        customerInvoices,
+        vendorBills,
+      }),
+    [ledgers, journalEntries, accounts, customerInvoices, vendorBills],
   )
 
   const statusColor: Record<string, string> = {
@@ -98,7 +122,7 @@ export default function GeneralLedgerPage() {
         <p className="text-gray-500">View financial transactions — click a row to open details in the panel above the table</p>
       </div>
 
-      {!ledgerLoading && ledgers.length > 0 && (
+      {orgId && !ledgerLoading && (
         <LedgerSummaryCards summary={summary} variant="ledger" />
       )}
 
@@ -106,7 +130,7 @@ export default function GeneralLedgerPage() {
         {[
           { label: 'Chart of Accounts', value: accounts.length, icon: BookOpen, cls: 'text-green-600 bg-green-50' },
           { label: 'Current Fiscal Year', value: new Date().getFullYear(), icon: Calendar, cls: 'text-purple-600 bg-purple-50' },
-          { label: 'Journal debits', value: formatMoney(summary.journalDebit ?? 0), icon: DollarSign, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Open receivable', value: formatMoney(summary.openReceivable ?? 0), icon: DollarSign, cls: 'text-emerald-600 bg-emerald-50' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
             <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>

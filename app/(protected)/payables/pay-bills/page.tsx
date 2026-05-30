@@ -164,6 +164,14 @@ export default function PayBillsPage() {
       render: v => <span className="text-green-600 font-medium">{formatMoney(v || 0)}</span>
     },
     {
+      key: 'debitNotesApplied', label: 'Debited', width: '90px', align: 'right',
+      render: (v) => (
+        <span className={Number(v) > 0 ? 'text-violet-700 font-medium' : 'text-gray-400'}>
+          {formatMoney(v || 0)}
+        </span>
+      ),
+    },
+    {
       key: 'outstandingAmount', label: 'Outstanding', width: '110px', align: 'right',
       render: v => (
         <span className={Number(v) > 0 ? 'text-red-600 font-bold' : 'text-gray-400'}>
@@ -219,9 +227,10 @@ export default function PayBillsPage() {
           </div>
           <div className="p-4 space-y-4">
             {/* Bill summary */}
-            <div className="grid grid-cols-3 gap-3 bg-gray-50 rounded p-3 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gray-50 rounded p-3 text-xs">
               <div><span className="text-gray-400">Bill Total</span><p className="font-bold text-gray-800">{formatMoney(payingBill.totalAmount)}</p></div>
-              <div><span className="text-gray-400">Already Paid</span><p className="font-bold text-green-600">{formatMoney(payingBill.paidAmount)}</p></div>
+              <div><span className="text-gray-400">Paid</span><p className="font-bold text-green-600">{formatMoney(payingBill.paidAmount)}</p></div>
+              <div><span className="text-gray-400">Debit notes</span><p className="font-bold text-violet-700">{formatMoney(payingBill.debitNotesApplied ?? 0)}</p></div>
               <div><span className="text-gray-400">Outstanding</span><p className="font-bold text-red-600">{formatMoney(payingBill.outstandingAmount)}</p></div>
             </div>
 

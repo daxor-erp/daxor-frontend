@@ -1,6 +1,8 @@
 'use client'
 
-import { X, Download, BookOpen } from 'lucide-react'
+import Link from 'next/link'
+import { X, Download, BookOpen, ExternalLink } from 'lucide-react'
+import { glSourceLabel, glSourceRoute } from '@/lib/gl-source-routes'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/format-date'
 import { formatMoney } from '@/lib/format-money'
@@ -83,8 +85,20 @@ function GlTransactionInlinePanel({ row, onClose }: { row: GeneralLedgerView; on
             {row.description}
           </p>
         )}
-        <p className="text-gray-600 font-mono text-[10px]">
-          Source: {row.referenceModule || '—'} · {row.referenceId || '—'}
+        <p className="text-gray-600 text-[10px] flex flex-wrap items-center gap-2">
+          <span>
+            Source: {glSourceLabel(row.referenceModule)} ·{' '}
+            <span className="font-mono">{row.referenceId || '—'}</span>
+          </span>
+          {glSourceRoute(row.referenceModule, row.referenceId) && (
+            <Link
+              href={glSourceRoute(row.referenceModule, row.referenceId)!}
+              className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+            >
+              Open document
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          )}
         </p>
         <p className="text-gray-500">
           Fiscal {row.fiscalYear || '—'} / {row.fiscalPeriod || '—'}
