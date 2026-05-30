@@ -192,12 +192,9 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-7 text-center text-sm text-muted-foreground">
-            New to Daxor?{' '}
-            <Link href="/register" className="font-medium text-primary hover:underline">
-              Create an account
-            </Link>
-          </div>
+          <p className="mt-7 text-center text-sm text-muted-foreground">
+            Need an account? Contact your platform administrator for credentials.
+          </p>
 
           <p className="mt-10 text-center text-[11px] text-muted-foreground">
             By signing in you agree to our{' '}

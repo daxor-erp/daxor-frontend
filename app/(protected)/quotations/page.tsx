@@ -28,19 +28,17 @@ import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { friendlyMutationDeniedMessage } from '@/lib/apollo-user-errors'
+import { shouldIgnoreRowClick } from '@/lib/data-table-row-click'
 import { SUBMIT_QUOTATION_FOR_APPROVAL } from '@/gql/queries'
 import { formatDate, toDateInputValue } from '@/lib/format-date'
 import { formatMoney } from '@/lib/format-money'
-
-const GET_CLIENTS = gql`
-  query GetClients($organizationId: ID) {
-    clients(organizationId: $organizationId) {
-      id
-      name
-      email
-    }
-  }
-`
+import {
+  GET_CUSTOMERS_FOR_SALES,
+  mapSalesCustomers,
+  customerSelectOptions,
+  quotationPartyId,
+  quotationPartyName,
+} from '@/lib/sales-customer-options'
 
 const GET_ITEMS = gql`
   query GetItems($organizationId: ID!) {
@@ -59,10 +57,11 @@ const GET_QUOTATIONS = gql`
     quotations(organizationId: $organizationId) {
       id
       quotationNumber
-      clientId {
+      customerId {
         id
         name
         email
+        docNumber
       }
       subject
       quotationDate
@@ -78,10 +77,11 @@ const GET_QUOTATION = gql`
     quotation(id: $id) {
       id
       quotationNumber
-      clientId {
+      customerId {
         id
         name
         email
+        docNumber
       }
       subject
       quotationDate
@@ -161,8 +161,8 @@ export default function CreateQuotationsPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId
 
-  const { data: clientsData } = useQuery(GET_CLIENTS, {
-    variables: { organizationId: orgId },
+  const { data: customersData } = useQuery(GET_CUSTOMERS_FOR_SALES, {
+    variables: { organizationId: orgId ?? '' },
     skip: !orgId,
     fetchPolicy: 'network-only',
   })
@@ -182,11 +182,12 @@ export default function CreateQuotationsPage() {
   const [viewListId, setViewListId] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorBanner, setErrorBanner] = useState('')
-  const [form, setForm] = useState({ clientId: '', subject: '', quotationDate: today(), validUntil: in30Days(), terms: '', notes: '' })
+  const [form, setForm] = useState({ customerId: '', subject: '', quotationDate: today(), validUntil: in30Days(), terms: '', notes: '' })
   const [lines, setLines] = useState<Line[]>([emptyLine()])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const showForm = adding || !!editingId
+  const formPanelRef = useRef<HTMLDivElement>(null)
 
   const { data: quotationDetail, loading: loadingDetail, error: detailError } = useQuery(GET_QUOTATION, {
     variables: { id: editingId! },
@@ -224,12 +225,17 @@ export default function CreateQuotationsPage() {
   }, [editingId])
 
   useEffect(() => {
+    if (!showForm) return
+    formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [showForm, editingId, adding])
+
+  useEffect(() => {
     const q = quotationDetail?.quotation
     if (!editingId || !q || q.id !== editingId) return
     if (hydratedEditId.current === editingId) return
     hydratedEditId.current = editingId
     setForm({
-      clientId: q.clientId?.id ?? '',
+      customerId: quotationPartyId(q),
       subject: q.subject ?? '',
       quotationDate: toDateInput(q.quotationDate),
       validUntil: toDateInput(q.validUntil),
@@ -252,12 +258,12 @@ export default function CreateQuotationsPage() {
     setErrors({})
   }, [editingId, quotationDetail])
 
-  const clients    = clientsData?.clients    ?? []
+  const customers  = mapSalesCustomers(customersData?.customers)
   const items      = itemsData?.items        ?? []
   const quotations = quotationsData?.quotations ?? []
 
   const reset = () => {
-    setForm({ clientId: '', subject: '', quotationDate: today(), validUntil: in30Days(), terms: '', notes: '' })
+    setForm({ customerId: '', subject: '', quotationDate: today(), validUntil: in30Days(), terms: '', notes: '' })
     setLines([emptyLine()])
     setErrors({})
   }
@@ -270,6 +276,7 @@ export default function CreateQuotationsPage() {
   }
 
   const startCreate = () => {
+    setViewListId(null)
     setEditingId(null)
     reset()
     setErrorBanner('')
@@ -277,6 +284,7 @@ export default function CreateQuotationsPage() {
   }
 
   const startEdit = (id: string) => {
+    setViewListId(null)
     setAdding(false)
     setEditingId(id)
   }
@@ -310,7 +318,7 @@ export default function CreateQuotationsPage() {
 
   const validate = () => {
     const e: Record<string, string> = {}
-    if (!form.clientId)      e.clientId      = 'Required'
+    if (!form.customerId)      e.customerId      = 'Required'
     if (!form.subject)       e.subject       = 'Required'
     if (!form.quotationDate) e.quotationDate = 'Required'
     if (!form.validUntil)    e.validUntil    = 'Required'
@@ -338,7 +346,7 @@ export default function CreateQuotationsPage() {
     if (!validate()) return
     setErrorBanner('')
     const payload = {
-      clientId:       form.clientId,
+      customerId:     form.customerId,
       subject:        form.subject,
       quotationDate:  form.quotationDate,
       validUntil:     form.validUntil,
@@ -413,7 +421,7 @@ export default function CreateQuotationsPage() {
     accepted: quotations.filter((q: { status: string }) => q.status === 'accepted').length,
   }
 
-  const headerCols = ['Quotation #', 'Client', 'Subject', 'Date', 'Valid Until', 'Amount', 'Status', 'View', 'Actions'] as const
+  const headerCols = ['Quotation #', 'Customer', 'Subject', 'Date', 'Valid Until', 'Amount', 'Status', 'View', 'Actions'] as const
   const colClass = (i: number) =>
     i === 0 ? 'w-32' : i === 1 ? 'flex-1 min-w-0' : i === 2 ? 'w-40' : i === 3 || i === 4 ? 'w-28' : i === 5 ? 'w-28' : i === 6 ? 'w-36' : i === 7 ? 'w-20 shrink-0' : 'w-36'
 
@@ -453,14 +461,19 @@ export default function CreateQuotationsPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
+        <div
+          ref={formPanelRef}
+          className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden"
+        >
           <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
             <span className="text-xs font-semibold text-white">
               {editingId
                 ? `Edit quotation${detail?.quotationNumber ? ` — ${detail.quotationNumber}` : ''}`
-                : 'New Quotation'}
+                : 'New quotation'}
             </span>
-            <button type="button" onClick={closeForm} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button type="button" onClick={closeForm} className="text-blue-200 hover:text-white">
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
           {editLoading ? (
@@ -473,7 +486,7 @@ export default function CreateQuotationsPage() {
             <>
               <div className="grid grid-cols-4 border-b border-gray-200">
                 {[
-                  { label: 'Client *',         key: 'clientId',      type: 'select', err: errors.clientId },
+                  { label: 'Customer *',       key: 'customerId',    type: 'select', err: errors.customerId },
                   { label: 'Subject *',        key: 'subject',       type: 'text',   err: errors.subject },
                   { label: 'Quotation Date *', key: 'quotationDate', type: 'date',   err: errors.quotationDate },
                   { label: 'Valid Until *',    key: 'validUntil',    type: 'date',   err: errors.validUntil },
@@ -485,11 +498,8 @@ export default function CreateQuotationsPage() {
                         value={(form as Record<string, string>)[key]}
                         onChange={e => setF(key, e.target.value)}
                         invalid={!!err}
-                        placeholder="— select client —"
-                        options={clients.map((c: { id: string; name: string; email?: string }) => ({
-                          value: c.id,
-                          label: `${c.name}${c.email ? ` (${c.email})` : ''}`,
-                        }))}
+                        placeholder="— select customer —"
+                        options={customerSelectOptions(customers).slice(1)}
                       />
                     ) : (
                       <CellInput type={type} value={(form as Record<string, string>)[key]} onChange={e => setF(key, e.target.value)} invalid={!!err} />
@@ -600,10 +610,13 @@ export default function CreateQuotationsPage() {
       )}
 
       <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
-          <span className="text-sm font-semibold text-gray-700">All quotations</span>
+        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300 gap-3">
+          <div>
+            <span className="text-sm font-semibold text-gray-700">All quotations</span>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Click a row to edit in the panel above</p>
+          </div>
           {!showForm && (
-            <Button size="sm" onClick={startCreate} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
+            <Button size="sm" onClick={startCreate} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white shrink-0">
               <Plus className="h-3.5 w-3.5 mr-1" /> New quotation
             </Button>
           )}
@@ -624,32 +637,49 @@ export default function CreateQuotationsPage() {
             <p className="text-xs">No quotations yet. Click &quot;New quotation&quot; to create one.</p>
           </div>
         ) : (
-          quotations.map((q: { id: string; quotationNumber: string; clientId?: { name?: string }; subject: string; quotationDate: string; validUntil: string; totalAmount: number; status: string }, idx: number) => {
+          quotations.map((q: { id: string; quotationNumber: string; customerId?: { name?: string; docNumber?: string }; clientId?: { name?: string }; subject: string; quotationDate: string; validUntil: string; totalAmount: number; status: string }, idx: number) => {
             const s = STATUS_CFG[q.status] ?? STATUS_CFG.draft
             return (
-              <div key={q.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+              <div
+                key={q.id}
+                role="button"
+                tabIndex={0}
+                className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors cursor-pointer ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                onClick={(e) => {
+                  if (shouldIgnoreRowClick(e, e.currentTarget)) return
+                  startEdit(q.id)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    startEdit(q.id)
+                  }
+                }}
+                title="Click to edit quotation"
+              >
                 <div className="w-8 border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-2">{idx + 1}</div>
                 <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-700 font-semibold truncate">{q.quotationNumber}</div>
-                <div className="flex-1 min-w-0 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{q.clientId?.name}</div>
+                <div className="flex-1 min-w-0 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{quotationPartyName(q)}</div>
                 <div className="w-40 border-r border-gray-200 px-2 py-2 text-xs text-gray-600 truncate">{q.subject}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{formatDate(q.quotationDate)}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{formatDate(q.validUntil)}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs font-semibold text-gray-800">{formatMoney(q.totalAmount)}</div>
-                <div className="w-36 border-r border-gray-200 px-2 py-2 flex items-center">
+                <div className="w-36 border-r border-gray-200 px-2 py-2 flex items-center" data-stop-row-click>
                   <CellSelect
                     value={q.status}
                     onChange={e => handleStatusChange(q.id, q.status, e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
                     disabled={updating}
                     className={`max-w-[9rem] font-medium ${s.cls}`}
                     aria-label={`Status for ${q.quotationNumber}`}
                     options={STATUS_KEYS.map(k => ({ value: k, label: STATUS_CFG[k].label }))}
                   />
                 </div>
-                <div className="w-20 shrink-0 border-r border-gray-200 px-1 py-2 flex items-center justify-center gap-1">
+                <div className="w-20 shrink-0 border-r border-gray-200 px-1 py-2 flex items-center justify-center gap-1" data-stop-row-click>
                   <button
                     type="button"
                     title="View full quotation (snapshot)"
-                    onClick={() => setViewListId(q.id)}
+                    onClick={(e) => { e.stopPropagation(); setViewListId(q.id) }}
                     className="p-1.5 rounded-md text-gray-500 hover:text-teal-700 hover:bg-teal-50"
                   >
                     <Eye className="h-3.5 w-3.5" />
@@ -657,19 +687,23 @@ export default function CreateQuotationsPage() {
                   <button
                     type="button"
                     title="Download PDF"
-                    onClick={() => downloadDocumentPdf('quotation', q.id, q.quotationNumber).catch((e) => toast.error(String(e?.message || e)))}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      downloadDocumentPdf('quotation', q.id, q.quotationNumber).catch((err) => toast.error(String(err?.message || err)))
+                    }}
                     className="p-1.5 rounded-md text-gray-500 hover:text-blue-700 hover:bg-blue-50"
                   >
                     <Download className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <div className="w-36 px-2 py-2 flex flex-wrap items-center justify-center gap-1">
+                <div className="w-36 px-2 py-2 flex flex-wrap items-center justify-center gap-1" data-stop-row-click>
                   {(q.status === 'draft' || q.status === 'approval_declined') && (
                     <button
                       type="button"
                       title="Send for internal approval"
                       disabled={submittingApproval}
-                      onClick={async () => {
+                      onClick={async (e) => {
+                        e.stopPropagation()
                         setErrorBanner('')
                         try {
                           await submitQuotationForApproval({ variables: { id: q.id } })
@@ -688,7 +722,7 @@ export default function CreateQuotationsPage() {
                   <button
                     type="button"
                     title="Edit quotation"
-                    onClick={() => startEdit(q.id)}
+                    onClick={(e) => { e.stopPropagation(); startEdit(q.id) }}
                     className="p-1.5 rounded-md text-gray-500 hover:text-blue-600 hover:bg-blue-50"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -696,7 +730,10 @@ export default function CreateQuotationsPage() {
                   <button
                     type="button"
                     title="Delete quotation"
-                    onClick={() => setDeleteTarget({ id: q.id, quotationNumber: q.quotationNumber })}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeleteTarget({ id: q.id, quotationNumber: q.quotationNumber })
+                    }}
                     className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

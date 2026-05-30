@@ -109,7 +109,7 @@ export const SelectFloating = React.forwardRef<HTMLDivElement, SelectFloatingPro
             e.preventDefault();
             if (filteredOptions[highlightedIndex] && !filteredOptions[highlightedIndex].disabled) {
               handleSelect(filteredOptions[highlightedIndex].value);
-            } else if (searchQuery && filteredOptions.length === 0) {
+            } else if (onSearch && searchQuery && filteredOptions.length === 0) {
               handleSelect(searchQuery);
             }
             break;
@@ -355,7 +355,7 @@ export const SelectFloating = React.forwardRef<HTMLDivElement, SelectFloatingPro
               >
                 {(hideDisabledInDropdown ? filteredOptions.filter(opt => !opt.disabled || opt.value === '') : filteredOptions).length === 0 && !loading ? (
                   <div className="px-4 py-2 text-sm text-muted-foreground">
-                    {searchQuery ? (
+                    {searchQuery && onSearch ? (
                       <div 
                         className="cursor-pointer hover:bg-secondary -mx-4 px-4 py-2"
                         onClick={() => handleSelect(searchQuery)}

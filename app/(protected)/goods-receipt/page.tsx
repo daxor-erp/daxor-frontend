@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus, Save, X, Pencil, Trash2 } from 'lucide-react'
+import { shouldIgnoreRowClick } from '@/lib/data-table-row-click'
 
 type GoodsReceiptRow = {
   id: string
@@ -275,7 +276,12 @@ export default function GoodsReceiptsPage() {
                   {items.map((item, idx) => (
                     <tr
                       key={item.id || `row-${idx}`}
-                      className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                      className={`border-b border-gray-200 cursor-pointer hover:bg-blue-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                      onClick={(e) => {
+                        if (shouldIgnoreRowClick(e) || !item.id) return
+                        openEdit(item)
+                      }}
+                      title="Click to view or edit"
                     >
                       <td className="px-3 py-2 border-r border-gray-200 font-mono">
                         {item.docNumber ?? 'N/A'}

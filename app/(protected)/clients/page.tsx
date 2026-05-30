@@ -333,6 +333,7 @@ export default function ClientsPage() {
             searchable
             searchPlaceholder="Search clients..."
             emptyMessage="No clients yet. Click 'New Client' to add one."
+            onRowClick={(row) => setViewClient(row)}
             actions={[
               {
                 label: 'View',

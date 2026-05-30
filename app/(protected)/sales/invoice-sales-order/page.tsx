@@ -1,9 +1,7 @@
 'use client'
 
-import { useQuery, gql } from '@apollo/client'
-import {
-  GET_CUSTOMER_INVOICES,
-} from '@/gql/queries'
+import { useQuery } from '@apollo/client'
+import { GET_CUSTOMER_INVOICES } from '@/gql/queries'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -11,16 +9,11 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney } from '@/lib/format-money'
-
-const GET_CLIENTS = gql`
-  query GetClientsForInvoiceView($organizationId: ID) {
-    clients(organizationId: $organizationId) {
-      id
-      name
-      company
-    }
-  }
-`
+import {
+  GET_CUSTOMERS_FOR_SALES,
+  mapSalesCustomers,
+  customerDisplayName,
+} from '@/lib/sales-customer-options'
 
 const INV_STATUS: Record<string, { label: string; className: string }> = {
   draft:          { label: 'Draft', className: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -40,17 +33,13 @@ export default function InvoiceSalesOrderPage() {
     variables: { organizationId, page: 1, limit: 200 },
     skip: !organizationId,
   })
-  const { data: clientsData } = useQuery(GET_CLIENTS, {
+  const { data: customersData } = useQuery(GET_CUSTOMERS_FOR_SALES, {
     variables: { organizationId },
     skip: !organizationId,
   })
   const invoices = invData?.customerinvoices ?? []
-  const clients = clientsData?.clients ?? []
-  const getClientDisplay = (id: string) => {
-    const client = clients.find((c: any) => c.id === id)
-    if (!client) return id
-    return `${client.name} (${client.id})`
-  }
+  const customers = mapSalesCustomers(customersData?.customers)
+  const getCustomerDisplay = (id: string) => customerDisplayName(customers, id)
   const formatDate = (value: string | null | undefined) => {
     if (!value) return '—'
     const d = new Date(value)
@@ -112,7 +101,7 @@ export default function InvoiceSalesOrderPage() {
               <table className="min-w-[1300px] w-full text-xs">
                 <thead>
                   <tr className="bg-[#f0f0f0] border-b border-gray-300">
-                    {['Invoice #', 'Client (Name + ID)', 'Sales Order', 'Invoice Date', 'Due Date', 'Total', 'Paid', 'Status'].map((h) => (
+                    {['Invoice #', 'Customer', 'Sales Order', 'Invoice Date', 'Due Date', 'Total', 'Paid', 'Status'].map((h) => (
                       <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</th>
                     ))}
                   </tr>
@@ -123,7 +112,7 @@ export default function InvoiceSalesOrderPage() {
                     return (
                       <tr key={inv.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                         <td className="px-3 py-2 border-r border-gray-200 font-mono">{inv.seqNo || '—'}</td>
-                        <td className="px-3 py-2 border-r border-gray-200">{getClientDisplay(inv.customerId || inv.clientId || '—')}</td>
+                        <td className="px-3 py-2 border-r border-gray-200">{getCustomerDisplay(inv.customerId || inv.clientId)}</td>
                         <td className="px-3 py-2 border-r border-gray-200 font-mono">{inv.salesOrderId || '—'}</td>
                         <td className="px-3 py-2 border-r border-gray-200">{formatDate(inv.invoiceDate)}</td>
                         <td className="px-3 py-2 border-r border-gray-200">{formatDate(inv.dueDate)}</td>

@@ -234,6 +234,7 @@ export default function ProductionPlanningPage() {
         searchable
         searchPlaceholder="Search records..."
         emptyMessage="No records yet. Click 'New Record' to create one."
+        onRowClick={handleEdit}
         actions={[
           { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
           { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this record?')) deleteRecord({ variables: { id: row.id } }) }, variant: 'ghost' },

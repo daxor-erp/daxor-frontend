@@ -202,6 +202,7 @@ export default function CustomersPage() {
         searchable
         searchPlaceholder="Search customers..."
         emptyMessage="No customers yet. Click 'New Customer' to add one."
+        onRowClick={handleEdit}
         actions={[
           { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
           { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => handleDelete(row.id), variant: 'ghost' },

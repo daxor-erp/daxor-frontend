@@ -13,6 +13,11 @@ import { Separator } from '@/components/ui/separator'
 import { Truck, PackageCheck, Clock, CheckCircle2, Building2, FolderKanban, CalendarDays, DollarSign, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney } from '@/lib/format-money'
+import {
+  GET_CUSTOMERS_FOR_SALES,
+  mapSalesCustomers,
+  customerDisplayName,
+} from '@/lib/sales-customer-options'
 
 const SO_STATUS: Record<string, { label: string; cls: string }> = {
   draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -23,16 +28,6 @@ const SO_STATUS: Record<string, { label: string; cls: string }> = {
   cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
 }
 
-const GET_CLIENTS = gql`
-  query GetClientsForDeliveryOrder($organizationId: ID) {
-    clients(organizationId: $organizationId) {
-      id
-      name
-      company
-    }
-  }
-`
-
 export default function DeliveryOrderPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
@@ -41,7 +36,7 @@ export default function DeliveryOrderPage() {
     variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
   })
-  const { data: clientsData } = useQuery(GET_CLIENTS, {
+  const { data: customersData } = useQuery(GET_CUSTOMERS_FOR_SALES, {
     variables: { organizationId: orgId },
     skip: !orgId,
   })
@@ -58,7 +53,7 @@ export default function DeliveryOrderPage() {
   const [deliveryDate, setDeliveryDate] = useState(new Date().toISOString().split('T')[0])
   const [activeTab, setActiveTab] = useState<'pending' | 'delivered'>('pending')
 
-  const clients: any[] = clientsData?.clients ?? []
+  const customers = mapSalesCustomers(customersData?.customers)
   const projects: any[] = projectsData?.projects ?? []
   const allOrders: any[] = soData?.salesorders ?? []
 
@@ -66,10 +61,7 @@ export default function DeliveryOrderPage() {
   const delivered = allOrders.filter(o => o.status === 'completed')
 
   const getProjectName = (id: string) => projects.find((x) => x.id === id)?.name ?? '—'
-  const getClientDisplay = (id: string) => {
-    const c = clients.find((x) => x.id === id)
-    return c ? `${c.name} (${c.id})` : id
-  }
+  const getCustomerDisplay = (id: string) => customerDisplayName(customers, id)
   const formatDate = (value: string | null | undefined) => {
     if (!value) return '—'
     const d = new Date(value)
@@ -109,7 +101,7 @@ export default function DeliveryOrderPage() {
             return (
               <tr key={o.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                 <td className="px-3 py-2 border-r border-gray-200 font-mono">{o.seqNo || '—'}</td>
-                <td className="px-3 py-2 border-r border-gray-200">{getClientDisplay(o.customerId || o.clientId || '—')}</td>
+                <td className="px-3 py-2 border-r border-gray-200">{getCustomerDisplay(o.customerId || o.clientId || '—')}</td>
                 <td className="px-3 py-2 border-r border-gray-200">{o.projectId ? getProjectName(o.projectId) : '—'}</td>
                 <td className="px-3 py-2 border-r border-gray-200">{formatDate(o.orderDate)}</td>
                 <td className="px-3 py-2 border-r border-gray-200 font-semibold">{formatMoney(o.totalAmount || 0)}</td>
@@ -215,7 +207,7 @@ export default function DeliveryOrderPage() {
                     <Building2 className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-xs text-gray-400">Customer</p>
-                      <p className="text-sm font-medium text-gray-800">{getClientDisplay(selected.customerId || selected.clientId)}</p>
+                      <p className="text-sm font-medium text-gray-800">{getCustomerDisplay(selected.customerId || selected.clientId)}</p>
                     </div>
                   </div>
                   {selected.projectId && (

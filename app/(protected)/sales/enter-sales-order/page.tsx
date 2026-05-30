@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { CREATE_SALES_ORDER, GET_SALES_ORDERS, SUBMIT_SALES_ORDER } from '@/gql/queries'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
+import { quotationPartyId } from '@/lib/sales-customer-options'
 
 const GET_QUOTATIONS = gql`
   query GetQuotationsForSalesOrder($organizationId: ID) {
@@ -19,10 +20,11 @@ const GET_QUOTATIONS = gql`
       quotationDate
       validUntil
       totalAmount
-      clientId {
+      customerId {
         id
         name
         email
+        docNumber
       }
     }
   }
@@ -114,14 +116,15 @@ export default function EnterSalesOrderPage() {
       setErrorMsg('Sales Order can be created only for accepted quotations.')
       return
     }
-    if (!selectedQuotation?.clientId?.id) {
-      setErrorMsg('Selected quotation does not have a valid client.')
+    const partyId = selectedQuotation ? quotationPartyId(selectedQuotation) : ''
+    if (!partyId) {
+      setErrorMsg('Selected quotation does not have a valid customer.')
       return
     }
     await createSalesOrder({
       variables: {
         input: {
-          customerId: selectedQuotation.clientId.id,
+          customerId: partyId,
           projectId: formData.projectId || undefined,
           quotationId: selectedQuotation.id,
           quotationStatus: formData.quotationStatus,
@@ -153,7 +156,7 @@ export default function EnterSalesOrderPage() {
       setFormData((prev) => ({
         ...prev,
         quotationId: value,
-        customerId: q?.clientId?.id || '',
+        customerId: quotationPartyId(q),
         totalAmount: q?.totalAmount != null ? String(q.totalAmount) : '',
       }))
     }

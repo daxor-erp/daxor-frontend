@@ -573,6 +573,7 @@ export default function CashBankPage() {
             searchable
             searchPlaceholder="Search accounts…"
             emptyMessage="No bank accounts configured"
+            onRowClick={handleEditAcct}
           />
         </div>
       )}

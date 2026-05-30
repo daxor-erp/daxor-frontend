@@ -471,6 +471,7 @@ export default function EquipmentMastersPage() {
         searchable
         searchPlaceholder="Search assets…"
         emptyMessage="No assets yet. Add equipment above."
+        onRowClick={openEdit}
         actions={actions}
         rowKey="id"
       />

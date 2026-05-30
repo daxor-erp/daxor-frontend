@@ -11,16 +11,18 @@ import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
+import { quotationPartyName, quotationPartyEmail } from '@/lib/sales-customer-options'
 
 const GET_QUOTATIONS = gql`
   query GetQuotationsForSend($organizationId: ID) {
     quotations(organizationId: $organizationId) {
       id
       quotationNumber
-      clientId {
+      customerId {
         id
         name
         email
+        docNumber
       }
       subject
       quotationDate
@@ -61,7 +63,8 @@ const SEND_QUOTATION = gql`
 type QuotationRow = {
   id: string
   quotationNumber: string
-  clientId: { id: string; name: string; email?: string | null }
+  customerId: { id: string; name: string; email?: string | null; docNumber?: string | null }
+  clientId?: { id: string; name: string; email?: string | null }
   subject: string
   quotationDate: string
   validUntil: string
@@ -104,7 +107,7 @@ export default function SendQuotationsPage() {
       setSendConfirmId(null)
       setBanner({
         type: 'ok',
-        text: 'Quotation was emailed to the client via SMTP and marked as sent.',
+        text: 'Quotation was emailed to the customer via SMTP and marked as sent.',
       })
       setTimeout(() => setBanner(null), 8000)
     },
@@ -156,7 +159,7 @@ export default function SendQuotationsPage() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Send quotations</h1>
-        <p className="text-gray-500 mt-2">Internally approved quotations appear here ready to email clients; other statuses appear in the list below.</p>
+        <p className="text-gray-500 mt-2">Internally approved quotations appear here ready to email customers; other statuses appear in the list below.</p>
       </div>
 
       {banner?.type === 'ok' && (
@@ -184,7 +187,7 @@ export default function SendQuotationsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Quotation #</TableHead>
-                  <TableHead>Client</TableHead>
+                  <TableHead>Customer</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Subject</TableHead>
                   <TableHead>Date</TableHead>
@@ -196,13 +199,13 @@ export default function SendQuotationsPage() {
               </TableHeader>
               <TableBody>
                 {draftQuotations.map((quotation) => {
-                  const clientEmail = quotation.clientId?.email?.trim()
-                  const canSend = Boolean(clientEmail)
+                  const customerEmail = quotationPartyEmail(quotation)
+                  const canSend = Boolean(customerEmail)
                   return (
                     <TableRow key={quotation.id}>
                       <TableCell className="font-medium font-mono text-xs">{quotation.quotationNumber}</TableCell>
-                      <TableCell>{quotation.clientId.name}</TableCell>
-                      <TableCell className="text-sm text-gray-600">{clientEmail || '—'}</TableCell>
+                      <TableCell>{quotationPartyName(quotation)}</TableCell>
+                      <TableCell className="text-sm text-gray-600">{customerEmail || '—'}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{quotation.subject}</TableCell>
                       <TableCell>{formatDate(quotation.quotationDate)}</TableCell>
                       <TableCell>{formatDate(quotation.validUntil)}</TableCell>
@@ -219,9 +222,9 @@ export default function SendQuotationsPage() {
                             size="sm"
                             onClick={() => setSendConfirmId(quotation.id)}
                             disabled={sending || !canSend}
-                            title={!canSend ? 'Add an email on the client record first' : 'Send to client'}
+                            title={!canSend ? 'Add an email on the customer record first' : 'Send to customer'}
                           >
-                            <Send className="w-4 h-4 mr-1" /> Send to client
+                            <Send className="w-4 h-4 mr-1" /> Send to customer
                           </Button>
                         </div>
                       </TableCell>
@@ -246,7 +249,7 @@ export default function SendQuotationsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Quotation #</TableHead>
-                  <TableHead>Client</TableHead>
+                  <TableHead>Customer</TableHead>
                   <TableHead>Subject</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
@@ -258,7 +261,7 @@ export default function SendQuotationsPage() {
                 {sentQuotations.map((quotation) => (
                   <TableRow key={quotation.id}>
                     <TableCell className="font-medium font-mono text-xs">{quotation.quotationNumber}</TableCell>
-                    <TableCell>{quotation.clientId.name}</TableCell>
+                    <TableCell>{quotationPartyName(quotation)}</TableCell>
                     <TableCell className="max-w-[220px] truncate">{quotation.subject}</TableCell>
                     <TableCell className="font-semibold">{formatMoney(quotation.totalAmount)}</TableCell>
                     <TableCell>
@@ -283,10 +286,10 @@ export default function SendQuotationsPage() {
       <Dialog open={!!sendConfirmId} onOpenChange={(open) => !open && setSendConfirmId(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Send quotation to client?</DialogTitle>
+            <DialogTitle>Send quotation to customer?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-gray-600">
-            Sends the full quotation (lines, totals, terms) to the client using SMTP (Nodemailer). The API must have
+            Sends the full quotation (lines, totals, terms) to the customer using SMTP (Nodemailer). The API must have
             EMAIL_USER and EMAIL_PASSWORD set. The quotation is only marked sent after the email succeeds.
           </p>
           <div className="flex justify-end gap-2 pt-2">
@@ -314,9 +317,9 @@ export default function SendQuotationsPage() {
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Client</p>
-                    <p className="font-semibold">{selectedQuotation.clientId.name}</p>
-                    <p className="text-sm">{selectedQuotation.clientId.email || '—'}</p>
+                    <p className="text-sm text-gray-500">Customer</p>
+                    <p className="font-semibold">{quotationPartyName(selectedQuotation)}</p>
+                    <p className="text-sm">{quotationPartyEmail(selectedQuotation) || '—'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Quotation date</p>

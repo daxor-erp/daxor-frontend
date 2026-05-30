@@ -52,6 +52,19 @@ export default function BillPurchaseOrdersPage() {
     (po: any) => !['draft', 'submitted'].includes(po.status)
   )
 
+  const startBilling = (row: any) => {
+    if (billedPOIds.has(row.id)) {
+      alert('This PO already has a bill created.')
+      return
+    }
+    if (!row.vendorId) {
+      alert('This PO has no vendor assigned. Add a vendor before billing.')
+      return
+    }
+    setBillingPO(row)
+    setSuccess('')
+  }
+
   const handleBill = () => {
     const e: Record<string, string> = {}
     if (!billDate) e.billDate = 'Required'
@@ -144,22 +157,12 @@ export default function BillPurchaseOrdersPage() {
         title="Purchase Orders Ready to Bill"
         searchable
         emptyMessage="No approved or received POs available. Approve a PO first from Purchases → Enter Purchase Orders."
+        onRowClick={startBilling}
         actions={[
           {
             label: 'Create Bill',
             icon: <FileText className="h-3.5 w-3.5" />,
-            onClick: row => {
-              if (billedPOIds.has(row.id)) {
-                alert('This PO already has a bill created.')
-                return
-              }
-              if (!row.vendorId) {
-                alert('This PO has no vendor assigned. Add a vendor before billing.')
-                return
-              }
-              setBillingPO(row)
-              setSuccess('')
-            },
+            onClick: (row) => startBilling(row),
             variant: 'ghost',
           },
         ]}

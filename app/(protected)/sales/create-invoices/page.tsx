@@ -19,6 +19,11 @@ import { PdfDownloadButton } from '@/components/widgets/pdf-download-button'
 import { escapeHtml, pdfMoney } from '@/lib/pdf-download'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
+import {
+  GET_CUSTOMERS_FOR_SALES,
+  mapSalesCustomers,
+  customerDisplayName,
+} from '@/lib/sales-customer-options'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   draft:            { label: 'Draft',    cls: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -39,16 +44,6 @@ const today = () => new Date().toISOString().split('T')[0]
 const cell = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 text-xs px-2 h-7 w-full rounded-sm'
 const cellErr = 'border border-red-400 bg-red-50 outline-none focus:ring-1 focus:ring-red-400 text-xs px-2 h-7 w-full rounded-sm'
 
-const GET_CLIENTS = gql`
-  query GetClientsForCreateInvoices($organizationId: ID) {
-    clients(organizationId: $organizationId) {
-      id
-      name
-      company
-    }
-  }
-`
-
 export default function CreateInvoicesPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
@@ -56,7 +51,10 @@ export default function CreateInvoicesPage() {
   const [viewInv, setViewInv] = useState<any | null>(null)
 
   const { data: invData, loading, refetch } = useQuery(GET_CUSTOMER_INVOICES, { variables: { organizationId: orgId, page: 1, limit: 100 }, skip: !orgId })
-  const { data: clientsData } = useQuery(GET_CLIENTS, { variables: { organizationId: orgId }, skip: !orgId })
+  const { data: customersData } = useQuery(GET_CUSTOMERS_FOR_SALES, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+  })
   const { data: soData } = useQuery(GET_SALES_ORDERS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
 
   const [create, { loading: saving, error: saveError }] = useMutation(CREATE_CUSTOMER_INVOICE, {
@@ -73,7 +71,7 @@ export default function CreateInvoicesPage() {
   const [lines, setLines] = useState<Line[]>([emptyLine()])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const clients = clientsData?.clients ?? []
+  const customers = mapSalesCustomers(customersData?.customers)
   const salesOrders = soData?.salesorders ?? []
   const invoices = invData?.customerinvoices ?? []
   const invoicedSOIds = new Set(invoices.map((i: any) => i.salesOrderId).filter(Boolean))
@@ -128,10 +126,7 @@ export default function CreateInvoicesPage() {
   }
 
   const stats = { total: invoices.length, draft: invoices.filter((i: any) => i.status === 'draft').length, paid: invoices.filter((i: any) => i.status === 'paid').length, overdue: invoices.filter((i: any) => i.status === 'overdue').length }
-  const getClient = (id: string) => {
-    const c = clients.find((x: any) => x.id === id)
-    return c ? `${c.name} (${c.id})` : id
-  }
+  const getCustomer = (id: string) => customerDisplayName(customers, id)
   const getSO = (id: string) => salesOrders.find((s: any) => s.id === id)?.seqNo ?? id
 
   return (
@@ -170,7 +165,7 @@ export default function CreateInvoicesPage() {
           {/* Header fields grid */}
           <div className="grid grid-cols-4 border-b border-gray-200">
             {[
-              { label: 'Client *', key: 'customerId', type: 'select', opts: clients.map((c: any) => ({ id: c.id, name: `${c.name} (${c.id})` })), err: errors.customerId },
+              { label: 'Customer *', key: 'customerId', type: 'select', opts: customers.map((c) => ({ id: c.id, name: c.docNumber ? `${c.docNumber} — ${c.name}` : c.name })), err: errors.customerId },
               { label: 'Sales Order', key: 'salesOrderId', type: 'select', opts: availableSalesOrders.map((s: any) => ({ id: s.id, name: `${s.seqNo || s.id} - ${formatMoney(s.totalAmount || 0)}` })), err: '' },
               { label: 'Invoice Date *', key: 'invoiceDate', type: 'date', err: errors.invoiceDate },
               { label: 'Due Date', key: 'dueDate', type: 'date', err: '' },
@@ -277,7 +272,7 @@ export default function CreateInvoicesPage() {
             <table className="min-w-[950px] w-full text-xs">
               <thead>
                 <tr className="bg-[#f0f0f0] border-b border-gray-300">
-                  {['Order #', 'Client', 'Order Date', 'Amount', 'Status', 'Action'].map((h) => (
+                  {['Order #', 'Customer', 'Order Date', 'Amount', 'Status', 'Action'].map((h) => (
                     <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</th>
                   ))}
                 </tr>
@@ -291,7 +286,7 @@ export default function CreateInvoicesPage() {
                   availableSalesOrders.map((so: any, idx: number) => (
                     <tr key={so.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                       <td className="px-3 py-2 border-r border-gray-200 font-mono">{so.seqNo || '—'}</td>
-                      <td className="px-3 py-2 border-r border-gray-200">{getClient(so.customerId || so.clientId || '—')}</td>
+                      <td className="px-3 py-2 border-r border-gray-200">{getCustomer(so.customerId || so.clientId || '')}</td>
                       <td className="px-3 py-2 border-r border-gray-200">{so.orderDate ? formatDate(so.orderDate) : '—'}</td>
                       <td className="px-3 py-2 border-r border-gray-200 font-semibold">{formatMoney(so.totalAmount || 0)}</td>
                       <td className="px-3 py-2 border-r border-gray-200">{so.status || '—'}</td>
@@ -323,7 +318,7 @@ export default function CreateInvoicesPage() {
         {/* Header */}
         <div className="flex bg-[#f0f0f0] border-b border-gray-300">
           <div className="w-8 border-r border-gray-300 py-2 flex items-center justify-center text-xs text-gray-400">#</div>
-          {['Code', 'Client', 'Sales Order', 'Invoice Date', 'Due Date', 'Total', 'Paid', 'Status', ''].map((h, i) => (
+          {['Code', 'Customer', 'Sales Order', 'Invoice Date', 'Due Date', 'Total', 'Paid', 'Status', ''].map((h, i) => (
             <div key={h === '' ? 'actions' : h} className={`border-r border-gray-300 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide ${i === 1 ? 'flex-1' : i === 0 ? 'w-24' : i === 2 ? 'w-28' : i === 3 || i === 4 ? 'w-28' : i === 5 || i === 6 ? 'w-24' : i === 7 ? 'w-28' : 'w-28'}`}>{h === '' ? 'View / Send' : h}</div>
           ))}
         </div>
@@ -342,7 +337,7 @@ export default function CreateInvoicesPage() {
               <div key={inv.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                 <div className="w-8 border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-2">{idx + 1}</div>
                 <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-400">{inv.seqNo || '—'}</div>
-                <div className="flex-1 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{getClient(inv.customerId || inv.clientId)}</div>
+                <div className="flex-1 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{getCustomer(inv.customerId || inv.clientId)}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-500">{inv.salesOrderId ? getSO(inv.salesOrderId) : '—'}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}</div>
                 <div className="w-28 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{inv.dueDate ? formatDate(inv.dueDate) : '—'}</div>
