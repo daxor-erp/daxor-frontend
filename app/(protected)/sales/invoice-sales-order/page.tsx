@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney } from '@/lib/format-money'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { entityRefLabel } from '@/lib/format-status'
 import {
   GET_CUSTOMERS_FOR_SALES,
   mapSalesCustomers,
@@ -108,12 +110,13 @@ export default function InvoiceSalesOrderPage() {
                 </thead>
                 <tbody>
                   {invoices.map((inv: any, idx: number) => {
-                    const s = INV_STATUS[inv.status] ?? INV_STATUS.draft
                     return (
                       <tr key={inv.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                         <td className="px-3 py-2 border-r border-gray-200 font-mono">{inv.seqNo || '—'}</td>
                         <td className="px-3 py-2 border-r border-gray-200">{getCustomerDisplay(inv.customerId || inv.clientId)}</td>
-                        <td className="px-3 py-2 border-r border-gray-200 font-mono">{inv.salesOrderId || '—'}</td>
+                        <td className="px-3 py-2 border-r border-gray-200 font-mono">
+                          {entityRefLabel(inv.salesOrderSeqNo, inv.salesOrderNumber)}
+                        </td>
                         <td className="px-3 py-2 border-r border-gray-200">{formatDate(inv.invoiceDate)}</td>
                         <td className="px-3 py-2 border-r border-gray-200">{formatDate(inv.dueDate)}</td>
                         <td className="px-3 py-2 border-r border-gray-200 font-semibold">
@@ -123,7 +126,7 @@ export default function InvoiceSalesOrderPage() {
                           {formatMoney(inv.paidAmount ?? 0)}
                         </td>
                         <td className="px-3 py-2">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.className}`}>{s.label}</span>
+                          <StatusBadge status={inv.status} />
                         </td>
                       </tr>
                     )

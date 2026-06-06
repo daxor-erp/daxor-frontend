@@ -4,6 +4,7 @@ import { X, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/format-date'
 import { formatMoney } from '@/lib/format-money'
+import { entityRefLabel } from '@/lib/format-status'
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 
 export type JournalEntryLine = {
@@ -44,7 +45,7 @@ export function JournalEntryViewPanel({
   subtitle?: string
 }) {
   const lines = entry.lines ?? []
-  const label = entry.entryNumber || entry.seqNo || entry.id
+  const label = entityRefLabel(entry.entryNumber, entry.seqNo)
 
   return (
     <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">

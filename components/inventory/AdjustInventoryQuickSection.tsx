@@ -13,6 +13,7 @@ import {
   CANCEL_STOCK_ADJUSTMENT,
   DELETE_STOCK_ADJUSTMENT,
 } from '@/gql/queries'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   ClipboardList,
   FileEdit,
@@ -205,13 +206,7 @@ export function AdjustInventoryQuickSection({ organizationId: orgId, warehouses 
       key: 'status',
       label: 'Status',
       width: '110px',
-      render: (v) => (
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${STATUS_MAP[String(v ?? '')] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}
-        >
-          {v ?? '—'}
-        </span>
-      ),
+      render: (v) => <StatusBadge status={v != null && v !== '' ? String(v) : undefined} />,
     },
     {
       key: 'createdAt',
@@ -326,7 +321,9 @@ export function AdjustInventoryQuickSection({ organizationId: orgId, warehouses 
                   { value: '', label: 'Optional…' },
                   ...warehouses.map((w) => ({
                     value: w.id,
-                    label: w.warehouseCode ? `${w.warehouseCode} — ${w.warehouseName}` : (w.warehouseName ?? w.id),
+                    label: w.warehouseCode
+                      ? `${w.warehouseCode} — ${w.warehouseName || 'Warehouse'}`
+                      : w.warehouseName || 'Warehouse',
                   })),
                 ]}
                 className="h-7 text-xs"

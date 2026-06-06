@@ -28,6 +28,7 @@ import {
   CalendarDays,
 } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+import { StatusBadge } from '@/components/ui/status-badge'
 
 const STATUS_MAP: Record<string, string> = {
   draft: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -229,13 +230,7 @@ export default function StockAdjustmentsPage() {
       key: 'status',
       label: 'Status',
       width: '110px',
-      render: v => (
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${STATUS_MAP[v] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}
-        >
-          {v}
-        </span>
-      ),
+      render: (v) => <StatusBadge status={String(v)} />,
     },
     {
       key: 'createdAt',

@@ -139,7 +139,9 @@ export function AdjustInventoryWorksheetSection({ organizationId: orgId, warehou
               { value: '', label: 'Optional…' },
               ...warehouses.map((w) => ({
                 value: w.id,
-                label: w.warehouseCode ? `${w.warehouseCode} — ${w.warehouseName}` : (w.warehouseName ?? w.id),
+                label: w.warehouseCode
+                  ? `${w.warehouseCode} — ${w.warehouseName || 'Warehouse'}`
+                  : w.warehouseName || 'Warehouse',
               })),
             ]}
             className="h-7 text-xs"

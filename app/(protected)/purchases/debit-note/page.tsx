@@ -16,6 +16,8 @@ import { FileText, X, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney, getCurrencySymbol } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
+import { lookupDisplayName } from '@/lib/format-status'
+import { StatusBadge } from '@/components/ui/status-badge'
 
 const cell = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 h-7 w-full rounded-sm'
 const cellErr = 'border border-red-400 bg-red-50 outline-none focus:ring-1 focus:ring-red-400 text-xs px-2 h-7 w-full rounded-sm'
@@ -93,7 +95,8 @@ export default function DebitNotePage() {
 
   const orders: any[] = poData?.purchaseorders ?? []
   const vendors: any[] = vendorData?.vendors ?? []
-  const getVendor = (id: string) => vendors.find((v) => v.id === id)?.name ?? id
+  const getVendor = (id: string) =>
+    lookupDisplayName(vendors.find((v) => v.id === id)?.name, id, 'Unknown vendor')
 
   const debitNotes: any[] = debitData?.vendorDebitNotes ?? []
   const debitedPoIds = new Set(debitNotes.map((d) => d.purchaseOrderId).filter(Boolean))
@@ -520,9 +523,7 @@ export default function DebitNotePage() {
                     {formatMoney(o.remainingAmount ?? 0)}
                   </div>
                   <div className="w-20 border-r border-gray-200 px-2 py-2">
-                    <span className="inline-flex px-2 py-0.5 rounded text-xs border bg-blue-50 text-blue-700 border-blue-200">
-                      {o.status}
-                    </span>
+                    <StatusBadge status={o.status} />
                   </div>
                   <div className="w-24 px-2 py-1.5 flex items-center">
                     {Number(o.remainingAmount ?? 0) > 0.009 && (

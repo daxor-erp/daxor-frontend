@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { formatStatus } from '@/lib/format-status'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Plus, Truck, Package, CheckCircle2, Trash2, Search,
   ArrowRight, Send,
@@ -88,7 +90,10 @@ export default function DeliveryOrdersPage() {
     onError: (e) => toast.error(e.message),
   })
   const [transitionMutation] = useMutation(TRANSITION_DELIVERY_STATUS, {
-    onCompleted: (d) => { listQ.refetch(); toast.success(`Status → ${d.transitionDeliveryOrderStatus.status}`) },
+    onCompleted: (d) => {
+      listQ.refetch()
+      toast.success(`Status → ${formatStatus(d.transitionDeliveryOrderStatus.status)}`)
+    },
     onError: (e) => toast.error(e.message),
   })
 
@@ -374,12 +379,5 @@ export default function DeliveryOrdersPage() {
 }
 
 function DOStatus({ status }: { status: string }) {
-  const s = String(status || '').toUpperCase()
-  const tone =
-    s === 'DELIVERED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : s === 'DISPATCHED' || s === 'IN_TRANSIT' ? 'bg-sky-50 text-sky-700 border-sky-200'
-        : s === 'READY' ? 'bg-amber-50 text-amber-700 border-amber-200'
-          : s === 'CANCELLED' || s === 'RETURNED' ? 'bg-rose-50 text-rose-700 border-rose-200'
-            : 'bg-slate-100 text-slate-700 border-slate-200'
-  return <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase', tone)}>{s.replace('_', ' ')}</span>
+  return <StatusBadge status={status} className="text-[10px]" />
 }

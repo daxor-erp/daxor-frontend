@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { ReactNode } from 'react'
 
 interface SectionCardProps {
-  title: string
+  title?: string
   description?: string
   action?: ReactNode
   children: ReactNode
@@ -22,15 +22,18 @@ export function SectionCard({
   bodyClassName,
   noPadding,
 }: SectionCardProps) {
+  const showHeader = Boolean(title || description || action)
   return (
     <section className={cn('rounded-2xl border border-border bg-card elev-1', className)}>
-      <header className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
-          {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
-        </div>
-        {action && <div className="shrink-0">{action}</div>}
-      </header>
+      {showHeader && (
+        <header className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
+          <div className="min-w-0">
+            {title && <h3 className="text-sm font-semibold tracking-tight">{title}</h3>}
+            {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+          </div>
+          {action && <div className="shrink-0">{action}</div>}
+        </header>
+      )}
       <div className={cn(noPadding ? '' : 'p-5', bodyClassName)}>{children}</div>
     </section>
   )

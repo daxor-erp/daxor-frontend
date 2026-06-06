@@ -28,6 +28,7 @@ import {
   CalendarDays,
   ArrowRightLeft,
 } from 'lucide-react'
+import { StatusBadge } from '@/components/ui/status-badge'
 
 const STATUS_MAP: Record<string, string> = {
   draft: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -347,13 +348,7 @@ export function StockTransfersView({
       key: 'status',
       label: 'Status',
       width: '110px',
-      render: (v) => (
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${STATUS_MAP[String(v ?? '')] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}
-        >
-          {v != null && v !== '' ? String(v) : '—'}
-        </span>
-      ),
+      render: (v) => <StatusBadge status={v != null && v !== '' ? String(v) : undefined} />,
     },
     {
       key: 'createdAt',
@@ -369,9 +364,11 @@ export function StockTransfersView({
   const whOptions = [
     { value: '', label: 'Select warehouse…' },
     MAIN_BIN_OPTION,
-    ...warehouses.map((w: { id: string; warehouseName?: string }) => ({
+    ...warehouses.map((w: { id: string; warehouseName?: string; warehouseCode?: string }) => ({
       value: w.id,
-      label: w.warehouseName ?? w.id,
+      label: w.warehouseCode
+        ? `${w.warehouseCode} — ${w.warehouseName || 'Warehouse'}`
+        : w.warehouseName || 'Warehouse',
     })),
   ]
 

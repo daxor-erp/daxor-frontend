@@ -10,6 +10,8 @@ import { DataTable, Column } from '@/components/DataTable'
 import { Trash2, Package, ShoppingCart, TrendingUp, AlertCircle } from 'lucide-react'
 import { X, Save } from 'lucide-react'
 import { formatMoney } from '@/lib/format-money'
+import { useAuth } from '@/contexts/AuthContext'
+import { StatusBadge } from '@/components/ui/status-badge'
 
 const GET_PRODUCTS = gql`
   query GetProducts {
@@ -63,6 +65,8 @@ const DELETE_PRODUCT = gql`
 `
 
 export default function ProductsPage() {
+  const { user } = useAuth()
+  const orgId = user?.organizationId || ''
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -80,7 +84,7 @@ export default function ProductsPage() {
     reorderPoint: '',
     barcode: '',
     status: 'active',
-    organizationId: '507f1f77bcf86cd799439011',
+    organizationId: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -121,7 +125,7 @@ export default function ProductsPage() {
       reorderPoint: '',
       barcode: '',
       status: 'active',
-      organizationId: '507f1f77bcf86cd799439011',
+      organizationId: orgId,
     })
     setErrors({})
   }
@@ -143,9 +147,11 @@ export default function ProductsPage() {
 
   const handleSubmit = () => {
     if (!validate()) return
-    
+    if (!orgId) return
+
     const input = {
       ...formData,
+      organizationId: orgId,
       price: parseFloat(formData.price) || 0,
       costPrice: parseFloat(formData.costPrice) || 0,
       taxRate: parseFloat(formData.taxRate) || 0,
@@ -193,15 +199,6 @@ export default function ProductsPage() {
     setAdding(false)
     setEditing(null)
     reset()
-  }
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      active: 'bg-green-50 text-green-700 border-green-200',
-      inactive: 'bg-gray-100 text-gray-600 border-gray-200',
-      discontinued: 'bg-red-50 text-red-700 border-red-200',
-    }
-    return colors[status] || 'bg-gray-100 text-gray-600 border-gray-200'
   }
 
   const stats = {
@@ -257,11 +254,7 @@ export default function ProductsPage() {
       key: 'status',
       label: 'Status',
       width: '120px',
-      render: (value) => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(value)}`}>
-          {value}
-        </span>
-      )
+      render: (value) => <StatusBadge status={value} />,
     },
   ]
 

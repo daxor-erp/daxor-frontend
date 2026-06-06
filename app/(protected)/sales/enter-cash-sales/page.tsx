@@ -16,6 +16,8 @@ import { Separator } from '@/components/ui/separator'
 import { Plus, Trash2, ShoppingBag, DollarSign, Receipt, TrendingUp } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney } from '@/lib/format-money'
+import { lookupDisplayName } from '@/lib/format-status'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { formatDate } from '@/lib/format-date'
 
 const today = () => new Date().toISOString().split('T')[0]
@@ -172,18 +174,19 @@ export default function EnterCashSalesPage() {
               </TableHeader>
               <TableBody>
                 {cashSales.map((s: any) => {
-                  const cfg = STATUS_CFG[s.status] ?? STATUS_CFG.draft
                   const org = orgs.find((o: any) => o.id === s.customerId)
                   const proj = projects.find((p: any) => p.id === s.projectId)
                   return (
                     <TableRow key={s.id} className="hover:bg-gray-50 transition-colors">
                       <TableCell className="pl-6 font-mono text-xs text-gray-400">{s.seqNo || '—'}</TableCell>
-                      <TableCell className="text-sm font-medium text-gray-800">{org?.name ?? s.customerId}</TableCell>
+                      <TableCell className="text-sm font-medium text-gray-800">
+                        {lookupDisplayName(org?.name, s.customerId, 'Unknown customer')}
+                      </TableCell>
                       <TableCell className="text-sm text-gray-500">{proj?.name ?? '—'}</TableCell>
                       <TableCell className="text-sm text-gray-600">{s.orderDate ? formatDate(s.orderDate) : '—'}</TableCell>
                       <TableCell className="text-sm font-semibold text-gray-800">{formatMoney(s.totalAmount)}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>{cfg.label}</span>
+                        <StatusBadge status={s.status} />
                       </TableCell>
                     </TableRow>
                   )

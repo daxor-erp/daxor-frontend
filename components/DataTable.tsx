@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { shouldIgnoreRowClick } from '@/lib/data-table-row-click'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Plus, Search, Filter, Download, Trash2, Edit, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import {
   sendForApprovalDataTableAction,
   type SendForApprovalDataTablePresetOptions,
@@ -65,6 +66,8 @@ export interface DataTableProps<T = any> {
   onRowClick?: (row: T) => void
   /** When false, rows are not clickable even if onRowClick is set. */
   isRowClickable?: (row: T) => boolean
+  /** Nest inside SectionCard — no outer card chrome or duplicate title bar chrome. */
+  embedded?: boolean
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -92,6 +95,7 @@ export function DataTable<T extends Record<string, any>>({
   pageSize = 25,
   onRowClick,
   isRowClickable,
+  embedded = false,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
@@ -144,12 +148,25 @@ export function DataTable<T extends Record<string, any>>({
   }
 
   return (
-    <div className={`bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm ${className}`}>
+    <div
+      className={cn(
+        'overflow-hidden',
+        embedded
+          ? 'bg-transparent border-0 shadow-none rounded-none'
+          : 'bg-card border border-border rounded-lg shadow-sm',
+        className,
+      )}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
-        <div className="flex items-center gap-3">
-          {title && <span className="text-sm font-semibold text-gray-700">{title}</span>}
-          {description && <span className="text-xs text-gray-500">{description}</span>}
+      <div
+        className={cn(
+          'flex items-center justify-between gap-2 px-4 py-3 border-b',
+          embedded ? 'border-border bg-secondary/30' : 'border-border bg-muted/40',
+        )}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          {title && <span className="text-sm font-semibold text-foreground">{title}</span>}
+          {description && <span className="text-xs text-muted-foreground">{description}</span>}
         </div>
         <div className="flex items-center gap-2">
           {searchable && (

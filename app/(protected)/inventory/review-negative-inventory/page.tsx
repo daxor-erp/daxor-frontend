@@ -65,7 +65,7 @@ export default function ReviewNegativeInventoryPage() {
     const m = new Map<string, string>()
     const list = whData?.warehouses ?? []
     for (const w of list) {
-      if (w?.id != null) m.set(String(w.id), String(w.warehouseName ?? w.id))
+      if (w?.id != null) m.set(String(w.id), String(w.warehouseName || w.warehouseCode || 'Warehouse'))
     }
     return m
   }, [whData])

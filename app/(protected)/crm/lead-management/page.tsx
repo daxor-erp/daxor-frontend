@@ -24,6 +24,7 @@ import {
 } from '@/gql/queries'
 import { Trash2, Edit, X, Save, TrendingUp, Eye } from 'lucide-react'
 import { formatMoney } from '@/lib/format-money'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { useRouter } from 'next/navigation'
 
 const EMPTY_FORM = {
@@ -170,7 +171,7 @@ export default function LeadManagementPage() {
     { key: 'company', label: 'Company', render: v => <span className="text-xs">{v || '—'}</span> },
     { key: 'email', label: 'Email', render: v => <span className="text-xs">{v || '—'}</span> },
     { key: 'phone', label: 'Phone', width: '120px' },
-    { key: 'status', label: 'Status', width: '110px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${statusColor[v]}`}>{v}</span> },
+    { key: 'status', label: 'Status', width: '110px', render: (v) => <StatusBadge status={String(v)} /> },
     { key: 'rating', label: 'Rating', width: '80px', render: v => v ? <span className={`px-2 py-0.5 rounded text-xs ${ratingColor[v]}`}>{v}</span> : '—' },
     { key: 'estimatedValue', label: 'Value', width: '120px', render: v => v ? formatMoney(v) : '—' },
   ]

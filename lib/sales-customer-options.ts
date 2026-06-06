@@ -1,4 +1,5 @@
 import { gql } from '@apollo/client'
+import { lookupDisplayName } from '@/lib/format-status'
 
 /** Registered customers (bill-to) for sales, quotations, and invoicing. */
 export const GET_CUSTOMERS_FOR_SALES = gql`
@@ -48,8 +49,8 @@ export function customerDisplayName(
 ): string {
   if (!id) return '—'
   const c = customers.find((x) => x.id === id)
-  if (!c) return String(id)
-  return c.docNumber ? `${c.name} (${c.docNumber})` : c.name
+  const label = c ? (c.docNumber ? `${c.name} (${c.docNumber})` : c.name) : null
+  return lookupDisplayName(label, id, 'Unknown customer')
 }
 
 /** Party id on quotations / legacy rows (customerId or clientId). */
