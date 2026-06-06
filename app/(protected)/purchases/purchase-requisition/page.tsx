@@ -2,22 +2,25 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_PURCHASE_ORDERS, CREATE_PURCHASE_ORDER, GET_VENDORS, GET_PROJECTS, GET_ITEMS } from '@/gql/queries'
+import { GET_PURCHASE_ORDERS, CREATE_PURCHASE_REQUISITION, GET_VENDORS, GET_PROJECTS, GET_ITEMS } from '@/gql/queries'
 import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
 import { CellInput } from '@/components/ui/cell-input'
 import { CellSelect } from '@/components/ui/cell-select'
-import { Plus, X, Save, Trash2, ClipboardList, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Plus, X, Save, Trash2, ClipboardList, Clock, CheckCircle2, AlertCircle, XCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  submitted: { label: 'Submitted', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  approved:  { label: 'Approved',  cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
+  draft:     { label: 'Draft',              cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+  submitted: { label: 'Pending Approval',   cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  approved:  { label: 'Approved',           cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  rejected:  { label: 'Declined',           cls: 'bg-red-50 text-red-700 border-red-200' },
+  cancelled: { label: 'Cancelled',          cls: 'bg-red-50 text-red-600 border-red-200' },
 }
+
+const PR_STATUSES = new Set(['draft', 'submitted', 'approved', 'rejected'])
 
 const PRIORITY = ['Low', 'Normal', 'High', 'Urgent']
 interface Line { desc: string; qty: string; unit: string; reason: string; price: string }
@@ -28,12 +31,25 @@ export default function PurchaseRequisitionPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
-  const { data: poData, loading, error: poError, refetch } = useQuery(GET_PURCHASE_ORDERS, { variables: { organizationId: orgId, page: 1, limit: 100 }, skip: !orgId })
+  const { data: poData, loading, error: poError, refetch } = useQuery(GET_PURCHASE_ORDERS, {
+    variables: { organizationId: orgId, page: 1, limit: 100 },
+    skip: !orgId,
+    fetchPolicy: 'network-only',
+  })
   const { data: projectData } = useQuery(GET_PROJECTS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
   const { data: itemData } = useQuery(GET_ITEMS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
   const { data: vendorData } = useQuery(GET_VENDORS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
-  const [create, { loading: saving, error: saveError }] = useMutation(CREATE_PURCHASE_ORDER, {
-    onCompleted: () => { setAdding(false); reset(); refetch() },
+
+  const [successMsg, setSuccessMsg] = useState('')
+  const [create, { loading: saving, error: saveError }] = useMutation(CREATE_PURCHASE_REQUISITION, {
+    onCompleted: (res) => {
+      setAdding(false)
+      reset()
+      void refetch()
+      const ref = res.createPurchaseRequisition?.seqNo ?? res.createPurchaseRequisition?.id
+      setSuccessMsg(`Requisition ${ref ?? ''} submitted for approval.`)
+      setTimeout(() => setSuccessMsg(''), 5000)
+    },
   })
 
   const [adding, setAdding] = useState(false)
@@ -44,14 +60,16 @@ export default function PurchaseRequisitionPage() {
   const projects = projectData?.projects ?? []
   const items = itemData?.items ?? []
   const vendors = vendorData?.vendors ?? []
-  // PRs = draft POs (internal requests not yet converted to real POs)
-  const requisitions = (poData?.purchaseorders ?? []).filter((o: any) => o.status === 'draft' || o.status === 'submitted')
+
+  const requisitions = (poData?.purchaseorders ?? []).filter((o: { status?: string }) =>
+    PR_STATUSES.has(String(o.status ?? '').toLowerCase()),
+  )
 
   const reset = () => { setForm({ vendorId: '', projectId: '', requiredDate: '', priority: 'Normal', notes: '' }); setLines([emptyLine()]); setErrors({}) }
   const setF = (k: string, v: string) => { setForm(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: '' })) }
   const setL = (i: number, k: keyof Line, v: string) => setLines(p => p.map((l, idx) => idx === i ? { ...l, [k]: v } : l))
   const pickItem = (i: number, id: string) => {
-    const it = items.find((x: any) => x.id === id)
+    const it = items.find((x: { id: string }) => x.id === id)
     if (it) setLines(p => p.map((l, idx) => idx === i ? { ...l, desc: it.name, unit: it.unit || 'pcs', price: String(it.rate || 0) } : l))
   }
 
@@ -67,44 +85,58 @@ export default function PurchaseRequisitionPage() {
 
   const handleSave = () => {
     if (!validate()) return
-    const items = lines.map(l => ({
+    const lineItems = lines.map(l => ({
       itemDescription: l.desc,
       quantity: parseFloat(l.qty) || 1,
       unitPrice: parseFloat(l.price) || 0,
       lineTotal: (parseFloat(l.qty) || 1) * (parseFloat(l.price) || 0),
     }))
-    const subtotal = items.reduce((s, i) => s + i.lineTotal, 0)
-    create({ variables: { input: {
-      vendorId: form.vendorId || undefined,
-      projectId: form.projectId || undefined,
-      orderDate: today(),
-      items,
-      subtotal,
-      totalAmount: subtotal,
-      organizationId: orgId,
-    } } })
+    const subtotal = lineItems.reduce((s, i) => s + i.lineTotal, 0)
+    create({
+      variables: {
+        input: {
+          vendorId: form.vendorId || undefined,
+          projectId: form.projectId || undefined,
+          deliveryDate: form.requiredDate || undefined,
+          orderDate: today(),
+          items: lineItems,
+          subtotal,
+          totalAmount: subtotal,
+          notes: [form.notes, form.priority !== 'Normal' ? `Priority: ${form.priority}` : ''].filter(Boolean).join('\n') || undefined,
+          organizationId: orgId,
+        },
+      },
+    })
   }
 
   const getProject = (id: string) => {
     if (!id) return '—'
-    const found = projects.find((p: any) => p.id === id || String(p._id) === id)
+    const found = projects.find((p: { id: string; _id?: string; name?: string }) => p.id === id || String(p._id) === id)
     return found?.name ?? `(ID: ${id.slice(-6)})`
   }
 
   const stats = {
     total: requisitions.length,
-    pending: requisitions.filter((r: any) => r.status === 'submitted').length,
-    approved: (poData?.purchaseorders ?? []).filter((o: any) => o.status === 'approved').length,
+    pending: requisitions.filter((r: { status?: string }) => r.status === 'submitted').length,
+    approved: requisitions.filter((r: { status?: string }) => r.status === 'approved').length,
+    declined: requisitions.filter((r: { status?: string }) => r.status === 'rejected').length,
   }
 
   return (
     <PageTemplate title="Purchase Requisition" description="Raise internal purchase requests for approval">
+      {successMsg && (
+        <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {successMsg}
+        </div>
+      )}
+
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total PRs',  value: stats.total,    icon: ClipboardList, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Pending',    value: stats.pending,  icon: Clock,         cls: 'text-amber-600 bg-amber-50' },
-          { label: 'Approved',   value: stats.approved, icon: CheckCircle2,  cls: 'text-emerald-600 bg-emerald-50' },
+          { label: 'Total PRs',   value: stats.total,    icon: ClipboardList, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Pending',     value: stats.pending,  icon: Clock,         cls: 'text-amber-600 bg-amber-50' },
+          { label: 'Approved',    value: stats.approved, icon: CheckCircle2,  cls: 'text-emerald-600 bg-emerald-50' },
+          { label: 'Declined',    value: stats.declined, icon: XCircle,       cls: 'text-red-600 bg-red-50' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
             <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
@@ -128,15 +160,15 @@ export default function PurchaseRequisitionPage() {
               { label: 'Required By *', key: 'requiredDate', type: 'date' },
               { label: 'Priority', key: 'priority', type: 'priority' },
               { label: 'Notes', key: 'notes', type: 'text' },
-            ].map(({ label, key, type, opts }: any) => (
+            ].map(({ label, key, type, opts }: { label: string; key: string; type: string; opts?: { id: string; name: string }[] }) => (
               <div key={key} className="border-r border-gray-200 last:border-r-0 p-2">
                 <p className={`text-xs mb-1 font-medium ${errors[key] ? 'text-red-500' : 'text-gray-500'}`}>{label}{errors[key] ? ` — ${errors[key]}` : ''}</p>
                 {type === 'select' ? (
                   <CellSelect
-                    value={(form as any)[key]}
+                    value={(form as Record<string, string>)[key]}
                     onChange={e => setF(key, e.target.value)}
                     placeholder="— select —"
-                    options={opts.map((o: any) => ({ value: o.id, label: o.name }))}
+                    options={(opts ?? []).map(o => ({ value: o.id, label: o.name }))}
                   />
                 ) : type === 'priority' ? (
                   <CellSelect
@@ -145,9 +177,9 @@ export default function PurchaseRequisitionPage() {
                     options={PRIORITY.map(p => ({ value: p, label: p }))}
                   />
                 ) : type === 'date' ? (
-                  <CellInput type="date" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} invalid={!!errors[key]} />
+                  <CellInput type="date" value={(form as Record<string, string>)[key]} onChange={e => setF(key, e.target.value)} invalid={!!errors[key]} />
                 ) : (
-                  <CellInput type="text" value={(form as any)[key]} onChange={e => setF(key, e.target.value)} placeholder="Optional notes…" />
+                  <CellInput type="text" value={(form as Record<string, string>)[key]} onChange={e => setF(key, e.target.value)} placeholder="Optional notes…" />
                 )}
               </div>
             ))}
@@ -169,7 +201,7 @@ export default function PurchaseRequisitionPage() {
                       className="px-1"
                       onChange={e => pickItem(i, e.target.value)}
                       placeholder="…"
-                      options={items.map((it: any) => ({ value: it.id, label: it.name }))}
+                      options={items.map((it: { id: string; name: string }) => ({ value: it.id, label: it.name }))}
                     />
                   </div>
                   <div className="border-r border-gray-200 px-1 py-1">
@@ -205,7 +237,7 @@ export default function PurchaseRequisitionPage() {
 
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-1.5">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" /> This requisition will be submitted for approval before a PO is raised.
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" /> Saving submits this requisition for approval automatically.
               </div>
               <div className="flex gap-2">
                 {saveError && <p className="text-xs text-red-500">{saveError.message}</p>}
@@ -230,7 +262,7 @@ export default function PurchaseRequisitionPage() {
           )}
         </div>
         <div className="flex bg-[#f0f0f0] border-b border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-          {[['w-8','#'],['w-24','PR #'],['flex-1','Project'],['w-32','Vendor'],['w-28','Required By'],['w-32','Items'],['w-24','Amount'],['w-24','Status']].map(([w,h]) => (
+          {[['w-8','#'],['w-24','PR #'],['flex-1','Project'],['w-32','Vendor'],['w-28','Required By'],['w-32','Items'],['w-24','Amount'],['w-32','Approval Status']].map(([w,h]) => (
             <div key={h} className={`${w} border-r border-gray-300 last:border-r-0 px-2 py-2`}>{h}</div>
           ))}
         </div>
@@ -241,25 +273,39 @@ export default function PurchaseRequisitionPage() {
             <ClipboardList className="h-8 w-8 mb-2 opacity-30" />
             <p className="text-xs">{poError ? `Error: ${poError.message}` : 'No requisitions yet. Click "New Requisition" to raise one.'}</p>
           </div>
-        ) : requisitions.map((r: any, idx: number) => {
-          const s = STATUS_CFG[r.status] ?? STATUS_CFG.draft
+        ) : requisitions.map((r: {
+          id: string
+          seqNo?: string
+          projectId?: string
+          vendorName?: string
+          orderDate?: string
+          deliveryDate?: string
+          items?: { quantity?: number; unitPrice?: number }[]
+          totalAmount?: number
+          status?: string
+        }, idx: number) => {
+          const statusKey = String(r.status ?? 'draft').toLowerCase()
+          const s = STATUS_CFG[statusKey] ?? STATUS_CFG.draft
           const projectName = r.projectId ? getProject(r.projectId) : '—'
           const itemCount = r.items?.length ?? 0
+          const requiredBy = r.deliveryDate ?? r.orderDate
           return (
             <div key={r.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors text-xs ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
               <div className="w-8 border-r border-gray-200 flex items-center justify-center text-gray-300 py-2">{idx + 1}</div>
               <div className="w-24 border-r border-gray-200 px-2 py-2 font-mono text-gray-400">{r.seqNo || '—'}</div>
               <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800">{projectName}</div>
               <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-600">{r.vendorName || '—'}</div>
-              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{r.orderDate ? formatDate(r.orderDate) : '—'}</div>
+              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{requiredBy ? formatDate(requiredBy) : '—'}</div>
               <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-600">{itemCount > 0 ? `${itemCount} item${itemCount > 1 ? 's' : ''}` : '—'}</div>
               <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">
                 {(() => {
-                  const total = r.totalAmount || r.items?.reduce((s: number, i: any) => s + ((i.quantity || 0) * (i.unitPrice || 0)), 0) || 0
+                  const total = r.totalAmount || r.items?.reduce((sum, i) => sum + ((i.quantity || 0) * (i.unitPrice || 0)), 0) || 0
                   return total > 0 ? `${formatMoney(total)}` : '—'
                 })()}
               </div>
-              <div className="w-24 px-2 py-2"><span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span></div>
+              <div className="w-32 px-2 py-2">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
+              </div>
             </div>
           )
         })}
