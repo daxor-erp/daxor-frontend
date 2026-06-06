@@ -33,6 +33,8 @@ import {
   Send,
 } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+import { entityRefLabel, formatStatus } from '@/lib/format-status'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { formatMoney } from '@/lib/format-money'
 
 interface LineItem {
@@ -355,13 +357,7 @@ export default function MaterialReceiptPage() {
       key: 'status',
       label: 'Status',
       width: '110px',
-      render: v => (
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${STATUS_STYLES[String(v)] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}
-        >
-          {v}
-        </span>
-      ),
+      render: (v) => <StatusBadge status={String(v)} />,
     },
     {
       key: '_orgApproval',
@@ -458,7 +454,7 @@ export default function MaterialReceiptPage() {
                     .filter((po: any) => !['cancelled', 'received'].includes(po.status))
                     .map((po: any) => ({
                       value: po.id,
-                      label: `${po.seqNo || po.id} — ${po.vendorName || ''} (${po.status})`,
+                      label: `${entityRefLabel(po.seqNo, po.docNumber)} — ${po.vendorName || ''} (${formatStatus(po.status)})`,
                     })),
                 ]}
                 className="h-7 text-xs"

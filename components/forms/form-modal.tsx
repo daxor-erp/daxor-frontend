@@ -20,6 +20,7 @@
 import { ReactNode, useEffect, useRef } from 'react'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogTitle,
   DialogDescription,
@@ -97,6 +98,7 @@ export function FormModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        showCloseButton={false}
         className={cn(
           'p-0 overflow-hidden gap-0 border-0 elev-3',
           'max-h-[92vh] flex flex-col w-[calc(100vw-2rem)]',
@@ -106,14 +108,15 @@ export function FormModal({
         {/* Header */}
         <div className={cn('relative px-6 py-4 text-white', headerToneClass)}>
           <div className="absolute inset-0 bg-dotgrid opacity-[0.08] pointer-events-none" />
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-white/80 hover:bg-white/15"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <DialogClose asChild>
+            <button
+              type="button"
+              className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md text-white/80 hover:bg-white/15"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </DialogClose>
           <div className="relative flex items-start gap-3 pr-10">
             {icon && (
               <div className="h-10 w-10 rounded-xl bg-white/15 border border-white/20 grid place-items-center shrink-0 backdrop-blur-sm">
@@ -152,14 +155,11 @@ export function FormModal({
                 {footerStart}
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={submitting}
-                >
-                  {cancelLabel}
-                </Button>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={submitting}>
+                    {cancelLabel}
+                  </Button>
+                </DialogClose>
                 {onSubmit && (
                   <Button
                     type="submit"

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { GET_PRODUCTION_PLANNINGS, CREATE_PRODUCTION_PLANNING, UPDATE_PRODUCTION_PLANNING, DELETE_PRODUCTION_PLANNING, GET_PROJECTS, GET_USERS } from '@/gql/queries'
 import { Trash2, Edit, X, Save, FolderKanban, Plus, Minus } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { formatMoney } from '@/lib/format-money'
 
 const EMPTY_FORM = {
@@ -153,7 +154,7 @@ export default function ProductionPlanningPage() {
     { key: 'progress', label: 'Progress', width: '100px', render: v => <span>{v || 0}%</span> },
     { key: 'budget', label: 'Budget', width: '120px', render: v => v ? formatMoney(v) : '—' },
     { key: 'actualCost', label: 'Actual Cost', width: '120px', render: v => v ? formatMoney(v) : '—' },
-    { key: 'status', label: 'Status', width: '100px', render: v => <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">{v}</span> },
+    { key: 'status', label: 'Status', width: '100px', render: (v) => <StatusBadge status={String(v)} /> },
   ]
 
   return (

@@ -24,6 +24,8 @@ import {
   mapSalesCustomers,
   customerDisplayName,
 } from '@/lib/sales-customer-options'
+import { entityRefLabel } from '@/lib/format-status'
+import { StatusBadge } from '@/components/ui/status-badge'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   draft:            { label: 'Draft',    cls: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -91,7 +93,7 @@ export default function CreateInvoicesPage() {
       salesOrderId: so.id,
       customerId: so.customerId || so.clientId || p.customerId,
     }))
-    setLines([{ desc: `Sales Order ${so.seqNo || so.id}`, qty: '1', price: String(so.totalAmount || 0) }])
+    setLines([{ desc: `Sales Order ${entityRefLabel(so.seqNo, so.docNumber)}`, qty: '1', price: String(so.totalAmount || 0) }])
   }
   const startFromSalesOrder = (so: any) => {
     setAdding(true)
@@ -101,7 +103,7 @@ export default function CreateInvoicesPage() {
       invoiceDate: today(),
       dueDate: '',
     })
-    setLines([{ desc: `Sales Order ${so.seqNo || so.id}`, qty: '1', price: String(so.totalAmount || 0) }])
+    setLines([{ desc: `Sales Order ${entityRefLabel(so.seqNo, so.docNumber)}`, qty: '1', price: String(so.totalAmount || 0) }])
     setErrors({})
   }
 
@@ -127,7 +129,10 @@ export default function CreateInvoicesPage() {
 
   const stats = { total: invoices.length, draft: invoices.filter((i: any) => i.status === 'draft').length, paid: invoices.filter((i: any) => i.status === 'paid').length, overdue: invoices.filter((i: any) => i.status === 'overdue').length }
   const getCustomer = (id: string) => customerDisplayName(customers, id)
-  const getSO = (id: string) => salesOrders.find((s: any) => s.id === id)?.seqNo ?? id
+  const getSO = (id: string) => {
+    const so = salesOrders.find((s: any) => s.id === id)
+    return entityRefLabel(so?.seqNo, so?.docNumber)
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -166,7 +171,7 @@ export default function CreateInvoicesPage() {
           <div className="grid grid-cols-4 border-b border-gray-200">
             {[
               { label: 'Customer *', key: 'customerId', type: 'select', opts: customers.map((c) => ({ id: c.id, name: c.docNumber ? `${c.docNumber} — ${c.name}` : c.name })), err: errors.customerId },
-              { label: 'Sales Order', key: 'salesOrderId', type: 'select', opts: availableSalesOrders.map((s: any) => ({ id: s.id, name: `${s.seqNo || s.id} - ${formatMoney(s.totalAmount || 0)}` })), err: '' },
+              { label: 'Sales Order', key: 'salesOrderId', type: 'select', opts: availableSalesOrders.map((s: any) => ({ id: s.id, name: `${entityRefLabel(s.seqNo, s.docNumber)} — ${formatMoney(s.totalAmount || 0)}` })), err: '' },
               { label: 'Invoice Date *', key: 'invoiceDate', type: 'date', err: errors.invoiceDate },
               { label: 'Due Date', key: 'dueDate', type: 'date', err: '' },
             ].map(({ label, key, type, opts, err }: any) => (
@@ -332,7 +337,6 @@ export default function CreateInvoicesPage() {
           </div>
         ) : (
           invoices.map((inv: any, idx: number) => {
-            const s = STATUS_CFG[inv.status] ?? STATUS_CFG.draft
             return (
               <div key={inv.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                 <div className="w-8 border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-2">{idx + 1}</div>
@@ -344,7 +348,7 @@ export default function CreateInvoicesPage() {
                 <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-semibold text-gray-800">{formatMoney(inv.totalAmount)}</div>
                 <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{formatMoney(inv.paidAmount ?? 0)}</div>
                 <div className="w-24 border-r border-gray-200 px-2 py-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
+                  <StatusBadge status={inv.status} />
                 </div>
                 <div className="w-28 px-2 py-2 flex items-center justify-center gap-1 border-l border-gray-100">
                   <button

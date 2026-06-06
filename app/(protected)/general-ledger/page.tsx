@@ -13,6 +13,7 @@ import { DataTable, Column } from '@/components/DataTable'
 import { DollarSign, BookOpen, Calendar, Download, Eye } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
 import { formatMoney } from '@/lib/format-money'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { summarizeLedgerPage } from '@/lib/ledger-totals'
 import { LedgerSummaryCards } from '@/components/financial/ledger-summary-cards'
@@ -93,7 +94,7 @@ export default function GeneralLedgerPage() {
     { key: 'debitAccount', label: 'Debit Account', render: v => <span className="text-xs">{v}</span> },
     { key: 'creditAccount', label: 'Credit Account', render: v => <span className="text-xs">{v}</span> },
     { key: 'amount', label: 'Amount', width: '120px', render: v => formatMoney(v) },
-    { key: 'status', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${statusColor[v] || 'bg-gray-100 text-gray-700'}`}>{v}</span> },
+    { key: 'status', label: 'Status', width: '90px', render: (v) => <StatusBadge status={String(v)} /> },
   ]
 
   const exportCsv = () => {

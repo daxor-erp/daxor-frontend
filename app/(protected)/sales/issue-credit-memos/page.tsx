@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney, getCurrencySymbol } from '@/lib/format-money'
+import { lookupDisplayName } from '@/lib/format-status'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { formatDate } from '@/lib/format-date'
 
 const CREDIT_REASONS = [
@@ -78,7 +80,7 @@ export default function IssueCreditMemosPage() {
   const eligible = allInvoices.filter(inv => ELIGIBLE.includes(inv.status))
   const issued = allInvoices.filter(inv => inv.status === 'cancelled')
 
-  const getOrgName = (id: string) => orgs.find(o => o.id === id)?.name ?? id
+  const getOrgName = (id: string) => lookupDisplayName(orgs.find(o => o.id === id)?.name, id, 'Unknown customer')
 
   const resetForm = () => {
     setForm({ creditAmount: '', reason: '', notes: '', memoDate: today() })
@@ -136,7 +138,6 @@ export default function IssueCreditMemosPage() {
       </TableHeader>
       <TableBody>
         {invoices.map(inv => {
-          const s = INV_STATUS[inv.status] ?? INV_STATUS.draft
           return (
             <TableRow key={inv.id} className="hover:bg-gray-50 transition-colors">
               <TableCell className="pl-6 font-mono text-xs text-gray-400">{inv.seqNo || '—'}</TableCell>
@@ -150,9 +151,7 @@ export default function IssueCreditMemosPage() {
                 {formatMoney(inv.paidAmount ?? 0)}
               </TableCell>
               <TableCell>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.cls}`}>
-                  {s.label}
-                </span>
+                <StatusBadge status={inv.status} />
               </TableCell>
               {showAction && (
                 <TableCell>

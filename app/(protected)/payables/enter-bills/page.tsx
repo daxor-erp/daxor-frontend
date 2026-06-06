@@ -17,6 +17,7 @@ import { Trash2, Edit, X, Save, Plus, CheckCircle, FileText, Clock, DollarSign, 
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
+import { StatusBadge } from '@/components/ui/status-badge'
 
 const EMPTY_LINE = { itemId: '', description: '', quantity: 1, unitPrice: 0, discount: 0, tax: 0, total: 0 }
 
@@ -179,13 +180,6 @@ export default function EnterBillsPage() {
     cancelled: 'bg-red-50 text-red-700 border-red-200',
   }
 
-  const statusDisplay = (s: string) => {
-    const x = (s || '').toLowerCase()
-    if (x === 'submitted') return 'pending approval'
-    if (x === 'approval_declined') return 'declined'
-    return x.replace('_', ' ')
-  }
-
   const stats = {
     total: bills.length,
     outstanding: bills.filter((b: any) => ['approved', 'partially_paid'].includes(b.status)).length,
@@ -215,11 +209,7 @@ export default function EnterBillsPage() {
     { key: 'outstandingAmount', label: 'Outstanding', width: '110px', align: 'right', render: v => <span className="font-semibold text-red-600">{formatMoney(v)}</span> },
     {
       key: 'status', label: 'Status', width: '130px',
-      render: (v) => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[String(v)] || statusColor.draft}`}>
-          {statusDisplay(String(v))}
-        </span>
-      ),
+      render: (v) => <StatusBadge status={String(v)} />,
     },
     {
       key: '_orgApproval',

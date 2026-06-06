@@ -11,6 +11,7 @@ import { VendorSendForApprovalSheet } from '@/components/vendors/vendor-send-for
 import { GET_VENDORS, CREATE_VENDOR, UPDATE_VENDOR, DELETE_VENDOR } from '@/gql/queries'
 import { useSendForApprovalSheet } from '@/hooks/use-send-for-approval-sheet'
 import { Trash2, Edit, X, Save, Building2, CheckCircle, XCircle } from 'lucide-react'
+import { StatusBadge } from '@/components/ui/status-badge'
 
 const EMPTY_FORM = {
   name: '',
@@ -119,11 +120,7 @@ export default function VendorsPage() {
     { key: 'paymentTerms', label: 'Payment Terms', width: '140px', render: v => <span className="text-gray-600">{v || '—'}</span> },
     {
       key: 'status', label: 'Status', width: '100px',
-      render: v => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${v === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-          {v}
-        </span>
-      )
+      render: (v) => <StatusBadge status={String(v)} />,
     },
     {
       key: '_orgApproval',

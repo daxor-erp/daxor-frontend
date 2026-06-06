@@ -571,7 +571,9 @@ export default function WarehousesPage() {
               placeholder="— select warehouse —"
               options={warehouses.map((w: { id: string; warehouseCode?: string; warehouseName?: string }) => ({
                 value: w.id,
-                label: (w.warehouseCode ? `${w.warehouseCode} — ` : '') + (w.warehouseName ?? w.id),
+                label:
+                  (w.warehouseCode ? `${w.warehouseCode} — ` : '') +
+                  (w.warehouseName || 'Warehouse'),
               }))}
             />
             <Button

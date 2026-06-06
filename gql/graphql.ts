@@ -1,7 +1,5 @@
-/* eslint-disable */
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
-const defaultOptions = {} as const;
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -9,6 +7,7 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: 
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string; output: string; }
@@ -2674,6 +2673,7 @@ export type Mutation = {
   createProductionPlanning: ProductionPlanning;
   createProject: Project;
   createPurchaseOrder: PurchaseOrder;
+  createPurchaseRequisition: PurchaseOrder;
   createQCInspection: QcInspection;
   createQuotation: Quotation;
   createRawMaterialRequisition: RawMaterialRequisition;
@@ -3390,6 +3390,11 @@ export type MutationCreateProjectArgs = {
 
 
 export type MutationCreatePurchaseOrderArgs = {
+  input: CreatePurchaseOrderInput;
+};
+
+
+export type MutationCreatePurchaseRequisitionArgs = {
   input: CreatePurchaseOrderInput;
 };
 
@@ -9456,6 +9461,13 @@ export type CreatePurchaseOrderMutationVariables = Exact<{
 
 export type CreatePurchaseOrderMutation = { __typename?: 'Mutation', createPurchaseOrder: { __typename?: 'PurchaseOrder', id: string, seqNo?: string | null, status: string, totalAmount?: number | null } };
 
+export type CreatePurchaseRequisitionMutationVariables = Exact<{
+  input: CreatePurchaseOrderInput;
+}>;
+
+
+export type CreatePurchaseRequisitionMutation = { __typename?: 'Mutation', createPurchaseRequisition: { __typename?: 'PurchaseOrder', id: string, seqNo?: string | null, status: string, totalAmount?: number | null } };
+
 export type UpdatePurchaseOrderMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   input: UpdatePurchaseOrderInput;
@@ -14988,6 +15000,24 @@ export function useCreatePurchaseOrderMutation(baseOptions?: Apollo.MutationHook
 export type CreatePurchaseOrderMutationHookResult = ReturnType<typeof useCreatePurchaseOrderMutation>;
 export type CreatePurchaseOrderMutationResult = Apollo.MutationResult<CreatePurchaseOrderMutation>;
 export type CreatePurchaseOrderMutationOptions = Apollo.BaseMutationOptions<CreatePurchaseOrderMutation, CreatePurchaseOrderMutationVariables>;
+export const CreatePurchaseRequisitionDocument = gql`
+    mutation CreatePurchaseRequisition($input: CreatePurchaseOrderInput!) {
+  createPurchaseRequisition(input: $input) {
+    id
+    seqNo
+    status
+    totalAmount
+  }
+}
+    `;
+export type CreatePurchaseRequisitionMutationFn = Apollo.MutationFunction<CreatePurchaseRequisitionMutation, CreatePurchaseRequisitionMutationVariables>;
+export function useCreatePurchaseRequisitionMutation(baseOptions?: Apollo.MutationHookOptions<CreatePurchaseRequisitionMutation, CreatePurchaseRequisitionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreatePurchaseRequisitionMutation, CreatePurchaseRequisitionMutationVariables>(CreatePurchaseRequisitionDocument, options);
+      }
+export type CreatePurchaseRequisitionMutationHookResult = ReturnType<typeof useCreatePurchaseRequisitionMutation>;
+export type CreatePurchaseRequisitionMutationResult = Apollo.MutationResult<CreatePurchaseRequisitionMutation>;
+export type CreatePurchaseRequisitionMutationOptions = Apollo.BaseMutationOptions<CreatePurchaseRequisitionMutation, CreatePurchaseRequisitionMutationVariables>;
 export const UpdatePurchaseOrderDocument = gql`
     mutation UpdatePurchaseOrder($id: ID!, $input: UpdatePurchaseOrderInput!) {
   updatePurchaseOrder(id: $id, input: $input) {

@@ -13,6 +13,7 @@ import {
 import { X, Save, DollarSign, Clock, CheckCircle, CreditCard, AlertCircle } from 'lucide-react'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
+import { StatusBadge } from '@/components/ui/status-badge'
 
 const PAYMENT_METHODS = [
   { value: 'bank_transfer', label: 'Bank Transfer' },
@@ -181,16 +182,7 @@ export default function PayBillsPage() {
     },
     {
       key: 'status', label: 'Status', width: '120px',
-      render: v => {
-        const s = String(v || '')
-        const label =
-          s === 'submitted' ? 'pending approval' : s === 'approval_declined' ? 'declined' : s.replace('_', ' ')
-        return (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[s] || statusColor.draft}`}>
-            {label}
-          </span>
-        )
-      },
+      render: (v) => <StatusBadge status={String(v)} />,
     },
   ]
 

@@ -21,6 +21,7 @@ import { Trash2, X, Save, Plus, Minus, CheckCircle, Download, Eye } from 'lucide
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { downloadCsv } from '@/lib/csv-download'
 import { JournalEntryViewPanel, type JournalEntryView } from '@/components/financial/journal-entry-view-panel'
 
@@ -187,7 +188,7 @@ export default function MakeJournalEntriesPage() {
     { key: 'description', label: 'Description', render: v => <span className="text-xs">{v}</span> },
     { key: 'totalDebit', label: 'Debit', width: '100px', render: v => formatMoney(v) },
     { key: 'totalCredit', label: 'Credit', width: '100px', render: v => formatMoney(v) },
-    { key: 'status', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${statusColor[v]}`}>{v}</span> },
+    { key: 'status', label: 'Status', width: '90px', render: (v) => <StatusBadge status={String(v)} /> },
   ]
 
   const exportCsv = () => {
