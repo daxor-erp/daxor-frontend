@@ -19,6 +19,8 @@ import {
   LayoutGrid,
   PanelLeftClose,
   PanelTopClose,
+  Shield,
+  Building2,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -34,6 +36,7 @@ import { cn } from '@/lib/utils'
 import { NotificationsDropdown } from '@/components/notifications-dropdown'
 import { useLayoutPreference } from '@/hooks/use-layout-preference'
 import { GlobalSearch } from '@/components/global-search'
+import { getAdminConsoleBackLink, isPlatformAdminRole } from '@/lib/admin-console-link'
 
 function moduleLabel(moduleKey: string) {
   const map: Record<string, string> = {
@@ -475,6 +478,8 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
 
   const initials = ((user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')).toUpperCase() || 'U'
   const orgName = orgData?.organization?.name as string | undefined
+  const adminBack = getAdminConsoleBackLink(user?.roles)
+  const AdminBackIcon = isPlatformAdminRole(user?.roles) ? Shield : Building2
 
   return (
     <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -517,6 +522,21 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
 
         {/* Right actions */}
         <div className="ml-auto flex items-center gap-1">
+          {adminBack ? (
+            <Link
+              href={adminBack.href}
+              className={cn(
+                'hidden sm:inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors',
+                isPlatformAdminRole(user?.roles)
+                  ? 'border-violet-200 bg-violet-50 text-violet-800 hover:bg-violet-100'
+                  : 'border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100',
+              )}
+              title={adminBack.label}
+            >
+              <AdminBackIcon className="h-4 w-4 shrink-0" />
+              <span>{adminBack.shortLabel}</span>
+            </Link>
+          ) : null}
           {/* Quick create */}
           <Popover>
             <PopoverTrigger asChild>
@@ -740,6 +760,14 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
               <DropdownMenuItem asChild>
                 <a href="/notifications"><Bell className="h-4 w-4 mr-2" /> Notifications</a>
               </DropdownMenuItem>
+              {adminBack ? (
+                <DropdownMenuItem asChild>
+                  <Link href={adminBack.href}>
+                    <AdminBackIcon className="h-4 w-4 mr-2" />
+                    {adminBack.label}
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => logout()} className="text-rose-600 focus:text-rose-700">
                 <LogOut className="h-4 w-4 mr-2" /> Log out

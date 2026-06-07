@@ -20,11 +20,14 @@ import { filterNavigationByPackageModules } from '@/lib/package-module-access'
 import { NAVIGATION, type NavItem } from '@/lib/navigation'
 import { cn } from '@/lib/utils'
 import {
+  Building2,
   ChevronDown,
   ChevronRight,
   MoreHorizontal,
+  Shield,
   Sparkles,
 } from 'lucide-react'
+import { getAdminConsoleBackLink, isPlatformAdminRole } from '@/lib/admin-console-link'
 
 interface TopNavbarProps {
   showBrand?: boolean
@@ -169,12 +172,30 @@ export function TopNavbar({ showBrand = true }: TopNavbarProps) {
     [open, visibleNavigation],
   )
 
+  const adminBack = getAdminConsoleBackLink(user?.roles)
+  const AdminBackIcon = isPlatformAdminRole(user?.roles) ? Shield : Building2
+
   return (
     <nav
       data-nav-root
       className="sticky top-16 z-30 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85"
     >
       <div ref={containerRef} className="flex h-12 items-center gap-2 px-3 sm:px-4 lg:px-6">
+        {adminBack ? (
+          <Link
+            href={adminBack.href}
+            className={cn(
+              'hidden lg:inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors shrink-0',
+              isPlatformAdminRole(user?.roles)
+                ? 'border-violet-200 bg-violet-50 text-violet-800 hover:bg-violet-100'
+                : 'border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100',
+            )}
+            title={adminBack.label}
+          >
+            <AdminBackIcon className="h-3.5 w-3.5 shrink-0" />
+            <span>{adminBack.shortLabel}</span>
+          </Link>
+        ) : null}
         {showBrand && (
           <Link href="/dashboard" data-brand className="hidden sm:flex items-center gap-2 mr-2 pr-3 border-r border-border">
             <div className="h-7 w-7 rounded-lg bg-grad-brand grid place-items-center text-white">

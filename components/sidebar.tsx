@@ -7,15 +7,18 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { filterNavigationByModuleView, type ErpNavItem } from '@/lib/erp-module-access'
 import { filterNavigationByPackageModules } from '@/lib/package-module-access'
 import {
+  Building2,
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
   LogOut,
+  Shield,
   Sparkles,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NAVIGATION } from '@/lib/navigation'
+import { getAdminConsoleBackLink, isPlatformAdminRole } from '@/lib/admin-console-link'
 
 interface SidebarProps {
   collapsed?: boolean
@@ -43,6 +46,9 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
   const [flyoutName, setFlyoutName] = useState<string | null>(null)
   const [flyoutTop, setFlyoutTop] = useState(0)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const adminBack = getAdminConsoleBackLink(user?.roles)
+  const AdminBackIcon = isPlatformAdminRole(user?.roles) ? Shield : Building2
 
   const visibleNavigation = useMemo(
     () => {
@@ -399,6 +405,20 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
             {!collapsed && <span>Collapse</span>}
           </button>
         )}
+        {adminBack ? (
+          <Link
+            href={adminBack.href}
+            title={adminBack.label}
+            onClick={() => mobile && onMobileClose?.()}
+            className={cn(
+              'flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-[13px] text-[hsl(var(--sidebar-foreground))] transition-colors hover:bg-[hsl(var(--sidebar-accent))] hover:text-white',
+              collapsed && !mobile && 'mx-auto h-11 w-11 justify-center px-0',
+            )}
+          >
+            <AdminBackIcon className="h-4 w-4 shrink-0" />
+            {(!collapsed || mobile) && <span>{adminBack.label}</span>}
+          </Link>
+        ) : null}
         <button
           type="button"
           onClick={() => {
