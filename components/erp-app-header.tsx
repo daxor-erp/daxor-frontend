@@ -537,6 +537,14 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
               <span>{adminBack.shortLabel}</span>
             </Link>
           ) : null}
+          <Link
+            href="/apps"
+            className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-secondary text-muted-foreground"
+            title="All apps"
+            aria-label="All apps"
+          >
+            <LayoutGrid className="h-5 w-5" />
+          </Link>
           {/* Quick create */}
           <Popover>
             <PopoverTrigger asChild>

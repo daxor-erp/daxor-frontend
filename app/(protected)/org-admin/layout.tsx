@@ -123,7 +123,7 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
           </button>
         )}
         <Link
-          href="/dashboard"
+          href="/apps"
           className={cn('nav-item w-full', collapsed && !mobile && 'justify-center px-0 w-11 h-11 mx-auto')}
         >
           <Sparkles className="h-4 w-4 shrink-0" />

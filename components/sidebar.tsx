@@ -349,17 +349,25 @@ export function Sidebar({ collapsed = false, onCollapseToggle, mobile = false, o
           collapsed && 'justify-center px-2',
         )}
       >
-        <div className="bg-grad-brand elev-brand grid h-9 w-9 place-items-center rounded-xl text-white">
-          <Sparkles className="h-5 w-5" />
-        </div>
-        {!collapsed && (
-          <div className="min-w-0 flex-1">
-            <p className="font-bold leading-none tracking-tight text-white">Daxor</p>
-            <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--sidebar-muted))]">
-              ERP Suite
-            </p>
+        <Link
+          href="/apps"
+          className={cn(
+            'flex min-w-0 flex-1 items-center gap-2.5 rounded-lg transition-colors hover:opacity-90',
+            collapsed && 'flex-none justify-center',
+          )}
+        >
+          <div className="bg-grad-brand elev-brand grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white">
+            <Sparkles className="h-5 w-5" />
           </div>
-        )}
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <p className="font-bold leading-none tracking-tight text-white">Daxor</p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--sidebar-muted))]">
+                ERP Suite
+              </p>
+            </div>
+          )}
+        </Link>
         {mobile && (
           <button
             type="button"

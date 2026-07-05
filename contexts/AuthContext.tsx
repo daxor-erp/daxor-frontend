@@ -54,7 +54,7 @@ function postLoginPath(roles: string[] | undefined): string {
   const r = roles ?? []
   if (r.includes('SUPER_ADMIN') || r.includes('ERP_ADMIN')) return '/admin/dashboard'
   if (r.includes('ORG_ADMIN')) return '/org-admin/dashboard'
-  return '/dashboard'
+  return '/apps'
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

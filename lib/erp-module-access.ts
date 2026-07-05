@@ -1,4 +1,5 @@
 import { getAllSubmoduleLeaves, hrefToSubmoduleKey } from '@/lib/erp-submodule-keys'
+import { canViewInventoryOdooHref } from '@/lib/inventory-nav-access'
 
 /** Top-level ERP sidebar modules — legacy + path rules */
 
@@ -51,7 +52,7 @@ export const ERP_MODULE_DEFINITIONS: ReadonlyArray<{ key: ErpModuleKey; label: s
 
 /** URL prefixes → module (for coarse routing); submodule checks refine access. */
 export const ERP_MODULE_PATH_RULES: ReadonlyArray<{ key: ErpModuleKey; prefixes: readonly string[] }> = [
-  { key: 'dashboard', prefixes: ['/dashboard', '/documents', '/notifications', '/settings'] },
+  { key: 'dashboard', prefixes: ['/apps', '/dashboard', '/ai-assistant', '/documents', '/notifications', '/settings'] },
   { key: 'crm', prefixes: ['/clients', '/crm'] },
   { key: 'quotations', prefixes: ['/quotations'] },
   {
@@ -206,6 +207,7 @@ export function canViewPath(
   roles: string[] | undefined,
 ): boolean {
   if (bypassesModuleAcl(roles)) return true
+  if (canViewInventoryOdooHref(pathname, rows, roles)) return true
 
   const targets = submoduleTargetsForPath(pathname)
   if (targets.length > 0) {
@@ -229,6 +231,19 @@ function navItemSubmoduleKey(href: string): string {
   return hrefToSubmoduleKey(href)
 }
 
+function canViewNavHref(
+  href: string,
+  moduleKey: string,
+  rows: ModulePermissionRow[] | undefined | null,
+  roles: string[] | undefined,
+): boolean {
+  if (moduleKey === 'inventory' && canViewInventoryOdooHref(href, rows, roles)) {
+    return true
+  }
+  const sk = navItemSubmoduleKey(href)
+  return effectiveSubmodulePermission(moduleKey, sk, rows).canView
+}
+
 export function filterNavigationByModuleView(
   items: ErpNavItem[],
   rows: ModulePermissionRow[] | undefined | null,
@@ -243,9 +258,7 @@ export function filterNavigationByModuleView(
       const children = item.subItems ? filterRecursive(item.subItems, moduleKey) : undefined
 
       if (item.href && moduleKey) {
-        const sk = navItemSubmoduleKey(item.href)
-        const p = effectiveSubmodulePermission(moduleKey, sk, rows)
-        if (!p.canView) continue
+        if (!canViewNavHref(item.href, moduleKey, rows, roles)) continue
         out.push({ ...item, subItems: children })
         continue
       }

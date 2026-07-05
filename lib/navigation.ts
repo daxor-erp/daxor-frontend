@@ -134,8 +134,15 @@ export const NAVIGATION: NavItem[] = [
   },
   {
     name: 'Inventory',
+    href: '/inventory',
     icon: Warehouse,
     moduleKey: 'inventory',
+    /* Temporary Odoo-style inventory navigation — REVERT: restore legacy subItems below */
+    subItems: [
+      { name: 'Overview', href: '/inventory', moduleKey: 'inventory' },
+      { name: 'Products', href: '/inventory/products', moduleKey: 'inventory' },
+    ],
+    /*
     subItems: [
       { name: 'Inventory Control', href: '/inventory-control' },
       { name: 'Warehouses', href: '/warehouse' },
@@ -151,6 +158,7 @@ export const NAVIGATION: NavItem[] = [
       { name: 'Review Negative Inventory', href: '/inventory/review-negative-inventory' },
       { name: 'Stock Ledger', href: '/inventory/stock-ledger' },
     ],
+    */
   },
   { name: 'Products', href: '/products', icon: Package, moduleKey: 'products' },
   { name: 'Documents', href: '/documents', icon: FileText, moduleKey: 'documents' },

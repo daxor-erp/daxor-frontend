@@ -21,20 +21,19 @@
     --popover: 210 17% 98%;
     --popover-foreground: 222 30% 14%;
 
-    /* Brand: deep blue (#1471d8) */
-    --primary: 212 84% 46%;
-    --primary-foreground: 210 17% 98%;
-    --primary-soft: 238 50% 87%;
+    /* Brand: professional teal ERP palette */
+    --primary: 173 58% 36%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 173 40% 92%;
 
-    --secondary: 238 50% 87%;
+    --secondary: 210 20% 94%;
     --secondary-foreground: 222 30% 14%;
 
-    --muted: 238 50% 87%;
+    --muted: 210 18% 93%;
     --muted-foreground: 222 15% 40%;
 
-    /* Accent: light blue (#85b9f3) */
-    --accent: 211 83% 74%;
-    --accent-foreground: 212 84% 20%;
+    --accent: 173 35% 90%;
+    --accent-foreground: 173 58% 22%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 17% 98%;
@@ -45,12 +44,12 @@
     --warning: 38 92% 50%;
     --warning-foreground: 30 80% 16%;
 
-    --info: 212 84% 46%;
-    --info-foreground: 210 17% 98%;
+    --info: 173 58% 36%;
+    --info-foreground: 0 0% 100%;
 
-    --border: 238 35% 80%;
-    --input: 238 35% 80%;
-    --ring: 212 84% 46%;
+    --border: 210 18% 88%;
+    --input: 210 18% 88%;
+    --ring: 173 58% 36%;
     --radius: 0.625rem;
 
     /* Sidebar: deep blue ink with light-blue accents */
@@ -72,26 +71,26 @@
     --card-foreground: 210 17% 98%;
     --popover: 218 39% 11%;
     --popover-foreground: 210 17% 98%;
-    --primary: 212 84% 55%;
-    --primary-foreground: 210 17% 98%;
-    --primary-soft: 238 35% 22%;
+    --primary: 173 58% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 173 35% 18%;
     --secondary: 218 32% 14%;
     --secondary-foreground: 210 17% 98%;
     --muted: 218 32% 14%;
     --muted-foreground: 229 30% 75%;
-    --accent: 211 83% 74%;
-    --accent-foreground: 212 84% 20%;
+    --accent: 173 35% 22%;
+    --accent-foreground: 173 40% 85%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 210 17% 98%;
     --success: 152 60% 45%;
     --success-foreground: 210 17% 98%;
     --warning: 38 92% 55%;
     --warning-foreground: 30 80% 16%;
-    --info: 212 84% 55%;
-    --info-foreground: 210 17% 98%;
+    --info: 173 58% 42%;
+    --info-foreground: 0 0% 100%;
     --border: 218 32% 22%;
     --input: 218 32% 22%;
-    --ring: 212 84% 55%;
+    --ring: 173 58% 42%;
     --sidebar-background: 218 50% 8%;
     --sidebar-foreground: 238 50% 87%;
     --sidebar-muted: 229 30% 65%;
@@ -127,8 +126,8 @@
   .elev-3 { box-shadow: 0 10px 15px -3px hsl(222 24% 14% / 0.08), 0 4px 6px -2px hsl(222 24% 14% / 0.05); }
   .elev-brand { box-shadow: 0 10px 25px -10px hsl(var(--primary) / 0.55); }
 
-  /* Brand gradients — blue-led (palette: #1471d8 → #8699eb → #85b9f3) */
-  .bg-grad-brand { background-image: linear-gradient(135deg, hsl(212 84% 46%) 0%, hsl(229 72% 72%) 100%); }
+  /* Brand gradients — teal ERP palette */
+  .bg-grad-brand { background-image: linear-gradient(135deg, hsl(173 58% 36%) 0%, hsl(173 48% 44%) 100%); }
   .bg-grad-accent { background-image: linear-gradient(135deg, hsl(211 83% 74%) 0%, hsl(229 72% 72%) 100%); }
   .bg-grad-warn { background-image: linear-gradient(135deg, hsl(20 92% 55%) 0%, hsl(38 92% 50%) 100%); }
   .bg-grad-rose { background-image: linear-gradient(135deg, hsl(340 82% 55%) 0%, hsl(15 90% 58%) 100%); }

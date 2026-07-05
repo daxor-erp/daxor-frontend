@@ -1,6 +1,7 @@
 import type { ErpNavItem } from '@/lib/erp-module-access'
 import { getAllSubmoduleLeaves, hrefToSubmoduleKey } from '@/lib/erp-submodule-keys'
 import { packageModuleKey } from '@/lib/package-nav-groups'
+import { isInventoryOdooHrefPackageAllowed } from '@/lib/inventory-nav-access'
 
 export type PackageEnabledModuleRow = {
   moduleKey: string
@@ -33,7 +34,11 @@ export function filterNavigationByPackageModules(
 
       if (item.href && moduleKey) {
         const sk = hrefToSubmoduleKey(item.href)
-        if (!allowed.has(packageModuleKey(moduleKey, sk))) continue
+        const packageAllowed =
+          moduleKey === 'inventory' && isInventoryOdooHrefPackageAllowed(item.href, allowed)
+            ? true
+            : allowed.has(packageModuleKey(moduleKey, sk))
+        if (!packageAllowed) continue
         out.push({ ...item, subItems: children })
         continue
       }
@@ -79,5 +84,8 @@ export function canViewPathWithPackage(
   }
 
   if (!best) return true
+  if (best.moduleKey === 'inventory' && isInventoryOdooHrefPackageAllowed(pathname, allowed)) {
+    return true
+  }
   return allowed.has(packageModuleKey(best.moduleKey, best.submoduleKey))
 }

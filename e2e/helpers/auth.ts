@@ -20,7 +20,7 @@ export async function loginAs(page: Page, user: TestUser) {
     const url = page.url()
     if (!url.includes(user.expectedPath)) {
       // Some org admins may land on /dashboard if role mapping differs
-      const fallback = user.expectedPath.includes('org-admin') ? '/dashboard' : null
+      const fallback = user.expectedPath.includes('org-admin') ? '/apps' : null
       if (!fallback || !url.includes(fallback)) {
         await expect(page).toHaveURL(new RegExp(user.expectedPath.replace(/\//g, '\\/')), {
           timeout: 15_000,
@@ -49,7 +49,7 @@ export function usersFromEnv(): TestUser[] {
       label: 'standard user',
       emailKey: 'E2E_USER_NEW_EMAIL',
       passwordKey: 'E2E_USER_NEW_PASSWORD',
-      expectedPath: '/dashboard',
+      expectedPath: '/apps',
     },
     {
       label: 'tenant org admin',
@@ -61,7 +61,7 @@ export function usersFromEnv(): TestUser[] {
       label: 'vinay user',
       emailKey: 'E2E_USER_STANDARD_EMAIL',
       passwordKey: 'E2E_USER_STANDARD_PASSWORD',
-      expectedPath: '/dashboard',
+      expectedPath: '/apps',
     },
   ]
 

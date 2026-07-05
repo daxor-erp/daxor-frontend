@@ -197,7 +197,7 @@ export function TopNavbar({ showBrand = true }: TopNavbarProps) {
           </Link>
         ) : null}
         {showBrand && (
-          <Link href="/dashboard" data-brand className="hidden sm:flex items-center gap-2 mr-2 pr-3 border-r border-border">
+          <Link href="/apps" data-brand className="hidden sm:flex items-center gap-2 mr-2 pr-3 border-r border-border">
             <div className="h-7 w-7 rounded-lg bg-grad-brand grid place-items-center text-white">
               <Sparkles className="h-3.5 w-3.5" />
             </div>
