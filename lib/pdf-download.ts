@@ -33,6 +33,7 @@ export type PdfDocumentType =
   | 'vendor-bill'
   | 'vendor-payment'
   | 'journal-entry'
+  | 'product-label'
 
 /**
  * Server-rendered document PDF. Backend fetches the document by id, joins related

@@ -13,14 +13,14 @@ import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  draft:     { label: 'Draft',              cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+  rfq:       { label: 'Draft',              cls: 'bg-gray-100 text-gray-600 border-gray-200' },
   submitted: { label: 'Pending Approval',   cls: 'bg-amber-50 text-amber-700 border-amber-200' },
   approved:  { label: 'Approved',           cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   rejected:  { label: 'Declined',           cls: 'bg-red-50 text-red-700 border-red-200' },
   cancelled: { label: 'Cancelled',          cls: 'bg-red-50 text-red-600 border-red-200' },
 }
 
-const PR_STATUSES = new Set(['draft', 'submitted', 'approved', 'rejected'])
+const PR_STATUSES = new Set(['rfq', 'submitted', 'approved', 'rejected'])
 
 const PRIORITY = ['Low', 'Normal', 'High', 'Urgent']
 interface Line { desc: string; qty: string; unit: string; reason: string; price: string }
@@ -89,9 +89,7 @@ export default function PurchaseRequisitionPage() {
       itemDescription: l.desc,
       quantity: parseFloat(l.qty) || 1,
       unitPrice: parseFloat(l.price) || 0,
-      lineTotal: (parseFloat(l.qty) || 1) * (parseFloat(l.price) || 0),
     }))
-    const subtotal = lineItems.reduce((s, i) => s + i.lineTotal, 0)
     create({
       variables: {
         input: {
@@ -100,8 +98,6 @@ export default function PurchaseRequisitionPage() {
           deliveryDate: form.requiredDate || undefined,
           orderDate: today(),
           items: lineItems,
-          subtotal,
-          totalAmount: subtotal,
           notes: [form.notes, form.priority !== 'Normal' ? `Priority: ${form.priority}` : ''].filter(Boolean).join('\n') || undefined,
           organizationId: orgId,
         },
@@ -284,8 +280,8 @@ export default function PurchaseRequisitionPage() {
           totalAmount?: number
           status?: string
         }, idx: number) => {
-          const statusKey = String(r.status ?? 'draft').toLowerCase()
-          const s = STATUS_CFG[statusKey] ?? STATUS_CFG.draft
+          const statusKey = String(r.status ?? 'rfq').toLowerCase()
+          const s = STATUS_CFG[statusKey] ?? STATUS_CFG.rfq
           const projectName = r.projectId ? getProject(r.projectId) : '—'
           const itemCount = r.items?.length ?? 0
           const requiredBy = r.deliveryDate ?? r.orderDate

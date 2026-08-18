@@ -41,20 +41,19 @@ export default function BillPurchaseOrdersPage() {
     onError: err => setErrors({ submit: err.message }),
   })
 
-  // POs that already have a bill
-  const billedPOIds = new Set(
-    (billsData?.vendorBills ?? [])
-      .filter((b: any) => b.purchaseOrderId)
-      .map((b: any) => b.purchaseOrderId)
+  // POs that have some billing done already — show status rather than hard blocking.
+  const billingStatusMap = Object.fromEntries(
+    (poData?.purchaseorders ?? []).map((po: any) => [po.id, po.billingStatus])
   )
 
+  const BILLABLE_STATUSES = new Set(['purchase_order', 'sent', 'received', 'partially_received', 'partially_billed'])
   const pos = (poData?.purchaseorders ?? []).filter(
-    (po: any) => !['draft', 'submitted'].includes(po.status)
+    (po: any) => BILLABLE_STATUSES.has(po.status)
   )
 
   const startBilling = (row: any) => {
-    if (billedPOIds.has(row.id)) {
-      alert('This PO already has a bill created.')
+    if (row.billingStatus === 'billed') {
+      alert('This PO has already been fully billed.')
       return
     }
     if (!row.vendorId) {
@@ -92,10 +91,13 @@ export default function BillPurchaseOrdersPage() {
       render: v => <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[v] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>{v}</span>
     },
     {
-      key: 'id', label: 'Billed', width: '90px',
-      render: (v) => billedPOIds.has(v)
-        ? <span className="inline-flex items-center gap-1 text-xs text-green-600"><CheckCircle className="h-3.5 w-3.5" /> Yes</span>
-        : <span className="text-xs text-gray-400">No</span>
+      key: 'id', label: 'Billing', width: '120px',
+      render: (v) => {
+        const status = billingStatusMap[v]
+        if (status === 'billed') return <span className="inline-flex items-center gap-1 text-xs text-green-600"><CheckCircle className="h-3.5 w-3.5" /> Fully billed</span>
+        if (status === 'partially_billed') return <span className="inline-flex items-center gap-1 text-xs text-amber-600"><CheckCircle className="h-3.5 w-3.5" /> Partial</span>
+        return <span className="text-xs text-gray-400">Not billed</span>
+      }
     },
   ]
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_PURCHASE_ORDERS, UPDATE_PURCHASE_ORDER, GET_VENDORS, GET_PROJECTS } from '@/gql/queries'
+import { GET_PURCHASE_ORDERS, APPROVE_PURCHASE_ORDER, GET_VENDORS, GET_PROJECTS } from '@/gql/queries'
 import { PageTemplate } from '@/components/page-template'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, CheckCircle2, Clock, FileCheck, Package, Building2, FolderKanban, CalendarDays, DollarSign, X } from 'lucide-react'
@@ -11,12 +11,15 @@ import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  submitted: { label: 'Submitted', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  approved:  { label: 'Approved',  cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  sent:      { label: 'Sent',      cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  received:  { label: 'Received',  cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
+  rfq:             { label: 'Draft',            cls: 'bg-gray-100 text-gray-600 border-gray-200' },
+  rfq_sent:        { label: 'RFQ Sent',         cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  submitted:       { label: 'Submitted',        cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+  approved:        { label: 'Approved',         cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  purchase_order:  { label: 'Purchase Order',   cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  sent:            { label: 'Sent',             cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  received:        { label: 'Received',         cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  partially_received: { label: 'Partially Received', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  cancelled:       { label: 'Cancelled',        cls: 'bg-red-50 text-red-600 border-red-200' },
 }
 
 const cell = 'border border-gray-300 bg-white outline-none focus:ring-1 focus:ring-blue-400 text-xs px-2 h-7 w-full rounded-sm'
@@ -30,7 +33,7 @@ export default function OrderRequisitionPage() {
   const { data: vendorData } = useQuery(GET_VENDORS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
   const { data: projectData } = useQuery(GET_PROJECTS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
 
-  const [approvePO, { loading: approving, error: approveError }] = useMutation(UPDATE_PURCHASE_ORDER, {
+  const [approvePO, { loading: approving, error: approveError }] = useMutation(APPROVE_PURCHASE_ORDER, {
     onCompleted: () => { setSelected(null); setVendorId(''); setErrors({}) ; refetch() },
   })
 
@@ -43,8 +46,8 @@ export default function OrderRequisitionPage() {
   const projects = projectData?.projects ?? []
   const allPOs = poData?.purchaseorders ?? []
 
-  const pending = allPOs.filter((o: any) => ['draft', 'submitted'].includes(o.status))
-  const approved = allPOs.filter((o: any) => ['approved', 'sent', 'received'].includes(o.status))
+  const pending = allPOs.filter((o: any) => ['rfq', 'rfq_sent', 'submitted'].includes(o.status))
+  const approved = allPOs.filter((o: any) => ['approved', 'purchase_order', 'sent', 'received', 'partially_received'].includes(o.status))
 
   const getName = (id: string, list: any[]) => list.find(x => x.id === id)?.name ?? '—'
 
@@ -52,7 +55,7 @@ export default function OrderRequisitionPage() {
 
   const handleApprove = () => {
     if (!vendorId) { setErrors({ vendorId: 'Vendor is required to raise a PO' }); return }
-    approvePO({ variables: { id: selected.id, input: { vendorId, status: 'approved' } } })
+    approvePO({ variables: { id: selected.id, vendorId } })
   }
 
   const POTable = ({ orders, showAction }: { orders: any[]; showAction: boolean }) => (
@@ -66,7 +69,7 @@ export default function OrderRequisitionPage() {
       </thead>
       <tbody>
         {orders.map((o, idx) => {
-          const s = STATUS_CFG[o.status] ?? STATUS_CFG.draft
+          const s = STATUS_CFG[o.status] ?? STATUS_CFG.rfq
           return (
             <tr key={o.id} className={`border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
               <td className="px-3 py-2 text-gray-300 border-r border-gray-200">{idx + 1}</td>

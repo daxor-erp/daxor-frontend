@@ -47,7 +47,7 @@ type PoRow = {
   }> | null
 }
 
-const RECEIVABLE_PO_STATUSES = new Set(['approved', 'sent', 'received'])
+const RECEIVABLE_PO_STATUSES = new Set(['purchase_order', 'sent', 'received', 'partially_received'])
 
 const EMPTY_LINE = {
   itemDescription: '',
