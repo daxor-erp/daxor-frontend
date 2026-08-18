@@ -19,6 +19,7 @@ import {
   GET_VENDOR_ELIGIBLE_APPROVERS,
   SUBMIT_VENDOR_FOR_APPROVAL,
 } from '@/gql/queries'
+import { ActivityLogPanel } from '@/components/activity-log-panel'
 import { toast } from 'sonner'
 
 type Props = {
@@ -96,22 +97,28 @@ export function VendorSendForApprovalSheet({
         id?: string
         seqNo?: string | null
         name?: string
-        contactPerson?: string | null
+        type?: string | null
         email?: string | null
         phone?: string | null
-        taxNumber?: string | null
-        paymentTerms?: string | null
-        address?: string | null
-        city?: string | null
-        state?: string | null
-        country?: string | null
-        notes?: string | null
+        mobile?: string | null
+        gstin?: string | null
+        pan?: string | null
+        gstTreatment?: string | null
+        address?: { street?: string | null; city?: string | null; zip?: string | null; country?: string | null } | null
+        tags?: { name: string }[] | null
+        internalNotes?: string | null
         orgApprovalStatus?: string
         createdAt?: string
         updatedAt?: string
         createdBy?: { firstName?: string; lastName?: string; email?: string } | null
       }
     | undefined
+
+  const formattedAddress = vendor?.address
+    ? [vendor.address.street, vendor.address.city, vendor.address.zip, vendor.address.country]
+        .filter(Boolean)
+        .join(', ')
+    : undefined
 
   const approvers = (uData?.vendorEligibleApprovers ?? []) as {
     id: string
@@ -207,16 +214,15 @@ export function VendorSendForApprovalSheet({
                 <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
                   {readRow('Vendor ID', vendor.seqNo || vendor.id)}
                   {readRow('Vendor Name', vendor.name)}
-                  {readRow('Contact Person', vendor.contactPerson ?? undefined)}
+                  {readRow('Type', vendor.type ?? undefined)}
                   {readRow('Email', vendor.email ?? undefined)}
                   {readRow('Phone', vendor.phone ?? undefined)}
-                  {readRow('Tax Number', vendor.taxNumber ?? undefined)}
-                  {readRow('Payment Terms', vendor.paymentTerms ?? undefined)}
-                  {readRow('Address', vendor.address ?? undefined)}
-                  {readRow('City', vendor.city ?? undefined)}
-                  {readRow('State', vendor.state ?? undefined)}
-                  {readRow('Country', vendor.country ?? undefined)}
-                  {readRow('Notes', vendor.notes ?? undefined)}
+                  {readRow('Mobile', vendor.mobile ?? undefined)}
+                  {readRow('GSTIN', vendor.gstin ?? undefined)}
+                  {readRow('PAN', vendor.pan ?? undefined)}
+                  {readRow('Address', formattedAddress)}
+                  {readRow('Tags', vendor.tags?.length ? vendor.tags.map((t) => t.name).join(', ') : undefined)}
+                  {readRow('Internal Notes', vendor.internalNotes ?? undefined)}
                   <Separator className="my-3" />
                   {readRow(
                     'Created By',
@@ -286,6 +292,13 @@ export function VendorSendForApprovalSheet({
                     </div>
                   </>
                 )}
+              </section>
+
+              <section>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                  Activity
+                </h3>
+                <ActivityLogPanel entityType="VENDOR" entityId={vid} />
               </section>
 
               <section>

@@ -152,7 +152,17 @@ export const NAVIGATION: NavItem[] = [
       { name: 'Stock Ledger', href: '/inventory/stock-ledger' },
     ],
   },
-  { name: 'Products', href: '/products', icon: Package, moduleKey: 'products' },
+  {
+    name: 'Products',
+    icon: Package,
+    moduleKey: 'products',
+    subItems: [
+      { name: 'All Products', href: '/products' },
+      { name: 'Categories', href: '/products/categories' },
+      { name: 'Units of Measure', href: '/products/uom' },
+      { name: 'Attributes', href: '/products/attributes' },
+    ],
+  },
   { name: 'Documents', href: '/documents', icon: FileText, moduleKey: 'documents' },
   {
     name: 'Financial',

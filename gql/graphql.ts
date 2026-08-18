@@ -297,6 +297,24 @@ export type Attendance = {
   userId: Scalars['ID']['output'];
 };
 
+/** Reusable product attribute (e.g. Make, Model, Size) with a reusable list of values. */
+export type Attribute = {
+  __typename?: 'Attribute';
+  createdAt: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  organizationId: Scalars['ID']['output'];
+  updatedAt: Scalars['String']['output'];
+  values: Array<AttributeValue>;
+};
+
+export type AttributeValue = {
+  __typename?: 'AttributeValue';
+  id: Scalars['ID']['output'];
+  value: Scalars['String']['output'];
+};
+
 export type AuditLog = {
   __typename?: 'AuditLog';
   action: Scalars['String']['output'];
@@ -307,6 +325,7 @@ export type AuditLog = {
   ipAddress?: Maybe<Scalars['String']['output']>;
   newValuesJson?: Maybe<Scalars['String']['output']>;
   oldValuesJson?: Maybe<Scalars['String']['output']>;
+  user?: Maybe<User>;
   userAgent?: Maybe<Scalars['String']['output']>;
   userId?: Maybe<Scalars['ID']['output']>;
 };
@@ -356,6 +375,20 @@ export type BalanceSheetReport = {
   totalEquity: Scalars['Float']['output'];
   totalLiabilities: Scalars['Float']['output'];
   totalLiabilitiesAndEquity: Scalars['Float']['output'];
+};
+
+/** Master bank record (the bank itself — not a specific account). */
+export type Bank = {
+  __typename?: 'Bank';
+  address?: Maybe<Scalars['String']['output']>;
+  bankIdentifierCode?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  organizationId: Scalars['ID']['output'];
+  phone?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['String']['output'];
 };
 
 export type BankAccount = {
@@ -695,6 +728,13 @@ export type CreateAttendanceInput = {
   userId: Scalars['ID']['input'];
 };
 
+export type CreateAttributeInput = {
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  values?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type CreateBomInput = {
   bomCode: Scalars['String']['input'];
   components: Array<BomComponentInput>;
@@ -709,6 +749,24 @@ export type CreateBomInput = {
   status?: InputMaybe<Scalars['String']['input']>;
   unit?: InputMaybe<Scalars['String']['input']>;
   version?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Nested "Create Bank" master-record modal, used when the bank isn't found in the bank picker. */
+export type CreateBankInline = {
+  address?: InputMaybe<Scalars['String']['input']>;
+  bankIdentifierCode?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  phone?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateBankInput = {
+  address?: InputMaybe<Scalars['String']['input']>;
+  bankIdentifierCode?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  phone?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateClientInput = {
@@ -1034,23 +1092,51 @@ export type CreatePackageInput = {
   price: Scalars['Float']['input'];
 };
 
-export type CreateProductInput = {
-  barcode?: InputMaybe<Scalars['String']['input']>;
-  brand?: InputMaybe<Scalars['String']['input']>;
-  category?: InputMaybe<Scalars['String']['input']>;
-  costPrice?: InputMaybe<Scalars['Float']['input']>;
+export type CreatePaymentTermInput = {
   description?: InputMaybe<Scalars['String']['input']>;
-  images?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  maxStockLevel?: InputMaybe<Scalars['Float']['input']>;
-  minStockLevel?: InputMaybe<Scalars['Float']['input']>;
+  dueDays?: InputMaybe<Scalars['Int']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
   organizationId: Scalars['ID']['input'];
-  price: Scalars['Float']['input'];
-  reorderPoint?: InputMaybe<Scalars['Float']['input']>;
-  sku: Scalars['String']['input'];
+};
+
+export type CreateProductCategoryInput = {
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  parentId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type CreateProductInput = {
+  attributeLines?: InputMaybe<Array<ProductAttributeLineInput>>;
+  barcode?: InputMaybe<Scalars['String']['input']>;
+  canBeExpensed?: InputMaybe<Scalars['Boolean']['input']>;
+  canBePurchased?: InputMaybe<Scalars['Boolean']['input']>;
+  canBeSold?: InputMaybe<Scalars['Boolean']['input']>;
+  categoryId?: InputMaybe<Scalars['ID']['input']>;
+  costPrice?: InputMaybe<Scalars['Float']['input']>;
+  expenseAccount?: InputMaybe<Scalars['String']['input']>;
+  hsnSac?: InputMaybe<Scalars['String']['input']>;
+  images?: InputMaybe<Array<Scalars['String']['input']>>;
+  incomeAccount?: InputMaybe<Scalars['String']['input']>;
+  /** Auto-generated from seqNo when omitted. */
+  internalReference?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  organizationId: Scalars['ID']['input'];
+  packagings?: InputMaybe<Array<ProductPackagingLineInput>>;
+  productType?: InputMaybe<Scalars['String']['input']>;
+  purchaseTaxIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  purchaseUomId?: InputMaybe<Scalars['ID']['input']>;
+  reorderingRules?: InputMaybe<Array<ProductReorderingRuleInput>>;
+  salesPrice?: InputMaybe<Scalars['Float']['input']>;
+  salesTaxIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   status?: InputMaybe<Scalars['String']['input']>;
-  taxRate?: InputMaybe<Scalars['Float']['input']>;
-  unit: Scalars['String']['input'];
+  stockAccount?: InputMaybe<Scalars['String']['input']>;
+  trackInventory?: InputMaybe<Scalars['Boolean']['input']>;
+  trackingMethod?: InputMaybe<Scalars['String']['input']>;
+  uomId?: InputMaybe<Scalars['ID']['input']>;
+  vendorPricelist?: InputMaybe<Array<VendorPricelistLineInput>>;
 };
 
 export type CreateProjectInput = {
@@ -1062,16 +1148,29 @@ export type CreateProjectInput = {
 };
 
 export type CreatePurchaseOrderInput = {
+  agreement?: InputMaybe<Scalars['String']['input']>;
+  askConfirmation?: InputMaybe<Scalars['Boolean']['input']>;
+  buyerId?: InputMaybe<Scalars['ID']['input']>;
+  currency?: InputMaybe<Scalars['String']['input']>;
+  deliverToLocationId?: InputMaybe<Scalars['ID']['input']>;
   deliveryDate?: InputMaybe<Scalars['String']['input']>;
+  deliveryTerms?: InputMaybe<Scalars['String']['input']>;
+  /** Foreign-currency units per 1 INR. Defaults to 1 (base currency). */
+  exchangeRate?: InputMaybe<Scalars['Float']['input']>;
+  expectedArrival?: InputMaybe<Scalars['String']['input']>;
+  fiscalPosition?: InputMaybe<Scalars['String']['input']>;
+  gstTreatment?: InputMaybe<Scalars['String']['input']>;
+  incoterms?: InputMaybe<Scalars['String']['input']>;
   items: Array<PoLineItemInput>;
   notes?: InputMaybe<Scalars['String']['input']>;
   orderDate: Scalars['String']['input'];
+  orderDeadline?: InputMaybe<Scalars['String']['input']>;
   organizationId: Scalars['ID']['input'];
+  paymentTerms?: InputMaybe<Scalars['ID']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
-  subtotal: Scalars['Float']['input'];
-  taxAmount?: InputMaybe<Scalars['Float']['input']>;
-  totalAmount: Scalars['Float']['input'];
+  sourceDocument?: InputMaybe<Scalars['String']['input']>;
   vendorId?: InputMaybe<Scalars['ID']['input']>;
+  vendorReference?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateQcInspectionInput = {
@@ -1195,6 +1294,21 @@ export type CreateStockTransferInput = {
   transferDate: Scalars['String']['input'];
 };
 
+/** Inline "Create Tag" during vendor tagging (Step 4). */
+export type CreateTagInline = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  color?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+};
+
+export type CreateTagInput = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  color?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+};
+
 export type CreateTaxRateInput = {
   appliesTo?: InputMaybe<Scalars['String']['input']>;
   code: Scalars['String']['input'];
@@ -1223,6 +1337,16 @@ export type CreateTimesheetEntryInput = {
   projectId?: InputMaybe<Scalars['ID']['input']>;
   taskName?: InputMaybe<Scalars['String']['input']>;
   workOrderId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type CreateUomInput = {
+  category: Scalars['String']['input'];
+  gstUqc?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  ratio?: InputMaybe<Scalars['Float']['input']>;
+  type?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateUserInput = {
@@ -1271,18 +1395,34 @@ export type CreateVendorDebitNoteInput = {
 };
 
 export type CreateVendorInput = {
-  address?: InputMaybe<Scalars['String']['input']>;
+  accounting?: InputMaybe<VendorAccountingInfoInput>;
+  address?: InputMaybe<VendorAddressInput>;
+  bankAccounts?: InputMaybe<Array<VendorBankAccountInput>>;
   city?: InputMaybe<Scalars['String']['input']>;
   contactPerson?: InputMaybe<Scalars['String']['input']>;
   country?: InputMaybe<Scalars['String']['input']>;
+  createTags?: InputMaybe<Array<CreateTagInline>>;
   email?: InputMaybe<Scalars['String']['input']>;
+  gstTreatment?: InputMaybe<Scalars['String']['input']>;
+  gstin?: InputMaybe<Scalars['String']['input']>;
+  internalNotes?: InputMaybe<Scalars['String']['input']>;
+  inventory?: InputMaybe<VendorInventoryInfoInput>;
+  misc?: InputMaybe<VendorMiscInfoInput>;
+  mobile?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   organizationId: Scalars['ID']['input'];
+  pan?: InputMaybe<Scalars['String']['input']>;
   paymentTerms?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
+  purchase?: InputMaybe<VendorPurchaseInfoInput>;
+  sales?: InputMaybe<VendorSalesInfoInput>;
   state?: InputMaybe<Scalars['String']['input']>;
+  tags?: InputMaybe<Array<VendorTagInput>>;
   taxNumber?: InputMaybe<Scalars['String']['input']>;
+  type?: InputMaybe<Scalars['String']['input']>;
+  warnings?: InputMaybe<VendorWarningsInput>;
+  website?: InputMaybe<Scalars['String']['input']>;
   zipCode?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -2027,6 +2167,22 @@ export type GoodsReceiptInput = {
   status?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Result of validating a GSTIN against the configured provider (mock until live credentials are set). */
+export type GstinCheckResult = {
+  __typename?: 'GstinCheckResult';
+  gstTreatment?: Maybe<Scalars['String']['output']>;
+  gstin: Scalars['String']['output'];
+  legalName?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+  registrationDate?: Maybe<Scalars['String']['output']>;
+  /** MOCK while no live GSTN/KYC-aggregator credentials are configured; LIVE once wired. */
+  source: Scalars['String']['output'];
+  stateCode?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  tradeName?: Maybe<Scalars['String']['output']>;
+  valid: Scalars['Boolean']['output'];
+};
+
 export type HrMaster = {
   __typename?: 'HrMaster';
   active: Scalars['Boolean']['output'];
@@ -2584,30 +2740,43 @@ export type Mutation = {
   __typename?: 'Mutation';
   _empty?: Maybe<Scalars['String']['output']>;
   activateBudget: Budget;
+  addAttributeValue: Attribute;
+  /** Add a bank account to an existing vendor (Step 6 nested "Create Bank Account" modal). */
+  addVendorBankAccount: Vendor;
   adjustStock: InventoryControl;
   /** Issue credit memo: reverse AR/revenue and update invoice balance. */
   applyCustomerCreditMemo: CustomerInvoice;
   applyVendorDebitNoteToBill: VendorDebitNote;
   approveLeaveApplication: LeaveApplication;
   approveLeaveReinstatement: LeaveReinstatement;
+  /** vendorId is optional — assigns/changes the vendor when approving a requisition raised without one. */
   approvePurchaseOrder: PurchaseOrder;
   approveReturnAuthorization: ReturnAuthorization;
   approveVendorBill: VendorBill;
   archiveAllNotifications: Scalars['Int']['output'];
   archiveNotification: Notification;
+  /**
+   * Bills the received-but-unbilled quantity by default (3-way match: capped at qtyReceived - qtyBilled per line).
+   * Omit `lines` to bill every line's full receivable-but-unbilled quantity. Supports multiple partial bills per PO.
+   */
   billPurchaseOrder: VendorBill;
   cancelCustomerDeposit: CustomerDeposit;
   cancelCustomerRefund: CustomerRefund;
   cancelFinanceChargeAssessment: FinanceChargeAssessment;
   cancelIntercompanyTransfer: IntercompanyTransfer;
   cancelMaterialReceipt: MaterialReceipt;
+  cancelPurchaseOrder: PurchaseOrder;
   cancelReturnAuthorization: ReturnAuthorization;
   cancelStockAdjustment: StockAdjustment;
   cancelStockTransfer: StockTransfer;
+  /** Marks a PO line as closed for further receiving (e.g. vendor confirmed no more stock coming) — 'backorder' cancel. */
+  closePurchaseOrderLine: PurchaseOrder;
   completeAssetMaintenance: AssetMaintenance;
   computePayrollRun: Array<Payslip>;
   confirmIntercompanyTransfer: IntercompanyTransfer;
   confirmMaterialReceipt: MaterialReceipt;
+  /** Approved RFQ -> formal Purchase Order (assigns confirmationDate). */
+  confirmPurchaseOrder: PurchaseOrder;
   confirmStockAdjustment: StockAdjustment;
   confirmStockTransfer: StockTransfer;
   convertLeadToOpportunity: Scalars['ID']['output'];
@@ -2617,6 +2786,8 @@ export type Mutation = {
   createAsset: Asset;
   createAssetMaintenance: AssetMaintenance;
   createAttendance: Attendance;
+  createAttribute: Attribute;
+  createBank: Bank;
   createBankAccount: BankAccount;
   createBankStatementLine: BankStatementLine;
   createBillOfMaterials: BillOfMaterials;
@@ -2667,9 +2838,11 @@ export type Mutation = {
   createOrganization: Organization;
   createOrganizationWithOrgAdmin: Organization;
   createPackage: Package;
+  createPaymentTerm: PaymentTerm;
   createPayrollManagement: PayrollManagement;
   createPayrollUiRecord: PayrollUiRecord;
   createProduct: Product;
+  createProductCategory: ProductCategory;
   createProductionPlanning: ProductionPlanning;
   createProject: Project;
   createPurchaseOrder: PurchaseOrder;
@@ -2692,8 +2865,10 @@ export type Mutation = {
   createStockTransfer: StockTransfer;
   /** ORG_ADMIN of a tenant with allowSubTenants creates a child tenant + its admin. */
   createSubTenantWithAdmin: Organization;
+  createTag: Tag;
   createTaxRate: TaxRate;
   createTimesheetEntry: TimesheetEntry;
+  createUom: Uom;
   createUser: User;
   createVendor: Vendor;
   createVendorBill: VendorBill;
@@ -2710,6 +2885,8 @@ export type Mutation = {
   deleteAsset: Scalars['Boolean']['output'];
   deleteAssetMaintenance: AssetMaintenance;
   deleteAttendance: Attendance;
+  deleteAttribute: Scalars['Boolean']['output'];
+  deleteBank: Scalars['Boolean']['output'];
   deleteBankStatementLine: Scalars['Boolean']['output'];
   deleteBillOfMaterials: BillOfMaterials;
   deleteBudget: Scalars['Boolean']['output'];
@@ -2755,10 +2932,12 @@ export type Mutation = {
   deleteOpportunity: Scalars['Boolean']['output'];
   deleteOrganization: Organization;
   deletePackageModuleAssignment: Scalars['Boolean']['output'];
+  deletePaymentTerm: Scalars['Boolean']['output'];
   deletePayrollManagement: Scalars['Boolean']['output'];
   deletePayrollUiRecord: Scalars['Boolean']['output'];
   deletePayslip: Scalars['Boolean']['output'];
   deleteProduct: Scalars['Boolean']['output'];
+  deleteProductCategory: Scalars['Boolean']['output'];
   deleteProductionPlanning: Scalars['Boolean']['output'];
   deleteProject: Project;
   deletePurchaseOrder: Scalars['Boolean']['output'];
@@ -2775,8 +2954,10 @@ export type Mutation = {
   deleteSiteLocation: Scalars['Boolean']['output'];
   deleteStockAdjustment: Scalars['Boolean']['output'];
   deleteStockTransfer: Scalars['Boolean']['output'];
+  deleteTag: Scalars['Boolean']['output'];
   deleteTaxRate: TaxRate;
   deleteTimesheetEntry: TimesheetEntry;
+  deleteUom: Scalars['Boolean']['output'];
   deleteUser: User;
   deleteVendor: Scalars['Boolean']['output'];
   deleteVendorBill: Scalars['Boolean']['output'];
@@ -2787,11 +2968,24 @@ export type Mutation = {
   deleteWorkOrder: Scalars['Boolean']['output'];
   disposeFixedAsset: FixedAsset;
   draftFinanceChargeAssessment: FinanceChargeAssessment;
+  /** Duplicates an existing PO/RFQ into a brand-new draft RFQ with the same vendor/lines (qty/received/billed reset). */
+  duplicatePurchaseOrder: PurchaseOrder;
+  /** Idempotent: seeds Due on Receipt / Net 15 / 30 / 45 / 60 for orgs with none configured yet. */
+  ensureDefaultPaymentTerms: Array<PaymentTerm>;
+  /** Idempotent: seeds Nos/Box/kg/g/Litre/Meter with GST UQC codes for orgs with none configured yet. */
+  ensureDefaultUoms: Array<Uom>;
   exportPayrollRunNeft: Scalars['String']['output'];
   generatePriceList: PriceList;
+  /** Move received goods into QC inspection hold (not yet available stock). */
+  holdProductForQc: Product;
+  lockPurchaseOrder: PurchaseOrder;
   login: AuthPayload;
   markAllNotificationsRead: Scalars['Int']['output'];
   markNotificationRead: Notification;
+  /** Standalone 'Print RFQ' action — records that the RFQ was printed without emailing or changing status. */
+  markPurchaseOrderPrinted: PurchaseOrder;
+  /** Optional 'Print RFQ / Send by Email' step prior to formal submission — rfq -> rfq_sent. */
+  markPurchaseOrderRfqSent: PurchaseOrder;
   matchBankStatementLineToBook: BankStatementLine;
   postCurrencyRevaluation: CurrencyRevaluation;
   postFinanceChargeAssessment: FinanceChargeAssessment;
@@ -2799,6 +2993,7 @@ export type Mutation = {
   postIntercompanyAllocation: IntercompanyAllocation;
   postIntercompanyJournalEntry: IntercompanyJournalEntry;
   postJournalEntry: JournalEntry;
+  /** Omit `lines` to receive every line's remaining quantity in full (legacy one-click behavior). */
   receivePurchaseOrder: PurchaseOrder;
   receiveReturnAuthorizationGoods: ReturnAuthorization;
   reconcileCashBank: CashBank;
@@ -2806,6 +3001,11 @@ export type Mutation = {
   rejectLeaveApplication: LeaveApplication;
   rejectLeaveReinstatement: LeaveReinstatement;
   rejectReturnAuthorization: ReturnAuthorization;
+  /** Release goods from QC hold. decision: 'pass' moves to available stock; 'fail' scraps/returns. */
+  releaseProductFromQc: Product;
+  removeVendorBankAccount: Vendor;
+  /** Creates a draft RFQ for this product using the cheapest vendor pricelist entry. */
+  replenishProduct: ReplenishResult;
   resolveApprovalRequest: ApprovalRequest;
   resolveTimesheetEntry: TimesheetEntry;
   reverseIntercompanyAllocation: IntercompanyAllocation;
@@ -2819,6 +3019,8 @@ export type Mutation = {
    * Returns the number of notifications created.
    */
   sendNotification: Scalars['Int']['output'];
+  /** Emails the vendor with the PO PDF attached, then marks the PO as sent. */
+  sendPurchaseOrderByEmail: PurchaseOrder;
   sendQuotation: SendQuotationResult;
   /** Replace module-level approver assignments for an organization (org admin: own org only). */
   setOrganizationModuleApprovers: Organization;
@@ -2863,6 +3065,8 @@ export type Mutation = {
   updateAsset: Asset;
   updateAssetMaintenance: AssetMaintenance;
   updateAttendance: Attendance;
+  updateAttribute: Attribute;
+  updateBank: Bank;
   updateBankAccount: BankAccount;
   updateBillOfMaterials: BillOfMaterials;
   updateBudget: Budget;
@@ -2907,9 +3111,14 @@ export type Mutation = {
   updateOpportunity: Opportunity;
   updateOrganization: Organization;
   updatePackage: Package;
+  updatePaymentTerm: PaymentTerm;
   updatePayrollManagement: PayrollManagement;
   updatePayrollUiRecord: PayrollUiRecord;
   updateProduct: Product;
+  updateProductCategory: ProductCategory;
+  /** Sets on-hand quantity for a product (optionally scoped to a warehouse) to an absolute value. */
+  updateProductQuantity: Product;
+  updateProductVariant: ProductVariant;
   updateProductionPlanning: ProductionPlanning;
   updateProject: Project;
   updatePurchaseOrder: PurchaseOrder;
@@ -2927,8 +3136,10 @@ export type Mutation = {
   updateSiteLocation: SiteLocation;
   updateStockAdjustment: StockAdjustment;
   updateStockTransfer: StockTransfer;
+  updateTag: Tag;
   updateTaxRate: TaxRate;
   updateTimesheetEntry: TimesheetEntry;
+  updateUom: Uom;
   updateUser: User;
   updateVendor: Vendor;
   updateVendorBill: VendorBill;
@@ -2945,6 +3156,18 @@ export type Mutation = {
 
 export type MutationActivateBudgetArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationAddAttributeValueArgs = {
+  id: Scalars['ID']['input'];
+  value: Scalars['String']['input'];
+};
+
+
+export type MutationAddVendorBankAccountArgs = {
+  input: VendorBankAccountInput;
+  vendorId: Scalars['ID']['input'];
 };
 
 
@@ -2983,6 +3206,7 @@ export type MutationApproveLeaveReinstatementArgs = {
 
 export type MutationApprovePurchaseOrderArgs = {
   id: Scalars['ID']['input'];
+  vendorId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -3005,6 +3229,7 @@ export type MutationBillPurchaseOrderArgs = {
   billDate: Scalars['String']['input'];
   dueDate: Scalars['String']['input'];
   id: Scalars['ID']['input'];
+  lines?: InputMaybe<Array<PoBillLineInput>>;
 };
 
 
@@ -3033,6 +3258,11 @@ export type MutationCancelMaterialReceiptArgs = {
 };
 
 
+export type MutationCancelPurchaseOrderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationCancelReturnAuthorizationArgs = {
   id: Scalars['ID']['input'];
 };
@@ -3045,6 +3275,12 @@ export type MutationCancelStockAdjustmentArgs = {
 
 export type MutationCancelStockTransferArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationClosePurchaseOrderLineArgs = {
+  id: Scalars['ID']['input'];
+  lineId: Scalars['ID']['input'];
 };
 
 
@@ -3065,6 +3301,11 @@ export type MutationConfirmIntercompanyTransferArgs = {
 
 
 export type MutationConfirmMaterialReceiptArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationConfirmPurchaseOrderArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -3111,6 +3352,16 @@ export type MutationCreateAssetMaintenanceArgs = {
 
 export type MutationCreateAttendanceArgs = {
   input: CreateAttendanceInput;
+};
+
+
+export type MutationCreateAttributeArgs = {
+  input: CreateAttributeInput;
+};
+
+
+export type MutationCreateBankArgs = {
+  input: CreateBankInput;
 };
 
 
@@ -3364,6 +3615,11 @@ export type MutationCreatePackageArgs = {
 };
 
 
+export type MutationCreatePaymentTermArgs = {
+  input: CreatePaymentTermInput;
+};
+
+
 export type MutationCreatePayrollManagementArgs = {
   input: PayrollManagementInput;
 };
@@ -3376,6 +3632,11 @@ export type MutationCreatePayrollUiRecordArgs = {
 
 export type MutationCreateProductArgs = {
   input: CreateProductInput;
+};
+
+
+export type MutationCreateProductCategoryArgs = {
+  input: CreateProductCategoryInput;
 };
 
 
@@ -3484,6 +3745,11 @@ export type MutationCreateSubTenantWithAdminArgs = {
 };
 
 
+export type MutationCreateTagArgs = {
+  input: CreateTagInput;
+};
+
+
 export type MutationCreateTaxRateArgs = {
   input: CreateTaxRateInput;
 };
@@ -3491,6 +3757,11 @@ export type MutationCreateTaxRateArgs = {
 
 export type MutationCreateTimesheetEntryArgs = {
   input: CreateTimesheetEntryInput;
+};
+
+
+export type MutationCreateUomArgs = {
+  input: CreateUomInput;
 };
 
 
@@ -3570,6 +3841,16 @@ export type MutationDeleteAssetMaintenanceArgs = {
 
 
 export type MutationDeleteAttendanceArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteAttributeArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteBankArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -3800,6 +4081,11 @@ export type MutationDeletePackageModuleAssignmentArgs = {
 };
 
 
+export type MutationDeletePaymentTermArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeletePayrollManagementArgs = {
   id: Scalars['ID']['input'];
 };
@@ -3816,6 +4102,11 @@ export type MutationDeletePayslipArgs = {
 
 
 export type MutationDeleteProductArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteProductCategoryArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -3900,12 +4191,22 @@ export type MutationDeleteStockTransferArgs = {
 };
 
 
+export type MutationDeleteTagArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteTaxRateArgs = {
   id: Scalars['ID']['input'];
 };
 
 
 export type MutationDeleteTimesheetEntryArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteUomArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -3962,6 +4263,21 @@ export type MutationDraftFinanceChargeAssessmentArgs = {
 };
 
 
+export type MutationDuplicatePurchaseOrderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationEnsureDefaultPaymentTermsArgs = {
+  organizationId: Scalars['ID']['input'];
+};
+
+
+export type MutationEnsureDefaultUomsArgs = {
+  organizationId: Scalars['ID']['input'];
+};
+
+
 export type MutationExportPayrollRunNeftArgs = {
   payrollRunId: Scalars['ID']['input'];
 };
@@ -3972,12 +4288,35 @@ export type MutationGeneratePriceListArgs = {
 };
 
 
+export type MutationHoldProductForQcArgs = {
+  productId: Scalars['ID']['input'];
+  quantity: Scalars['Float']['input'];
+  referenceId?: InputMaybe<Scalars['ID']['input']>;
+  warehouseId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type MutationLockPurchaseOrderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationLoginArgs = {
   input: LoginInput;
 };
 
 
 export type MutationMarkNotificationReadArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationMarkPurchaseOrderPrintedArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationMarkPurchaseOrderRfqSentArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -4021,6 +4360,7 @@ export type MutationPostJournalEntryArgs = {
 
 export type MutationReceivePurchaseOrderArgs = {
   id: Scalars['ID']['input'];
+  lines?: InputMaybe<Array<PoReceiveLineInput>>;
 };
 
 
@@ -4057,6 +4397,27 @@ export type MutationRejectReturnAuthorizationArgs = {
 };
 
 
+export type MutationReleaseProductFromQcArgs = {
+  decision: Scalars['String']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+  productId: Scalars['ID']['input'];
+  quantity: Scalars['Float']['input'];
+  warehouseId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type MutationRemoveVendorBankAccountArgs = {
+  bankAccountId: Scalars['ID']['input'];
+  vendorId: Scalars['ID']['input'];
+};
+
+
+export type MutationReplenishProductArgs = {
+  productId: Scalars['ID']['input'];
+  quantity?: InputMaybe<Scalars['Float']['input']>;
+};
+
+
 export type MutationResolveApprovalRequestArgs = {
   decision: ApprovalDecision;
   id: Scalars['ID']['input'];
@@ -4089,6 +4450,11 @@ export type MutationSeedIndividualPriceListFromCatalogArgs = {
 
 export type MutationSendNotificationArgs = {
   input: SendNotificationInput;
+};
+
+
+export type MutationSendPurchaseOrderByEmailArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -4282,6 +4648,18 @@ export type MutationUpdateAssetMaintenanceArgs = {
 export type MutationUpdateAttendanceArgs = {
   id: Scalars['ID']['input'];
   input: UpdateAttendanceInput;
+};
+
+
+export type MutationUpdateAttributeArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateAttributeInput;
+};
+
+
+export type MutationUpdateBankArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateBankInput;
 };
 
 
@@ -4551,6 +4929,12 @@ export type MutationUpdatePackageArgs = {
 };
 
 
+export type MutationUpdatePaymentTermArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdatePaymentTermInput;
+};
+
+
 export type MutationUpdatePayrollManagementArgs = {
   id: Scalars['ID']['input'];
   input: PayrollManagementInput;
@@ -4566,6 +4950,26 @@ export type MutationUpdatePayrollUiRecordArgs = {
 export type MutationUpdateProductArgs = {
   id: Scalars['ID']['input'];
   input: UpdateProductInput;
+};
+
+
+export type MutationUpdateProductCategoryArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateProductCategoryInput;
+};
+
+
+export type MutationUpdateProductQuantityArgs = {
+  notes?: InputMaybe<Scalars['String']['input']>;
+  productId: Scalars['ID']['input'];
+  quantity: Scalars['Float']['input'];
+  warehouseId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type MutationUpdateProductVariantArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateProductVariantInput;
 };
 
 
@@ -4671,6 +5075,12 @@ export type MutationUpdateStockTransferArgs = {
 };
 
 
+export type MutationUpdateTagArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateTagInput;
+};
+
+
 export type MutationUpdateTaxRateArgs = {
   id: Scalars['ID']['input'];
   input: UpdateTaxRateInput;
@@ -4680,6 +5090,12 @@ export type MutationUpdateTaxRateArgs = {
 export type MutationUpdateTimesheetEntryArgs = {
   id: Scalars['ID']['input'];
   input: UpdateTimesheetEntryInput;
+};
+
+
+export type MutationUpdateUomArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateUomInput;
 };
 
 
@@ -4900,19 +5316,57 @@ export type OrganizationModuleApproverInput = {
 
 export type PoLineItem = {
   __typename?: 'POLineItem';
+  /** True when the vendor confirmed no further delivery is expected on this line (backorder closed). */
+  closedForReceiving: Scalars['Boolean']['output'];
+  discountPercent: Scalars['Float']['output'];
+  hsnSac?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
   itemDescription?: Maybe<Scalars['String']['output']>;
+  /** Legacy (pre-catalog-rework) fields — retained for backward-compatible reads only. */
   itemId?: Maybe<Scalars['ID']['output']>;
-  lineTotal?: Maybe<Scalars['Float']['output']>;
+  lineTax: Scalars['Float']['output'];
+  lineTotal: Scalars['Float']['output'];
+  /** product (default) | section | note — mixed catalog/section/note line types. */
+  lineType: Scalars['String']['output'];
+  lineUntaxed: Scalars['Float']['output'];
+  /** Free text — populated for section headers and note lines (lineType != 'product'). */
+  note?: Maybe<Scalars['String']['output']>;
+  packaging?: Maybe<ProductPackagingLine>;
+  packagingId?: Maybe<Scalars['ID']['output']>;
+  packagingQty: Scalars['Float']['output'];
+  product?: Maybe<Product>;
+  productId?: Maybe<Scalars['ID']['output']>;
+  /** Denormalized display name — kept in sync with the linked Product/Variant. */
+  productName?: Maybe<Scalars['String']['output']>;
+  qtyBilled: Scalars['Float']['output'];
+  qtyReceived: Scalars['Float']['output'];
   quantity?: Maybe<Scalars['Float']['output']>;
+  taxIds: Array<Scalars['ID']['output']>;
+  taxes: Array<TaxRate>;
   unitPrice?: Maybe<Scalars['Float']['output']>;
+  uom?: Maybe<Uom>;
+  uomId?: Maybe<Scalars['ID']['output']>;
+  variant?: Maybe<ProductVariant>;
+  variantId?: Maybe<Scalars['ID']['output']>;
 };
 
 export type PoLineItemInput = {
-  itemDescription: Scalars['String']['input'];
+  discountPercent?: InputMaybe<Scalars['Float']['input']>;
+  hsnSac?: InputMaybe<Scalars['String']['input']>;
+  itemDescription?: InputMaybe<Scalars['String']['input']>;
+  /** Legacy passthrough — only used when migrating/reading old free-text lines. */
   itemId?: InputMaybe<Scalars['ID']['input']>;
-  lineTotal: Scalars['Float']['input'];
-  quantity: Scalars['Float']['input'];
-  unitPrice: Scalars['Float']['input'];
+  lineType?: InputMaybe<Scalars['String']['input']>;
+  note?: InputMaybe<Scalars['String']['input']>;
+  packagingId?: InputMaybe<Scalars['ID']['input']>;
+  packagingQty?: InputMaybe<Scalars['Float']['input']>;
+  productId?: InputMaybe<Scalars['ID']['input']>;
+  productName?: InputMaybe<Scalars['String']['input']>;
+  quantity?: InputMaybe<Scalars['Float']['input']>;
+  taxIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  unitPrice?: InputMaybe<Scalars['Float']['input']>;
+  uomId?: InputMaybe<Scalars['ID']['input']>;
+  variantId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type Package = {
@@ -4945,6 +5399,28 @@ export type PackageModuleAssignment = {
   organizationId: Scalars['ID']['output'];
   organizationName: Scalars['String']['output'];
   packageId: Scalars['ID']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
+export type PanLookupResult = {
+  __typename?: 'PanLookupResult';
+  holderType?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+  nameOnRecord?: Maybe<Scalars['String']['output']>;
+  pan: Scalars['String']['output'];
+  source: Scalars['String']['output'];
+  valid: Scalars['Boolean']['output'];
+};
+
+export type PaymentTerm = {
+  __typename?: 'PaymentTerm';
+  createdAt: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  dueDays: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  organizationId: Scalars['ID']['output'];
   updatedAt: Scalars['String']['output'];
 };
 
@@ -5039,6 +5515,30 @@ export type PermissionInput = {
   resource: Scalars['String']['input'];
 };
 
+/** Partial-bill line input for billPurchaseOrder; omit to bill every line's full received-but-unbilled quantity. */
+export type PoBillLineInput = {
+  lineId: Scalars['ID']['input'];
+  quantity: Scalars['Float']['input'];
+};
+
+/** Partial-receipt line input for receivePurchaseOrder; omit to receive every line's remaining quantity. */
+export type PoReceiveLineInput = {
+  /** Set true to record more than the ordered quantity (vendor over-shipment). Defaults to false (over-receipt is capped/rejected). */
+  allowOverReceipt?: InputMaybe<Scalars['Boolean']['input']>;
+  lineId: Scalars['ID']['input'];
+  /** Lot/batch number or list of serial numbers for this receipt. Required when the product has trackingMethod: lot/serial. */
+  lotSerialNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
+  qtyReceived: Scalars['Float']['input'];
+};
+
+/** Header-level GST split, computed from the aggregate tax amount and fiscalPosition. */
+export type PoTaxBreakdown = {
+  __typename?: 'PoTaxBreakdown';
+  cgst: Scalars['Float']['output'];
+  igst: Scalars['Float']['output'];
+  sgst: Scalars['Float']['output'];
+};
+
 export type PostDepreciationInput = {
   amount?: InputMaybe<Scalars['Float']['input']>;
   notes?: InputMaybe<Scalars['String']['input']>;
@@ -5070,25 +5570,120 @@ export type PriceListLine = {
 
 export type Product = {
   __typename?: 'Product';
+  attributeLines: Array<ProductAttributeLine>;
   barcode?: Maybe<Scalars['String']['output']>;
-  brand?: Maybe<Scalars['String']['output']>;
-  category?: Maybe<Scalars['String']['output']>;
-  costPrice?: Maybe<Scalars['Float']['output']>;
+  canBeExpensed: Scalars['Boolean']['output'];
+  canBePurchased: Scalars['Boolean']['output'];
+  canBeSold: Scalars['Boolean']['output'];
+  category?: Maybe<ProductCategory>;
+  categoryId?: Maybe<Scalars['ID']['output']>;
+  costPrice: Scalars['Float']['output'];
   createdAt: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
+  expenseAccount?: Maybe<Scalars['String']['output']>;
+  forecastedQty: Scalars['Float']['output'];
+  hsnSac?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  images?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
-  maxStockLevel?: Maybe<Scalars['Float']['output']>;
-  minStockLevel?: Maybe<Scalars['Float']['output']>;
+  images: Array<Scalars['String']['output']>;
+  incomeAccount?: Maybe<Scalars['String']['output']>;
+  internalReference?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
+  /** Smart buttons — real stock/purchase data, computed after save. */
+  onHandQty: Scalars['Float']['output'];
+  organizationId: Scalars['ID']['output'];
+  packagings: Array<ProductPackagingLine>;
+  productType: Scalars['String']['output'];
+  purchaseTaxIds: Array<Scalars['ID']['output']>;
+  purchaseTaxes: Array<TaxRate>;
+  purchaseUom?: Maybe<Uom>;
+  purchaseUomId?: Maybe<Scalars['ID']['output']>;
+  purchasedQty: Scalars['Float']['output'];
+  /** Quantity currently held in QC inspection (received but not cleared for available use). */
+  qcHoldQty: Scalars['Float']['output'];
+  reorderingRules: Array<ProductReorderingRule>;
+  salesPrice: Scalars['Float']['output'];
+  salesTaxIds: Array<Scalars['ID']['output']>;
+  salesTaxes: Array<TaxRate>;
+  seqNo?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  stockAccount?: Maybe<Scalars['String']['output']>;
+  trackInventory: Scalars['Boolean']['output'];
+  trackingMethod: Scalars['String']['output'];
+  uom?: Maybe<Uom>;
+  uomId?: Maybe<Scalars['ID']['output']>;
+  updatedAt: Scalars['String']['output'];
+  variants: Array<ProductVariant>;
+  vendorPricelist: Array<VendorPricelistLine>;
+};
+
+export type ProductAttributeLine = {
+  __typename?: 'ProductAttributeLine';
+  attribute?: Maybe<Attribute>;
+  attributeId: Scalars['ID']['output'];
+  valueIds: Array<Scalars['ID']['output']>;
+};
+
+export type ProductAttributeLineInput = {
+  attributeId: Scalars['ID']['input'];
+  valueIds: Array<Scalars['ID']['input']>;
+};
+
+/** Hierarchical product category (e.g. All -> Tools -> Tools Consumables). */
+export type ProductCategory = {
+  __typename?: 'ProductCategory';
+  createdAt: Scalars['String']['output'];
+  /** Denormalized breadcrumb, e.g. "All / Tools / Tools Consumables". */
+  fullPath: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   organizationId: Scalars['ID']['output'];
-  price: Scalars['Float']['output'];
-  reorderPoint?: Maybe<Scalars['Float']['output']>;
-  seqNo?: Maybe<Scalars['String']['output']>;
-  sku: Scalars['String']['output'];
-  status: Scalars['String']['output'];
-  taxRate?: Maybe<Scalars['Float']['output']>;
-  unit: Scalars['String']['output'];
+  parentId?: Maybe<Scalars['ID']['output']>;
+  updatedAt: Scalars['String']['output'];
+};
+
+export type ProductPackagingLine = {
+  __typename?: 'ProductPackagingLine';
+  barcode?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  qtyPerPackage: Scalars['Float']['output'];
+};
+
+export type ProductPackagingLineInput = {
+  barcode?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  qtyPerPackage: Scalars['Float']['input'];
+};
+
+export type ProductReorderingRule = {
+  __typename?: 'ProductReorderingRule';
+  id: Scalars['ID']['output'];
+  maxQty: Scalars['Float']['output'];
+  minQty: Scalars['Float']['output'];
+  warehouse?: Maybe<Warehouse>;
+  warehouseId?: Maybe<Scalars['ID']['output']>;
+};
+
+export type ProductReorderingRuleInput = {
+  maxQty: Scalars['Float']['input'];
+  minQty: Scalars['Float']['input'];
+  warehouseId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** A generated combination of a product's attribute-line values (e.g. Make=NAKSHTRA, Model=250MIG/ARC, Size=0.8mm). */
+export type ProductVariant = {
+  __typename?: 'ProductVariant';
+  attributeValues: Array<VariantAttributeValue>;
+  barcode?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  displayName: Scalars['String']['output'];
+  extraPrice: Scalars['Float']['output'];
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  organizationId: Scalars['ID']['output'];
+  productId: Scalars['ID']['output'];
+  sku?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['String']['output'];
 };
 
@@ -5139,24 +5734,56 @@ export type Project = {
 
 export type PurchaseOrder = {
   __typename?: 'PurchaseOrder';
+  agreement?: Maybe<Scalars['String']['output']>;
+  askConfirmation: Scalars['Boolean']['output'];
+  billingStatus: Scalars['String']['output'];
+  buyer?: Maybe<User>;
+  buyerId?: Maybe<Scalars['ID']['output']>;
+  confirmationDate?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['String']['output']>;
+  currency: Scalars['String']['output'];
+  deliverToLocation?: Maybe<Warehouse>;
+  deliverToLocationId?: Maybe<Scalars['ID']['output']>;
+  /** Legacy alias for expectedArrival. */
   deliveryDate?: Maybe<Scalars['String']['output']>;
+  deliveryTerms?: Maybe<Scalars['String']['output']>;
+  /** Foreign-currency units per 1 INR (base). 1.0 for INR POs. Snapshotted at create/update. */
+  exchangeRate: Scalars['Float']['output'];
+  expectedArrival?: Maybe<Scalars['String']['output']>;
+  fiscalPosition?: Maybe<Scalars['String']['output']>;
+  gstTreatment?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  incoterms?: Maybe<Scalars['String']['output']>;
   items?: Maybe<Array<PoLineItem>>;
+  lastPrintedAt?: Maybe<Scalars['String']['output']>;
   notes?: Maybe<Scalars['String']['output']>;
   orderDate?: Maybe<Scalars['String']['output']>;
+  orderDeadline?: Maybe<Scalars['String']['output']>;
   organizationId: Scalars['ID']['output'];
+  paymentTerms?: Maybe<Scalars['ID']['output']>;
+  paymentTermsInfo?: Maybe<PaymentTerm>;
   projectId?: Maybe<Scalars['ID']['output']>;
   projectName?: Maybe<Scalars['String']['output']>;
+  receiptStatus: Scalars['String']['output'];
   seqNo?: Maybe<Scalars['String']['output']>;
+  sourceDocument?: Maybe<Scalars['String']['output']>;
+  /** rfq | rfq_sent | submitted | approved | purchase_order | sent | received | partially_received | billed | partially_billed | debited | cancelled | rejected | locked */
   status: Scalars['String']['output'];
+  /** Legacy alias for untaxedAmount. */
   subtotal?: Maybe<Scalars['Float']['output']>;
   taxAmount?: Maybe<Scalars['Float']['output']>;
+  taxBreakdown: PoTaxBreakdown;
   totalAmount?: Maybe<Scalars['Float']['output']>;
+  /** totalAmount converted to base currency (INR) using exchangeRate — used for accounting/reporting. */
+  totalAmountBaseCurrency: Scalars['Float']['output'];
+  untaxedAmount?: Maybe<Scalars['Float']['output']>;
   updatedAt?: Maybe<Scalars['String']['output']>;
   vendor?: Maybe<Vendor>;
   vendorId?: Maybe<Scalars['ID']['output']>;
   vendorName?: Maybe<Scalars['String']['output']>;
+  vendorReference?: Maybe<Scalars['String']['output']>;
+  /** Optimistic-concurrency version counter — pass as expectedVersion in updatePurchaseOrder to detect conflicting edits. */
+  version: Scalars['Int']['output'];
 };
 
 export type QcDefect = {
@@ -5227,13 +5854,17 @@ export type Query = {
   assets: Array<Asset>;
   attendance?: Maybe<Attendance>;
   attendances: Array<Attendance>;
+  attribute?: Maybe<Attribute>;
+  attributes: Array<Attribute>;
   auditLogs: AuditLogPage;
   availableVendorCredits: Array<VendorCredit>;
   availableVendorPrepayments: Array<VendorPrepayment>;
   balanceSheet: BalanceSheetReport;
+  bank?: Maybe<Bank>;
   bankAccount?: Maybe<BankAccount>;
   bankAccounts: Array<BankAccount>;
   bankStatementLines: Array<BankStatementLine>;
+  banks: Array<Bank>;
   billOfMaterials?: Maybe<BillOfMaterials>;
   billsOfMaterials: Array<BillOfMaterials>;
   budget?: Maybe<Budget>;
@@ -5245,6 +5876,8 @@ export type Query = {
   cashSalesRefundCandidates: Array<SalesOrder>;
   chartOfAccount?: Maybe<ChartOfAccounts>;
   chartOfAccounts: Array<ChartOfAccounts>;
+  /** Vendor form 'Check Status' action — validates a GSTIN before save. */
+  checkGstinStatus: GstinCheckResult;
   client?: Maybe<Client>;
   clients: Array<Client>;
   clientsByOrganization: Array<Client>;
@@ -5334,6 +5967,8 @@ export type Query = {
   leaveTypes: Array<LeaveType>;
   loanrepayment?: Maybe<LoanRepayment>;
   loanrepayments: Array<LoanRepayment>;
+  /** Vendor form PAN lookup/verification action. */
+  lookupPan: PanLookupResult;
   lowStockItems: Array<InventoryControl>;
   materialreceipt?: Maybe<MaterialReceipt>;
   materialreceipts: Array<MaterialReceipt>;
@@ -5364,6 +5999,8 @@ export type Query = {
   /** All tenant/sub-tenant assignments saved for a package. */
   packageModuleAssignments: Array<PackageModuleAssignment>;
   packages: Array<Package>;
+  paymentTerm?: Maybe<PaymentTerm>;
+  paymentTerms: Array<PaymentTerm>;
   payrollmanagement?: Maybe<PayrollManagement>;
   payrollmanagements: Array<PayrollManagement>;
   payrolluirecord?: Maybe<PayrollUiRecord>;
@@ -5374,12 +6011,13 @@ export type Query = {
   priceList?: Maybe<PriceList>;
   priceLists: Array<PriceList>;
   product?: Maybe<Product>;
+  productCategories: Array<ProductCategory>;
+  productCategory?: Maybe<ProductCategory>;
+  productVariant?: Maybe<ProductVariant>;
+  productVariantsByProduct: Array<ProductVariant>;
   productionplanning?: Maybe<ProductionPlanning>;
   productionplannings: Array<ProductionPlanning>;
   products: Array<Product>;
-  productsByCategory: Array<Product>;
-  productsByOrganization: Array<Product>;
-  productsByStatus: Array<Product>;
   project?: Maybe<Project>;
   projects: Array<Project>;
   purchaseorder?: Maybe<PurchaseOrder>;
@@ -5429,13 +6067,19 @@ export type Query = {
   stocktransfers: Array<StockTransfer>;
   /** Direct child tenants of a parent (one level deep). */
   subTenants: Array<Organization>;
+  /** Vendor form PAN autocomplete-as-you-type suggestions. */
+  suggestPan: Array<Scalars['String']['output']>;
   systemRoles: Array<Role>;
+  tag?: Maybe<Tag>;
+  tags: Array<Tag>;
   taxRate?: Maybe<TaxRate>;
   taxRates: Array<TaxRate>;
   timesheetEntries: Array<TimesheetEntry>;
   timesheetEntry?: Maybe<TimesheetEntry>;
   timesheetWeeklySummary: TimesheetWeeklySummary;
   trialBalance: Array<TrialBalanceLine>;
+  uom?: Maybe<Uom>;
+  uoms: Array<Uom>;
   upcomingMaintenance: Array<AssetMaintenance>;
   user?: Maybe<User>;
   userByEmail?: Maybe<User>;
@@ -5547,6 +6191,17 @@ export type QueryAttendancesArgs = {
 };
 
 
+export type QueryAttributeArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAttributesArgs = {
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  organizationId: Scalars['ID']['input'];
+};
+
+
 export type QueryAuditLogsArgs = {
   action?: InputMaybe<Scalars['String']['input']>;
   entityId?: InputMaybe<Scalars['ID']['input']>;
@@ -5574,6 +6229,11 @@ export type QueryBalanceSheetArgs = {
 };
 
 
+export type QueryBankArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryBankAccountArgs = {
   id: Scalars['ID']['input'];
 };
@@ -5590,6 +6250,12 @@ export type QueryBankStatementLinesArgs = {
   bankAccount: Scalars['String']['input'];
   onlyUnmatched?: InputMaybe<Scalars['Boolean']['input']>;
   organizationId: Scalars['String']['input'];
+};
+
+
+export type QueryBanksArgs = {
+  organizationId: Scalars['ID']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -5659,6 +6325,11 @@ export type QueryChartOfAccountsArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   organizationId: Scalars['String']['input'];
   page?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryCheckGstinStatusArgs = {
+  gstin: Scalars['String']['input'];
 };
 
 
@@ -6202,6 +6873,11 @@ export type QueryLoanrepaymentsArgs = {
 };
 
 
+export type QueryLookupPanArgs = {
+  pan: Scalars['String']['input'];
+};
+
+
 export type QueryLowStockItemsArgs = {
   organizationId: Scalars['String']['input'];
 };
@@ -6310,6 +6986,17 @@ export type QueryPackageModuleAssignmentsArgs = {
 };
 
 
+export type QueryPaymentTermArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPaymentTermsArgs = {
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  organizationId: Scalars['ID']['input'];
+};
+
+
 export type QueryPayrollmanagementArgs = {
   id: Scalars['ID']['input'];
 };
@@ -6365,6 +7052,27 @@ export type QueryProductArgs = {
 };
 
 
+export type QueryProductCategoriesArgs = {
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  organizationId: Scalars['ID']['input'];
+};
+
+
+export type QueryProductCategoryArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryProductVariantArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryProductVariantsByProductArgs = {
+  productId: Scalars['ID']['input'];
+};
+
+
 export type QueryProductionplanningArgs = {
   id: Scalars['ID']['input'];
 };
@@ -6377,20 +7085,13 @@ export type QueryProductionplanningsArgs = {
 };
 
 
-export type QueryProductsByCategoryArgs = {
-  category: Scalars['String']['input'];
+export type QueryProductsArgs = {
+  canBePurchased?: InputMaybe<Scalars['Boolean']['input']>;
+  canBeSold?: InputMaybe<Scalars['Boolean']['input']>;
+  categoryId?: InputMaybe<Scalars['ID']['input']>;
   organizationId: Scalars['ID']['input'];
-};
-
-
-export type QueryProductsByOrganizationArgs = {
-  organizationId: Scalars['ID']['input'];
-};
-
-
-export type QueryProductsByStatusArgs = {
-  organizationId: Scalars['ID']['input'];
-  status: Scalars['String']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -6677,6 +7378,24 @@ export type QuerySubTenantsArgs = {
 };
 
 
+export type QuerySuggestPanArgs = {
+  partial: Scalars['String']['input'];
+};
+
+
+export type QueryTagArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTagsArgs = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  organizationId: Scalars['ID']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type QueryTaxRateArgs = {
   id: Scalars['ID']['input'];
 };
@@ -6716,6 +7435,18 @@ export type QueryTimesheetWeeklySummaryArgs = {
 
 export type QueryTrialBalanceArgs = {
   organizationId: Scalars['String']['input'];
+};
+
+
+export type QueryUomArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryUomsArgs = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  organizationId: Scalars['ID']['input'];
 };
 
 
@@ -7083,6 +7814,15 @@ export type RefundCashSaleInput = {
   refundDate: Scalars['String']['input'];
   refundMethod: Scalars['String']['input'];
   salesOrderId: Scalars['ID']['input'];
+};
+
+/** Result of the Replenish action — the draft RFQ created from the product's cheapest vendor pricelist entry. */
+export type ReplenishResult = {
+  __typename?: 'ReplenishResult';
+  purchaseOrder: PurchaseOrder;
+  quantity: Scalars['Float']['output'];
+  unitPrice: Scalars['Float']['output'];
+  vendorId: Scalars['ID']['output'];
 };
 
 export type ReturnAuthorization = {
@@ -7476,6 +8216,18 @@ export type StructureComponentInput = {
   payComponentId: Scalars['String']['input'];
 };
 
+export type Tag = {
+  __typename?: 'Tag';
+  category?: Maybe<Scalars['String']['output']>;
+  color: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  organizationId: Scalars['ID']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
 export type Task = {
   __typename?: 'Task';
   assignedTo?: Maybe<Scalars['ID']['output']>;
@@ -7563,6 +8315,23 @@ export type TrialBalanceLine = {
   net: Scalars['Float']['output'];
 };
 
+/** Unit of Measure master, e.g. Nos, Box, kg — with GST UQC for HSN/GST filing. */
+export type Uom = {
+  __typename?: 'Uom';
+  category: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  /** Indian GST Unit Quantity Code, e.g. NOS, BOX, KGS. */
+  gstUqc?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  organizationId: Scalars['ID']['output'];
+  /** Ratio relative to the category's reference unit (1 for the reference unit itself). */
+  ratio: Scalars['Float']['output'];
+  type: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
 export type UpdateAssetMaintenanceInput = {
   actionsTaken?: InputMaybe<Scalars['String']['input']>;
   assetId?: InputMaybe<Scalars['ID']['input']>;
@@ -7589,6 +8358,12 @@ export type UpdateAttendanceInput = {
   status?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateAttributeInput = {
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  values?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type UpdateBomInput = {
   bomCode?: InputMaybe<Scalars['String']['input']>;
   components?: InputMaybe<Array<BomComponentInput>>;
@@ -7602,6 +8377,14 @@ export type UpdateBomInput = {
   status?: InputMaybe<Scalars['String']['input']>;
   unit?: InputMaybe<Scalars['String']['input']>;
   version?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateBankInput = {
+  address?: InputMaybe<Scalars['String']['input']>;
+  bankIdentifierCode?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateClientInput = {
@@ -7848,22 +8631,54 @@ export type UpdatePackageInput = {
   price: Scalars['Float']['input'];
 };
 
-export type UpdateProductInput = {
-  barcode?: InputMaybe<Scalars['String']['input']>;
-  brand?: InputMaybe<Scalars['String']['input']>;
-  category?: InputMaybe<Scalars['String']['input']>;
-  costPrice?: InputMaybe<Scalars['Float']['input']>;
+export type UpdatePaymentTermInput = {
   description?: InputMaybe<Scalars['String']['input']>;
-  images?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  maxStockLevel?: InputMaybe<Scalars['Float']['input']>;
-  minStockLevel?: InputMaybe<Scalars['Float']['input']>;
+  dueDays?: InputMaybe<Scalars['Int']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
-  price?: InputMaybe<Scalars['Float']['input']>;
-  reorderPoint?: InputMaybe<Scalars['Float']['input']>;
-  sku?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateProductCategoryInput = {
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  parentId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type UpdateProductInput = {
+  attributeLines?: InputMaybe<Array<ProductAttributeLineInput>>;
+  barcode?: InputMaybe<Scalars['String']['input']>;
+  canBeExpensed?: InputMaybe<Scalars['Boolean']['input']>;
+  canBePurchased?: InputMaybe<Scalars['Boolean']['input']>;
+  canBeSold?: InputMaybe<Scalars['Boolean']['input']>;
+  categoryId?: InputMaybe<Scalars['ID']['input']>;
+  costPrice?: InputMaybe<Scalars['Float']['input']>;
+  expenseAccount?: InputMaybe<Scalars['String']['input']>;
+  hsnSac?: InputMaybe<Scalars['String']['input']>;
+  images?: InputMaybe<Array<Scalars['String']['input']>>;
+  incomeAccount?: InputMaybe<Scalars['String']['input']>;
+  internalReference?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  packagings?: InputMaybe<Array<ProductPackagingLineInput>>;
+  productType?: InputMaybe<Scalars['String']['input']>;
+  purchaseTaxIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  purchaseUomId?: InputMaybe<Scalars['ID']['input']>;
+  reorderingRules?: InputMaybe<Array<ProductReorderingRuleInput>>;
+  salesPrice?: InputMaybe<Scalars['Float']['input']>;
+  salesTaxIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   status?: InputMaybe<Scalars['String']['input']>;
-  taxRate?: InputMaybe<Scalars['Float']['input']>;
-  unit?: InputMaybe<Scalars['String']['input']>;
+  stockAccount?: InputMaybe<Scalars['String']['input']>;
+  trackInventory?: InputMaybe<Scalars['Boolean']['input']>;
+  trackingMethod?: InputMaybe<Scalars['String']['input']>;
+  uomId?: InputMaybe<Scalars['ID']['input']>;
+  vendorPricelist?: InputMaybe<Array<VendorPricelistLineInput>>;
+};
+
+export type UpdateProductVariantInput = {
+  barcode?: InputMaybe<Scalars['String']['input']>;
+  extraPrice?: InputMaybe<Scalars['Float']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  sku?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateProjectInput = {
@@ -7875,14 +8690,29 @@ export type UpdateProjectInput = {
 };
 
 export type UpdatePurchaseOrderInput = {
+  agreement?: InputMaybe<Scalars['String']['input']>;
+  askConfirmation?: InputMaybe<Scalars['Boolean']['input']>;
+  buyerId?: InputMaybe<Scalars['ID']['input']>;
+  currency?: InputMaybe<Scalars['String']['input']>;
+  deliverToLocationId?: InputMaybe<Scalars['ID']['input']>;
   deliveryDate?: InputMaybe<Scalars['String']['input']>;
+  deliveryTerms?: InputMaybe<Scalars['String']['input']>;
+  exchangeRate?: InputMaybe<Scalars['Float']['input']>;
+  expectedArrival?: InputMaybe<Scalars['String']['input']>;
+  /** Current version value from the client — if provided and mismatched, the update is rejected (optimistic concurrency). */
+  expectedVersion?: InputMaybe<Scalars['Int']['input']>;
+  fiscalPosition?: InputMaybe<Scalars['String']['input']>;
+  gstTreatment?: InputMaybe<Scalars['String']['input']>;
+  incoterms?: InputMaybe<Scalars['String']['input']>;
   items?: InputMaybe<Array<PoLineItemInput>>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  orderDeadline?: InputMaybe<Scalars['String']['input']>;
+  paymentTerms?: InputMaybe<Scalars['ID']['input']>;
   projectId?: InputMaybe<Scalars['ID']['input']>;
+  sourceDocument?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
-  subtotal?: InputMaybe<Scalars['Float']['input']>;
-  taxAmount?: InputMaybe<Scalars['Float']['input']>;
-  totalAmount?: InputMaybe<Scalars['Float']['input']>;
   vendorId?: InputMaybe<Scalars['ID']['input']>;
+  vendorReference?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateQcInspectionInput = {
@@ -7987,6 +8817,13 @@ export type UpdateStockTransferInput = {
   transferDate?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateTagInput = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  color?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateTaxRateInput = {
   appliesTo?: InputMaybe<Scalars['String']['input']>;
   code?: InputMaybe<Scalars['String']['input']>;
@@ -8012,6 +8849,15 @@ export type UpdateTimesheetEntryInput = {
   projectId?: InputMaybe<Scalars['ID']['input']>;
   taskName?: InputMaybe<Scalars['String']['input']>;
   workOrderId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type UpdateUomInput = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  gstUqc?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  ratio?: InputMaybe<Scalars['Float']['input']>;
+  type?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateUserInput = {
@@ -8050,18 +8896,34 @@ export type UpdateVendorDebitNoteInput = {
 };
 
 export type UpdateVendorInput = {
-  address?: InputMaybe<Scalars['String']['input']>;
+  accounting?: InputMaybe<VendorAccountingInfoInput>;
+  address?: InputMaybe<VendorAddressInput>;
+  bankAccounts?: InputMaybe<Array<VendorBankAccountInput>>;
   city?: InputMaybe<Scalars['String']['input']>;
   contactPerson?: InputMaybe<Scalars['String']['input']>;
   country?: InputMaybe<Scalars['String']['input']>;
+  createTags?: InputMaybe<Array<CreateTagInline>>;
   email?: InputMaybe<Scalars['String']['input']>;
+  gstTreatment?: InputMaybe<Scalars['String']['input']>;
+  gstin?: InputMaybe<Scalars['String']['input']>;
+  internalNotes?: InputMaybe<Scalars['String']['input']>;
+  inventory?: InputMaybe<VendorInventoryInfoInput>;
+  misc?: InputMaybe<VendorMiscInfoInput>;
+  mobile?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   notes?: InputMaybe<Scalars['String']['input']>;
+  pan?: InputMaybe<Scalars['String']['input']>;
   paymentTerms?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
+  purchase?: InputMaybe<VendorPurchaseInfoInput>;
+  sales?: InputMaybe<VendorSalesInfoInput>;
   state?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
+  tags?: InputMaybe<Array<VendorTagInput>>;
   taxNumber?: InputMaybe<Scalars['String']['input']>;
+  type?: InputMaybe<Scalars['String']['input']>;
+  warnings?: InputMaybe<VendorWarningsInput>;
+  website?: InputMaybe<Scalars['String']['input']>;
   zipCode?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -8112,29 +8974,106 @@ export type UserList = {
   users: Array<User>;
 };
 
+export type VariantAttributeValue = {
+  __typename?: 'VariantAttributeValue';
+  attributeId: Scalars['ID']['output'];
+  attributeName: Scalars['String']['output'];
+  value: Scalars['String']['output'];
+  valueId: Scalars['ID']['output'];
+};
+
 export type Vendor = {
   __typename?: 'Vendor';
-  address?: Maybe<Scalars['String']['output']>;
+  accounting?: Maybe<VendorAccountingInfo>;
+  address?: Maybe<VendorAddress>;
+  bankAccounts: Array<VendorBankAccount>;
   city?: Maybe<Scalars['String']['output']>;
+  /** Legacy flat fields — retained for backward compatibility with existing reports/PDF templates. */
   contactPerson?: Maybe<Scalars['String']['output']>;
   country?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
   createdBy?: Maybe<User>;
   email?: Maybe<Scalars['String']['output']>;
+  gstTreatment: Scalars['String']['output'];
+  gstin?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  internalNotes?: Maybe<Scalars['String']['output']>;
+  inventory?: Maybe<VendorInventoryInfo>;
+  misc?: Maybe<VendorMiscInfo>;
+  mobile?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   notes?: Maybe<Scalars['String']['output']>;
   /** draft | submitted | approval_declined | approved — omitted on legacy rows means approved */
   orgApprovalStatus: Scalars['String']['output'];
   organizationId: Scalars['ID']['output'];
+  pan?: Maybe<Scalars['String']['output']>;
   paymentTerms?: Maybe<Scalars['String']['output']>;
   phone?: Maybe<Scalars['String']['output']>;
+  purchase?: Maybe<VendorPurchaseInfo>;
+  sales?: Maybe<VendorSalesInfo>;
   seqNo?: Maybe<Scalars['String']['output']>;
   state?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
+  tags: Array<VendorTag>;
   taxNumber?: Maybe<Scalars['String']['output']>;
+  type: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
+  warnings?: Maybe<VendorWarnings>;
+  website?: Maybe<Scalars['String']['output']>;
   zipCode?: Maybe<Scalars['String']['output']>;
+};
+
+export type VendorAccountingInfo = {
+  __typename?: 'VendorAccountingInfo';
+  accountPayable?: Maybe<Scalars['String']['output']>;
+  accountReceivable?: Maybe<Scalars['String']['output']>;
+  /** How invoices/bills should be sent to this vendor by default: email | postal | manual. */
+  invoiceSendingPreference: Scalars['String']['output'];
+};
+
+export type VendorAccountingInfoInput = {
+  accountPayable?: InputMaybe<Scalars['String']['input']>;
+  accountReceivable?: InputMaybe<Scalars['String']['input']>;
+  invoiceSendingPreference?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type VendorAddress = {
+  __typename?: 'VendorAddress';
+  city?: Maybe<Scalars['String']['output']>;
+  country?: Maybe<Scalars['String']['output']>;
+  street?: Maybe<Scalars['String']['output']>;
+  zip?: Maybe<Scalars['String']['output']>;
+};
+
+export type VendorAddressInput = {
+  city?: InputMaybe<Scalars['String']['input']>;
+  country?: InputMaybe<Scalars['String']['input']>;
+  street?: InputMaybe<Scalars['String']['input']>;
+  zip?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type VendorBankAccount = {
+  __typename?: 'VendorBankAccount';
+  accountHolder?: Maybe<Scalars['String']['output']>;
+  accountNumber: Scalars['String']['output'];
+  bank?: Maybe<Bank>;
+  bankId?: Maybe<Scalars['ID']['output']>;
+  bankName?: Maybe<Scalars['String']['output']>;
+  createdAt?: Maybe<Scalars['String']['output']>;
+  currency: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  sendMoney: Scalars['Boolean']['output'];
+};
+
+/** Nested "Create Bank Account" modal (Step 6). If bankId is omitted, provide newBank to create the master Bank record inline. */
+export type VendorBankAccountInput = {
+  /** Defaults to the vendor's name when omitted. */
+  accountHolder?: InputMaybe<Scalars['String']['input']>;
+  accountNumber: Scalars['String']['input'];
+  bankId?: InputMaybe<Scalars['ID']['input']>;
+  currency?: InputMaybe<Scalars['String']['input']>;
+  newBank?: InputMaybe<CreateBankInline>;
+  sendMoney?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type VendorBill = {
@@ -8226,6 +9165,35 @@ export type VendorDebitNoteBillAllocation = {
   billId: Scalars['ID']['output'];
 };
 
+export type VendorInventoryInfo = {
+  __typename?: 'VendorInventoryInfo';
+  customerLocation?: Maybe<Scalars['String']['output']>;
+  subcontractingLocation?: Maybe<Scalars['String']['output']>;
+  vendorLocation?: Maybe<Scalars['String']['output']>;
+};
+
+export type VendorInventoryInfoInput = {
+  customerLocation?: InputMaybe<Scalars['String']['input']>;
+  subcontractingLocation?: InputMaybe<Scalars['String']['input']>;
+  vendorLocation?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type VendorMiscInfo = {
+  __typename?: 'VendorMiscInfo';
+  /** Free-text display name of the operating company, independent of the linked Organization record. */
+  company?: Maybe<Scalars['String']['output']>;
+  companyId?: Maybe<Scalars['ID']['output']>;
+  reference?: Maybe<Scalars['String']['output']>;
+  slaPolicies?: Maybe<Scalars['String']['output']>;
+};
+
+export type VendorMiscInfoInput = {
+  company?: InputMaybe<Scalars['String']['input']>;
+  companyId?: InputMaybe<Scalars['ID']['input']>;
+  reference?: InputMaybe<Scalars['String']['input']>;
+  slaPolicies?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type VendorPayment = {
   __typename?: 'VendorPayment';
   allocations: Array<VendorPaymentAllocation>;
@@ -8273,6 +9241,82 @@ export type VendorPrepayment = {
   updatedAt?: Maybe<Scalars['String']['output']>;
   vendor?: Maybe<Vendor>;
   vendorId: Scalars['ID']['output'];
+};
+
+export type VendorPricelistLine = {
+  __typename?: 'VendorPricelistLine';
+  id: Scalars['ID']['output'];
+  leadTimeDays: Scalars['Int']['output'];
+  minQty: Scalars['Float']['output'];
+  price: Scalars['Float']['output'];
+  vendor?: Maybe<Vendor>;
+  vendorId: Scalars['ID']['output'];
+};
+
+export type VendorPricelistLineInput = {
+  leadTimeDays?: InputMaybe<Scalars['Int']['input']>;
+  minQty?: InputMaybe<Scalars['Float']['input']>;
+  price: Scalars['Float']['input'];
+  vendorId: Scalars['ID']['input'];
+};
+
+export type VendorPurchaseInfo = {
+  __typename?: 'VendorPurchaseInfo';
+  buyer?: Maybe<Scalars['ID']['output']>;
+  fiscalPosition?: Maybe<Scalars['String']['output']>;
+  /** Bank account id (within this vendor's bankAccounts[]) used as the default payment method. */
+  paymentMethod?: Maybe<Scalars['ID']['output']>;
+  paymentTerms?: Maybe<Scalars['ID']['output']>;
+};
+
+export type VendorPurchaseInfoInput = {
+  buyer?: InputMaybe<Scalars['ID']['input']>;
+  fiscalPosition?: InputMaybe<Scalars['String']['input']>;
+  paymentMethod?: InputMaybe<Scalars['ID']['input']>;
+  paymentTerms?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type VendorSalesInfo = {
+  __typename?: 'VendorSalesInfo';
+  deliveryMethod?: Maybe<Scalars['String']['output']>;
+  paymentMethod?: Maybe<Scalars['String']['output']>;
+  paymentTerms?: Maybe<Scalars['ID']['output']>;
+  priceList?: Maybe<Scalars['ID']['output']>;
+  salesperson?: Maybe<Scalars['ID']['output']>;
+};
+
+export type VendorSalesInfoInput = {
+  deliveryMethod?: InputMaybe<Scalars['String']['input']>;
+  paymentMethod?: InputMaybe<Scalars['String']['input']>;
+  paymentTerms?: InputMaybe<Scalars['ID']['input']>;
+  priceList?: InputMaybe<Scalars['ID']['input']>;
+  salesperson?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type VendorTag = {
+  __typename?: 'VendorTag';
+  category?: Maybe<Scalars['String']['output']>;
+  color: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  tagId: Scalars['ID']['output'];
+};
+
+export type VendorTagInput = {
+  tagId: Scalars['ID']['input'];
+};
+
+/** No Message / Warning / Blocking Message. */
+export type VendorWarnings = {
+  __typename?: 'VendorWarnings';
+  picking: Scalars['String']['output'];
+  purchaseOrder: Scalars['String']['output'];
+  salesOrder: Scalars['String']['output'];
+};
+
+export type VendorWarningsInput = {
+  picking?: InputMaybe<Scalars['String']['input']>;
+  purchaseOrder?: InputMaybe<Scalars['String']['input']>;
+  salesOrder?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Warehouse = {
@@ -9047,7 +10091,7 @@ export type GetAuditLogsQueryVariables = Exact<{
 }>;
 
 
-export type GetAuditLogsQuery = { __typename?: 'Query', auditLogs: { __typename?: 'AuditLogPage', total: number, page: number, pages: number, data: Array<{ __typename?: 'AuditLog', id: string, userId?: string | null, action: string, entityType: string, entityId?: string | null, oldValuesJson?: string | null, newValuesJson?: string | null, ipAddress?: string | null, userAgent?: string | null, createdAt: string }> } };
+export type GetAuditLogsQuery = { __typename?: 'Query', auditLogs: { __typename?: 'AuditLogPage', total: number, page: number, pages: number, data: Array<{ __typename?: 'AuditLog', id: string, userId?: string | null, action: string, entityType: string, entityId?: string | null, oldValuesJson?: string | null, newValuesJson?: string | null, ipAddress?: string | null, userAgent?: string | null, createdAt: string, user?: { __typename?: 'User', id: string, firstName: string, lastName: string, email: string } | null }> } };
 
 export type LoginMutationVariables = Exact<{
   input: LoginInput;
@@ -9344,14 +10388,14 @@ export type GetVendorsQueryVariables = Exact<{
 }>;
 
 
-export type GetVendorsQuery = { __typename?: 'Query', vendors: Array<{ __typename?: 'Vendor', id: string, seqNo?: string | null, name: string, contactPerson?: string | null, email?: string | null, phone?: string | null, address?: string | null, organizationId: string, orgApprovalStatus: string, status: string, createdAt: string }> };
+export type GetVendorsQuery = { __typename?: 'Query', vendors: Array<{ __typename?: 'Vendor', id: string, seqNo?: string | null, type: string, name: string, email?: string | null, phone?: string | null, mobile?: string | null, gstTreatment: string, gstin?: string | null, pan?: string | null, organizationId: string, orgApprovalStatus: string, status: string, createdAt: string, address?: { __typename?: 'VendorAddress', street?: string | null, city?: string | null, zip?: string | null, country?: string | null } | null }> };
 
 export type GetVendorQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetVendorQuery = { __typename?: 'Query', vendor?: { __typename?: 'Vendor', id: string, seqNo?: string | null, name: string, contactPerson?: string | null, email?: string | null, phone?: string | null, address?: string | null, city?: string | null, state?: string | null, country?: string | null, zipCode?: string | null, taxNumber?: string | null, paymentTerms?: string | null, notes?: string | null, organizationId: string, orgApprovalStatus: string, status: string, createdAt: string, updatedAt: string, createdBy?: { __typename?: 'User', id: string, firstName: string, lastName: string, email: string } | null } | null };
+export type GetVendorQuery = { __typename?: 'Query', vendor?: { __typename?: 'Vendor', id: string, seqNo?: string | null, type: string, name: string, gstTreatment: string, gstin?: string | null, pan?: string | null, phone?: string | null, mobile?: string | null, email?: string | null, website?: string | null, internalNotes?: string | null, organizationId: string, orgApprovalStatus: string, status: string, createdAt: string, updatedAt: string, address?: { __typename?: 'VendorAddress', street?: string | null, city?: string | null, zip?: string | null, country?: string | null } | null, tags: Array<{ __typename?: 'VendorTag', tagId: string, name: string, color: string, category?: string | null }>, sales?: { __typename?: 'VendorSalesInfo', salesperson?: string | null, paymentTerms?: string | null, paymentMethod?: string | null, priceList?: string | null, deliveryMethod?: string | null } | null, purchase?: { __typename?: 'VendorPurchaseInfo', buyer?: string | null, paymentTerms?: string | null, paymentMethod?: string | null, fiscalPosition?: string | null } | null, inventory?: { __typename?: 'VendorInventoryInfo', customerLocation?: string | null, vendorLocation?: string | null, subcontractingLocation?: string | null } | null, misc?: { __typename?: 'VendorMiscInfo', reference?: string | null, companyId?: string | null, company?: string | null, slaPolicies?: string | null } | null, bankAccounts: Array<{ __typename?: 'VendorBankAccount', id: string, accountNumber: string, bankId?: string | null, bankName?: string | null, currency: string, accountHolder?: string | null, sendMoney: boolean }>, accounting?: { __typename?: 'VendorAccountingInfo', accountReceivable?: string | null, accountPayable?: string | null, invoiceSendingPreference: string } | null, warnings?: { __typename?: 'VendorWarnings', salesOrder: string, purchaseOrder: string, picking: string } | null, createdBy?: { __typename?: 'User', id: string, firstName: string, lastName: string, email: string } | null } | null };
 
 export type VendorEligibleApproversQueryVariables = Exact<{
   organizationId: Scalars['ID']['input'];
@@ -9397,6 +10441,90 @@ export type DeleteVendorMutationVariables = Exact<{
 
 
 export type DeleteVendorMutation = { __typename?: 'Mutation', deleteVendor: boolean };
+
+export type AddVendorBankAccountMutationVariables = Exact<{
+  vendorId: Scalars['ID']['input'];
+  input: VendorBankAccountInput;
+}>;
+
+
+export type AddVendorBankAccountMutation = { __typename?: 'Mutation', addVendorBankAccount: { __typename?: 'Vendor', id: string, bankAccounts: Array<{ __typename?: 'VendorBankAccount', id: string, accountNumber: string, bankId?: string | null, bankName?: string | null, currency: string, accountHolder?: string | null, sendMoney: boolean }> } };
+
+export type RemoveVendorBankAccountMutationVariables = Exact<{
+  vendorId: Scalars['ID']['input'];
+  bankAccountId: Scalars['ID']['input'];
+}>;
+
+
+export type RemoveVendorBankAccountMutation = { __typename?: 'Mutation', removeVendorBankAccount: { __typename?: 'Vendor', id: string, bankAccounts: Array<{ __typename?: 'VendorBankAccount', id: string, accountNumber: string, bankId?: string | null, bankName?: string | null, currency: string, accountHolder?: string | null, sendMoney: boolean }> } };
+
+export type GetTagsQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+  category?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type GetTagsQuery = { __typename?: 'Query', tags: Array<{ __typename?: 'Tag', id: string, name: string, color: string, category?: string | null, isActive: boolean }> };
+
+export type CreateTagMutationVariables = Exact<{
+  input: CreateTagInput;
+}>;
+
+
+export type CreateTagMutation = { __typename?: 'Mutation', createTag: { __typename?: 'Tag', id: string, name: string, color: string, category?: string | null, isActive: boolean } };
+
+export type GetBanksQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type GetBanksQuery = { __typename?: 'Query', banks: Array<{ __typename?: 'Bank', id: string, name: string, bankIdentifierCode?: string | null, address?: string | null, phone?: string | null, email?: string | null }> };
+
+export type CreateBankMutationVariables = Exact<{
+  input: CreateBankInput;
+}>;
+
+
+export type CreateBankMutation = { __typename?: 'Mutation', createBank: { __typename?: 'Bank', id: string, name: string, bankIdentifierCode?: string | null, address?: string | null, phone?: string | null, email?: string | null } };
+
+export type GetPaymentTermsQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type GetPaymentTermsQuery = { __typename?: 'Query', paymentTerms: Array<{ __typename?: 'PaymentTerm', id: string, name: string, dueDays: number, isActive: boolean }> };
+
+export type EnsureDefaultPaymentTermsMutationVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+}>;
+
+
+export type EnsureDefaultPaymentTermsMutation = { __typename?: 'Mutation', ensureDefaultPaymentTerms: Array<{ __typename?: 'PaymentTerm', id: string, name: string, dueDays: number, isActive: boolean }> };
+
+export type CheckGstinStatusQueryVariables = Exact<{
+  gstin: Scalars['String']['input'];
+}>;
+
+
+export type CheckGstinStatusQuery = { __typename?: 'Query', checkGstinStatus: { __typename?: 'GstinCheckResult', gstin: string, valid: boolean, status: string, legalName?: string | null, tradeName?: string | null, gstTreatment?: string | null, stateCode?: string | null, message: string, source: string } };
+
+export type LookupPanQueryVariables = Exact<{
+  pan: Scalars['String']['input'];
+}>;
+
+
+export type LookupPanQuery = { __typename?: 'Query', lookupPan: { __typename?: 'PanLookupResult', pan: string, valid: boolean, holderType?: string | null, nameOnRecord?: string | null, message: string, source: string } };
+
+export type SuggestPanQueryVariables = Exact<{
+  partial: Scalars['String']['input'];
+}>;
+
+
+export type SuggestPanQuery = { __typename?: 'Query', suggestPan: Array<string> };
 
 export type GetProjectsQueryVariables = Exact<{
   organizationId: Scalars['ID']['input'];
@@ -9452,7 +10580,14 @@ export type GetPurchaseOrdersQueryVariables = Exact<{
 }>;
 
 
-export type GetPurchaseOrdersQuery = { __typename?: 'Query', purchaseorders: Array<{ __typename?: 'PurchaseOrder', id: string, seqNo?: string | null, vendorId?: string | null, vendorName?: string | null, projectId?: string | null, projectName?: string | null, deliveryDate?: string | null, subtotal?: number | null, taxAmount?: number | null, totalAmount?: number | null, status: string, orderDate?: string | null, notes?: string | null, organizationId: string, createdAt?: string | null, items?: Array<{ __typename?: 'POLineItem', itemDescription?: string | null, quantity?: number | null, unitPrice?: number | null, lineTotal?: number | null }> | null }> };
+export type GetPurchaseOrdersQuery = { __typename?: 'Query', purchaseorders: Array<{ __typename?: 'PurchaseOrder', id: string, seqNo?: string | null, vendorId?: string | null, vendorName?: string | null, gstTreatment?: string | null, vendorReference?: string | null, currency: string, exchangeRate: number, totalAmountBaseCurrency: number, agreement?: string | null, sourceDocument?: string | null, incoterms?: string | null, projectId?: string | null, projectName?: string | null, orderDate?: string | null, orderDeadline?: string | null, expectedArrival?: string | null, deliveryDate?: string | null, askConfirmation: boolean, lastPrintedAt?: string | null, version: number, deliverToLocationId?: string | null, paymentTerms?: string | null, deliveryTerms?: string | null, buyerId?: string | null, fiscalPosition?: string | null, confirmationDate?: string | null, untaxedAmount?: number | null, subtotal?: number | null, taxAmount?: number | null, totalAmount?: number | null, status: string, receiptStatus: string, billingStatus: string, notes?: string | null, organizationId: string, createdAt?: string | null, buyer?: { __typename?: 'User', id: string, firstName: string, lastName: string } | null, taxBreakdown: { __typename?: 'PoTaxBreakdown', cgst: number, sgst: number, igst: number }, items?: Array<{ __typename?: 'POLineItem', id: string, lineType: string, productId?: string | null, variantId?: string | null, productName?: string | null, hsnSac?: string | null, quantity?: number | null, uomId?: string | null, packagingId?: string | null, packagingQty: number, unitPrice?: number | null, taxIds: Array<string>, discountPercent: number, lineUntaxed: number, lineTax: number, lineTotal: number, qtyReceived: number, qtyBilled: number, note?: string | null, itemDescription?: string | null }> | null }> };
+
+export type GetPurchaseOrderQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetPurchaseOrderQuery = { __typename?: 'Query', purchaseorder?: { __typename?: 'PurchaseOrder', id: string, seqNo?: string | null, vendorId?: string | null, vendorName?: string | null, gstTreatment?: string | null, vendorReference?: string | null, currency: string, exchangeRate: number, totalAmountBaseCurrency: number, agreement?: string | null, sourceDocument?: string | null, incoterms?: string | null, projectId?: string | null, projectName?: string | null, orderDate?: string | null, orderDeadline?: string | null, expectedArrival?: string | null, askConfirmation: boolean, lastPrintedAt?: string | null, version: number, deliverToLocationId?: string | null, paymentTerms?: string | null, deliveryTerms?: string | null, buyerId?: string | null, fiscalPosition?: string | null, confirmationDate?: string | null, untaxedAmount?: number | null, taxAmount?: number | null, totalAmount?: number | null, status: string, receiptStatus: string, billingStatus: string, notes?: string | null, organizationId: string, taxBreakdown: { __typename?: 'PoTaxBreakdown', cgst: number, sgst: number, igst: number }, items?: Array<{ __typename?: 'POLineItem', id: string, lineType: string, productId?: string | null, variantId?: string | null, productName?: string | null, hsnSac?: string | null, quantity?: number | null, uomId?: string | null, packagingId?: string | null, packagingQty: number, unitPrice?: number | null, taxIds: Array<string>, discountPercent: number, lineUntaxed: number, lineTax: number, lineTotal: number, qtyReceived: number, qtyBilled: number, closedForReceiving: boolean, note?: string | null }> | null } | null };
 
 export type CreatePurchaseOrderMutationVariables = Exact<{
   input: CreatePurchaseOrderInput;
@@ -9476,6 +10611,20 @@ export type UpdatePurchaseOrderMutationVariables = Exact<{
 
 export type UpdatePurchaseOrderMutation = { __typename?: 'Mutation', updatePurchaseOrder: { __typename?: 'PurchaseOrder', id: string, seqNo?: string | null, status: string, totalAmount?: number | null } };
 
+export type MarkPurchaseOrderRfqSentMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type MarkPurchaseOrderRfqSentMutation = { __typename?: 'Mutation', markPurchaseOrderRfqSent: { __typename?: 'PurchaseOrder', id: string, status: string } };
+
+export type MarkPurchaseOrderPrintedMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type MarkPurchaseOrderPrintedMutation = { __typename?: 'Mutation', markPurchaseOrderPrinted: { __typename?: 'PurchaseOrder', id: string, lastPrintedAt?: string | null } };
+
 export type SubmitPurchaseOrderMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -9490,21 +10639,66 @@ export type ApprovePurchaseOrderMutationVariables = Exact<{
 
 export type ApprovePurchaseOrderMutation = { __typename?: 'Mutation', approvePurchaseOrder: { __typename?: 'PurchaseOrder', id: string, status: string } };
 
-export type ReceivePurchaseOrderMutationVariables = Exact<{
+export type ConfirmPurchaseOrderMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type ReceivePurchaseOrderMutation = { __typename?: 'Mutation', receivePurchaseOrder: { __typename?: 'PurchaseOrder', id: string, status: string } };
+export type ConfirmPurchaseOrderMutation = { __typename?: 'Mutation', confirmPurchaseOrder: { __typename?: 'PurchaseOrder', id: string, status: string, confirmationDate?: string | null } };
+
+export type SendPurchaseOrderByEmailMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SendPurchaseOrderByEmailMutation = { __typename?: 'Mutation', sendPurchaseOrderByEmail: { __typename?: 'PurchaseOrder', id: string, status: string } };
+
+export type ReceivePurchaseOrderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  lines?: InputMaybe<Array<PoReceiveLineInput> | PoReceiveLineInput>;
+}>;
+
+
+export type ReceivePurchaseOrderMutation = { __typename?: 'Mutation', receivePurchaseOrder: { __typename?: 'PurchaseOrder', id: string, status: string, receiptStatus: string, items?: Array<{ __typename?: 'POLineItem', id: string, qtyReceived: number }> | null } };
+
+export type CancelPurchaseOrderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type CancelPurchaseOrderMutation = { __typename?: 'Mutation', cancelPurchaseOrder: { __typename?: 'PurchaseOrder', id: string, status: string } };
+
+export type LockPurchaseOrderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type LockPurchaseOrderMutation = { __typename?: 'Mutation', lockPurchaseOrder: { __typename?: 'PurchaseOrder', id: string, status: string } };
 
 export type BillPurchaseOrderMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   billDate: Scalars['String']['input'];
   dueDate: Scalars['String']['input'];
+  lines?: InputMaybe<Array<PoBillLineInput> | PoBillLineInput>;
 }>;
 
 
-export type BillPurchaseOrderMutation = { __typename?: 'Mutation', billPurchaseOrder: { __typename?: 'VendorBill', id: string, billNumber: string, status: string, totalAmount: number } };
+export type BillPurchaseOrderMutation = { __typename?: 'Mutation', billPurchaseOrder: { __typename?: 'VendorBill', id: string, billNumber: string, status: string, totalAmount: number, notes?: string | null } };
+
+export type ClosePurchaseOrderLineMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  lineId: Scalars['ID']['input'];
+}>;
+
+
+export type ClosePurchaseOrderLineMutation = { __typename?: 'Mutation', closePurchaseOrderLine: { __typename?: 'PurchaseOrder', id: string, status: string, receiptStatus: string, items?: Array<{ __typename?: 'POLineItem', id: string, closedForReceiving: boolean, qtyReceived: number, quantity?: number | null }> | null } };
+
+export type DuplicatePurchaseOrderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DuplicatePurchaseOrderMutation = { __typename?: 'Mutation', duplicatePurchaseOrder: { __typename?: 'PurchaseOrder', id: string, seqNo?: string | null, status: string } };
 
 export type GetSalesOrdersQueryVariables = Exact<{
   organizationId: Scalars['ID']['input'];
@@ -10969,31 +12163,49 @@ export type SendQuotationMutationVariables = Exact<{
 
 export type SendQuotationMutation = { __typename?: 'Mutation', sendQuotation: { __typename?: 'SendQuotationResult', emailSent: boolean, quotation: { __typename?: 'Quotation', id: string, quotationNumber: string, status: string, sentAt?: string | null, sentBy?: string | null } } };
 
-export type GetProductsQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetProductsQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+  categoryId?: InputMaybe<Scalars['ID']['input']>;
+  canBePurchased?: InputMaybe<Scalars['Boolean']['input']>;
+  canBeSold?: InputMaybe<Scalars['Boolean']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+}>;
 
 
-export type GetProductsQuery = { __typename?: 'Query', products: Array<{ __typename?: 'Product', id: string, seqNo?: string | null, name: string, sku: string, description?: string | null, category?: string | null, brand?: string | null, unit: string, price: number, costPrice?: number | null, taxRate?: number | null, minStockLevel?: number | null, maxStockLevel?: number | null, reorderPoint?: number | null, barcode?: string | null, status: string, organizationId: string, createdAt: string }> };
+export type GetProductsQuery = { __typename?: 'Query', products: Array<{ __typename?: 'Product', id: string, seqNo?: string | null, name: string, internalReference?: string | null, barcode?: string | null, hsnSac?: string | null, canBeSold: boolean, canBePurchased: boolean, canBeExpensed: boolean, productType: string, trackInventory: boolean, salesPrice: number, costPrice: number, categoryId?: string | null, uomId?: string | null, status: string, organizationId: string, createdAt: string, category?: { __typename?: 'ProductCategory', id: string, fullPath: string } | null, uom?: { __typename?: 'Uom', id: string, name: string } | null, packagings: Array<{ __typename?: 'ProductPackagingLine', id: string, name: string, qtyPerPackage: number, barcode?: string | null }> }> };
 
 export type GetProductQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetProductQuery = { __typename?: 'Query', product?: { __typename?: 'Product', id: string, seqNo?: string | null, name: string, sku: string, description?: string | null, category?: string | null, brand?: string | null, unit: string, price: number, costPrice?: number | null, taxRate?: number | null, minStockLevel?: number | null, maxStockLevel?: number | null, reorderPoint?: number | null, barcode?: string | null, status: string, organizationId: string, createdAt: string } | null };
+export type GetProductQuery = { __typename?: 'Query', product?: { __typename?: 'Product', id: string, seqNo?: string | null, name: string, internalReference?: string | null, barcode?: string | null, hsnSac?: string | null, images: Array<string>, notes?: string | null, canBeSold: boolean, canBePurchased: boolean, canBeExpensed: boolean, productType: string, trackInventory: boolean, trackingMethod: string, salesPrice: number, costPrice: number, uomId?: string | null, purchaseUomId?: string | null, salesTaxIds: Array<string>, purchaseTaxIds: Array<string>, categoryId?: string | null, onHandQty: number, forecastedQty: number, purchasedQty: number, incomeAccount?: string | null, expenseAccount?: string | null, stockAccount?: string | null, status: string, organizationId: string, createdAt: string, updatedAt: string, attributeLines: Array<{ __typename?: 'ProductAttributeLine', attributeId: string, valueIds: Array<string> }>, variants: Array<{ __typename?: 'ProductVariant', id: string, displayName: string, sku?: string | null, barcode?: string | null, extraPrice: number, isActive: boolean, attributeValues: Array<{ __typename?: 'VariantAttributeValue', attributeId: string, attributeName: string, valueId: string, value: string }> }>, vendorPricelist: Array<{ __typename?: 'VendorPricelistLine', id: string, vendorId: string, leadTimeDays: number, minQty: number, price: number }>, packagings: Array<{ __typename?: 'ProductPackagingLine', id: string, name: string, qtyPerPackage: number, barcode?: string | null }>, reorderingRules: Array<{ __typename?: 'ProductReorderingRule', id: string, warehouseId?: string | null, minQty: number, maxQty: number }> } | null };
 
-export type GetProductsByOrganizationQueryVariables = Exact<{
-  organizationId: Scalars['ID']['input'];
+export type UpdateProductQuantityMutationVariables = Exact<{
+  productId: Scalars['ID']['input'];
+  quantity: Scalars['Float']['input'];
+  warehouseId?: InputMaybe<Scalars['ID']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type GetProductsByOrganizationQuery = { __typename?: 'Query', productsByOrganization: Array<{ __typename?: 'Product', id: string, name: string, sku: string, price: number, status: string }> };
+export type UpdateProductQuantityMutation = { __typename?: 'Mutation', updateProductQuantity: { __typename?: 'Product', id: string, onHandQty: number, forecastedQty: number } };
+
+export type ReplenishProductMutationVariables = Exact<{
+  productId: Scalars['ID']['input'];
+  quantity?: InputMaybe<Scalars['Float']['input']>;
+}>;
+
+
+export type ReplenishProductMutation = { __typename?: 'Mutation', replenishProduct: { __typename?: 'ReplenishResult', vendorId: string, quantity: number, unitPrice: number, purchaseOrder: { __typename?: 'PurchaseOrder', id: string, seqNo?: string | null, status: string } } };
 
 export type CreateProductMutationVariables = Exact<{
   input: CreateProductInput;
 }>;
 
 
-export type CreateProductMutation = { __typename?: 'Mutation', createProduct: { __typename?: 'Product', id: string, name: string, sku: string } };
+export type CreateProductMutation = { __typename?: 'Mutation', createProduct: { __typename?: 'Product', id: string, name: string, seqNo?: string | null, internalReference?: string | null } };
 
 export type UpdateProductMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -11001,7 +12213,7 @@ export type UpdateProductMutationVariables = Exact<{
 }>;
 
 
-export type UpdateProductMutation = { __typename?: 'Mutation', updateProduct: { __typename?: 'Product', id: string, name: string, sku: string } };
+export type UpdateProductMutation = { __typename?: 'Mutation', updateProduct: { __typename?: 'Product', id: string, name: string, internalReference?: string | null } };
 
 export type DeleteProductMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -11009,6 +12221,112 @@ export type DeleteProductMutationVariables = Exact<{
 
 
 export type DeleteProductMutation = { __typename?: 'Mutation', deleteProduct: boolean };
+
+export type GetProductCategoriesQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type GetProductCategoriesQuery = { __typename?: 'Query', productCategories: Array<{ __typename?: 'ProductCategory', id: string, name: string, parentId?: string | null, fullPath: string, isActive: boolean }> };
+
+export type CreateProductCategoryMutationVariables = Exact<{
+  input: CreateProductCategoryInput;
+}>;
+
+
+export type CreateProductCategoryMutation = { __typename?: 'Mutation', createProductCategory: { __typename?: 'ProductCategory', id: string, name: string, parentId?: string | null, fullPath: string, isActive: boolean } };
+
+export type UpdateProductCategoryMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateProductCategoryInput;
+}>;
+
+
+export type UpdateProductCategoryMutation = { __typename?: 'Mutation', updateProductCategory: { __typename?: 'ProductCategory', id: string, name: string, parentId?: string | null, fullPath: string, isActive: boolean } };
+
+export type DeleteProductCategoryMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteProductCategoryMutation = { __typename?: 'Mutation', deleteProductCategory: boolean };
+
+export type GetUomsQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  category?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type GetUomsQuery = { __typename?: 'Query', uoms: Array<{ __typename?: 'Uom', id: string, name: string, category: string, ratio: number, type: string, gstUqc?: string | null, isActive: boolean }> };
+
+export type CreateUomMutationVariables = Exact<{
+  input: CreateUomInput;
+}>;
+
+
+export type CreateUomMutation = { __typename?: 'Mutation', createUom: { __typename?: 'Uom', id: string, name: string, category: string, ratio: number, type: string, gstUqc?: string | null, isActive: boolean } };
+
+export type UpdateUomMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateUomInput;
+}>;
+
+
+export type UpdateUomMutation = { __typename?: 'Mutation', updateUom: { __typename?: 'Uom', id: string, name: string, category: string, ratio: number, type: string, gstUqc?: string | null, isActive: boolean } };
+
+export type DeleteUomMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteUomMutation = { __typename?: 'Mutation', deleteUom: boolean };
+
+export type EnsureDefaultUomsMutationVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+}>;
+
+
+export type EnsureDefaultUomsMutation = { __typename?: 'Mutation', ensureDefaultUoms: Array<{ __typename?: 'Uom', id: string, name: string, category: string, ratio: number, type: string, gstUqc?: string | null, isActive: boolean }> };
+
+export type GetAttributesQueryVariables = Exact<{
+  organizationId: Scalars['ID']['input'];
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type GetAttributesQuery = { __typename?: 'Query', attributes: Array<{ __typename?: 'Attribute', id: string, name: string, isActive: boolean, values: Array<{ __typename?: 'AttributeValue', id: string, value: string }> }> };
+
+export type CreateAttributeMutationVariables = Exact<{
+  input: CreateAttributeInput;
+}>;
+
+
+export type CreateAttributeMutation = { __typename?: 'Mutation', createAttribute: { __typename?: 'Attribute', id: string, name: string, isActive: boolean, values: Array<{ __typename?: 'AttributeValue', id: string, value: string }> } };
+
+export type UpdateAttributeMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateAttributeInput;
+}>;
+
+
+export type UpdateAttributeMutation = { __typename?: 'Mutation', updateAttribute: { __typename?: 'Attribute', id: string, name: string, isActive: boolean, values: Array<{ __typename?: 'AttributeValue', id: string, value: string }> } };
+
+export type AddAttributeValueMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  value: Scalars['String']['input'];
+}>;
+
+
+export type AddAttributeValueMutation = { __typename?: 'Mutation', addAttributeValue: { __typename?: 'Attribute', id: string, values: Array<{ __typename?: 'AttributeValue', id: string, value: string }> } };
+
+export type DeleteAttributeMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteAttributeMutation = { __typename?: 'Mutation', deleteAttribute: boolean };
 
 export type GetVendorCreditsQueryVariables = Exact<{
   organizationId: Scalars['ID']['input'];
@@ -13555,6 +14873,12 @@ export const GetAuditLogsDocument = gql`
     data {
       id
       userId
+      user {
+        id
+        firstName
+        lastName
+        email
+      }
       action
       entityType
       entityId
@@ -14572,11 +15896,20 @@ export const GetVendorsDocument = gql`
   ) {
     id
     seqNo
+    type
     name
-    contactPerson
     email
     phone
-    address
+    mobile
+    gstTreatment
+    gstin
+    pan
+    address {
+      street
+      city
+      zip
+      country
+    }
     organizationId
     orgApprovalStatus
     status
@@ -14608,18 +15941,71 @@ export const GetVendorDocument = gql`
   vendor(id: $id) {
     id
     seqNo
+    type
     name
-    contactPerson
-    email
+    address {
+      street
+      city
+      zip
+      country
+    }
+    gstTreatment
+    gstin
+    pan
     phone
-    address
-    city
-    state
-    country
-    zipCode
-    taxNumber
-    paymentTerms
-    notes
+    mobile
+    email
+    website
+    tags {
+      tagId
+      name
+      color
+      category
+    }
+    sales {
+      salesperson
+      paymentTerms
+      paymentMethod
+      priceList
+      deliveryMethod
+    }
+    purchase {
+      buyer
+      paymentTerms
+      paymentMethod
+      fiscalPosition
+    }
+    inventory {
+      customerLocation
+      vendorLocation
+      subcontractingLocation
+    }
+    misc {
+      reference
+      companyId
+      company
+      slaPolicies
+    }
+    bankAccounts {
+      id
+      accountNumber
+      bankId
+      bankName
+      currency
+      accountHolder
+      sendMoney
+    }
+    accounting {
+      accountReceivable
+      accountPayable
+      invoiceSendingPreference
+    }
+    warnings {
+      salesOrder
+      purchaseOrder
+      picking
+    }
+    internalNotes
     organizationId
     orgApprovalStatus
     status
@@ -14787,6 +16173,295 @@ export function useDeleteVendorMutation(baseOptions?: Apollo.MutationHookOptions
 export type DeleteVendorMutationHookResult = ReturnType<typeof useDeleteVendorMutation>;
 export type DeleteVendorMutationResult = Apollo.MutationResult<DeleteVendorMutation>;
 export type DeleteVendorMutationOptions = Apollo.BaseMutationOptions<DeleteVendorMutation, DeleteVendorMutationVariables>;
+export const AddVendorBankAccountDocument = gql`
+    mutation AddVendorBankAccount($vendorId: ID!, $input: VendorBankAccountInput!) {
+  addVendorBankAccount(vendorId: $vendorId, input: $input) {
+    id
+    bankAccounts {
+      id
+      accountNumber
+      bankId
+      bankName
+      currency
+      accountHolder
+      sendMoney
+    }
+  }
+}
+    `;
+export type AddVendorBankAccountMutationFn = Apollo.MutationFunction<AddVendorBankAccountMutation, AddVendorBankAccountMutationVariables>;
+export function useAddVendorBankAccountMutation(baseOptions?: Apollo.MutationHookOptions<AddVendorBankAccountMutation, AddVendorBankAccountMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AddVendorBankAccountMutation, AddVendorBankAccountMutationVariables>(AddVendorBankAccountDocument, options);
+      }
+export type AddVendorBankAccountMutationHookResult = ReturnType<typeof useAddVendorBankAccountMutation>;
+export type AddVendorBankAccountMutationResult = Apollo.MutationResult<AddVendorBankAccountMutation>;
+export type AddVendorBankAccountMutationOptions = Apollo.BaseMutationOptions<AddVendorBankAccountMutation, AddVendorBankAccountMutationVariables>;
+export const RemoveVendorBankAccountDocument = gql`
+    mutation RemoveVendorBankAccount($vendorId: ID!, $bankAccountId: ID!) {
+  removeVendorBankAccount(vendorId: $vendorId, bankAccountId: $bankAccountId) {
+    id
+    bankAccounts {
+      id
+      accountNumber
+      bankId
+      bankName
+      currency
+      accountHolder
+      sendMoney
+    }
+  }
+}
+    `;
+export type RemoveVendorBankAccountMutationFn = Apollo.MutationFunction<RemoveVendorBankAccountMutation, RemoveVendorBankAccountMutationVariables>;
+export function useRemoveVendorBankAccountMutation(baseOptions?: Apollo.MutationHookOptions<RemoveVendorBankAccountMutation, RemoveVendorBankAccountMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RemoveVendorBankAccountMutation, RemoveVendorBankAccountMutationVariables>(RemoveVendorBankAccountDocument, options);
+      }
+export type RemoveVendorBankAccountMutationHookResult = ReturnType<typeof useRemoveVendorBankAccountMutation>;
+export type RemoveVendorBankAccountMutationResult = Apollo.MutationResult<RemoveVendorBankAccountMutation>;
+export type RemoveVendorBankAccountMutationOptions = Apollo.BaseMutationOptions<RemoveVendorBankAccountMutation, RemoveVendorBankAccountMutationVariables>;
+export const GetTagsDocument = gql`
+    query GetTags($organizationId: ID!, $search: String, $category: String, $isActive: Boolean) {
+  tags(
+    organizationId: $organizationId
+    search: $search
+    category: $category
+    isActive: $isActive
+  ) {
+    id
+    name
+    color
+    category
+    isActive
+  }
+}
+    `;
+export function useGetTagsQuery(baseOptions: Apollo.QueryHookOptions<GetTagsQuery, GetTagsQueryVariables> & ({ variables: GetTagsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetTagsQuery, GetTagsQueryVariables>(GetTagsDocument, options);
+      }
+export function useGetTagsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetTagsQuery, GetTagsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetTagsQuery, GetTagsQueryVariables>(GetTagsDocument, options);
+        }
+// @ts-ignore
+export function useGetTagsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetTagsQuery, GetTagsQueryVariables>): Apollo.UseSuspenseQueryResult<GetTagsQuery, GetTagsQueryVariables>;
+export function useGetTagsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetTagsQuery, GetTagsQueryVariables>): Apollo.UseSuspenseQueryResult<GetTagsQuery | undefined, GetTagsQueryVariables>;
+export function useGetTagsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetTagsQuery, GetTagsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetTagsQuery, GetTagsQueryVariables>(GetTagsDocument, options);
+        }
+export type GetTagsQueryHookResult = ReturnType<typeof useGetTagsQuery>;
+export type GetTagsLazyQueryHookResult = ReturnType<typeof useGetTagsLazyQuery>;
+export type GetTagsSuspenseQueryHookResult = ReturnType<typeof useGetTagsSuspenseQuery>;
+export type GetTagsQueryResult = Apollo.QueryResult<GetTagsQuery, GetTagsQueryVariables>;
+export const CreateTagDocument = gql`
+    mutation CreateTag($input: CreateTagInput!) {
+  createTag(input: $input) {
+    id
+    name
+    color
+    category
+    isActive
+  }
+}
+    `;
+export type CreateTagMutationFn = Apollo.MutationFunction<CreateTagMutation, CreateTagMutationVariables>;
+export function useCreateTagMutation(baseOptions?: Apollo.MutationHookOptions<CreateTagMutation, CreateTagMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateTagMutation, CreateTagMutationVariables>(CreateTagDocument, options);
+      }
+export type CreateTagMutationHookResult = ReturnType<typeof useCreateTagMutation>;
+export type CreateTagMutationResult = Apollo.MutationResult<CreateTagMutation>;
+export type CreateTagMutationOptions = Apollo.BaseMutationOptions<CreateTagMutation, CreateTagMutationVariables>;
+export const GetBanksDocument = gql`
+    query GetBanks($organizationId: ID!, $search: String) {
+  banks(organizationId: $organizationId, search: $search) {
+    id
+    name
+    bankIdentifierCode
+    address
+    phone
+    email
+  }
+}
+    `;
+export function useGetBanksQuery(baseOptions: Apollo.QueryHookOptions<GetBanksQuery, GetBanksQueryVariables> & ({ variables: GetBanksQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetBanksQuery, GetBanksQueryVariables>(GetBanksDocument, options);
+      }
+export function useGetBanksLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetBanksQuery, GetBanksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetBanksQuery, GetBanksQueryVariables>(GetBanksDocument, options);
+        }
+// @ts-ignore
+export function useGetBanksSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetBanksQuery, GetBanksQueryVariables>): Apollo.UseSuspenseQueryResult<GetBanksQuery, GetBanksQueryVariables>;
+export function useGetBanksSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetBanksQuery, GetBanksQueryVariables>): Apollo.UseSuspenseQueryResult<GetBanksQuery | undefined, GetBanksQueryVariables>;
+export function useGetBanksSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetBanksQuery, GetBanksQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetBanksQuery, GetBanksQueryVariables>(GetBanksDocument, options);
+        }
+export type GetBanksQueryHookResult = ReturnType<typeof useGetBanksQuery>;
+export type GetBanksLazyQueryHookResult = ReturnType<typeof useGetBanksLazyQuery>;
+export type GetBanksSuspenseQueryHookResult = ReturnType<typeof useGetBanksSuspenseQuery>;
+export type GetBanksQueryResult = Apollo.QueryResult<GetBanksQuery, GetBanksQueryVariables>;
+export const CreateBankDocument = gql`
+    mutation CreateBank($input: CreateBankInput!) {
+  createBank(input: $input) {
+    id
+    name
+    bankIdentifierCode
+    address
+    phone
+    email
+  }
+}
+    `;
+export type CreateBankMutationFn = Apollo.MutationFunction<CreateBankMutation, CreateBankMutationVariables>;
+export function useCreateBankMutation(baseOptions?: Apollo.MutationHookOptions<CreateBankMutation, CreateBankMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateBankMutation, CreateBankMutationVariables>(CreateBankDocument, options);
+      }
+export type CreateBankMutationHookResult = ReturnType<typeof useCreateBankMutation>;
+export type CreateBankMutationResult = Apollo.MutationResult<CreateBankMutation>;
+export type CreateBankMutationOptions = Apollo.BaseMutationOptions<CreateBankMutation, CreateBankMutationVariables>;
+export const GetPaymentTermsDocument = gql`
+    query GetPaymentTerms($organizationId: ID!, $isActive: Boolean) {
+  paymentTerms(organizationId: $organizationId, isActive: $isActive) {
+    id
+    name
+    dueDays
+    isActive
+  }
+}
+    `;
+export function useGetPaymentTermsQuery(baseOptions: Apollo.QueryHookOptions<GetPaymentTermsQuery, GetPaymentTermsQueryVariables> & ({ variables: GetPaymentTermsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetPaymentTermsQuery, GetPaymentTermsQueryVariables>(GetPaymentTermsDocument, options);
+      }
+export function useGetPaymentTermsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetPaymentTermsQuery, GetPaymentTermsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetPaymentTermsQuery, GetPaymentTermsQueryVariables>(GetPaymentTermsDocument, options);
+        }
+// @ts-ignore
+export function useGetPaymentTermsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetPaymentTermsQuery, GetPaymentTermsQueryVariables>): Apollo.UseSuspenseQueryResult<GetPaymentTermsQuery, GetPaymentTermsQueryVariables>;
+export function useGetPaymentTermsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetPaymentTermsQuery, GetPaymentTermsQueryVariables>): Apollo.UseSuspenseQueryResult<GetPaymentTermsQuery | undefined, GetPaymentTermsQueryVariables>;
+export function useGetPaymentTermsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetPaymentTermsQuery, GetPaymentTermsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetPaymentTermsQuery, GetPaymentTermsQueryVariables>(GetPaymentTermsDocument, options);
+        }
+export type GetPaymentTermsQueryHookResult = ReturnType<typeof useGetPaymentTermsQuery>;
+export type GetPaymentTermsLazyQueryHookResult = ReturnType<typeof useGetPaymentTermsLazyQuery>;
+export type GetPaymentTermsSuspenseQueryHookResult = ReturnType<typeof useGetPaymentTermsSuspenseQuery>;
+export type GetPaymentTermsQueryResult = Apollo.QueryResult<GetPaymentTermsQuery, GetPaymentTermsQueryVariables>;
+export const EnsureDefaultPaymentTermsDocument = gql`
+    mutation EnsureDefaultPaymentTerms($organizationId: ID!) {
+  ensureDefaultPaymentTerms(organizationId: $organizationId) {
+    id
+    name
+    dueDays
+    isActive
+  }
+}
+    `;
+export type EnsureDefaultPaymentTermsMutationFn = Apollo.MutationFunction<EnsureDefaultPaymentTermsMutation, EnsureDefaultPaymentTermsMutationVariables>;
+export function useEnsureDefaultPaymentTermsMutation(baseOptions?: Apollo.MutationHookOptions<EnsureDefaultPaymentTermsMutation, EnsureDefaultPaymentTermsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<EnsureDefaultPaymentTermsMutation, EnsureDefaultPaymentTermsMutationVariables>(EnsureDefaultPaymentTermsDocument, options);
+      }
+export type EnsureDefaultPaymentTermsMutationHookResult = ReturnType<typeof useEnsureDefaultPaymentTermsMutation>;
+export type EnsureDefaultPaymentTermsMutationResult = Apollo.MutationResult<EnsureDefaultPaymentTermsMutation>;
+export type EnsureDefaultPaymentTermsMutationOptions = Apollo.BaseMutationOptions<EnsureDefaultPaymentTermsMutation, EnsureDefaultPaymentTermsMutationVariables>;
+export const CheckGstinStatusDocument = gql`
+    query CheckGstinStatus($gstin: String!) {
+  checkGstinStatus(gstin: $gstin) {
+    gstin
+    valid
+    status
+    legalName
+    tradeName
+    gstTreatment
+    stateCode
+    message
+    source
+  }
+}
+    `;
+export function useCheckGstinStatusQuery(baseOptions: Apollo.QueryHookOptions<CheckGstinStatusQuery, CheckGstinStatusQueryVariables> & ({ variables: CheckGstinStatusQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<CheckGstinStatusQuery, CheckGstinStatusQueryVariables>(CheckGstinStatusDocument, options);
+      }
+export function useCheckGstinStatusLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<CheckGstinStatusQuery, CheckGstinStatusQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<CheckGstinStatusQuery, CheckGstinStatusQueryVariables>(CheckGstinStatusDocument, options);
+        }
+// @ts-ignore
+export function useCheckGstinStatusSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<CheckGstinStatusQuery, CheckGstinStatusQueryVariables>): Apollo.UseSuspenseQueryResult<CheckGstinStatusQuery, CheckGstinStatusQueryVariables>;
+export function useCheckGstinStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<CheckGstinStatusQuery, CheckGstinStatusQueryVariables>): Apollo.UseSuspenseQueryResult<CheckGstinStatusQuery | undefined, CheckGstinStatusQueryVariables>;
+export function useCheckGstinStatusSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<CheckGstinStatusQuery, CheckGstinStatusQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<CheckGstinStatusQuery, CheckGstinStatusQueryVariables>(CheckGstinStatusDocument, options);
+        }
+export type CheckGstinStatusQueryHookResult = ReturnType<typeof useCheckGstinStatusQuery>;
+export type CheckGstinStatusLazyQueryHookResult = ReturnType<typeof useCheckGstinStatusLazyQuery>;
+export type CheckGstinStatusSuspenseQueryHookResult = ReturnType<typeof useCheckGstinStatusSuspenseQuery>;
+export type CheckGstinStatusQueryResult = Apollo.QueryResult<CheckGstinStatusQuery, CheckGstinStatusQueryVariables>;
+export const LookupPanDocument = gql`
+    query LookupPan($pan: String!) {
+  lookupPan(pan: $pan) {
+    pan
+    valid
+    holderType
+    nameOnRecord
+    message
+    source
+  }
+}
+    `;
+export function useLookupPanQuery(baseOptions: Apollo.QueryHookOptions<LookupPanQuery, LookupPanQueryVariables> & ({ variables: LookupPanQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<LookupPanQuery, LookupPanQueryVariables>(LookupPanDocument, options);
+      }
+export function useLookupPanLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<LookupPanQuery, LookupPanQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<LookupPanQuery, LookupPanQueryVariables>(LookupPanDocument, options);
+        }
+// @ts-ignore
+export function useLookupPanSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<LookupPanQuery, LookupPanQueryVariables>): Apollo.UseSuspenseQueryResult<LookupPanQuery, LookupPanQueryVariables>;
+export function useLookupPanSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<LookupPanQuery, LookupPanQueryVariables>): Apollo.UseSuspenseQueryResult<LookupPanQuery | undefined, LookupPanQueryVariables>;
+export function useLookupPanSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<LookupPanQuery, LookupPanQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<LookupPanQuery, LookupPanQueryVariables>(LookupPanDocument, options);
+        }
+export type LookupPanQueryHookResult = ReturnType<typeof useLookupPanQuery>;
+export type LookupPanLazyQueryHookResult = ReturnType<typeof useLookupPanLazyQuery>;
+export type LookupPanSuspenseQueryHookResult = ReturnType<typeof useLookupPanSuspenseQuery>;
+export type LookupPanQueryResult = Apollo.QueryResult<LookupPanQuery, LookupPanQueryVariables>;
+export const SuggestPanDocument = gql`
+    query SuggestPan($partial: String!) {
+  suggestPan(partial: $partial)
+}
+    `;
+export function useSuggestPanQuery(baseOptions: Apollo.QueryHookOptions<SuggestPanQuery, SuggestPanQueryVariables> & ({ variables: SuggestPanQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SuggestPanQuery, SuggestPanQueryVariables>(SuggestPanDocument, options);
+      }
+export function useSuggestPanLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SuggestPanQuery, SuggestPanQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SuggestPanQuery, SuggestPanQueryVariables>(SuggestPanDocument, options);
+        }
+// @ts-ignore
+export function useSuggestPanSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<SuggestPanQuery, SuggestPanQueryVariables>): Apollo.UseSuspenseQueryResult<SuggestPanQuery, SuggestPanQueryVariables>;
+export function useSuggestPanSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<SuggestPanQuery, SuggestPanQueryVariables>): Apollo.UseSuspenseQueryResult<SuggestPanQuery | undefined, SuggestPanQueryVariables>;
+export function useSuggestPanSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<SuggestPanQuery, SuggestPanQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<SuggestPanQuery, SuggestPanQueryVariables>(SuggestPanDocument, options);
+        }
+export type SuggestPanQueryHookResult = ReturnType<typeof useSuggestPanQuery>;
+export type SuggestPanLazyQueryHookResult = ReturnType<typeof useSuggestPanLazyQuery>;
+export type SuggestPanSuspenseQueryHookResult = ReturnType<typeof useSuggestPanSuspenseQuery>;
+export type SuggestPanQueryResult = Apollo.QueryResult<SuggestPanQuery, SuggestPanQueryVariables>;
 export const GetProjectsDocument = gql`
     query GetProjects($organizationId: ID!, $page: Int, $limit: Int, $search: String) {
   projects(
@@ -14943,19 +16618,67 @@ export const GetPurchaseOrdersDocument = gql`
     seqNo
     vendorId
     vendorName
+    gstTreatment
+    vendorReference
+    currency
+    exchangeRate
+    totalAmountBaseCurrency
+    agreement
+    sourceDocument
+    incoterms
     projectId
     projectName
+    orderDate
+    orderDeadline
+    expectedArrival
     deliveryDate
+    askConfirmation
+    lastPrintedAt
+    version
+    deliverToLocationId
+    paymentTerms
+    deliveryTerms
+    buyerId
+    buyer {
+      id
+      firstName
+      lastName
+    }
+    fiscalPosition
+    confirmationDate
+    untaxedAmount
     subtotal
     taxAmount
+    taxBreakdown {
+      cgst
+      sgst
+      igst
+    }
     totalAmount
     status
-    orderDate
+    receiptStatus
+    billingStatus
     items {
-      itemDescription
+      id
+      lineType
+      productId
+      variantId
+      productName
+      hsnSac
       quantity
+      uomId
+      packagingId
+      packagingQty
       unitPrice
+      taxIds
+      discountPercent
+      lineUntaxed
+      lineTax
       lineTotal
+      qtyReceived
+      qtyBilled
+      note
+      itemDescription
     }
     notes
     organizationId
@@ -14982,6 +16705,92 @@ export type GetPurchaseOrdersQueryHookResult = ReturnType<typeof useGetPurchaseO
 export type GetPurchaseOrdersLazyQueryHookResult = ReturnType<typeof useGetPurchaseOrdersLazyQuery>;
 export type GetPurchaseOrdersSuspenseQueryHookResult = ReturnType<typeof useGetPurchaseOrdersSuspenseQuery>;
 export type GetPurchaseOrdersQueryResult = Apollo.QueryResult<GetPurchaseOrdersQuery, GetPurchaseOrdersQueryVariables>;
+export const GetPurchaseOrderDocument = gql`
+    query GetPurchaseOrder($id: ID!) {
+  purchaseorder(id: $id) {
+    id
+    seqNo
+    vendorId
+    vendorName
+    gstTreatment
+    vendorReference
+    currency
+    exchangeRate
+    totalAmountBaseCurrency
+    agreement
+    sourceDocument
+    incoterms
+    projectId
+    projectName
+    orderDate
+    orderDeadline
+    expectedArrival
+    askConfirmation
+    lastPrintedAt
+    version
+    deliverToLocationId
+    paymentTerms
+    deliveryTerms
+    buyerId
+    fiscalPosition
+    confirmationDate
+    untaxedAmount
+    taxAmount
+    taxBreakdown {
+      cgst
+      sgst
+      igst
+    }
+    totalAmount
+    status
+    receiptStatus
+    billingStatus
+    items {
+      id
+      lineType
+      productId
+      variantId
+      productName
+      hsnSac
+      quantity
+      uomId
+      packagingId
+      packagingQty
+      unitPrice
+      taxIds
+      discountPercent
+      lineUntaxed
+      lineTax
+      lineTotal
+      qtyReceived
+      qtyBilled
+      closedForReceiving
+      note
+    }
+    notes
+    organizationId
+  }
+}
+    `;
+export function useGetPurchaseOrderQuery(baseOptions: Apollo.QueryHookOptions<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables> & ({ variables: GetPurchaseOrderQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables>(GetPurchaseOrderDocument, options);
+      }
+export function useGetPurchaseOrderLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables>(GetPurchaseOrderDocument, options);
+        }
+// @ts-ignore
+export function useGetPurchaseOrderSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables>): Apollo.UseSuspenseQueryResult<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables>;
+export function useGetPurchaseOrderSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables>): Apollo.UseSuspenseQueryResult<GetPurchaseOrderQuery | undefined, GetPurchaseOrderQueryVariables>;
+export function useGetPurchaseOrderSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables>(GetPurchaseOrderDocument, options);
+        }
+export type GetPurchaseOrderQueryHookResult = ReturnType<typeof useGetPurchaseOrderQuery>;
+export type GetPurchaseOrderLazyQueryHookResult = ReturnType<typeof useGetPurchaseOrderLazyQuery>;
+export type GetPurchaseOrderSuspenseQueryHookResult = ReturnType<typeof useGetPurchaseOrderSuspenseQuery>;
+export type GetPurchaseOrderQueryResult = Apollo.QueryResult<GetPurchaseOrderQuery, GetPurchaseOrderQueryVariables>;
 export const CreatePurchaseOrderDocument = gql`
     mutation CreatePurchaseOrder($input: CreatePurchaseOrderInput!) {
   createPurchaseOrder(input: $input) {
@@ -15036,6 +16845,38 @@ export function useUpdatePurchaseOrderMutation(baseOptions?: Apollo.MutationHook
 export type UpdatePurchaseOrderMutationHookResult = ReturnType<typeof useUpdatePurchaseOrderMutation>;
 export type UpdatePurchaseOrderMutationResult = Apollo.MutationResult<UpdatePurchaseOrderMutation>;
 export type UpdatePurchaseOrderMutationOptions = Apollo.BaseMutationOptions<UpdatePurchaseOrderMutation, UpdatePurchaseOrderMutationVariables>;
+export const MarkPurchaseOrderRfqSentDocument = gql`
+    mutation MarkPurchaseOrderRfqSent($id: ID!) {
+  markPurchaseOrderRfqSent(id: $id) {
+    id
+    status
+  }
+}
+    `;
+export type MarkPurchaseOrderRfqSentMutationFn = Apollo.MutationFunction<MarkPurchaseOrderRfqSentMutation, MarkPurchaseOrderRfqSentMutationVariables>;
+export function useMarkPurchaseOrderRfqSentMutation(baseOptions?: Apollo.MutationHookOptions<MarkPurchaseOrderRfqSentMutation, MarkPurchaseOrderRfqSentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<MarkPurchaseOrderRfqSentMutation, MarkPurchaseOrderRfqSentMutationVariables>(MarkPurchaseOrderRfqSentDocument, options);
+      }
+export type MarkPurchaseOrderRfqSentMutationHookResult = ReturnType<typeof useMarkPurchaseOrderRfqSentMutation>;
+export type MarkPurchaseOrderRfqSentMutationResult = Apollo.MutationResult<MarkPurchaseOrderRfqSentMutation>;
+export type MarkPurchaseOrderRfqSentMutationOptions = Apollo.BaseMutationOptions<MarkPurchaseOrderRfqSentMutation, MarkPurchaseOrderRfqSentMutationVariables>;
+export const MarkPurchaseOrderPrintedDocument = gql`
+    mutation MarkPurchaseOrderPrinted($id: ID!) {
+  markPurchaseOrderPrinted(id: $id) {
+    id
+    lastPrintedAt
+  }
+}
+    `;
+export type MarkPurchaseOrderPrintedMutationFn = Apollo.MutationFunction<MarkPurchaseOrderPrintedMutation, MarkPurchaseOrderPrintedMutationVariables>;
+export function useMarkPurchaseOrderPrintedMutation(baseOptions?: Apollo.MutationHookOptions<MarkPurchaseOrderPrintedMutation, MarkPurchaseOrderPrintedMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<MarkPurchaseOrderPrintedMutation, MarkPurchaseOrderPrintedMutationVariables>(MarkPurchaseOrderPrintedDocument, options);
+      }
+export type MarkPurchaseOrderPrintedMutationHookResult = ReturnType<typeof useMarkPurchaseOrderPrintedMutation>;
+export type MarkPurchaseOrderPrintedMutationResult = Apollo.MutationResult<MarkPurchaseOrderPrintedMutation>;
+export type MarkPurchaseOrderPrintedMutationOptions = Apollo.BaseMutationOptions<MarkPurchaseOrderPrintedMutation, MarkPurchaseOrderPrintedMutationVariables>;
 export const SubmitPurchaseOrderDocument = gql`
     mutation SubmitPurchaseOrder($id: ID!) {
   submitPurchaseOrder(id: $id) {
@@ -15068,11 +16909,49 @@ export function useApprovePurchaseOrderMutation(baseOptions?: Apollo.MutationHoo
 export type ApprovePurchaseOrderMutationHookResult = ReturnType<typeof useApprovePurchaseOrderMutation>;
 export type ApprovePurchaseOrderMutationResult = Apollo.MutationResult<ApprovePurchaseOrderMutation>;
 export type ApprovePurchaseOrderMutationOptions = Apollo.BaseMutationOptions<ApprovePurchaseOrderMutation, ApprovePurchaseOrderMutationVariables>;
-export const ReceivePurchaseOrderDocument = gql`
-    mutation ReceivePurchaseOrder($id: ID!) {
-  receivePurchaseOrder(id: $id) {
+export const ConfirmPurchaseOrderDocument = gql`
+    mutation ConfirmPurchaseOrder($id: ID!) {
+  confirmPurchaseOrder(id: $id) {
     id
     status
+    confirmationDate
+  }
+}
+    `;
+export type ConfirmPurchaseOrderMutationFn = Apollo.MutationFunction<ConfirmPurchaseOrderMutation, ConfirmPurchaseOrderMutationVariables>;
+export function useConfirmPurchaseOrderMutation(baseOptions?: Apollo.MutationHookOptions<ConfirmPurchaseOrderMutation, ConfirmPurchaseOrderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ConfirmPurchaseOrderMutation, ConfirmPurchaseOrderMutationVariables>(ConfirmPurchaseOrderDocument, options);
+      }
+export type ConfirmPurchaseOrderMutationHookResult = ReturnType<typeof useConfirmPurchaseOrderMutation>;
+export type ConfirmPurchaseOrderMutationResult = Apollo.MutationResult<ConfirmPurchaseOrderMutation>;
+export type ConfirmPurchaseOrderMutationOptions = Apollo.BaseMutationOptions<ConfirmPurchaseOrderMutation, ConfirmPurchaseOrderMutationVariables>;
+export const SendPurchaseOrderByEmailDocument = gql`
+    mutation SendPurchaseOrderByEmail($id: ID!) {
+  sendPurchaseOrderByEmail(id: $id) {
+    id
+    status
+  }
+}
+    `;
+export type SendPurchaseOrderByEmailMutationFn = Apollo.MutationFunction<SendPurchaseOrderByEmailMutation, SendPurchaseOrderByEmailMutationVariables>;
+export function useSendPurchaseOrderByEmailMutation(baseOptions?: Apollo.MutationHookOptions<SendPurchaseOrderByEmailMutation, SendPurchaseOrderByEmailMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SendPurchaseOrderByEmailMutation, SendPurchaseOrderByEmailMutationVariables>(SendPurchaseOrderByEmailDocument, options);
+      }
+export type SendPurchaseOrderByEmailMutationHookResult = ReturnType<typeof useSendPurchaseOrderByEmailMutation>;
+export type SendPurchaseOrderByEmailMutationResult = Apollo.MutationResult<SendPurchaseOrderByEmailMutation>;
+export type SendPurchaseOrderByEmailMutationOptions = Apollo.BaseMutationOptions<SendPurchaseOrderByEmailMutation, SendPurchaseOrderByEmailMutationVariables>;
+export const ReceivePurchaseOrderDocument = gql`
+    mutation ReceivePurchaseOrder($id: ID!, $lines: [PoReceiveLineInput!]) {
+  receivePurchaseOrder(id: $id, lines: $lines) {
+    id
+    status
+    receiptStatus
+    items {
+      id
+      qtyReceived
+    }
   }
 }
     `;
@@ -15084,13 +16963,51 @@ export function useReceivePurchaseOrderMutation(baseOptions?: Apollo.MutationHoo
 export type ReceivePurchaseOrderMutationHookResult = ReturnType<typeof useReceivePurchaseOrderMutation>;
 export type ReceivePurchaseOrderMutationResult = Apollo.MutationResult<ReceivePurchaseOrderMutation>;
 export type ReceivePurchaseOrderMutationOptions = Apollo.BaseMutationOptions<ReceivePurchaseOrderMutation, ReceivePurchaseOrderMutationVariables>;
+export const CancelPurchaseOrderDocument = gql`
+    mutation CancelPurchaseOrder($id: ID!) {
+  cancelPurchaseOrder(id: $id) {
+    id
+    status
+  }
+}
+    `;
+export type CancelPurchaseOrderMutationFn = Apollo.MutationFunction<CancelPurchaseOrderMutation, CancelPurchaseOrderMutationVariables>;
+export function useCancelPurchaseOrderMutation(baseOptions?: Apollo.MutationHookOptions<CancelPurchaseOrderMutation, CancelPurchaseOrderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CancelPurchaseOrderMutation, CancelPurchaseOrderMutationVariables>(CancelPurchaseOrderDocument, options);
+      }
+export type CancelPurchaseOrderMutationHookResult = ReturnType<typeof useCancelPurchaseOrderMutation>;
+export type CancelPurchaseOrderMutationResult = Apollo.MutationResult<CancelPurchaseOrderMutation>;
+export type CancelPurchaseOrderMutationOptions = Apollo.BaseMutationOptions<CancelPurchaseOrderMutation, CancelPurchaseOrderMutationVariables>;
+export const LockPurchaseOrderDocument = gql`
+    mutation LockPurchaseOrder($id: ID!) {
+  lockPurchaseOrder(id: $id) {
+    id
+    status
+  }
+}
+    `;
+export type LockPurchaseOrderMutationFn = Apollo.MutationFunction<LockPurchaseOrderMutation, LockPurchaseOrderMutationVariables>;
+export function useLockPurchaseOrderMutation(baseOptions?: Apollo.MutationHookOptions<LockPurchaseOrderMutation, LockPurchaseOrderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<LockPurchaseOrderMutation, LockPurchaseOrderMutationVariables>(LockPurchaseOrderDocument, options);
+      }
+export type LockPurchaseOrderMutationHookResult = ReturnType<typeof useLockPurchaseOrderMutation>;
+export type LockPurchaseOrderMutationResult = Apollo.MutationResult<LockPurchaseOrderMutation>;
+export type LockPurchaseOrderMutationOptions = Apollo.BaseMutationOptions<LockPurchaseOrderMutation, LockPurchaseOrderMutationVariables>;
 export const BillPurchaseOrderDocument = gql`
-    mutation BillPurchaseOrder($id: ID!, $billDate: String!, $dueDate: String!) {
-  billPurchaseOrder(id: $id, billDate: $billDate, dueDate: $dueDate) {
+    mutation BillPurchaseOrder($id: ID!, $billDate: String!, $dueDate: String!, $lines: [PoBillLineInput!]) {
+  billPurchaseOrder(
+    id: $id
+    billDate: $billDate
+    dueDate: $dueDate
+    lines: $lines
+  ) {
     id
     billNumber
     status
     totalAmount
+    notes
   }
 }
     `;
@@ -15102,6 +17019,46 @@ export function useBillPurchaseOrderMutation(baseOptions?: Apollo.MutationHookOp
 export type BillPurchaseOrderMutationHookResult = ReturnType<typeof useBillPurchaseOrderMutation>;
 export type BillPurchaseOrderMutationResult = Apollo.MutationResult<BillPurchaseOrderMutation>;
 export type BillPurchaseOrderMutationOptions = Apollo.BaseMutationOptions<BillPurchaseOrderMutation, BillPurchaseOrderMutationVariables>;
+export const ClosePurchaseOrderLineDocument = gql`
+    mutation ClosePurchaseOrderLine($id: ID!, $lineId: ID!) {
+  closePurchaseOrderLine(id: $id, lineId: $lineId) {
+    id
+    status
+    receiptStatus
+    items {
+      id
+      closedForReceiving
+      qtyReceived
+      quantity
+    }
+  }
+}
+    `;
+export type ClosePurchaseOrderLineMutationFn = Apollo.MutationFunction<ClosePurchaseOrderLineMutation, ClosePurchaseOrderLineMutationVariables>;
+export function useClosePurchaseOrderLineMutation(baseOptions?: Apollo.MutationHookOptions<ClosePurchaseOrderLineMutation, ClosePurchaseOrderLineMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ClosePurchaseOrderLineMutation, ClosePurchaseOrderLineMutationVariables>(ClosePurchaseOrderLineDocument, options);
+      }
+export type ClosePurchaseOrderLineMutationHookResult = ReturnType<typeof useClosePurchaseOrderLineMutation>;
+export type ClosePurchaseOrderLineMutationResult = Apollo.MutationResult<ClosePurchaseOrderLineMutation>;
+export type ClosePurchaseOrderLineMutationOptions = Apollo.BaseMutationOptions<ClosePurchaseOrderLineMutation, ClosePurchaseOrderLineMutationVariables>;
+export const DuplicatePurchaseOrderDocument = gql`
+    mutation DuplicatePurchaseOrder($id: ID!) {
+  duplicatePurchaseOrder(id: $id) {
+    id
+    seqNo
+    status
+  }
+}
+    `;
+export type DuplicatePurchaseOrderMutationFn = Apollo.MutationFunction<DuplicatePurchaseOrderMutation, DuplicatePurchaseOrderMutationVariables>;
+export function useDuplicatePurchaseOrderMutation(baseOptions?: Apollo.MutationHookOptions<DuplicatePurchaseOrderMutation, DuplicatePurchaseOrderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DuplicatePurchaseOrderMutation, DuplicatePurchaseOrderMutationVariables>(DuplicatePurchaseOrderDocument, options);
+      }
+export type DuplicatePurchaseOrderMutationHookResult = ReturnType<typeof useDuplicatePurchaseOrderMutation>;
+export type DuplicatePurchaseOrderMutationResult = Apollo.MutationResult<DuplicatePurchaseOrderMutation>;
+export type DuplicatePurchaseOrderMutationOptions = Apollo.BaseMutationOptions<DuplicatePurchaseOrderMutation, DuplicatePurchaseOrderMutationVariables>;
 export const GetSalesOrdersDocument = gql`
     query GetSalesOrders($organizationId: ID!, $page: Int, $limit: Int, $status: String, $cashSale: Boolean) {
   salesorders(
@@ -19958,30 +21915,51 @@ export type SendQuotationMutationHookResult = ReturnType<typeof useSendQuotation
 export type SendQuotationMutationResult = Apollo.MutationResult<SendQuotationMutation>;
 export type SendQuotationMutationOptions = Apollo.BaseMutationOptions<SendQuotationMutation, SendQuotationMutationVariables>;
 export const GetProductsDocument = gql`
-    query GetProducts {
-  products {
+    query GetProducts($organizationId: ID!, $search: String, $categoryId: ID, $canBePurchased: Boolean, $canBeSold: Boolean, $status: String) {
+  products(
+    organizationId: $organizationId
+    search: $search
+    categoryId: $categoryId
+    canBePurchased: $canBePurchased
+    canBeSold: $canBeSold
+    status: $status
+  ) {
     id
     seqNo
     name
-    sku
-    description
-    category
-    brand
-    unit
-    price
-    costPrice
-    taxRate
-    minStockLevel
-    maxStockLevel
-    reorderPoint
+    internalReference
     barcode
+    hsnSac
+    canBeSold
+    canBePurchased
+    canBeExpensed
+    productType
+    trackInventory
+    salesPrice
+    costPrice
+    categoryId
+    category {
+      id
+      fullPath
+    }
+    uomId
+    uom {
+      id
+      name
+    }
+    packagings {
+      id
+      name
+      qtyPerPackage
+      barcode
+    }
     status
     organizationId
     createdAt
   }
 }
     `;
-export function useGetProductsQuery(baseOptions?: Apollo.QueryHookOptions<GetProductsQuery, GetProductsQueryVariables>) {
+export function useGetProductsQuery(baseOptions: Apollo.QueryHookOptions<GetProductsQuery, GetProductsQueryVariables> & ({ variables: GetProductsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
         const options = {...defaultOptions, ...baseOptions}
         return Apollo.useQuery<GetProductsQuery, GetProductsQueryVariables>(GetProductsDocument, options);
       }
@@ -20006,21 +21984,71 @@ export const GetProductDocument = gql`
     id
     seqNo
     name
-    sku
-    description
-    category
-    brand
-    unit
-    price
-    costPrice
-    taxRate
-    minStockLevel
-    maxStockLevel
-    reorderPoint
+    internalReference
     barcode
+    hsnSac
+    images
+    notes
+    canBeSold
+    canBePurchased
+    canBeExpensed
+    productType
+    trackInventory
+    trackingMethod
+    salesPrice
+    costPrice
+    uomId
+    purchaseUomId
+    salesTaxIds
+    purchaseTaxIds
+    categoryId
+    attributeLines {
+      attributeId
+      valueIds
+    }
+    variants {
+      id
+      displayName
+      attributeValues {
+        attributeId
+        attributeName
+        valueId
+        value
+      }
+      sku
+      barcode
+      extraPrice
+      isActive
+    }
+    vendorPricelist {
+      id
+      vendorId
+      leadTimeDays
+      minQty
+      price
+    }
+    packagings {
+      id
+      name
+      qtyPerPackage
+      barcode
+    }
+    reorderingRules {
+      id
+      warehouseId
+      minQty
+      maxQty
+    }
+    onHandQty
+    forecastedQty
+    purchasedQty
+    incomeAccount
+    expenseAccount
+    stockAccount
     status
     organizationId
     createdAt
+    updatedAt
   }
 }
     `;
@@ -20043,42 +22071,57 @@ export type GetProductQueryHookResult = ReturnType<typeof useGetProductQuery>;
 export type GetProductLazyQueryHookResult = ReturnType<typeof useGetProductLazyQuery>;
 export type GetProductSuspenseQueryHookResult = ReturnType<typeof useGetProductSuspenseQuery>;
 export type GetProductQueryResult = Apollo.QueryResult<GetProductQuery, GetProductQueryVariables>;
-export const GetProductsByOrganizationDocument = gql`
-    query GetProductsByOrganization($organizationId: ID!) {
-  productsByOrganization(organizationId: $organizationId) {
+export const UpdateProductQuantityDocument = gql`
+    mutation UpdateProductQuantity($productId: ID!, $quantity: Float!, $warehouseId: ID, $notes: String) {
+  updateProductQuantity(
+    productId: $productId
+    quantity: $quantity
+    warehouseId: $warehouseId
+    notes: $notes
+  ) {
     id
-    name
-    sku
-    price
-    status
+    onHandQty
+    forecastedQty
   }
 }
     `;
-export function useGetProductsByOrganizationQuery(baseOptions: Apollo.QueryHookOptions<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables> & ({ variables: GetProductsByOrganizationQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+export type UpdateProductQuantityMutationFn = Apollo.MutationFunction<UpdateProductQuantityMutation, UpdateProductQuantityMutationVariables>;
+export function useUpdateProductQuantityMutation(baseOptions?: Apollo.MutationHookOptions<UpdateProductQuantityMutation, UpdateProductQuantityMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables>(GetProductsByOrganizationDocument, options);
+        return Apollo.useMutation<UpdateProductQuantityMutation, UpdateProductQuantityMutationVariables>(UpdateProductQuantityDocument, options);
       }
-export function useGetProductsByOrganizationLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables>(GetProductsByOrganizationDocument, options);
-        }
-// @ts-ignore
-export function useGetProductsByOrganizationSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables>): Apollo.UseSuspenseQueryResult<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables>;
-export function useGetProductsByOrganizationSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables>): Apollo.UseSuspenseQueryResult<GetProductsByOrganizationQuery | undefined, GetProductsByOrganizationQueryVariables>;
-export function useGetProductsByOrganizationSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables>(GetProductsByOrganizationDocument, options);
-        }
-export type GetProductsByOrganizationQueryHookResult = ReturnType<typeof useGetProductsByOrganizationQuery>;
-export type GetProductsByOrganizationLazyQueryHookResult = ReturnType<typeof useGetProductsByOrganizationLazyQuery>;
-export type GetProductsByOrganizationSuspenseQueryHookResult = ReturnType<typeof useGetProductsByOrganizationSuspenseQuery>;
-export type GetProductsByOrganizationQueryResult = Apollo.QueryResult<GetProductsByOrganizationQuery, GetProductsByOrganizationQueryVariables>;
+export type UpdateProductQuantityMutationHookResult = ReturnType<typeof useUpdateProductQuantityMutation>;
+export type UpdateProductQuantityMutationResult = Apollo.MutationResult<UpdateProductQuantityMutation>;
+export type UpdateProductQuantityMutationOptions = Apollo.BaseMutationOptions<UpdateProductQuantityMutation, UpdateProductQuantityMutationVariables>;
+export const ReplenishProductDocument = gql`
+    mutation ReplenishProduct($productId: ID!, $quantity: Float) {
+  replenishProduct(productId: $productId, quantity: $quantity) {
+    vendorId
+    quantity
+    unitPrice
+    purchaseOrder {
+      id
+      seqNo
+      status
+    }
+  }
+}
+    `;
+export type ReplenishProductMutationFn = Apollo.MutationFunction<ReplenishProductMutation, ReplenishProductMutationVariables>;
+export function useReplenishProductMutation(baseOptions?: Apollo.MutationHookOptions<ReplenishProductMutation, ReplenishProductMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ReplenishProductMutation, ReplenishProductMutationVariables>(ReplenishProductDocument, options);
+      }
+export type ReplenishProductMutationHookResult = ReturnType<typeof useReplenishProductMutation>;
+export type ReplenishProductMutationResult = Apollo.MutationResult<ReplenishProductMutation>;
+export type ReplenishProductMutationOptions = Apollo.BaseMutationOptions<ReplenishProductMutation, ReplenishProductMutationVariables>;
 export const CreateProductDocument = gql`
     mutation CreateProduct($input: CreateProductInput!) {
   createProduct(input: $input) {
     id
     name
-    sku
+    seqNo
+    internalReference
   }
 }
     `;
@@ -20095,7 +22138,7 @@ export const UpdateProductDocument = gql`
   updateProduct(id: $id, input: $input) {
     id
     name
-    sku
+    internalReference
   }
 }
     `;
@@ -20120,6 +22163,301 @@ export function useDeleteProductMutation(baseOptions?: Apollo.MutationHookOption
 export type DeleteProductMutationHookResult = ReturnType<typeof useDeleteProductMutation>;
 export type DeleteProductMutationResult = Apollo.MutationResult<DeleteProductMutation>;
 export type DeleteProductMutationOptions = Apollo.BaseMutationOptions<DeleteProductMutation, DeleteProductMutationVariables>;
+export const GetProductCategoriesDocument = gql`
+    query GetProductCategories($organizationId: ID!, $isActive: Boolean) {
+  productCategories(organizationId: $organizationId, isActive: $isActive) {
+    id
+    name
+    parentId
+    fullPath
+    isActive
+  }
+}
+    `;
+export function useGetProductCategoriesQuery(baseOptions: Apollo.QueryHookOptions<GetProductCategoriesQuery, GetProductCategoriesQueryVariables> & ({ variables: GetProductCategoriesQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetProductCategoriesQuery, GetProductCategoriesQueryVariables>(GetProductCategoriesDocument, options);
+      }
+export function useGetProductCategoriesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetProductCategoriesQuery, GetProductCategoriesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetProductCategoriesQuery, GetProductCategoriesQueryVariables>(GetProductCategoriesDocument, options);
+        }
+// @ts-ignore
+export function useGetProductCategoriesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetProductCategoriesQuery, GetProductCategoriesQueryVariables>): Apollo.UseSuspenseQueryResult<GetProductCategoriesQuery, GetProductCategoriesQueryVariables>;
+export function useGetProductCategoriesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetProductCategoriesQuery, GetProductCategoriesQueryVariables>): Apollo.UseSuspenseQueryResult<GetProductCategoriesQuery | undefined, GetProductCategoriesQueryVariables>;
+export function useGetProductCategoriesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetProductCategoriesQuery, GetProductCategoriesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetProductCategoriesQuery, GetProductCategoriesQueryVariables>(GetProductCategoriesDocument, options);
+        }
+export type GetProductCategoriesQueryHookResult = ReturnType<typeof useGetProductCategoriesQuery>;
+export type GetProductCategoriesLazyQueryHookResult = ReturnType<typeof useGetProductCategoriesLazyQuery>;
+export type GetProductCategoriesSuspenseQueryHookResult = ReturnType<typeof useGetProductCategoriesSuspenseQuery>;
+export type GetProductCategoriesQueryResult = Apollo.QueryResult<GetProductCategoriesQuery, GetProductCategoriesQueryVariables>;
+export const CreateProductCategoryDocument = gql`
+    mutation CreateProductCategory($input: CreateProductCategoryInput!) {
+  createProductCategory(input: $input) {
+    id
+    name
+    parentId
+    fullPath
+    isActive
+  }
+}
+    `;
+export type CreateProductCategoryMutationFn = Apollo.MutationFunction<CreateProductCategoryMutation, CreateProductCategoryMutationVariables>;
+export function useCreateProductCategoryMutation(baseOptions?: Apollo.MutationHookOptions<CreateProductCategoryMutation, CreateProductCategoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateProductCategoryMutation, CreateProductCategoryMutationVariables>(CreateProductCategoryDocument, options);
+      }
+export type CreateProductCategoryMutationHookResult = ReturnType<typeof useCreateProductCategoryMutation>;
+export type CreateProductCategoryMutationResult = Apollo.MutationResult<CreateProductCategoryMutation>;
+export type CreateProductCategoryMutationOptions = Apollo.BaseMutationOptions<CreateProductCategoryMutation, CreateProductCategoryMutationVariables>;
+export const UpdateProductCategoryDocument = gql`
+    mutation UpdateProductCategory($id: ID!, $input: UpdateProductCategoryInput!) {
+  updateProductCategory(id: $id, input: $input) {
+    id
+    name
+    parentId
+    fullPath
+    isActive
+  }
+}
+    `;
+export type UpdateProductCategoryMutationFn = Apollo.MutationFunction<UpdateProductCategoryMutation, UpdateProductCategoryMutationVariables>;
+export function useUpdateProductCategoryMutation(baseOptions?: Apollo.MutationHookOptions<UpdateProductCategoryMutation, UpdateProductCategoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateProductCategoryMutation, UpdateProductCategoryMutationVariables>(UpdateProductCategoryDocument, options);
+      }
+export type UpdateProductCategoryMutationHookResult = ReturnType<typeof useUpdateProductCategoryMutation>;
+export type UpdateProductCategoryMutationResult = Apollo.MutationResult<UpdateProductCategoryMutation>;
+export type UpdateProductCategoryMutationOptions = Apollo.BaseMutationOptions<UpdateProductCategoryMutation, UpdateProductCategoryMutationVariables>;
+export const DeleteProductCategoryDocument = gql`
+    mutation DeleteProductCategory($id: ID!) {
+  deleteProductCategory(id: $id)
+}
+    `;
+export type DeleteProductCategoryMutationFn = Apollo.MutationFunction<DeleteProductCategoryMutation, DeleteProductCategoryMutationVariables>;
+export function useDeleteProductCategoryMutation(baseOptions?: Apollo.MutationHookOptions<DeleteProductCategoryMutation, DeleteProductCategoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteProductCategoryMutation, DeleteProductCategoryMutationVariables>(DeleteProductCategoryDocument, options);
+      }
+export type DeleteProductCategoryMutationHookResult = ReturnType<typeof useDeleteProductCategoryMutation>;
+export type DeleteProductCategoryMutationResult = Apollo.MutationResult<DeleteProductCategoryMutation>;
+export type DeleteProductCategoryMutationOptions = Apollo.BaseMutationOptions<DeleteProductCategoryMutation, DeleteProductCategoryMutationVariables>;
+export const GetUomsDocument = gql`
+    query GetUoms($organizationId: ID!, $category: String, $isActive: Boolean) {
+  uoms(organizationId: $organizationId, category: $category, isActive: $isActive) {
+    id
+    name
+    category
+    ratio
+    type
+    gstUqc
+    isActive
+  }
+}
+    `;
+export function useGetUomsQuery(baseOptions: Apollo.QueryHookOptions<GetUomsQuery, GetUomsQueryVariables> & ({ variables: GetUomsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetUomsQuery, GetUomsQueryVariables>(GetUomsDocument, options);
+      }
+export function useGetUomsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetUomsQuery, GetUomsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetUomsQuery, GetUomsQueryVariables>(GetUomsDocument, options);
+        }
+// @ts-ignore
+export function useGetUomsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetUomsQuery, GetUomsQueryVariables>): Apollo.UseSuspenseQueryResult<GetUomsQuery, GetUomsQueryVariables>;
+export function useGetUomsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetUomsQuery, GetUomsQueryVariables>): Apollo.UseSuspenseQueryResult<GetUomsQuery | undefined, GetUomsQueryVariables>;
+export function useGetUomsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetUomsQuery, GetUomsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetUomsQuery, GetUomsQueryVariables>(GetUomsDocument, options);
+        }
+export type GetUomsQueryHookResult = ReturnType<typeof useGetUomsQuery>;
+export type GetUomsLazyQueryHookResult = ReturnType<typeof useGetUomsLazyQuery>;
+export type GetUomsSuspenseQueryHookResult = ReturnType<typeof useGetUomsSuspenseQuery>;
+export type GetUomsQueryResult = Apollo.QueryResult<GetUomsQuery, GetUomsQueryVariables>;
+export const CreateUomDocument = gql`
+    mutation CreateUom($input: CreateUomInput!) {
+  createUom(input: $input) {
+    id
+    name
+    category
+    ratio
+    type
+    gstUqc
+    isActive
+  }
+}
+    `;
+export type CreateUomMutationFn = Apollo.MutationFunction<CreateUomMutation, CreateUomMutationVariables>;
+export function useCreateUomMutation(baseOptions?: Apollo.MutationHookOptions<CreateUomMutation, CreateUomMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateUomMutation, CreateUomMutationVariables>(CreateUomDocument, options);
+      }
+export type CreateUomMutationHookResult = ReturnType<typeof useCreateUomMutation>;
+export type CreateUomMutationResult = Apollo.MutationResult<CreateUomMutation>;
+export type CreateUomMutationOptions = Apollo.BaseMutationOptions<CreateUomMutation, CreateUomMutationVariables>;
+export const UpdateUomDocument = gql`
+    mutation UpdateUom($id: ID!, $input: UpdateUomInput!) {
+  updateUom(id: $id, input: $input) {
+    id
+    name
+    category
+    ratio
+    type
+    gstUqc
+    isActive
+  }
+}
+    `;
+export type UpdateUomMutationFn = Apollo.MutationFunction<UpdateUomMutation, UpdateUomMutationVariables>;
+export function useUpdateUomMutation(baseOptions?: Apollo.MutationHookOptions<UpdateUomMutation, UpdateUomMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateUomMutation, UpdateUomMutationVariables>(UpdateUomDocument, options);
+      }
+export type UpdateUomMutationHookResult = ReturnType<typeof useUpdateUomMutation>;
+export type UpdateUomMutationResult = Apollo.MutationResult<UpdateUomMutation>;
+export type UpdateUomMutationOptions = Apollo.BaseMutationOptions<UpdateUomMutation, UpdateUomMutationVariables>;
+export const DeleteUomDocument = gql`
+    mutation DeleteUom($id: ID!) {
+  deleteUom(id: $id)
+}
+    `;
+export type DeleteUomMutationFn = Apollo.MutationFunction<DeleteUomMutation, DeleteUomMutationVariables>;
+export function useDeleteUomMutation(baseOptions?: Apollo.MutationHookOptions<DeleteUomMutation, DeleteUomMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteUomMutation, DeleteUomMutationVariables>(DeleteUomDocument, options);
+      }
+export type DeleteUomMutationHookResult = ReturnType<typeof useDeleteUomMutation>;
+export type DeleteUomMutationResult = Apollo.MutationResult<DeleteUomMutation>;
+export type DeleteUomMutationOptions = Apollo.BaseMutationOptions<DeleteUomMutation, DeleteUomMutationVariables>;
+export const EnsureDefaultUomsDocument = gql`
+    mutation EnsureDefaultUoms($organizationId: ID!) {
+  ensureDefaultUoms(organizationId: $organizationId) {
+    id
+    name
+    category
+    ratio
+    type
+    gstUqc
+    isActive
+  }
+}
+    `;
+export type EnsureDefaultUomsMutationFn = Apollo.MutationFunction<EnsureDefaultUomsMutation, EnsureDefaultUomsMutationVariables>;
+export function useEnsureDefaultUomsMutation(baseOptions?: Apollo.MutationHookOptions<EnsureDefaultUomsMutation, EnsureDefaultUomsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<EnsureDefaultUomsMutation, EnsureDefaultUomsMutationVariables>(EnsureDefaultUomsDocument, options);
+      }
+export type EnsureDefaultUomsMutationHookResult = ReturnType<typeof useEnsureDefaultUomsMutation>;
+export type EnsureDefaultUomsMutationResult = Apollo.MutationResult<EnsureDefaultUomsMutation>;
+export type EnsureDefaultUomsMutationOptions = Apollo.BaseMutationOptions<EnsureDefaultUomsMutation, EnsureDefaultUomsMutationVariables>;
+export const GetAttributesDocument = gql`
+    query GetAttributes($organizationId: ID!, $isActive: Boolean) {
+  attributes(organizationId: $organizationId, isActive: $isActive) {
+    id
+    name
+    isActive
+    values {
+      id
+      value
+    }
+  }
+}
+    `;
+export function useGetAttributesQuery(baseOptions: Apollo.QueryHookOptions<GetAttributesQuery, GetAttributesQueryVariables> & ({ variables: GetAttributesQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetAttributesQuery, GetAttributesQueryVariables>(GetAttributesDocument, options);
+      }
+export function useGetAttributesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetAttributesQuery, GetAttributesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetAttributesQuery, GetAttributesQueryVariables>(GetAttributesDocument, options);
+        }
+// @ts-ignore
+export function useGetAttributesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetAttributesQuery, GetAttributesQueryVariables>): Apollo.UseSuspenseQueryResult<GetAttributesQuery, GetAttributesQueryVariables>;
+export function useGetAttributesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetAttributesQuery, GetAttributesQueryVariables>): Apollo.UseSuspenseQueryResult<GetAttributesQuery | undefined, GetAttributesQueryVariables>;
+export function useGetAttributesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetAttributesQuery, GetAttributesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetAttributesQuery, GetAttributesQueryVariables>(GetAttributesDocument, options);
+        }
+export type GetAttributesQueryHookResult = ReturnType<typeof useGetAttributesQuery>;
+export type GetAttributesLazyQueryHookResult = ReturnType<typeof useGetAttributesLazyQuery>;
+export type GetAttributesSuspenseQueryHookResult = ReturnType<typeof useGetAttributesSuspenseQuery>;
+export type GetAttributesQueryResult = Apollo.QueryResult<GetAttributesQuery, GetAttributesQueryVariables>;
+export const CreateAttributeDocument = gql`
+    mutation CreateAttribute($input: CreateAttributeInput!) {
+  createAttribute(input: $input) {
+    id
+    name
+    isActive
+    values {
+      id
+      value
+    }
+  }
+}
+    `;
+export type CreateAttributeMutationFn = Apollo.MutationFunction<CreateAttributeMutation, CreateAttributeMutationVariables>;
+export function useCreateAttributeMutation(baseOptions?: Apollo.MutationHookOptions<CreateAttributeMutation, CreateAttributeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateAttributeMutation, CreateAttributeMutationVariables>(CreateAttributeDocument, options);
+      }
+export type CreateAttributeMutationHookResult = ReturnType<typeof useCreateAttributeMutation>;
+export type CreateAttributeMutationResult = Apollo.MutationResult<CreateAttributeMutation>;
+export type CreateAttributeMutationOptions = Apollo.BaseMutationOptions<CreateAttributeMutation, CreateAttributeMutationVariables>;
+export const UpdateAttributeDocument = gql`
+    mutation UpdateAttribute($id: ID!, $input: UpdateAttributeInput!) {
+  updateAttribute(id: $id, input: $input) {
+    id
+    name
+    isActive
+    values {
+      id
+      value
+    }
+  }
+}
+    `;
+export type UpdateAttributeMutationFn = Apollo.MutationFunction<UpdateAttributeMutation, UpdateAttributeMutationVariables>;
+export function useUpdateAttributeMutation(baseOptions?: Apollo.MutationHookOptions<UpdateAttributeMutation, UpdateAttributeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateAttributeMutation, UpdateAttributeMutationVariables>(UpdateAttributeDocument, options);
+      }
+export type UpdateAttributeMutationHookResult = ReturnType<typeof useUpdateAttributeMutation>;
+export type UpdateAttributeMutationResult = Apollo.MutationResult<UpdateAttributeMutation>;
+export type UpdateAttributeMutationOptions = Apollo.BaseMutationOptions<UpdateAttributeMutation, UpdateAttributeMutationVariables>;
+export const AddAttributeValueDocument = gql`
+    mutation AddAttributeValue($id: ID!, $value: String!) {
+  addAttributeValue(id: $id, value: $value) {
+    id
+    values {
+      id
+      value
+    }
+  }
+}
+    `;
+export type AddAttributeValueMutationFn = Apollo.MutationFunction<AddAttributeValueMutation, AddAttributeValueMutationVariables>;
+export function useAddAttributeValueMutation(baseOptions?: Apollo.MutationHookOptions<AddAttributeValueMutation, AddAttributeValueMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AddAttributeValueMutation, AddAttributeValueMutationVariables>(AddAttributeValueDocument, options);
+      }
+export type AddAttributeValueMutationHookResult = ReturnType<typeof useAddAttributeValueMutation>;
+export type AddAttributeValueMutationResult = Apollo.MutationResult<AddAttributeValueMutation>;
+export type AddAttributeValueMutationOptions = Apollo.BaseMutationOptions<AddAttributeValueMutation, AddAttributeValueMutationVariables>;
+export const DeleteAttributeDocument = gql`
+    mutation DeleteAttribute($id: ID!) {
+  deleteAttribute(id: $id)
+}
+    `;
+export type DeleteAttributeMutationFn = Apollo.MutationFunction<DeleteAttributeMutation, DeleteAttributeMutationVariables>;
+export function useDeleteAttributeMutation(baseOptions?: Apollo.MutationHookOptions<DeleteAttributeMutation, DeleteAttributeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteAttributeMutation, DeleteAttributeMutationVariables>(DeleteAttributeDocument, options);
+      }
+export type DeleteAttributeMutationHookResult = ReturnType<typeof useDeleteAttributeMutation>;
+export type DeleteAttributeMutationResult = Apollo.MutationResult<DeleteAttributeMutation>;
+export type DeleteAttributeMutationOptions = Apollo.BaseMutationOptions<DeleteAttributeMutation, DeleteAttributeMutationVariables>;
 export const GetVendorCreditsDocument = gql`
     query GetVendorCredits($organizationId: ID!, $vendorId: ID) {
   vendorCredits(organizationId: $organizationId, vendorId: $vendorId) {

@@ -4,38 +4,19 @@ import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, Column, commonActions } from '@/components/DataTable'
-import { InputFloating } from '@/components/ui/input-floating'
-import { SelectFloating } from '@/components/ui/select-floating'
-import { Button } from '@/components/ui/button'
 import { VendorSendForApprovalSheet } from '@/components/vendors/vendor-send-for-approval-sheet'
-import { GET_VENDORS, CREATE_VENDOR, UPDATE_VENDOR, DELETE_VENDOR } from '@/gql/queries'
+import { VendorWizardDialog } from '@/components/vendors/vendor-wizard-dialog'
+import { GET_VENDORS, DELETE_VENDOR } from '@/gql/queries'
 import { useSendForApprovalSheet } from '@/hooks/use-send-for-approval-sheet'
-import { Trash2, Edit, X, Save, Building2, CheckCircle, XCircle } from 'lucide-react'
+import { Trash2, Edit, Building2, CheckCircle, XCircle } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/status-badge'
-
-const EMPTY_FORM = {
-  name: '',
-  contactPerson: '',
-  email: '',
-  phone: '',
-  address: '',
-  city: '',
-  state: '',
-  country: '',
-  zipCode: '',
-  taxNumber: '',
-  paymentTerms: '',
-  notes: '',
-}
 
 export default function VendorsPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
-  const [adding, setAdding] = useState(false)
-  const [editing, setEditing] = useState<string | null>(null)
-  const [form, setForm] = useState({ ...EMPTY_FORM })
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [editingVendor, setEditingVendor] = useState<any | null>(null)
 
   const vendorApprovalSheet = useSendForApprovalSheet<string>()
 
@@ -44,60 +25,18 @@ export default function VendorsPage() {
     skip: !orgId,
   })
 
-  const [createVendor, { loading: saving }] = useMutation(CREATE_VENDOR, {
-    onCompleted: () => { refetch(); setAdding(false); reset() },
-  })
-
-  const [updateVendor, { loading: updating }] = useMutation(UPDATE_VENDOR, {
-    onCompleted: () => { refetch(); setEditing(null); reset() },
-  })
-
   const [deleteVendor] = useMutation(DELETE_VENDOR, {
     onCompleted: () => refetch(),
   })
 
-  const reset = () => { setForm({ ...EMPTY_FORM }); setErrors({}) }
-  const setF = (k: string, v: string) => {
-    setForm(p => ({ ...p, [k]: v }))
-    setErrors(p => ({ ...p, [k]: '' }))
-  }
-
-  const validate = () => {
-    const e: Record<string, string> = {}
-    if (!form.name.trim()) e.name = 'Required'
-    setErrors(e)
-    return !Object.keys(e).length
-  }
-
-  const handleSubmit = () => {
-    if (!validate()) return
-    const input = { ...form, organizationId: orgId }
-    if (editing) {
-      const { ...updateInput } = input as any
-      delete updateInput.organizationId
-      updateVendor({ variables: { id: editing, input: updateInput } })
-    } else {
-      createVendor({ variables: { input } })
-    }
+  const handleAdd = () => {
+    setEditingVendor(null)
+    setWizardOpen(true)
   }
 
   const handleEdit = (vendor: any) => {
-    setForm({
-      name: vendor.name || '',
-      contactPerson: vendor.contactPerson || '',
-      email: vendor.email || '',
-      phone: vendor.phone || '',
-      address: vendor.address || '',
-      city: vendor.city || '',
-      state: vendor.state || '',
-      country: vendor.country || '',
-      zipCode: vendor.zipCode || '',
-      taxNumber: vendor.taxNumber || '',
-      paymentTerms: vendor.paymentTerms || '',
-      notes: vendor.notes || '',
-    })
-    setEditing(vendor.id)
-    setAdding(true)
+    setEditingVendor(vendor)
+    setWizardOpen(true)
   }
 
   const handleDelete = (id: string) => {
@@ -111,13 +50,20 @@ export default function VendorsPage() {
     inactive: vendors.filter((v: any) => v.status === 'inactive').length,
   }
 
+  const formatAddress = (a: { street?: string; city?: string; zip?: string; country?: string } | null | undefined) =>
+    a ? [a.street, a.city, a.zip, a.country].filter(Boolean).join(', ') : ''
+
   const columns: Column[] = [
     { key: 'seqNo', label: 'Code', width: '140px', render: v => <span className="font-mono text-gray-500 text-xs">{v || '—'}</span> },
     { key: 'name', label: 'Vendor Name', width: '200px', sortable: true, render: v => <span className="font-medium text-gray-800">{v}</span> },
-    { key: 'contactPerson', label: 'Contact', width: '150px', render: v => <span className="text-gray-600">{v || '—'}</span> },
-    { key: 'email', label: 'Email', width: '200px', render: v => <span className="text-gray-600">{v || '—'}</span> },
-    { key: 'phone', label: 'Phone', width: '150px', render: v => <span className="text-gray-600">{v || '—'}</span> },
-    { key: 'paymentTerms', label: 'Payment Terms', width: '140px', render: v => <span className="text-gray-600">{v || '—'}</span> },
+    { key: 'type', label: 'Type', width: '100px', render: v => <span className="text-gray-600 capitalize">{v || '—'}</span> },
+    { key: 'email', label: 'Email', width: '190px', render: v => <span className="text-gray-600">{v || '—'}</span> },
+    { key: 'phone', label: 'Phone', width: '140px', render: v => <span className="text-gray-600">{v || '—'}</span> },
+    { key: 'gstin', label: 'GSTIN', width: '160px', render: v => <span className="text-gray-600 font-mono text-[11px]">{v || '—'}</span> },
+    {
+      key: 'address', label: 'Address', width: '220px',
+      render: (v) => <span className="text-gray-600 truncate">{formatAddress(v) || '—'}</span>,
+    },
     {
       key: 'status', label: 'Status', width: '100px',
       render: (v) => <StatusBadge status={String(v)} />,
@@ -172,62 +118,12 @@ export default function VendorsPage() {
         ))}
       </div>
 
-      {/* Inline form */}
-      {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
-            <span className="text-xs font-semibold text-white">{editing ? 'Edit Vendor' : 'New Vendor'}</span>
-            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
-          </div>
-          <div className="p-4 space-y-3">
-            <div className="grid grid-cols-3 gap-3">
-              <InputFloating label="Vendor Name *" value={form.name} onChange={e => setF('name', e.target.value)} error={errors.name} className="h-7 text-xs" />
-              <InputFloating label="Contact Person" value={form.contactPerson} onChange={e => setF('contactPerson', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="Email" type="email" value={form.email} onChange={e => setF('email', e.target.value)} className="h-7 text-xs" />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <InputFloating label="Phone" value={form.phone} onChange={e => setF('phone', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="Tax Number" value={form.taxNumber} onChange={e => setF('taxNumber', e.target.value)} className="h-7 text-xs" />
-              <SelectFloating
-                label="Payment Terms"
-                value={form.paymentTerms}
-                onChange={e => setF('paymentTerms', typeof e === 'string' ? e : e.target.value)}
-                options={[
-                  { value: '', label: 'Select...' },
-                  { value: 'Net 15', label: 'Net 15' },
-                  { value: 'Net 30', label: 'Net 30' },
-                  { value: 'Net 45', label: 'Net 45' },
-                  { value: 'Net 60', label: 'Net 60' },
-                  { value: 'Due on Receipt', label: 'Due on Receipt' },
-                ]}
-                className="h-7 text-xs"
-              />
-            </div>
-            <div className="grid grid-cols-4 gap-3">
-              <InputFloating label="Address" value={form.address} onChange={e => setF('address', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="City" value={form.city} onChange={e => setF('city', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="State" value={form.state} onChange={e => setF('state', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="Country" value={form.country} onChange={e => setF('country', e.target.value)} className="h-7 text-xs" />
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              <InputFloating label="Notes" multiline rows={2} value={form.notes} onChange={e => setF('notes', e.target.value)} className="text-xs min-h-[50px]" />
-            </div>
-            <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={() => { setAdding(false); setEditing(null); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]">
-                <Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving…' : editing ? 'Update' : 'Save Vendor'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <DataTable
         data={vendors}
         columns={columns}
         loading={loading}
         title="All Vendors"
-        onAdd={() => { reset(); setAdding(true) }}
+        onAdd={handleAdd}
         addLabel="New Vendor"
         searchable
         searchPlaceholder="Search vendors..."
@@ -244,6 +140,15 @@ export default function VendorsPage() {
           { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => handleDelete(row.id), variant: 'ghost' },
         ]}
       />
+
+      <VendorWizardDialog
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        organizationId={orgId}
+        editingVendor={editingVendor}
+        onSaved={() => refetch()}
+      />
+
       <VendorSendForApprovalSheet
         open={vendorApprovalSheet.open}
         onOpenChange={vendorApprovalSheet.onOpenChange}

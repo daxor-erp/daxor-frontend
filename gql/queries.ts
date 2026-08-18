@@ -839,6 +839,12 @@ export const GET_AUDIT_LOGS = gql`
       data {
         id
         userId
+        user {
+          id
+          firstName
+          lastName
+          email
+        }
         action
         entityType
         entityId
@@ -1443,11 +1449,20 @@ export const GET_VENDORS = gql`
     ) {
       id
       seqNo
+      type
       name
-      contactPerson
       email
       phone
-      address
+      mobile
+      gstTreatment
+      gstin
+      pan
+      address {
+        street
+        city
+        zip
+        country
+      }
       organizationId
       orgApprovalStatus
       status
@@ -1461,18 +1476,71 @@ export const GET_VENDOR = gql`
     vendor(id: $id) {
       id
       seqNo
+      type
       name
-      contactPerson
-      email
+      address {
+        street
+        city
+        zip
+        country
+      }
+      gstTreatment
+      gstin
+      pan
       phone
-      address
-      city
-      state
-      country
-      zipCode
-      taxNumber
-      paymentTerms
-      notes
+      mobile
+      email
+      website
+      tags {
+        tagId
+        name
+        color
+        category
+      }
+      sales {
+        salesperson
+        paymentTerms
+        paymentMethod
+        priceList
+        deliveryMethod
+      }
+      purchase {
+        buyer
+        paymentTerms
+        paymentMethod
+        fiscalPosition
+      }
+      inventory {
+        customerLocation
+        vendorLocation
+        subcontractingLocation
+      }
+      misc {
+        reference
+        companyId
+        company
+        slaPolicies
+      }
+      bankAccounts {
+        id
+        accountNumber
+        bankId
+        bankName
+        currency
+        accountHolder
+        sendMoney
+      }
+      accounting {
+        accountReceivable
+        accountPayable
+        invoiceSendingPreference
+      }
+      warnings {
+        salesOrder
+        purchaseOrder
+        picking
+      }
+      internalNotes
       organizationId
       orgApprovalStatus
       status
@@ -1552,6 +1620,151 @@ export const SUBMIT_VENDOR_FOR_APPROVAL = gql`
 export const DELETE_VENDOR = gql`
   mutation DeleteVendor($id: ID!) {
     deleteVendor(id: $id)
+  }
+`
+
+export const ADD_VENDOR_BANK_ACCOUNT = gql`
+  mutation AddVendorBankAccount($vendorId: ID!, $input: VendorBankAccountInput!) {
+    addVendorBankAccount(vendorId: $vendorId, input: $input) {
+      id
+      bankAccounts {
+        id
+        accountNumber
+        bankId
+        bankName
+        currency
+        accountHolder
+        sendMoney
+      }
+    }
+  }
+`
+
+export const REMOVE_VENDOR_BANK_ACCOUNT = gql`
+  mutation RemoveVendorBankAccount($vendorId: ID!, $bankAccountId: ID!) {
+    removeVendorBankAccount(vendorId: $vendorId, bankAccountId: $bankAccountId) {
+      id
+      bankAccounts {
+        id
+        accountNumber
+        bankId
+        bankName
+        currency
+        accountHolder
+        sendMoney
+      }
+    }
+  }
+`
+
+// Tags (vendor tagging — searchable multi-select + inline "Create Tag")
+export const GET_TAGS = gql`
+  query GetTags($organizationId: ID!, $search: String, $category: String, $isActive: Boolean) {
+    tags(organizationId: $organizationId, search: $search, category: $category, isActive: $isActive) {
+      id
+      name
+      color
+      category
+      isActive
+    }
+  }
+`
+
+export const CREATE_TAG = gql`
+  mutation CreateTag($input: CreateTagInput!) {
+    createTag(input: $input) {
+      id
+      name
+      color
+      category
+      isActive
+    }
+  }
+`
+
+// Banks (master bank record — used by the nested "Create Bank" modal on vendor bank accounts)
+export const GET_BANKS = gql`
+  query GetBanks($organizationId: ID!, $search: String) {
+    banks(organizationId: $organizationId, search: $search) {
+      id
+      name
+      bankIdentifierCode
+      address
+      phone
+      email
+    }
+  }
+`
+
+export const CREATE_BANK = gql`
+  mutation CreateBank($input: CreateBankInput!) {
+    createBank(input: $input) {
+      id
+      name
+      bankIdentifierCode
+      address
+      phone
+      email
+    }
+  }
+`
+
+// Payment terms (master data — replaces the hardcoded Net 15/30/45/60 enum)
+export const GET_PAYMENT_TERMS = gql`
+  query GetPaymentTerms($organizationId: ID!, $isActive: Boolean) {
+    paymentTerms(organizationId: $organizationId, isActive: $isActive) {
+      id
+      name
+      dueDays
+      isActive
+    }
+  }
+`
+
+export const ENSURE_DEFAULT_PAYMENT_TERMS = gql`
+  mutation EnsureDefaultPaymentTerms($organizationId: ID!) {
+    ensureDefaultPaymentTerms(organizationId: $organizationId) {
+      id
+      name
+      dueDays
+      isActive
+    }
+  }
+`
+
+// Tax compliance (GSTIN "Check Status" + PAN lookup/autocomplete on the vendor form)
+export const CHECK_GSTIN_STATUS = gql`
+  query CheckGstinStatus($gstin: String!) {
+    checkGstinStatus(gstin: $gstin) {
+      gstin
+      valid
+      status
+      legalName
+      tradeName
+      gstTreatment
+      stateCode
+      message
+      source
+    }
+  }
+`
+
+export const LOOKUP_PAN = gql`
+  query LookupPan($pan: String!) {
+    lookupPan(pan: $pan) {
+      pan
+      valid
+      holderType
+      nameOnRecord
+      message
+      source
+    }
+  }
+`
+
+export const SUGGEST_PAN = gql`
+  query SuggestPan($partial: String!) {
+    suggestPan(partial: $partial)
   }
 `
 
@@ -1636,7 +1849,7 @@ export const DELETE_PROJECT = gql`
   }
 `
 
-// Purchase Orders
+// Purchase Orders (RFQ -> Purchase Order lifecycle, Product/Variant-based lines)
 export const GET_PURCHASE_ORDERS = gql`
   query GetPurchaseOrders($organizationId: ID!, $page: Int, $limit: Int, $status: String) {
     purchaseorders(
@@ -1649,23 +1862,139 @@ export const GET_PURCHASE_ORDERS = gql`
       seqNo
       vendorId
       vendorName
+      gstTreatment
+      vendorReference
+      currency
+      exchangeRate
+      totalAmountBaseCurrency
+      agreement
+      sourceDocument
+      incoterms
       projectId
       projectName
+      orderDate
+      orderDeadline
+      expectedArrival
       deliveryDate
+      askConfirmation
+      lastPrintedAt
+      version
+      deliverToLocationId
+      paymentTerms
+      deliveryTerms
+      buyerId
+      buyer {
+        id
+        firstName
+        lastName
+      }
+      fiscalPosition
+      confirmationDate
+      untaxedAmount
       subtotal
       taxAmount
+      taxBreakdown {
+        cgst
+        sgst
+        igst
+      }
       totalAmount
       status
-      orderDate
+      receiptStatus
+      billingStatus
       items {
-        itemDescription
+        id
+        lineType
+        productId
+        variantId
+        productName
+        hsnSac
         quantity
+        uomId
+        packagingId
+        packagingQty
         unitPrice
+        taxIds
+        discountPercent
+        lineUntaxed
+        lineTax
         lineTotal
+        qtyReceived
+        qtyBilled
+        note
+        itemDescription
       }
       notes
       organizationId
       createdAt
+    }
+  }
+`
+
+export const GET_PURCHASE_ORDER = gql`
+  query GetPurchaseOrder($id: ID!) {
+    purchaseorder(id: $id) {
+      id
+      seqNo
+      vendorId
+      vendorName
+      gstTreatment
+      vendorReference
+      currency
+      exchangeRate
+      totalAmountBaseCurrency
+      agreement
+      sourceDocument
+      incoterms
+      projectId
+      projectName
+      orderDate
+      orderDeadline
+      expectedArrival
+      askConfirmation
+      lastPrintedAt
+      version
+      deliverToLocationId
+      paymentTerms
+      deliveryTerms
+      buyerId
+      fiscalPosition
+      confirmationDate
+      untaxedAmount
+      taxAmount
+      taxBreakdown {
+        cgst
+        sgst
+        igst
+      }
+      totalAmount
+      status
+      receiptStatus
+      billingStatus
+      items {
+        id
+        lineType
+        productId
+        variantId
+        productName
+        hsnSac
+        quantity
+        uomId
+        packagingId
+        packagingQty
+        unitPrice
+        taxIds
+        discountPercent
+        lineUntaxed
+        lineTax
+        lineTotal
+        qtyReceived
+        qtyBilled
+        closedForReceiving
+        note
+      }
+      notes
+      organizationId
     }
   }
 `
@@ -1703,6 +2032,24 @@ export const UPDATE_PURCHASE_ORDER = gql`
   }
 `
 
+export const MARK_PURCHASE_ORDER_RFQ_SENT = gql`
+  mutation MarkPurchaseOrderRfqSent($id: ID!) {
+    markPurchaseOrderRfqSent(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const MARK_PURCHASE_ORDER_PRINTED = gql`
+  mutation MarkPurchaseOrderPrinted($id: ID!) {
+    markPurchaseOrderPrinted(id: $id) {
+      id
+      lastPrintedAt
+    }
+  }
+`
+
 export const SUBMIT_PURCHASE_ORDER = gql`
   mutation SubmitPurchaseOrder($id: ID!) {
     submitPurchaseOrder(id: $id) {
@@ -1721,9 +2068,51 @@ export const APPROVE_PURCHASE_ORDER = gql`
   }
 `
 
+export const CONFIRM_PURCHASE_ORDER = gql`
+  mutation ConfirmPurchaseOrder($id: ID!) {
+    confirmPurchaseOrder(id: $id) {
+      id
+      status
+      confirmationDate
+    }
+  }
+`
+
+export const SEND_PURCHASE_ORDER_BY_EMAIL = gql`
+  mutation SendPurchaseOrderByEmail($id: ID!) {
+    sendPurchaseOrderByEmail(id: $id) {
+      id
+      status
+    }
+  }
+`
+
 export const RECEIVE_PURCHASE_ORDER = gql`
-  mutation ReceivePurchaseOrder($id: ID!) {
-    receivePurchaseOrder(id: $id) {
+  mutation ReceivePurchaseOrder($id: ID!, $lines: [PoReceiveLineInput!]) {
+    receivePurchaseOrder(id: $id, lines: $lines) {
+      id
+      status
+      receiptStatus
+      items {
+        id
+        qtyReceived
+      }
+    }
+  }
+`
+
+export const CANCEL_PURCHASE_ORDER = gql`
+  mutation CancelPurchaseOrder($id: ID!) {
+    cancelPurchaseOrder(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const LOCK_PURCHASE_ORDER = gql`
+  mutation LockPurchaseOrder($id: ID!) {
+    lockPurchaseOrder(id: $id) {
       id
       status
     }
@@ -1731,12 +2120,39 @@ export const RECEIVE_PURCHASE_ORDER = gql`
 `
 
 export const BILL_PURCHASE_ORDER = gql`
-  mutation BillPurchaseOrder($id: ID!, $billDate: String!, $dueDate: String!) {
-    billPurchaseOrder(id: $id, billDate: $billDate, dueDate: $dueDate) {
+  mutation BillPurchaseOrder($id: ID!, $billDate: String!, $dueDate: String!, $lines: [PoBillLineInput!]) {
+    billPurchaseOrder(id: $id, billDate: $billDate, dueDate: $dueDate, lines: $lines) {
       id
       billNumber
       status
       totalAmount
+      notes
+    }
+  }
+`
+
+export const CLOSE_PURCHASE_ORDER_LINE = gql`
+  mutation ClosePurchaseOrderLine($id: ID!, $lineId: ID!) {
+    closePurchaseOrderLine(id: $id, lineId: $lineId) {
+      id
+      status
+      receiptStatus
+      items {
+        id
+        closedForReceiving
+        qtyReceived
+        quantity
+      }
+    }
+  }
+`
+
+export const DUPLICATE_PURCHASE_ORDER = gql`
+  mutation DuplicatePurchaseOrder($id: ID!) {
+    duplicatePurchaseOrder(id: $id) {
+      id
+      seqNo
+      status
     }
   }
 `
@@ -4540,25 +4956,46 @@ export const SEND_QUOTATION = gql`
   }
 `
 
-// Products
+// Products (catalog master — shared by Inventory & Purchasing)
 export const GET_PRODUCTS = gql`
-  query GetProducts {
-    products {
+  query GetProducts($organizationId: ID!, $search: String, $categoryId: ID, $canBePurchased: Boolean, $canBeSold: Boolean, $status: String) {
+    products(
+      organizationId: $organizationId
+      search: $search
+      categoryId: $categoryId
+      canBePurchased: $canBePurchased
+      canBeSold: $canBeSold
+      status: $status
+    ) {
       id
       seqNo
       name
-      sku
-      description
-      category
-      brand
-      unit
-      price
-      costPrice
-      taxRate
-      minStockLevel
-      maxStockLevel
-      reorderPoint
+      internalReference
       barcode
+      hsnSac
+      canBeSold
+      canBePurchased
+      canBeExpensed
+      productType
+      trackInventory
+      salesPrice
+      costPrice
+      categoryId
+      category {
+        id
+        fullPath
+      }
+      uomId
+      uom {
+        id
+        name
+      }
+      packagings {
+        id
+        name
+        qtyPerPackage
+        barcode
+      }
       status
       organizationId
       createdAt
@@ -4572,33 +5009,96 @@ export const GET_PRODUCT = gql`
       id
       seqNo
       name
-      sku
-      description
-      category
-      brand
-      unit
-      price
-      costPrice
-      taxRate
-      minStockLevel
-      maxStockLevel
-      reorderPoint
+      internalReference
       barcode
+      hsnSac
+      images
+      notes
+      canBeSold
+      canBePurchased
+      canBeExpensed
+      productType
+      trackInventory
+      trackingMethod
+      salesPrice
+      costPrice
+      uomId
+      purchaseUomId
+      salesTaxIds
+      purchaseTaxIds
+      categoryId
+      attributeLines {
+        attributeId
+        valueIds
+      }
+      variants {
+        id
+        displayName
+        attributeValues {
+          attributeId
+          attributeName
+          valueId
+          value
+        }
+        sku
+        barcode
+        extraPrice
+        isActive
+      }
+      vendorPricelist {
+        id
+        vendorId
+        leadTimeDays
+        minQty
+        price
+      }
+      packagings {
+        id
+        name
+        qtyPerPackage
+        barcode
+      }
+      reorderingRules {
+        id
+        warehouseId
+        minQty
+        maxQty
+      }
+      onHandQty
+      forecastedQty
+      purchasedQty
+      incomeAccount
+      expenseAccount
+      stockAccount
       status
       organizationId
       createdAt
+      updatedAt
     }
   }
 `
 
-export const GET_PRODUCTS_BY_ORGANIZATION = gql`
-  query GetProductsByOrganization($organizationId: ID!) {
-    productsByOrganization(organizationId: $organizationId) {
+export const UPDATE_PRODUCT_QUANTITY = gql`
+  mutation UpdateProductQuantity($productId: ID!, $quantity: Float!, $warehouseId: ID, $notes: String) {
+    updateProductQuantity(productId: $productId, quantity: $quantity, warehouseId: $warehouseId, notes: $notes) {
       id
-      name
-      sku
-      price
-      status
+      onHandQty
+      forecastedQty
+    }
+  }
+`
+
+export const REPLENISH_PRODUCT = gql`
+  mutation ReplenishProduct($productId: ID!, $quantity: Float) {
+    replenishProduct(productId: $productId, quantity: $quantity) {
+      vendorId
+      quantity
+      unitPrice
+      purchaseOrder {
+        id
+        seqNo
+        status
+      }
     }
   }
 `
@@ -4608,7 +5108,8 @@ export const CREATE_PRODUCT = gql`
     createProduct(input: $input) {
       id
       name
-      sku
+      seqNo
+      internalReference
     }
   }
 `
@@ -4618,7 +5119,7 @@ export const UPDATE_PRODUCT = gql`
     updateProduct(id: $id, input: $input) {
       id
       name
-      sku
+      internalReference
     }
   }
 `
@@ -4626,6 +5127,173 @@ export const UPDATE_PRODUCT = gql`
 export const DELETE_PRODUCT = gql`
   mutation DeleteProduct($id: ID!) {
     deleteProduct(id: $id)
+  }
+`
+
+// Product categories (hierarchical tree)
+export const GET_PRODUCT_CATEGORIES = gql`
+  query GetProductCategories($organizationId: ID!, $isActive: Boolean) {
+    productCategories(organizationId: $organizationId, isActive: $isActive) {
+      id
+      name
+      parentId
+      fullPath
+      isActive
+    }
+  }
+`
+
+export const CREATE_PRODUCT_CATEGORY = gql`
+  mutation CreateProductCategory($input: CreateProductCategoryInput!) {
+    createProductCategory(input: $input) {
+      id
+      name
+      parentId
+      fullPath
+      isActive
+    }
+  }
+`
+
+export const UPDATE_PRODUCT_CATEGORY = gql`
+  mutation UpdateProductCategory($id: ID!, $input: UpdateProductCategoryInput!) {
+    updateProductCategory(id: $id, input: $input) {
+      id
+      name
+      parentId
+      fullPath
+      isActive
+    }
+  }
+`
+
+export const DELETE_PRODUCT_CATEGORY = gql`
+  mutation DeleteProductCategory($id: ID!) {
+    deleteProductCategory(id: $id)
+  }
+`
+
+// Units of Measure
+export const GET_UOMS = gql`
+  query GetUoms($organizationId: ID!, $category: String, $isActive: Boolean) {
+    uoms(organizationId: $organizationId, category: $category, isActive: $isActive) {
+      id
+      name
+      category
+      ratio
+      type
+      gstUqc
+      isActive
+    }
+  }
+`
+
+export const CREATE_UOM = gql`
+  mutation CreateUom($input: CreateUomInput!) {
+    createUom(input: $input) {
+      id
+      name
+      category
+      ratio
+      type
+      gstUqc
+      isActive
+    }
+  }
+`
+
+export const UPDATE_UOM = gql`
+  mutation UpdateUom($id: ID!, $input: UpdateUomInput!) {
+    updateUom(id: $id, input: $input) {
+      id
+      name
+      category
+      ratio
+      type
+      gstUqc
+      isActive
+    }
+  }
+`
+
+export const DELETE_UOM = gql`
+  mutation DeleteUom($id: ID!) {
+    deleteUom(id: $id)
+  }
+`
+
+export const ENSURE_DEFAULT_UOMS = gql`
+  mutation EnsureDefaultUoms($organizationId: ID!) {
+    ensureDefaultUoms(organizationId: $organizationId) {
+      id
+      name
+      category
+      ratio
+      type
+      gstUqc
+      isActive
+    }
+  }
+`
+
+// Attributes (Make, Model, Size, ...) — reusable values used to generate product variants
+export const GET_ATTRIBUTES = gql`
+  query GetAttributes($organizationId: ID!, $isActive: Boolean) {
+    attributes(organizationId: $organizationId, isActive: $isActive) {
+      id
+      name
+      isActive
+      values {
+        id
+        value
+      }
+    }
+  }
+`
+
+export const CREATE_ATTRIBUTE = gql`
+  mutation CreateAttribute($input: CreateAttributeInput!) {
+    createAttribute(input: $input) {
+      id
+      name
+      isActive
+      values {
+        id
+        value
+      }
+    }
+  }
+`
+
+export const UPDATE_ATTRIBUTE = gql`
+  mutation UpdateAttribute($id: ID!, $input: UpdateAttributeInput!) {
+    updateAttribute(id: $id, input: $input) {
+      id
+      name
+      isActive
+      values {
+        id
+        value
+      }
+    }
+  }
+`
+
+export const ADD_ATTRIBUTE_VALUE = gql`
+  mutation AddAttributeValue($id: ID!, $value: String!) {
+    addAttributeValue(id: $id, value: $value) {
+      id
+      values {
+        id
+        value
+      }
+    }
+  }
+`
+
+export const DELETE_ATTRIBUTE = gql`
+  mutation DeleteAttribute($id: ID!) {
+    deleteAttribute(id: $id)
   }
 `
 
