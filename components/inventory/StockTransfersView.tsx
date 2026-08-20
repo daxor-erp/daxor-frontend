@@ -11,6 +11,7 @@ import {
   GET_STOCK_TRANSFERS,
   GET_WAREHOUSES,
   CREATE_STOCK_TRANSFER,
+  UPDATE_STOCK_TRANSFER,
   CONFIRM_STOCK_TRANSFER,
   CANCEL_STOCK_TRANSFER,
   DELETE_STOCK_TRANSFER,
@@ -27,6 +28,7 @@ import {
   Minus,
   CalendarDays,
   ArrowRightLeft,
+  Pencil,
 } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/status-badge'
 
@@ -122,6 +124,7 @@ export function StockTransfersView({
   const orgId = user?.organizationId ?? ''
 
   const [adding, setAdding] = useState(false)
+  const [editingRow, setEditingRow] = useState<TransferRow | null>(null)
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [lines, setLines] = useState([{ ...EMPTY_LINE }])
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -135,6 +138,7 @@ export function StockTransfersView({
 
   const closeForm = () => {
     setAdding(false)
+    setEditingRow(null)
     reset()
   }
 
@@ -152,12 +156,13 @@ export function StockTransfersView({
   const [mutationError, setMutationError] = useState<string | null>(null)
 
   const [createTr, { loading: saving }] = useMutation(CREATE_STOCK_TRANSFER, {
-    onCompleted: () => {
-      setMutationError(null)
-      void refetch()
-      closeForm()
-    },
+    onCompleted: () => { setMutationError(null); void refetch(); closeForm() },
     onError: (e) => setMutationError(e.message ?? 'Failed to save transfer'),
+  })
+
+  const [updateTr, { loading: updating }] = useMutation(UPDATE_STOCK_TRANSFER, {
+    onCompleted: () => { setMutationError(null); void refetch(); closeForm() },
+    onError: (e) => setMutationError(e.message ?? 'Failed to update transfer'),
   })
 
   const [confirmTr] = useMutation(CONFIRM_STOCK_TRANSFER, {
@@ -222,6 +227,31 @@ export function StockTransfersView({
   const addLine = () => setLines((p) => [...p, { ...EMPTY_LINE }])
   const removeLine = (idx: number) => setLines((p) => p.filter((_, i) => i !== idx))
 
+  const openEdit = (row: TransferRow) => {
+    setEditingRow(row)
+    setAdding(false)
+    setMutationError(null)
+    const rowAny = row as any
+    setForm({
+      transferDate:      rowAny.transferDate?.split('T')[0] ?? new Date().toISOString().split('T')[0],
+      fromWarehouseId:   rowAny.fromWarehouseId ?? '',
+      fromWarehouseName: rowAny.fromWarehouseName ?? '',
+      toWarehouseId:     rowAny.toWarehouseId ?? '',
+      toWarehouseName:   rowAny.toWarehouseName ?? '',
+      notes:             rowAny.notes ?? '',
+    })
+    setLines(
+      Array.isArray(rowAny.lineItems) && rowAny.lineItems.length > 0
+        ? rowAny.lineItems.map((l: any) => ({
+            itemDescription: l.itemDescription ?? '',
+            qty: String(l.qty ?? l.quantity ?? ''),
+            unit: l.unit ?? '',
+          }))
+        : [{ ...EMPTY_LINE }]
+    )
+    setErrors({})
+  }
+
   const validate = () => {
     const e: Record<string, string> = {}
     if (!form.transferDate) e.transferDate = 'Required'
@@ -250,14 +280,10 @@ export function StockTransfersView({
 
   const handleSubmit = () => {
     setMutationError(null)
-    if (!orgId) {
-      setMutationError('Organization is required. Please sign in again.')
-      return
-    }
+    if (!orgId) { setMutationError('Organization is required. Please sign in again.'); return }
     if (!validate()) return
     const input: Record<string, unknown> = {
       transferDate: form.transferDate,
-      organizationId: orgId,
       lineItems: lines.map((l) => ({
         itemDescription: l.itemDescription.trim(),
         qty: parseFloat(String(l.qty)) || 0,
@@ -265,19 +291,16 @@ export function StockTransfersView({
       })),
     }
     if (form.notes.trim()) input.notes = form.notes.trim()
-    if (form.fromWarehouseId && form.fromWarehouseId !== MAIN_BIN_OPTION.value) {
-      input.fromWarehouseId = form.fromWarehouseId
+    if (form.fromWarehouseId && form.fromWarehouseId !== MAIN_BIN_OPTION.value) input.fromWarehouseId = form.fromWarehouseId
+    if (form.fromWarehouseName?.trim()) input.fromWarehouseName = form.fromWarehouseName.trim()
+    if (form.toWarehouseId && form.toWarehouseId !== MAIN_BIN_OPTION.value) input.toWarehouseId = form.toWarehouseId
+    if (form.toWarehouseName?.trim()) input.toWarehouseName = form.toWarehouseName.trim()
+
+    if (editingRow) {
+      updateTr({ variables: { id: editingRow.id, input } })
+    } else {
+      createTr({ variables: { input: { ...input, organizationId: orgId } } })
     }
-    if (form.fromWarehouseName?.trim()) {
-      input.fromWarehouseName = form.fromWarehouseName.trim()
-    }
-    if (form.toWarehouseId && form.toWarehouseId !== MAIN_BIN_OPTION.value) {
-      input.toWarehouseId = form.toWarehouseId
-    }
-    if (form.toWarehouseName?.trim()) {
-      input.toWarehouseName = form.toWarehouseName.trim()
-    }
-    createTr({ variables: { input } })
   }
 
   const handleConfirm = (id: string) => {
@@ -374,32 +397,30 @@ export function StockTransfersView({
 
   const actions: Action<TransferRow>[] = [
     {
+      label: 'Edit',
+      icon: <Pencil className="h-3.5 w-3.5 text-blue-600" />,
+      onClick: (row) => { if (row.status === 'draft') openEdit(row) },
+      variant: 'ghost',
+      show: (row) => row.status === 'draft',
+    },
+    {
       label: 'Confirm',
       icon: <BadgeCheck className="h-3.5 w-3.5 text-green-600" />,
-      onClick: (row) => {
-        if (!row.id || row.status !== 'draft') return
-        handleConfirm(row.id)
-      },
+      onClick: (row) => { if (!row.id || row.status !== 'draft') return; handleConfirm(row.id) },
       variant: 'ghost',
       show: (row) => row.status === 'draft',
     },
     {
       label: 'Cancel',
       icon: <XCircle className="h-3.5 w-3.5 text-amber-600" />,
-      onClick: (row) => {
-        if (!row.id || row.status === 'cancelled') return
-        handleCancel(row.id)
-      },
+      onClick: (row) => { if (!row.id || row.status === 'cancelled') return; handleCancel(row.id) },
       variant: 'ghost',
       show: (row) => row.status !== 'cancelled',
     },
     {
       label: 'Delete',
       icon: <Trash2 className="h-3.5 w-3.5 text-red-600" />,
-      onClick: (row) => {
-        if (!row.id) return
-        handleDelete(row.id)
-      },
+      onClick: (row) => { if (!row.id) return; handleDelete(row.id) },
       variant: 'ghost',
     },
   ]
@@ -451,11 +472,12 @@ export function StockTransfersView({
         ))}
       </div>
 
-      {adding && (
+      {(adding || editingRow) && (
         <div className={`bg-white border ${theme.panelBorder} rounded-lg shadow-sm overflow-hidden`}>
           <div className={`flex items-center justify-between px-4 py-2 ${theme.headerBg}`}>
             <span className="text-xs font-semibold text-white flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4" /> {newPanelHeading}
+              <ArrowRightLeft className="h-4 w-4" />
+              {editingRow ? `Edit Transfer ${(editingRow as any).transferNumber ?? ''}` : newPanelHeading}
             </span>
             <button type="button" onClick={closeForm} className={theme.headerSub}>
               <X className="h-4 w-4" />
@@ -597,11 +619,11 @@ export function StockTransfersView({
                 type="button"
                 size="sm"
                 onClick={handleSubmit}
-                disabled={saving || !orgId}
+                disabled={saving || updating || !orgId}
                 className={`h-8 text-xs text-white ${theme.saveBtn}`}
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
-                {saving ? 'Saving…' : 'Save'}
+                {saving || updating ? 'Saving…' : editingRow ? 'Save Changes' : 'Save'}
               </Button>
             </div>
           </div>
@@ -613,10 +635,7 @@ export function StockTransfersView({
         columns={columns}
         loading={loading}
         title={tableTitle}
-        onAdd={() => {
-          reset()
-          setAdding(true)
-        }}
+        onAdd={() => { reset(); setEditingRow(null); setAdding(true) }}
         addLabel={addLabel}
         searchable
         searchPlaceholder={searchPlaceholder}

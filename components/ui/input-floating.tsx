@@ -24,25 +24,50 @@ export const InputFloating = React.forwardRef<HTMLInputElement & HTMLTextAreaEle
     const shouldFloatByDefault = FLOATING_LABEL_TYPES.includes(type);
     const showFloatingLabel = isFocused || hasValue || shouldFloatByDefault;
 
+    /**
+     * When an icon is present alongside a label, the label acts as a
+     * static inline placeholder (sits next to the icon, fades on focus/value).
+     * This matches how search inputs look — icon left, text right.
+     * No floating behaviour when icon is present: avoids the label
+     * riding up over the border and misaligning with the icon.
+     */
+    const iconWithLabel = !!icon && !!label;
+
     return (
       <div className={cn("relative", containerClassName)}>
-        <label
-          className={cn(
-            "absolute left-3 transition-all duration-200 pointer-events-none z-10",
-            showFloatingLabel
-              ? "-top-2 text-[10px] px-1 py-px text-primary"
-              : "top-2.5 text-[10px] text-muted-foreground"
-          )}
-          style={showFloatingLabel ? { backgroundColor: 'hsl(var(--card))' } : undefined}
-          htmlFor={props.id}
-        >
-          {label}
-        </label>
+
+        {/* Standard floating label (no icon, or icon-only with no label) */}
+        {label && !iconWithLabel && (
+          <label
+            className={cn(
+              "absolute left-3 transition-all duration-200 pointer-events-none z-10",
+              showFloatingLabel
+                ? "-top-2 text-[10px] px-1 py-px text-primary"
+                : "top-2.5 text-xs text-muted-foreground"
+            )}
+            style={showFloatingLabel ? { backgroundColor: 'hsl(var(--card))' } : undefined}
+            htmlFor={props.id}
+          >
+            {label}
+          </label>
+        )}
+
+        {/* Icon */}
         {icon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
             {icon}
           </div>
         )}
+
+        {/* Static placeholder-style label next to icon */}
+        {iconWithLabel && !isFocused && !hasValue && (
+          <span
+            className="absolute left-10 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none select-none"
+          >
+            {label}
+          </span>
+        )}
+
         {multiline ? (
           <textarea
             className={cn(

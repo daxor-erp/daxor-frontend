@@ -3,21 +3,20 @@
 import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column, commonActions } from '@/components/DataTable'
+import { DataTable, type Column, commonActions } from '@/components/DataTable'
 import { VendorSendForApprovalSheet } from '@/components/vendors/vendor-send-for-approval-sheet'
 import { VendorWizardDialog } from '@/components/vendors/vendor-wizard-dialog'
-import { GET_VENDORS, DELETE_VENDOR } from '@/gql/queries'
+import { GET_VENDORS, DELETE_VENDOR, DEACTIVATE_VENDOR, REACTIVATE_VENDOR } from '@/gql/queries'
 import { useSendForApprovalSheet } from '@/hooks/use-send-for-approval-sheet'
-import { Trash2, Edit, Building2, CheckCircle, XCircle } from 'lucide-react'
-import { StatusBadge } from '@/components/ui/status-badge'
+import { Trash2, Edit, Building2, CheckCircle, XCircle, Plus, PowerOff, Power } from 'lucide-react'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell } from '@/components/ui/erp-shared'
 
 export default function VendorsPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
-  const [wizardOpen, setWizardOpen] = useState(false)
+  const [wizardOpen, setWizardOpen]       = useState(false)
   const [editingVendor, setEditingVendor] = useState<any | null>(null)
-
   const vendorApprovalSheet = useSendForApprovalSheet<string>()
 
   const { data, loading, refetch } = useQuery(GET_VENDORS, {
@@ -25,98 +24,59 @@ export default function VendorsPage() {
     skip: !orgId,
   })
 
-  const [deleteVendor] = useMutation(DELETE_VENDOR, {
-    onCompleted: () => refetch(),
-  })
+  const [deleteVendor]     = useMutation(DELETE_VENDOR,     { onCompleted: () => refetch(), onError: (e) => alert(e.message) })
+  const [deactivateVendor] = useMutation(DEACTIVATE_VENDOR, { onCompleted: () => refetch(), onError: (e) => alert(e.message) })
+  const [reactivateVendor] = useMutation(REACTIVATE_VENDOR, { onCompleted: () => refetch(), onError: (e) => alert(e.message) })
 
-  const handleAdd = () => {
-    setEditingVendor(null)
-    setWizardOpen(true)
-  }
-
-  const handleEdit = (vendor: any) => {
-    setEditingVendor(vendor)
-    setWizardOpen(true)
-  }
-
-  const handleDelete = (id: string) => {
-    if (confirm('Delete this vendor?')) deleteVendor({ variables: { id } })
-  }
+  const handleAdd    = () => { setEditingVendor(null); setWizardOpen(true) }
+  const handleEdit   = (v: any) => { setEditingVendor(v); setWizardOpen(true) }
+  const handleDelete = (id: string) => { if (confirm('Delete this vendor?')) deleteVendor({ variables: { id } }) }
 
   const vendors = data?.vendors ?? []
   const stats = {
-    total: vendors.length,
-    active: vendors.filter((v: any) => v.status === 'active').length,
+    total:    vendors.length,
+    active:   vendors.filter((v: any) => v.status === 'active').length,
     inactive: vendors.filter((v: any) => v.status === 'inactive').length,
   }
 
-  const formatAddress = (a: { street?: string; city?: string; zip?: string; country?: string } | null | undefined) =>
-    a ? [a.street, a.city, a.zip, a.country].filter(Boolean).join(', ') : ''
+  const fmtAddr = (a: any) => a ? [a.street, a.city, a.zip, a.country].filter(Boolean).join(', ') : ''
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '140px', render: v => <span className="font-mono text-gray-500 text-xs">{v || '—'}</span> },
-    { key: 'name', label: 'Vendor Name', width: '200px', sortable: true, render: v => <span className="font-medium text-gray-800">{v}</span> },
-    { key: 'type', label: 'Type', width: '100px', render: v => <span className="text-gray-600 capitalize">{v || '—'}</span> },
-    { key: 'email', label: 'Email', width: '190px', render: v => <span className="text-gray-600">{v || '—'}</span> },
-    { key: 'phone', label: 'Phone', width: '140px', render: v => <span className="text-gray-600">{v || '—'}</span> },
-    { key: 'gstin', label: 'GSTIN', width: '160px', render: v => <span className="text-gray-600 font-mono text-[11px]">{v || '—'}</span> },
+    { key: 'seqNo',   label: 'Code',        width: '130px', render: v => <MonoCell value={v} /> },
+    { key: 'name',    label: 'Vendor Name', width: '200px', sortable: true, render: v => <span className="font-medium text-sm">{v}</span> },
+    { key: 'type',    label: 'Type',        width: '100px', render: v => <span className="capitalize text-sm">{v || '—'}</span> },
+    { key: 'email',   label: 'Email',       width: '190px', render: v => <span className="text-sm">{v || '—'}</span> },
+    { key: 'phone',   label: 'Phone',       width: '130px', render: v => <span className="text-sm">{v || '—'}</span> },
+    { key: 'gstin',   label: 'GSTIN',       width: '160px', render: v => <MonoCell value={v} /> },
+    { key: 'address', label: 'Address',     width: '200px', render: v => <span className="text-xs text-muted-foreground truncate">{fmtAddr(v) || '—'}</span> },
+    { key: 'status',  label: 'Status',      width: '100px', render: v => <ErpBadge status={String(v)} /> },
     {
-      key: 'address', label: 'Address', width: '220px',
-      render: (v) => <span className="text-gray-600 truncate">{formatAddress(v) || '—'}</span>,
-    },
-    {
-      key: 'status', label: 'Status', width: '100px',
-      render: (v) => <StatusBadge status={String(v)} />,
-    },
-    {
-      key: '_orgApproval',
-      label: 'Org approval',
-      width: '128px',
-      render: (_v, row: { orgApprovalStatus?: string }) => {
-        const ap = String(row.orgApprovalStatus ?? 'approved').toLowerCase()
-        const label =
-          ap === 'draft'
-            ? 'Draft'
-            : ap === 'submitted'
-              ? 'Pending approval'
-              : ap === 'approval_declined'
-                ? 'Declined'
-                : 'Approved'
-        return (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-            ap === 'draft'
-              ? 'bg-slate-50 text-slate-700 border-slate-200'
-              : ap === 'submitted'
-                ? 'bg-amber-50 text-amber-800 border-amber-200'
-                : ap === 'approval_declined'
-                  ? 'bg-red-50 text-red-700 border-red-200'
-                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-          }`}>{label}</span>
-        )
-      },
+      key: '_ap', label: 'Approval', width: '130px',
+      render: (_v: any, row: any) => (
+        <ErpBadge status={row.orgApprovalStatus === 'submitted' ? 'pending' : (row.orgApprovalStatus ?? 'approved')} />
+      ),
     },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Vendors</h1>
-        <p className="text-gray-500">Manage your suppliers and vendors</p>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Vendors"
+        subtitle="Manage your suppliers and vendors"
+        icon={<Building2 className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Procurement' }, { label: 'Vendors' }]}
+        actions={
+          <button onClick={handleAdd} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4" /> New Vendor
+          </button>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Total Vendors', value: stats.total, icon: Building2, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Active', value: stats.active, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'Inactive', value: stats.inactive, icon: XCircle, cls: 'text-gray-600 bg-gray-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={3}>
+        <StatCard label="Total Vendors" value={stats.total}    icon={<Building2   className="h-5 w-5" />} variant="blue"  />
+        <StatCard label="Active"        value={stats.active}   icon={<CheckCircle className="h-5 w-5" />} variant="green" />
+        <StatCard label="Inactive"      value={stats.inactive} icon={<XCircle     className="h-5 w-5" />} variant="slate" />
+      </StatsRow>
 
       <DataTable
         data={vendors}
@@ -127,17 +87,19 @@ export default function VendorsPage() {
         addLabel="New Vendor"
         searchable
         searchPlaceholder="Search vendors..."
-        emptyMessage="No vendors yet. Click 'New Vendor' to add one."
+        emptyMessage="No vendors yet."
         onRowClick={handleEdit}
         actions={[
           commonActions.sendForApproval({
             entityLabel: 'vendor',
-            eligibleTooltip: 'Open drawer to route this vendor to selected approvers',
-            blockedTooltip: 'A vendor approval request is already pending',
-            onOpenSheet: (row) => vendorApprovalSheet.openFor(row.id),
+            eligibleTooltip: 'Route this vendor for approval',
+            blockedTooltip: 'Approval pending',
+            onOpenSheet: (row: any) => vendorApprovalSheet.openFor(row.id),
           }),
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => handleDelete(row.id), variant: 'ghost' },
+          { label: 'Edit',       icon: <Edit     className="h-3.5 w-3.5" />, onClick: (r: any) => handleEdit(r),                                                                                          variant: 'ghost' },
+          { label: 'Deactivate', icon: <PowerOff className="h-3.5 w-3.5" />, onClick: (r: any) => { if (confirm(`Deactivate vendor "${r.name}"?`)) deactivateVendor({ variables: { id: r.id } }) }, show: (r: any) => r.status === 'active',   variant: 'ghost' },
+          { label: 'Activate',   icon: <Power    className="h-3.5 w-3.5" />, onClick: (r: any) => reactivateVendor({ variables: { id: r.id } }),                                                     show: (r: any) => r.status === 'inactive', variant: 'ghost' },
+          { label: 'Delete',     icon: <Trash2   className="h-3.5 w-3.5" />, onClick: (r: any) => handleDelete(r.id),                                                                                                variant: 'ghost' },
         ]}
       />
 

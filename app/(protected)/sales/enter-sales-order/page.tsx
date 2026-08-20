@@ -163,11 +163,11 @@ export default function EnterSalesOrderPage() {
   }
 
   return (
-    <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-1">Enter Sales Order</h1>
-          <p className="text-sm text-gray-500">Create sales order from accepted quotation</p>
-        </div>
+    <div className="p-6 space-y-5">
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold">Enter Sales Order</h2>
+        <p className="text-sm text-muted-foreground">Create a sales order from an accepted quotation</p>
+      </div>
         {successMsg && (
           <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -180,7 +180,7 @@ export default function EnterSalesOrderPage() {
           </div>
         )}
 
-        <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
           <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
             <span className="text-sm font-semibold text-gray-700">Sales Order Entry</span>
           </div>

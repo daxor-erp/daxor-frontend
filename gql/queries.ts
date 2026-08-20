@@ -6000,3 +6000,297 @@ export const DELETE_PACKAGE_MODULE_ASSIGNMENT = gql`
     deletePackageModuleAssignment(packageId: $packageId, organizationId: $organizationId)
   }
 `
+
+// Aged Payable / Receivable reports (Odoo 19 standard)
+export const GET_AGED_PAYABLE = gql`
+  query GetAgedPayable($organizationId: String!) {
+    agedPayable(organizationId: $organizationId) {
+      vendorId
+      vendorName
+      current
+      days30
+      days60
+      days90
+      over90
+      total
+      bills {
+        billId
+        billNumber
+        billDate
+        dueDate
+        totalAmount
+        outstandingAmount
+        daysOverdue
+        status
+      }
+    }
+  }
+`
+
+export const GET_AGED_RECEIVABLE = gql`
+  query GetAgedReceivable($organizationId: String!) {
+    agedReceivable(organizationId: $organizationId) {
+      customerId
+      customerName
+      current
+      days30
+      days60
+      days90
+      over90
+      total
+      invoices {
+        invoiceId
+        invoiceNumber
+        invoiceDate
+        dueDate
+        totalAmount
+        outstandingAmount
+        daysOverdue
+        status
+      }
+    }
+  }
+`
+
+// ── New mutations added for Odoo A-Z parity ─────────────────────────────────
+
+export const UNLOCK_PURCHASE_ORDER = gql`
+  mutation UnlockPurchaseOrder($id: ID!) {
+    unlockPurchaseOrder(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const RECONCILE_VENDOR_BILL = gql`
+  mutation ReconcileVendorBill($id: ID!) {
+    reconcileVendorBill(id: $id) {
+      id
+      billNumber
+      status
+    }
+  }
+`
+
+export const RECONCILE_CUSTOMER_INVOICE = gql`
+  mutation ReconcileCustomerInvoice($id: ID!) {
+    reconcileCustomerInvoice(id: $id) {
+      id
+      invoiceNumber
+      status
+    }
+  }
+`
+
+export const APPROVE_CUSTOMER_INVOICE = gql`
+  mutation ApproveCustomerInvoiceApproval($id: ID!) {
+    approveCustomerInvoiceApproval(id: $id) {
+      id
+      invoiceNumber
+      status
+    }
+  }
+`
+
+export const UPDATE_CUSTOMER_INVOICE_EDIT = gql`
+  mutation UpdateCustomerInvoice($id: ID!, $input: UpdateCustomerInvoiceInput!) {
+    updateCustomerInvoice(id: $id, input: $input) {
+      id
+      invoiceNumber
+      status
+      totalAmount
+    }
+  }
+`
+// ── Medium-priority gap fixes ────────────────────────────────────────────────
+
+export const APPLY_VENDOR_CREDIT = gql`
+  mutation ApplyVendorCredit($id: ID!, $amount: Float!) {
+    applyVendorCredit(id: $id, amount: $amount) {
+      id
+      billNumber
+      status
+      outstandingAmount
+      debitNotesApplied
+      paidAmount
+    }
+  }
+`
+
+export const RUN_REORDER_SCHEDULER = gql`
+  mutation RunReorderScheduler($organizationId: ID!) {
+    runReorderScheduler(organizationId: $organizationId) {
+      triggered
+      scanned
+      replenished
+      products {
+        productId
+        productName
+        onHandQty
+        minQty
+        qtyToOrder
+        poCreated
+        poId
+        error
+      }
+    }
+  }
+`
+
+export const DEACTIVATE_VENDOR = gql`
+  mutation DeactivateVendor($id: ID!) {
+    deactivateVendor(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const REACTIVATE_VENDOR = gql`
+  mutation ReactivateVendor($id: ID!) {
+    reactivateVendor(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const GET_BLANKET_ORDERS = gql`
+  query GetBlanketOrders($organizationId: ID!, $status: String, $vendorId: ID) {
+    blanketOrders(organizationId: $organizationId, status: $status, vendorId: $vendorId) {
+      id
+      boNumber
+      vendorId
+      vendorName
+      startDate
+      endDate
+      status
+      totalValue
+      committedValue
+      lines {
+        id
+        productName
+        quantity
+        orderedQty
+        unitPrice
+        lineTotal
+      }
+      organizationId
+      createdAt
+    }
+  }
+`
+
+export const CREATE_BLANKET_ORDER = gql`
+  mutation CreateBlanketOrder($input: CreateBlanketOrderInput!) {
+    createBlanketOrder(input: $input) {
+      id
+      boNumber
+      status
+    }
+  }
+`
+
+export const CONFIRM_BLANKET_ORDER = gql`
+  mutation ConfirmBlanketOrder($id: ID!) {
+    confirmBlanketOrder(id: $id) {
+      id
+      boNumber
+      status
+    }
+  }
+`
+
+export const CLOSE_BLANKET_ORDER = gql`
+  mutation CloseBlanketOrder($id: ID!) {
+    closeBlanketOrder(id: $id) {
+      id
+      boNumber
+      status
+    }
+  }
+`
+
+export const CANCEL_BLANKET_ORDER = gql`
+  mutation CancelBlanketOrder($id: ID!) {
+    cancelBlanketOrder(id: $id) {
+      id
+      boNumber
+      status
+    }
+  }
+`
+
+export const DELETE_BLANKET_ORDER = gql`
+  mutation DeleteBlanketOrder($id: ID!) {
+    deleteBlanketOrder(id: $id)
+  }
+`
+
+export const RECORD_BLANKET_CALL_OFF = gql`
+  mutation BlanketCallOff($id: ID!, $lineId: ID!, $qty: Float!) {
+    recordCallOff(id: $id, lineId: $lineId, qty: $qty) {
+      id
+      boNumber
+      status
+      lines {
+        id
+        productName
+        quantity
+        orderedQty
+        unitPrice
+        lineTotal
+      }
+    }
+  }
+`
+
+export const CREATE_SO_FROM_QUOTATION = gql`
+  mutation CreateSOFromQuotation($quotationId: ID!) {
+    createSOFromQuotation(quotationId: $quotationId) {
+      id
+      seqNo
+      status
+      totalAmount
+    }
+  }
+`
+
+export const APPROVE_SALES_ORDER = gql`
+  mutation ApproveSalesOrder($id: ID!) {
+    approveSalesOrder(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const REJECT_SALES_ORDER = gql`
+  mutation RejectSalesOrder($id: ID!) {
+    rejectSalesOrder(id: $id) {
+      id
+      status
+    }
+  }
+`
+
+export const CREATE_INVOICE_FROM_SALES_ORDER = gql`
+  mutation CreateInvoiceFromSalesOrder($salesOrderId: ID!, $invoiceDate: String!, $dueDate: String) {
+    createInvoiceFromSalesOrder(salesOrderId: $salesOrderId, invoiceDate: $invoiceDate, dueDate: $dueDate) {
+      id
+      invoiceNumber
+      status
+      totalAmount
+    }
+  }
+`
+
+export const CANCEL_DELIVERY_ORDER = gql`
+  mutation CancelDeliveryOrder($id: ID!) {
+    cancelDeliveryOrder(id: $id) {
+      id
+      status
+    }
+  }
+`

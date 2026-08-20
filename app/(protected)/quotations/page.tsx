@@ -23,13 +23,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, Send, Pencil, Loader2, Eye, Download } from 'lucide-react'
+import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, Send, Pencil, Loader2, Eye, Download, ShoppingBag, Mail } from 'lucide-react'
+import { PageHeader, StatsRow, StatCard, ErpBadge } from '@/components/ui/erp-shared'
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { friendlyMutationDeniedMessage } from '@/lib/apollo-user-errors'
 import { shouldIgnoreRowClick } from '@/lib/data-table-row-click'
-import { SUBMIT_QUOTATION_FOR_APPROVAL } from '@/gql/queries'
+import { SUBMIT_QUOTATION_FOR_APPROVAL, CREATE_SO_FROM_QUOTATION, SEND_QUOTATION } from '@/gql/queries'
 import { formatDate, toDateInputValue } from '@/lib/format-date'
 import { formatMoney } from '@/lib/format-money'
 import {
@@ -180,6 +181,7 @@ export default function CreateQuotationsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; quotationNumber: string } | null>(null)
   const [viewListId, setViewListId] = useState<string | null>(null)
+  const [convertTarget, setConvertTarget] = useState<{ id: string; quotationNumber: string } | null>(null)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorBanner, setErrorBanner] = useState('')
   const [form, setForm] = useState({ customerId: '', subject: '', quotationDate: today(), validUntil: in30Days(), terms: '', notes: '' })
@@ -202,6 +204,10 @@ export default function CreateQuotationsPage() {
   const [deleteQuotation, { loading: deleting }] = useMutation(DELETE_QUOTATION)
 
   const [submitQuotationForApproval, { loading: submittingApproval }] = useMutation(SUBMIT_QUOTATION_FOR_APPROVAL)
+
+  const [createSOFromQuotation, { loading: converting }] = useMutation(CREATE_SO_FROM_QUOTATION)
+
+  const [sendQuotationEmail, { loading: sending }] = useMutation(SEND_QUOTATION)
 
   const reportMutationFailure = (err: unknown) => {
     const msg = friendlyMutationDeniedMessage(err)
@@ -414,6 +420,21 @@ export default function CreateQuotationsPage() {
     }
   }
 
+  const confirmConvert = async () => {
+    if (!convertTarget) return
+    setErrorBanner('')
+    try {
+      const res = await createSOFromQuotation({ variables: { quotationId: convertTarget.id } })
+      const soSeq = res.data?.createSOFromQuotation?.seqNo
+      setConvertTarget(null)
+      await refetch()
+      setSuccessMsg(`Sales Order ${soSeq ? `"${soSeq}" ` : ''}created from quotation "${convertTarget.quotationNumber}".`)
+      setTimeout(() => setSuccessMsg(''), 6000)
+    } catch (err) {
+      reportMutationFailure(err)
+    }
+  }
+
   const stats = {
     total:    quotations.length,
     draft:    quotations.filter((q: { status: string }) => q.status === 'draft').length,
@@ -426,13 +447,20 @@ export default function CreateQuotationsPage() {
     i === 0 ? 'w-32' : i === 1 ? 'flex-1 min-w-0' : i === 2 ? 'w-40' : i === 3 || i === 4 ? 'w-28' : i === 5 ? 'w-28' : i === 6 ? 'w-36' : i === 7 ? 'w-20 shrink-0' : 'w-36'
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Quotations</h1>
-          <p className="text-gray-500">Create, edit, and manage quotations</p>
-        </div>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Quotations"
+        subtitle="Create, edit, and manage quotations"
+        icon={<FileText className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Quotations' }]}
+        actions={
+          !showForm && (
+            <button onClick={startCreate} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-4 w-4" /> New Quotation
+            </button>
+          )
+        }
+      />
 
       {successMsg && (
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
@@ -446,19 +474,12 @@ export default function CreateQuotationsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: 'Total',    value: stats.total,    icon: FileText,     cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Draft',    value: stats.draft,    icon: Clock,        cls: 'text-gray-500 bg-gray-100' },
-          { label: 'Sent',     value: stats.sent,     icon: Send,         cls: 'text-indigo-600 bg-indigo-50' },
-          { label: 'Accepted', value: stats.accepted, icon: CheckCircle2, cls: 'text-emerald-600 bg-emerald-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total"    value={stats.total}    icon={<FileText     className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft"    value={stats.draft}    icon={<Clock        className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Sent"     value={stats.sent}     icon={<Send         className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Accepted" value={stats.accepted} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
       {showForm && (
         <div
@@ -719,6 +740,43 @@ export default function CreateQuotationsPage() {
                       <Send className="h-3.5 w-3.5" />
                     </button>
                   )}
+                  {/* Send to Customer email — shown when approved */}
+                  {q.status === 'approved' && (
+                    <button
+                      type="button"
+                      title="Send to Customer (email)"
+                      disabled={sending}
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        setErrorBanner('')
+                        try {
+                          await sendQuotationEmail({ variables: { id: q.id } })
+                          await refetch()
+                          setSuccessMsg(`Quotation "${q.quotationNumber}" sent to customer.`)
+                          setTimeout(() => setSuccessMsg(''), 5000)
+                        } catch (err) {
+                          reportMutationFailure(err)
+                        }
+                      }}
+                      className="p-1.5 rounded-md text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  {/* Convert to Sales Order — shown for draft/approved/sent/accepted */}
+                  {['draft','approved','sent','accepted'].includes(q.status) && (                    <button
+                      type="button"
+                      title="Convert to Sales Order"
+                      disabled={converting}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setConvertTarget({ id: q.id, quotationNumber: q.quotationNumber })
+                      }}
+                      className="p-1.5 rounded-md text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                    >
+                      <ShoppingBag className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     title="Edit quotation"
@@ -771,8 +829,30 @@ export default function CreateQuotationsPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+      <AlertDialog open={!!convertTarget} onOpenChange={(open) => { if (!open) setConvertTarget(null) }}>
         <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert to Sales Order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {convertTarget
+                ? `Quotation "${convertTarget.quotationNumber}" will become a new draft Sales Order. The quotation status will be set to Accepted.`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={converting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={converting}
+              onClick={(e) => { e.preventDefault(); confirmConvert() }}
+              className="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-600"
+            >
+              {converting ? 'Converting…' : 'Convert to SO'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete quotation?</AlertDialogTitle>
             <AlertDialogDescription>

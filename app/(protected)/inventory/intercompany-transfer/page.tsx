@@ -16,19 +16,10 @@ import {
   DELETE_INTERCOMPANY_TRANSFER,
 } from '@/gql/queries'
 import {
-  Building2,
-  ClipboardList,
-  FileEdit,
-  BadgeCheck,
-  XCircle,
-  Trash2,
-  X,
-  Save,
-  Plus,
-  Minus,
-  CalendarDays,
-  ArrowRightLeft,
+  Building2, ClipboardList, FileEdit, BadgeCheck, XCircle,
+  Trash2, X, Save, Plus, Minus, CalendarDays, ArrowRightLeft,
 } from 'lucide-react'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
 
 const STATUS_MAP: Record<string, string> = {
   draft: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -232,13 +223,7 @@ export default function IntercompanyTransferPage() {
       key: 'status',
       label: 'Status',
       width: '100px',
-      render: (v) => (
-        <span
-          className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${STATUS_MAP[String(v ?? '')] ?? 'bg-gray-100 border-gray-200'}`}
-        >
-          {v ?? '—'}
-        </span>
-      ),
+      render: (v) => <ErpBadge status={String(v ?? '')} />,
     },
     {
       key: 'createdAt',
@@ -278,49 +263,25 @@ export default function IntercompanyTransferPage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Building2 className="h-8 w-8 text-slate-700" />
-          Intercompany transfer
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Log stock movements between legal entities / organizations. Platform users see all organizations;
-          others see their org for the counterparty dropdown (you can still enter transfers using your org as
-          source or destination).
-        </p>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Intercompany Transfer"
+        subtitle="Log stock movements between legal entities / organizations"
+        icon={<ArrowRightLeft className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Inventory' }, { label: 'Intercompany Transfer' }]}
+        actions={
+          <button onClick={() => { reset(); setFromOrgId(orgId); setAdding(true) }} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4" /> New Transfer
+          </button>
+        }
+      />
 
-      {!orgId && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-          No organization on your profile.
-        </p>
-      )}
-
-      {listError && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-          {listError.message}
-        </p>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'Total', value: stats.total, icon: ClipboardList, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Draft', value: stats.draft, icon: FileEdit, cls: 'text-yellow-600 bg-yellow-50' },
-          { label: 'Confirmed', value: stats.confirmed, icon: BadgeCheck, cls: 'text-green-600 bg-green-50' },
-          { label: 'This month', value: stats.thisMonth, icon: CalendarDays, cls: 'text-purple-600 bg-purple-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}>
-              <Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">{label}</p>
-              <p className="text-lg font-bold text-gray-800">{value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total"      value={stats.total}     icon={<ClipboardList className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft"      value={stats.draft}     icon={<FileEdit      className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Confirmed"  value={stats.confirmed} icon={<BadgeCheck    className="h-5 w-5" />} variant="green" />
+        <StatCard label="This Month" value={stats.thisMonth} icon={<CalendarDays  className="h-5 w-5" />} variant="violet" />
+      </StatsRow>
 
       {adding && (
         <div className="border border-slate-400 rounded-lg overflow-hidden bg-white shadow-sm">

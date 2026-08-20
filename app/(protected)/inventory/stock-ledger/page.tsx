@@ -8,6 +8,7 @@ import { DataTable, Column } from '@/components/DataTable'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { BookOpen, RefreshCw, ArrowRightLeft, Hash } from 'lucide-react'
+import { PageHeader, StatsRow, StatCard, ErpBadge } from '@/components/ui/erp-shared'
 
 type MovementRow = {
   id?: string | null
@@ -204,25 +205,20 @@ export default function StockLedgerPage() {
   const topTypes = useMemo(() => Array.from(stats.byType.entries()).slice(0, 4), [stats.byType])
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Stock ledger</h1>
-        <p className="text-gray-500">
-          Chronological log of inventory movements (receipts, issues, adjustments, transfers) for your organization.
-        </p>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Stock Ledger"
+        subtitle="Chronological log of inventory movements — receipts, issues, adjustments, transfers"
+        icon={<BookOpen className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Inventory' }, { label: 'Stock Ledger' }]}
+      />
 
-      {!orgId && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-          No organization on your profile; ledger data cannot be loaded.
-        </p>
-      )}
-
-      {listError && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-          {listError.message}
-        </p>
-      )}
+      <StatsRow cols={4}>
+        <StatCard label="Movements Shown" value={stats.total} icon={<BookOpen className="h-5 w-5" />} variant="slate" />
+        {topTypes.map(([label, count]) => (
+          <StatCard key={label} label={label} value={count} icon={<Hash className="h-5 w-5" />} variant="blue" />
+        ))}
+      </StatsRow>
 
       <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-wrap">
         <div className="w-full sm:w-72">
@@ -245,45 +241,6 @@ export default function StockLedgerPage() {
           <RefreshCw className="h-3.5 w-3.5 mr-1" />
           Refresh
         </Button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-          <div className="p-2 rounded-md bg-slate-50">
-            <BookOpen className="h-4 w-4 text-slate-700" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-400">Movements shown</p>
-            <p className="text-lg font-bold text-gray-800">{stats.total}</p>
-          </div>
-        </div>
-        {topTypes.map(([label, count]) => (
-          <div
-            key={label}
-            className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm"
-          >
-            <div className="p-2 rounded-md bg-blue-50">
-              <Hash className="h-4 w-4 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">{label}</p>
-              <p className="text-lg font-bold text-gray-800">{count}</p>
-            </div>
-          </div>
-        ))}
-        {topTypes.length === 0 && stats.total === 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm sm:col-span-3">
-            <div className="p-2 rounded-md bg-gray-50">
-              <ArrowRightLeft className="h-4 w-4 text-gray-500" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">Tip</p>
-              <p className="text-sm text-gray-600">
-                Movements appear when you post inventory adjustments or other modules record stock movement.
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       <DataTable<MovementRow>
