@@ -8,9 +8,10 @@ import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { DataTable, Column } from '@/components/DataTable'
 import { Trash2, Package, Box, Archive, AlertTriangle } from 'lucide-react'
-import { X, Save, Edit } from 'lucide-react'
+import { X, Save, Edit, Plus } from 'lucide-react'
 import { GET_ITEMS, CREATE_ITEM, UPDATE_ITEM, DELETE_ITEM } from '@/gql/queries'
 import { formatMoney } from '@/lib/format-money'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell } from '@/components/ui/erp-shared'
 
 type ItemRow = {
   id?: string
@@ -253,40 +254,26 @@ export default function ItemsPage() {
       key: 'status',
       label: 'Status',
       width: '120px',
-      render: (value) => {
-        const label = value != null && String(value) !== '' ? String(value) : 'active'
-        return (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(label)}`}>
-            {label}
-          </span>
-        )
-      }
+      render: (value) => <ErpBadge status={String(value ?? 'active')} />
     },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center mb-5">
-        <div>
-          <h1 className="text-3xl font-bold">Inventory Items</h1>
-          <p className="text-gray-500">Manage inventory items and materials</p>
-        </div>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Inventory Items"
+        subtitle="Manage inventory items and materials"
+        icon={<Package className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Inventory' }, { label: 'Items' }]}
+        actions={<button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"><Plus className="h-4 w-4" /> New Item</button>}
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        {[
-          { label: 'Total Items', value: stats.total, icon: Package, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Active', value: stats.active, icon: Box, cls: 'text-green-600 bg-green-50' },
-          { label: 'Inactive', value: stats.inactive, icon: Archive, cls: 'text-gray-600 bg-gray-50' },
-          { label: 'Categories', value: stats.categories, icon: AlertTriangle, cls: 'text-purple-600 bg-purple-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total Items" value={stats.total}      icon={<Package      className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Active"      value={stats.active}     icon={<Box          className="h-5 w-5" />} variant="green" />
+        <StatCard label="Inactive"    value={stats.inactive}   icon={<Archive      className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Categories"  value={stats.categories} icon={<AlertTriangle className="h-5 w-5" />} variant="violet" />
+      </StatsRow>
 
       {/* Inline form panel */}
       {adding && (

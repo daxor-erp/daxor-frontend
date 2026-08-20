@@ -8,11 +8,11 @@ import {
   CREATE_DELIVERY_ORDER,
   DELETE_DELIVERY_ORDER,
   TRANSITION_DELIVERY_STATUS,
+  CANCEL_DELIVERY_ORDER,
   GET_CUSTOMERS,
   GET_SALES_ORDERS,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
-import { StatCard } from '@/components/dashboard/stat-card'
+import { PageHeader, SectionPanel as SectionCard, StatCard } from '@/components/ui/erp-shared'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { LineItemsEditor, type LineColumn } from '@/components/forms/line-items-editor'
 import { Button } from '@/components/ui/button'
@@ -23,7 +23,7 @@ import { formatStatus } from '@/lib/format-status'
 import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Plus, Truck, Package, CheckCircle2, Trash2, Search,
-  ArrowRight, Send,
+  ArrowRight, Send, Ban,
 } from 'lucide-react'
 import { formatNumber } from '@/lib/format-money'
 import { cn } from '@/lib/utils'
@@ -87,6 +87,10 @@ export default function DeliveryOrdersPage() {
   })
   const [deleteMutation] = useMutation(DELETE_DELIVERY_ORDER, {
     onCompleted: () => { listQ.refetch(); toast.success('Removed') },
+    onError: (e) => toast.error(e.message),
+  })
+  const [cancelMutation] = useMutation(CANCEL_DELIVERY_ORDER, {
+    onCompleted: () => { listQ.refetch(); toast.success('Delivery order cancelled') },
     onError: (e) => toast.error(e.message),
   })
   const [transitionMutation] = useMutation(TRANSITION_DELIVERY_STATUS, {
@@ -179,7 +183,7 @@ export default function DeliveryOrdersPage() {
     <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
       <PageHeader
         title="Delivery Orders"
-        description="Track shipments — from preparation through dispatch, transit, and customer signature."
+        subtitle="Track shipments — from preparation through dispatch, transit, and customer signature."
         actions={
           <Button onClick={() => { resetForm(); setOpen(true) }} className="bg-grad-brand text-white border-none gap-1.5">
             <Plus className="h-4 w-4" /> New delivery
@@ -188,16 +192,16 @@ export default function DeliveryOrdersPage() {
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Total" value={formatNumber(docs.length)} icon={<Truck className="h-5 w-5" />} tone="brand" />
-        <StatCard label="Dispatched / in transit" value={formatNumber(stats.dispatched)} icon={<Send className="h-5 w-5" />} tone="sky" />
-        <StatCard label="Delivered" value={formatNumber(stats.delivered)} icon={<CheckCircle2 className="h-5 w-5" />} tone="emerald" />
-        <StatCard label="Total units shipped" value={formatNumber(stats.totalQty)} icon={<Package className="h-5 w-5" />} tone="warn" />
+        <StatCard label="Total"                    value={formatNumber(docs.length)}       icon={<Truck       className="h-5 w-5" />} variant="blue"   />
+        <StatCard label="Dispatched / in transit"  value={formatNumber(stats.dispatched)}  icon={<Send        className="h-5 w-5" />} variant="violet" />
+        <StatCard label="Delivered"                value={formatNumber(stats.delivered)}   icon={<CheckCircle2 className="h-5 w-5" />} variant="green"  />
+        <StatCard label="Total units shipped"      value={formatNumber(stats.totalQty)}    icon={<Package     className="h-5 w-5" />} variant="amber"  />
       </div>
 
       <SectionCard
         title="Delivery register"
         description={`${filtered.length} of ${docs.length}`}
-        action={
+        actions={
           <div className="flex items-center gap-2">
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-border bg-secondary/40 py-1.5 px-2 text-xs">
               <option value="">All statuses</option>
@@ -214,7 +218,7 @@ export default function DeliveryOrdersPage() {
             </div>
           </div>
         }
-        bodyClassName="p-0"
+        noPadding
       >
         {listQ.loading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
@@ -262,6 +266,15 @@ export default function DeliveryOrdersPage() {
                         {['DISPATCHED', 'IN_TRANSIT'].includes(d.status) && (
                           <button onClick={() => transitionMutation({ variables: { id: d.id, status: 'DELIVERED' } })} title="Mark delivered" className="h-7 w-7 grid place-items-center rounded-md text-emerald-600 hover:bg-emerald-50">
                             <CheckCircle2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        {!['DELIVERED','CANCELLED'].includes(d.status) && (
+                          <button
+                            onClick={() => { if (confirm(`Cancel delivery order ${d.docNumber}? If already dispatched, stock will be reversed.`)) cancelMutation({ variables: { id: d.id } }) }}
+                            title="Cancel delivery order"
+                            className="h-7 w-7 grid place-items-center rounded-md text-amber-600 hover:bg-amber-50"
+                          >
+                            <Ban className="h-3.5 w-3.5" />
                           </button>
                         )}
                         <button

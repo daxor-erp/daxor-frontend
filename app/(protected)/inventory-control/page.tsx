@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { AdjustInventoryQuickSection } from '@/components/inventory/AdjustInventoryQuickSection'
 import { AdjustInventoryWorksheetSection } from '@/components/inventory/AdjustInventoryWorksheetSection'
 import { Package, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
+import { PageHeader } from '@/components/ui/erp-shared'
 import { CellInput } from '@/components/ui/cell-input'
 import { CellSelect } from '@/components/ui/cell-select'
 
@@ -250,14 +251,13 @@ export default function InventoryControlPage() {
 
   return (
     <div className="p-6 space-y-8">
-      <div className="flex flex-wrap justify-between gap-4 items-start">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory control &amp; adjustments</h1>
-          <p className="text-gray-500 mt-1">
-            Bin-level stock levels, stock adjustments, and physical count worksheets — combined for one workflow.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
+      <PageHeader
+        title="Inventory Control"
+        subtitle="Bin-level stock levels, adjustments, and physical count worksheets"
+        icon={<Package className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Inventory' }, { label: 'Inventory Control' }]}
+      />
+      <div className="flex flex-wrap justify-end gap-4 items-center">
           <CellSelect
             className="w-[196px]"
             value={warehouseFilter}
@@ -285,7 +285,6 @@ export default function InventoryControlPage() {
             Add row
           </Button>
         </div>
-      </div>
 
       <section className="border border-gray-300 rounded-md overflow-hidden bg-white shadow-sm">
         <div className="flex items-center gap-2 px-3 py-2 bg-[#f3f2f1] border-b border-gray-300 text-xs text-gray-700">

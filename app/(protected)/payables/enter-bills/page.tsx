@@ -3,402 +3,250 @@
 import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
-import { CellInput } from '@/components/ui/cell-input'
-import { CellSelect } from '@/components/ui/cell-select'
 import { Button } from '@/components/ui/button'
+import { FormDrawer, FormSection, LineItemsEditor } from '@/components/ui/form-drawer'
+import { ConfirmDialog } from '@/components/ui/form-drawer'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import {
   GET_VENDOR_BILLS, CREATE_VENDOR_BILL, UPDATE_VENDOR_BILL,
-  APPROVE_VENDOR_BILL, SUBMIT_VENDOR_BILL_FOR_APPROVAL, DELETE_VENDOR_BILL, GET_VENDORS, GET_ITEMS
+  APPROVE_VENDOR_BILL, SUBMIT_VENDOR_BILL_FOR_APPROVAL, DELETE_VENDOR_BILL, GET_VENDORS,
+  RECONCILE_VENDOR_BILL, APPLY_VENDOR_CREDIT,
 } from '@/gql/queries'
-import { Trash2, Edit, X, Save, Plus, CheckCircle, FileText, Clock, DollarSign, Download } from 'lucide-react'
-import { downloadDocumentPdf } from '@/lib/pdf-download'
-import { formatMoney } from '@/lib/format-money'
-import { formatDate } from '@/lib/format-date'
-import { StatusBadge } from '@/components/ui/status-badge'
+import { FileText, Clock, CheckCircle2, DollarSign, Trash2, Send, CheckCheck, Plus, CreditCard, Minus } from 'lucide-react'
 
-const EMPTY_LINE = { itemId: '', description: '', quantity: 1, unitPrice: 0, discount: 0, tax: 0, total: 0 }
+const BLANK_LINE = { description: '', quantity: 1, unitPrice: 0, discount: 0, tax: 0, total: 0 }
+const BLANK_FORM = { vendorId: '', billDate: new Date().toISOString().split('T')[0], dueDate: '', notes: '' }
 
-const EMPTY_FORM = {
-  vendorId: '',
-  billDate: new Date().toISOString().split('T')[0],
-  dueDate: '',
-  notes: '',
+function computeLines(lines: any[]) {
+  return lines.map(l => {
+    const base = Number(l.quantity) * Number(l.unitPrice)
+    const afterDisc = base * (1 - Number(l.discount) / 100)
+    const total = afterDisc * (1 + Number(l.tax) / 100)
+    return { ...l, total: Math.round(total * 100) / 100 }
+  })
 }
 
 export default function EnterBillsPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
-  const [adding, setAdding] = useState(false)
-  const [editing, setEditing] = useState<string | null>(null)
-  const [form, setForm] = useState({ ...EMPTY_FORM })
-  const [lineItems, setLineItems] = useState([{ ...EMPTY_LINE }])
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [editRow, setEditRow]       = useState<any>(null)
+  const [form, setForm]             = useState({ ...BLANK_FORM })
+  const [lines, setLines]           = useState([{ ...BLANK_LINE }])
+  const [delConfirm, setDelConfirm] = useState<string | null>(null)
+  const [creditDrawer, setCreditDrawer] = useState<any>(null)
+  const [creditAmount, setCreditAmount]  = useState('')
 
-  const { data, loading, error, refetch } = useQuery(GET_VENDOR_BILLS, {
-    variables: { organizationId: orgId, page: 1, limit: 100 },
+  const { data, loading, refetch } = useQuery(GET_VENDOR_BILLS, {
+    variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
   })
-
-  const { data: vendorsData } = useQuery(GET_VENDORS, {
+  const { data: vData } = useQuery(GET_VENDORS, {
     variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
   })
 
-  const { data: itemsData } = useQuery(GET_ITEMS, {
-    variables: { organizationId: orgId, page: 1, limit: 500 },
-    skip: !orgId,
-  })
+  const done = () => { refetch(); setDrawerOpen(false); setEditRow(null); setDelConfirm(null); setCreditDrawer(null); setCreditAmount('') }
+  const err  = (e: any) => alert(e.message)
 
-  const [createBill, { loading: saving }] = useMutation(CREATE_VENDOR_BILL, {
-    onCompleted: () => { refetch(); setAdding(false); reset() },
-  })
+  const [createBill, { loading: saving }]  = useMutation(CREATE_VENDOR_BILL,               { onCompleted: done, onError: err })
+  const [updateBill, { loading: updating }] = useMutation(UPDATE_VENDOR_BILL,              { onCompleted: done, onError: err })
+  const [approveBill]                       = useMutation(APPROVE_VENDOR_BILL,             { onCompleted: done, onError: err })
+  const [submitBill]                        = useMutation(SUBMIT_VENDOR_BILL_FOR_APPROVAL, { onCompleted: done, onError: err })
+  const [deleteBill]                        = useMutation(DELETE_VENDOR_BILL,              { onCompleted: done, onError: err })
+  const [reconcileBill]                     = useMutation(RECONCILE_VENDOR_BILL,           { onCompleted: done, onError: err })
+  const [applyCredit, { loading: applying }] = useMutation(APPLY_VENDOR_CREDIT,           { onCompleted: done, onError: err })
 
-  const [updateBill, { loading: updating }] = useMutation(UPDATE_VENDOR_BILL, {
-    onCompleted: () => { refetch(); setEditing(null); reset() },
-  })
-
-  const [approveBill] = useMutation(APPROVE_VENDOR_BILL, {
-    onCompleted: () => refetch(),
-  })
-
-  const [submitBillForApproval] = useMutation(SUBMIT_VENDOR_BILL_FOR_APPROVAL, {
-    onCompleted: () => refetch(),
-  })
-
-  const [deleteBill] = useMutation(DELETE_VENDOR_BILL, {
-    onCompleted: () => refetch(),
-  })
-
-  const reset = () => {
-    setForm({ ...EMPTY_FORM })
-    setLineItems([{ ...EMPTY_LINE }])
-    setErrors({})
-  }
-
-  const setF = (k: string, v: string) => {
-    setForm(p => ({ ...p, [k]: v }))
-    setErrors(p => ({ ...p, [k]: '' }))
-  }
-
-  const updateLine = (i: number, k: string, v: string | number) => {
-    setLineItems(prev => {
-      const lines = [...prev]
-      lines[i] = { ...lines[i], [k]: v }
-      // recalculate total
-      const qty = k === 'quantity' ? Number(v) : Number(lines[i].quantity)
-      const price = k === 'unitPrice' ? Number(v) : Number(lines[i].unitPrice)
-      const disc = k === 'discount' ? Number(v) : Number(lines[i].discount)
-      const tax = k === 'tax' ? Number(v) : Number(lines[i].tax)
-      const subtotal = qty * price
-      const discAmt = subtotal * (disc / 100)
-      const taxAmt = (subtotal - discAmt) * (tax / 100)
-      lines[i].total = Math.round((subtotal - discAmt + taxAmt) * 100) / 100
-      return lines
-    })
-  }
-
-  const addLine = () => setLineItems(p => [...p, { ...EMPTY_LINE }])
-  const removeLine = (i: number) => setLineItems(p => p.filter((_, idx) => idx !== i))
-
-  const totals = lineItems.reduce((acc, l) => ({
-    subtotal: acc.subtotal + (Number(l.quantity) * Number(l.unitPrice)),
-    discount: acc.discount + (Number(l.quantity) * Number(l.unitPrice) * (Number(l.discount) / 100)),
-    tax: acc.tax + ((Number(l.quantity) * Number(l.unitPrice) - Number(l.quantity) * Number(l.unitPrice) * (Number(l.discount) / 100)) * (Number(l.tax) / 100)),
-    total: acc.total + Number(l.total),
-  }), { subtotal: 0, discount: 0, tax: 0, total: 0 })
-
-  const validate = () => {
-    const e: Record<string, string> = {}
-    if (!form.vendorId) e.vendorId = 'Required'
-    if (!form.billDate) e.billDate = 'Required'
-    if (!form.dueDate) e.dueDate = 'Required'
-    if (lineItems.length === 0 || !lineItems[0].description) e.lines = 'At least one line item required'
-    setErrors(e)
-    return !Object.keys(e).length
-  }
-
-  const handleSubmit = () => {
-    if (!validate()) return
-    const input = {
-      vendorId: form.vendorId,
-      billDate: form.billDate,
-      dueDate: form.dueDate,
-      notes: form.notes,
-      lineItems: lineItems.map(l => ({
-        description: l.description,
-        quantity: Number(l.quantity),
-        unitPrice: Number(l.unitPrice),
-        discount: Number(l.discount),
-        tax: Number(l.tax),
-        total: Number(l.total),
-      })),
-      subtotal: Math.round(totals.subtotal * 100) / 100,
-      discountAmount: Math.round(totals.discount * 100) / 100,
-      taxAmount: Math.round(totals.tax * 100) / 100,
-      totalAmount: Math.round(totals.total * 100) / 100,
-      organizationId: orgId,
-    }
-    if (editing) {
-      const { organizationId, ...updateInput } = input as any
-      updateBill({ variables: { id: editing, input: updateInput } })
-    } else {
-      createBill({ variables: { input } })
-    }
-  }
-
-  const bills = data?.vendorBills ?? []
-  const vendors = vendorsData?.vendors ?? []
-  const items = itemsData?.items ?? []
-
-  const handleItemSelect = (lineIndex: number, itemId: string) => {
-    const item = items.find((i: any) => i.id === itemId)
-    if (!item) return
-    setLineItems(prev => {
-      const lines = [...prev]
-      lines[lineIndex] = {
-        ...lines[lineIndex],
-        itemId,
-        description: item.name,
-        unitPrice: item.rate || 0,
-        total: Math.round((Number(lines[lineIndex].quantity) * (item.rate || 0)) * 100) / 100,
-      }
-      return lines
-    })
-  }
-
-  const statusColor: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-600 border-gray-200',
-    submitted: 'bg-amber-50 text-amber-800 border-amber-200',
-    approval_declined: 'bg-red-50 text-red-700 border-red-200',
-    approved: 'bg-blue-50 text-blue-700 border-blue-200',
-    partially_paid: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    paid: 'bg-green-50 text-green-700 border-green-200',
-    cancelled: 'bg-red-50 text-red-700 border-red-200',
-  }
+  const records: any[] = data?.vendorBills ?? []
+  const vendors: any[] = vData?.vendors ?? []
 
   const stats = {
-    total: bills.length,
-    outstanding: bills.filter((b: any) => ['approved', 'partially_paid'].includes(b.status)).length,
-    paid: bills.filter((b: any) => b.status === 'paid').length,
-    totalOwed: bills.filter((b: any) => b.status !== 'paid' && b.status !== 'cancelled')
-      .reduce((s: number, b: any) => s + (b.outstandingAmount || 0), 0),
+    total:    records.length,
+    draft:    records.filter((r: any) => r.status === 'draft').length,
+    pending:  records.filter((r: any) => r.status === 'submitted').length,
+    approved: records.filter((r: any) => r.status === 'approved').length,
+    outstanding: records.reduce((s: number, r: any) => s + Number(r.outstandingAmount ?? 0), 0),
   }
 
+  const setF = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+
+  const openCreate = () => {
+    setForm({ ...BLANK_FORM })
+    setLines([{ ...BLANK_LINE }])
+    setEditRow(null)
+    setDrawerOpen(true)
+  }
+
+  const openEdit = (row: any) => {
+    setForm({ vendorId: row.vendorId ?? '', billDate: row.billDate?.split('T')[0] ?? '', dueDate: row.dueDate?.split('T')[0] ?? '', notes: row.notes ?? '' })
+    setLines(row.lineItems?.length ? row.lineItems.map((l: any) => ({ ...l })) : [{ ...BLANK_LINE }])
+    setEditRow(row)
+    setDrawerOpen(true)
+  }
+
+  const handleSave = () => {
+    const computed = computeLines(lines)
+    const subtotal    = computed.reduce((s, l) => s + l.unitPrice * l.quantity * (1 - l.discount / 100), 0)
+    const taxAmount   = computed.reduce((s, l) => s + l.unitPrice * l.quantity * (1 - l.discount / 100) * (l.tax / 100), 0)
+    const totalAmount = computed.reduce((s, l) => s + l.total, 0)
+    const input = {
+      vendorId: form.vendorId, billDate: form.billDate, dueDate: form.dueDate,
+      lineItems: computed, subtotal, taxAmount, totalAmount, notes: form.notes,
+      organizationId: orgId,
+    }
+    if (editRow) updateBill({ variables: { id: editRow.id, input } })
+    else createBill({ variables: { input } })
+  }
+
+  const LINE_COLS = [
+    { key: 'description', header: 'Description' },
+    { key: 'quantity',    header: 'Qty',      width: '70px',  type: 'number' as const },
+    { key: 'unitPrice',   header: 'Price',    width: '90px',  type: 'number' as const },
+    { key: 'discount',    header: 'Disc %',   width: '70px',  type: 'number' as const },
+    { key: 'tax',         header: 'Tax %',    width: '70px',  type: 'number' as const },
+    { key: 'total',       header: 'Total',    width: '90px',  readOnly: true },
+  ]
+
   const columns: Column[] = [
-    { key: 'billNumber', label: 'Bill #', width: '130px', render: v => <span className="font-mono text-xs text-gray-600">{v}</span> },
-    { key: 'vendor', label: 'Vendor', render: (_v, row) => <span className="font-medium">{row.vendor?.name || '—'}</span> },
-    { key: 'billDate', label: 'Bill Date', width: '110px', render: v => v ? formatDate(v) : '—' },
-    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => v ? formatDate(v) : '—' },
-    { key: 'totalAmount', label: 'Total', width: '110px', align: 'right', render: v => <span className="font-semibold">{formatMoney(v)}</span> },
-    { key: 'paidAmount', label: 'Paid', width: '100px', align: 'right', render: v => <span className="text-green-600">{formatMoney(v)}</span> },
-    {
-      key: 'debitNotesApplied',
-      label: 'Debited',
-      width: '90px',
-      align: 'right',
-      render: (v) => (
-        <span className={Number(v) > 0 ? 'text-violet-700 font-medium' : 'text-gray-400'}>
-          {formatMoney(v ?? 0)}
-        </span>
-      ),
-    },
-    { key: 'outstandingAmount', label: 'Outstanding', width: '110px', align: 'right', render: v => <span className="font-semibold text-red-600">{formatMoney(v)}</span> },
-    {
-      key: 'status', label: 'Status', width: '130px',
-      render: (v) => <StatusBadge status={String(v)} />,
-    },
-    {
-      key: '_orgApproval',
-      label: 'Org approval',
-      width: '168px',
-      render: (_v, row: any) => {
-        const st = String(row.status || '')
-        const showSubmit = st === 'draft' || st === 'approval_declined'
-        return (
-          <div className="flex flex-col gap-1 min-w-[140px]">
-            {showSubmit ? (
-              <CellSelect
-                aria-label="Vendor bill approval action"
-                defaultValue=""
-                onChange={(e) => {
-                  const val = e.target.value
-                  e.target.value = ''
-                  if (val === 'submit') submitBillForApproval({ variables: { id: row.id } })
-                }}
-                options={[
-                  { value: '', label: 'Change status…' },
-                  { value: 'submit', label: 'Send for approval' },
-                ]}
-              />
-            ) : (
-              <span className="text-xs text-gray-400">—</span>
-            )}
-          </div>
-        )
-      },
-    },
+    { key: 'billNumber',       label: 'Bill #',       width: '140px', render: v => <MonoCell value={v} /> },
+    { key: 'vendor',           label: 'Vendor',       render: (v, r) => <span className="text-sm font-medium">{v?.name || '—'}</span> },
+    { key: 'billDate',         label: 'Bill Date',    width: '110px', render: v => <DateCell value={v} /> },
+    { key: 'dueDate',          label: 'Due Date',     width: '110px', render: v => <DateCell value={v} /> },
+    { key: 'status',           label: 'Status',       width: '130px', render: v => <ErpBadge status={v} /> },
+    { key: 'totalAmount',      label: 'Total',        width: '120px', align: 'right', render: v => <AmountCell value={v} /> },
+    { key: 'outstandingAmount',label: 'Outstanding',  width: '120px', align: 'right', render: v => <AmountCell value={v} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Enter Bills</h1>
-        <p className="text-gray-500">Record vendor invoices (Accounts Payable)</p>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Vendor Bills"
+        subtitle="Record and manage accounts payable invoices from vendors"
+        icon={<FileText className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Payables' }, { label: 'Enter Bills' }]}
+        actions={<Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90"><Plus className="h-4 w-4 mr-1.5" /> New Bill</Button>}
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: 'Total Bills', value: stats.total, icon: FileText, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Outstanding', value: stats.outstanding, icon: Clock, cls: 'text-yellow-600 bg-yellow-50' },
-          { label: 'Paid', value: stats.paid, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'Total Owed', value: `${formatMoney(stats.totalOwed)}`, icon: DollarSign, cls: 'text-red-600 bg-red-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
-
-      {/* Form */}
-      {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 bg-blue-600">
-            <span className="text-xs font-semibold text-white">{editing ? 'Edit Bill' : 'New Vendor Bill'}</span>
-            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
-          </div>
-          <div className="p-4 space-y-4">
-            {/* Header fields */}
-            <div className="grid grid-cols-3 gap-3">
-              <SelectFloating
-                label="Vendor *"
-                value={form.vendorId}
-                onChange={e => setF('vendorId', typeof e === 'string' ? e : e.target.value)}
-                options={[{ value: '', label: 'Select vendor...' }, ...vendors.map((v: any) => ({ value: v.id, label: v.name }))]}
-                error={errors.vendorId}
-                className="h-7 text-xs"
-              />
-              <InputFloating label="Bill Date *" type="date" value={form.billDate} onChange={e => setF('billDate', e.target.value)} error={errors.billDate} className="h-7 text-xs" />
-              <InputFloating label="Due Date *" type="date" value={form.dueDate} onChange={e => setF('dueDate', e.target.value)} error={errors.dueDate} className="h-7 text-xs" />
-            </div>
-
-            {/* Line items */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-gray-700">Line Items</span>
-                {errors.lines && <span className="text-xs text-red-500">{errors.lines}</span>}
-              </div>
-              <table className="w-full text-xs border border-gray-200 rounded">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left p-2 font-medium text-gray-600 w-40">Item</th>
-                    <th className="text-left p-2 font-medium text-gray-600">Description</th>
-                    <th className="text-right p-2 font-medium text-gray-600 w-20">Qty</th>
-                    <th className="text-right p-2 font-medium text-gray-600 w-24">Unit Price</th>
-                    <th className="text-right p-2 font-medium text-gray-600 w-20">Disc %</th>
-                    <th className="text-right p-2 font-medium text-gray-600 w-20">Tax %</th>
-                    <th className="text-right p-2 font-medium text-gray-600 w-24">Total</th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lineItems.map((line, i) => (
-                    <tr key={i} className="border-t border-gray-100">
-                      <td className="p-1">
-                        <CellSelect
-                          value={line.itemId}
-                          onChange={e => handleItemSelect(i, e.target.value)}
-                          placeholder="— select item —"
-                          options={items.map((item: any) => ({ value: item.id, label: item.name }))}
-                        />
-                      </td>
-                      <td className="p-1"><CellInput value={line.description} onChange={e => updateLine(i, 'description', e.target.value)} placeholder="Description" /></td>
-                      <td className="p-1"><CellInput type="number" className="text-right" value={line.quantity} onChange={e => updateLine(i, 'quantity', e.target.value)} /></td>
-                      <td className="p-1"><CellInput type="number" className="text-right" value={line.unitPrice} onChange={e => updateLine(i, 'unitPrice', e.target.value)} /></td>
-                      <td className="p-1"><CellInput type="number" className="text-right" value={line.discount} onChange={e => updateLine(i, 'discount', e.target.value)} /></td>
-                      <td className="p-1"><CellInput type="number" className="text-right" value={line.tax} onChange={e => updateLine(i, 'tax', e.target.value)} /></td>
-                      <td className="p-1 text-right font-semibold pr-2">{formatMoney(line.total)}</td>
-                      <td className="p-1"><button onClick={() => removeLine(i)} className="text-red-400 hover:text-red-600"><X className="h-3.5 w-3.5" /></button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <button onClick={addLine} className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
-                <Plus className="h-3.5 w-3.5" /> Add Line
-              </button>
-            </div>
-
-            {/* Totals */}
-            <div className="flex justify-end">
-              <div className="w-64 space-y-1 text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatMoney(totals.subtotal)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Discount</span><span>-{formatMoney(totals.discount)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Tax</span><span>{formatMoney(totals.tax)}</span></div>
-                <div className="flex justify-between font-bold text-sm border-t pt-1"><span>Total</span><span>{formatMoney(totals.total)}</span></div>
-              </div>
-            </div>
-
-            <InputFloating label="Notes" multiline rows={2} value={form.notes} onChange={e => setF('notes', e.target.value)} className="text-xs" />
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setAdding(false); setEditing(null); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]">
-                <Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving…' : editing ? 'Update Bill' : 'Save Bill'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatsRow cols={5}>
+        <StatCard label="Total Bills"   value={stats.total}    icon={<FileText     className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft"         value={stats.draft}    icon={<Clock        className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Pending"       value={stats.pending}  icon={<Send         className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Approved"      value={stats.approved} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Outstanding"   value={`₹${(stats.outstanding/1000).toFixed(1)}k`} icon={<DollarSign className="h-5 w-5" />} variant="rose" />
+      </StatsRow>
 
       <DataTable
-        data={bills}
+        data={records}
         columns={columns}
         loading={loading}
-        title={error ? `Error: ${error.message}` : 'All Bills'}
-        onAdd={() => { reset(); setAdding(true) }}
-        addLabel="New Bill"
-        searchable
-        searchPlaceholder="Search bills..."
-        emptyMessage="No bills yet. Click 'New Bill' to record a vendor invoice."
-        onRowClick={(row) => {
-          setForm({
-            vendorId: String(row.vendorId ?? row.vendor?.id ?? ''),
-            billDate: row.billDate ? String(row.billDate).slice(0, 10) : new Date().toISOString().split('T')[0],
-            dueDate: row.dueDate ? String(row.dueDate).slice(0, 10) : '',
-            notes: row.notes ?? '',
-          })
-          setLineItems([{ ...EMPTY_LINE }])
-          setEditing(row.id)
-          setAdding(true)
-        }}
+        title="All Vendor Bills"
+        searchable searchPlaceholder="Search bills…"
+        emptyMessage="No vendor bills found."
+        pageSize={25}
+        onRowClick={(r: any) => { if (['draft','approval_declined'].includes(r.status)) openEdit(r) }}
+        isRowClickable={(r: any) => ['draft','approval_declined'].includes(r.status)}
         actions={[
           {
-            label: 'Approve',
-            icon: <CheckCircle className="h-3.5 w-3.5" />,
-            show: (row) => row.status === 'draft',
-            onClick: row => { if (confirm('Approve this bill without routing through the approver queue?')) approveBill({ variables: { id: row.id } }) },
-            variant: 'ghost',
+            label: 'Submit',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (r: any) => submitBill({ variables: { id: r.id } }),
+            show: (r: any) => ['draft','approval_declined'].includes(r.status),
           },
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => { setEditing(row.id); setAdding(true) }, variant: 'ghost' },
           {
-            label: 'Download PDF',
-            icon: <Download className="h-3.5 w-3.5" />,
-            onClick: row => downloadDocumentPdf('vendor-bill', row.id, row.billNumber || row.seqNo).catch(() => {}),
-            variant: 'ghost',
+            label: 'Approve',
+            icon: <CheckCheck className="h-3.5 w-3.5" />,
+            onClick: (r: any) => approveBill({ variables: { id: r.id } }),
+            show: (r: any) => r.status === 'draft',
+          },
+          {
+            label: 'Reconcile (Mark Paid)',
+            icon: <CreditCard className="h-3.5 w-3.5" />,
+            onClick: (r: any) => reconcileBill({ variables: { id: r.id } }),
+            show: (r: any) => r.status === 'in_payment',
+          },
+          {
+            label: 'Apply Credit',
+            icon: <Minus className="h-3.5 w-3.5" />,
+            onClick: (r: any) => { setCreditDrawer(r); setCreditAmount('') },
+            show: (r: any) => ['approved','in_payment','partially_paid'].includes(r.status),
           },
           {
             label: 'Delete',
             icon: <Trash2 className="h-3.5 w-3.5" />,
-            onClick: row => { if (confirm('Delete this bill?')) deleteBill({ variables: { id: row.id } }) },
-            variant: 'ghost',
+            onClick: (r: any) => setDelConfirm(r.id),
+            show: (r: any) => ['draft','approval_declined'].includes(r.status),
           },
         ]}
       />
+
+      <FormDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={editRow ? `Edit Bill ${editRow.billNumber}` : 'New Vendor Bill'}
+        size="lg"
+        submitLabel={editRow ? 'Update Bill' : 'Save Bill'}
+        onSubmit={handleSave}
+        submitting={saving || updating}
+      >
+        <FormSection title="Bill Details" columns={2}>
+          <SelectFloating
+            label="Vendor *"
+            value={form.vendorId}
+            onChange={v => setF('vendorId', typeof v === 'string' ? v : (v as any).target.value)}
+            options={[{ value: '', label: 'Select vendor…' }, ...vendors.map((v: any) => ({ value: v.id, label: v.name }))]}
+          />
+          <div />
+          <InputFloating label="Bill Date *" type="date" value={form.billDate} onChange={e => setF('billDate', e.target.value)} />
+          <InputFloating label="Due Date *"  type="date" value={form.dueDate}  onChange={e => setF('dueDate',  e.target.value)} />
+        </FormSection>
+        <FormSection title="Line Items" columns={1}>
+          <LineItemsEditor columns={LINE_COLS} rows={lines} onChange={r => setLines(computeLines(r))} onAddRow={() => ({ ...BLANK_LINE })} />
+        </FormSection>
+        <FormSection title="Notes" columns={1}>
+          <InputFloating label="Notes" multiline rows={2} value={form.notes} onChange={e => setF('notes', e.target.value)} />
+        </FormSection>
+      </FormDrawer>
+
+      <ConfirmDialog
+        open={!!delConfirm}
+        onClose={() => setDelConfirm(null)}
+        onConfirm={() => { if (delConfirm) deleteBill({ variables: { id: delConfirm } }) }}
+        title="Delete Vendor Bill?"
+        description="This bill will be permanently deleted."
+        confirmLabel="Delete"
+      />
+
+      {/* Apply Outstanding Credit drawer */}
+      <FormDrawer
+        open={!!creditDrawer}
+        onClose={() => setCreditDrawer(null)}
+        title={`Apply Credit — ${creditDrawer?.billNumber ?? ''}`}
+        description="Apply a vendor debit note or prepayment credit against this bill's outstanding balance."
+        size="sm"
+        submitLabel="Apply Credit"
+        onSubmit={() => {
+          if (!creditDrawer || !creditAmount || Number(creditAmount) <= 0) return alert('Enter a positive credit amount')
+          applyCredit({ variables: { id: creditDrawer.id, amount: Number(creditAmount) } })
+        }}
+        submitting={applying}
+      >
+        <FormSection columns={1}>
+          <div className="text-sm text-muted-foreground space-y-1">
+            <div>Outstanding: <strong>₹{Number(creditDrawer?.outstandingAmount ?? 0).toLocaleString()}</strong></div>
+            <div>Debit notes applied so far: <strong>₹{Number(creditDrawer?.debitNotesApplied ?? 0).toLocaleString()}</strong></div>
+          </div>
+          <InputFloating
+            label="Credit Amount to Apply *"
+            type="number"
+            value={creditAmount}
+            onChange={e => setCreditAmount(e.target.value)}
+          />
+        </FormSection>
+      </FormDrawer>
     </div>
   )
 }

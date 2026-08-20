@@ -122,7 +122,7 @@ export function GlobalSearch() {
         onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 30) }}
         className="hidden sm:flex min-w-0 items-center w-full max-w-xl rounded-lg border border-border bg-secondary/40 py-2 pl-10 pr-12 text-sm text-left text-muted-foreground hover:bg-secondary transition-colors relative"
       >
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <span className="truncate min-w-0 flex-1">Search customers, invoices, items…</span>
         <kbd className="hidden md:inline-flex pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-6 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
           <span className="text-xs">⌘</span>K

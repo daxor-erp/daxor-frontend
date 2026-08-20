@@ -12,6 +12,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
 import { quotationPartyName, quotationPartyEmail } from '@/lib/sales-customer-options'
+import { PageHeader, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { DataTable, type Column } from '@/components/DataTable'
 
 const GET_QUOTATIONS = gql`
   query GetQuotationsForSend($organizationId: ID) {
@@ -156,132 +158,74 @@ export default function SendQuotationsPage() {
   const sentQuotations = rows.filter((q) => q.status !== 'approved')
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Send quotations</h1>
-        <p className="text-gray-500 mt-2">Internally approved quotations appear here ready to email customers; other statuses appear in the list below.</p>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Send Quotations"
+        subtitle="Internally approved quotations appear here ready to email to customers"
+        icon={<Send className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Quotations' }, { label: 'Send' }]}
+      />
 
       {banner?.type === 'ok' && (
-        <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm">
-          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>{banner.text}</span>
+        <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-lg text-sm">
+          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" /><span>{banner.text}</span>
         </div>
       )}
       {banner?.type === 'err' && (
         <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>{banner.text}</span>
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" /><span>{banner.text}</span>
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ready to send (internally approved)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {draftQuotations.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No internally approved quotations yet. On Create Quotations, submit for approval; when approved they show here.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quotation #</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Valid until</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {draftQuotations.map((quotation) => {
-                  const customerEmail = quotationPartyEmail(quotation)
-                  const canSend = Boolean(customerEmail)
-                  return (
-                    <TableRow key={quotation.id}>
-                      <TableCell className="font-medium font-mono text-xs">{quotation.quotationNumber}</TableCell>
-                      <TableCell>{quotationPartyName(quotation)}</TableCell>
-                      <TableCell className="text-sm text-gray-600">{customerEmail || '—'}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{quotation.subject}</TableCell>
-                      <TableCell>{formatDate(quotation.quotationDate)}</TableCell>
-                      <TableCell>{formatDate(quotation.validUntil)}</TableCell>
-                      <TableCell className="font-semibold">{formatMoney(quotation.totalAmount)}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusStyle(quotation.status)}>{quotation.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2 flex-wrap">
-                          <Button size="sm" variant="outline" onClick={() => handlePreview(quotation)}>
-                            <Eye className="w-4 h-4 mr-1" /> Preview
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => setSendConfirmId(quotation.id)}
-                            disabled={sending || !canSend}
-                            title={!canSend ? 'Add an email on the customer record first' : 'Send to customer'}
-                          >
-                            <Send className="w-4 h-4 mr-1" /> Send to customer
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Ready to send */}
+      <DataTable
+        data={draftQuotations}
+        columns={[
+          { key: 'quotationNumber', label: 'Quotation #', width: '130px', render: (v) => <MonoCell value={v} /> },
+          { key: 'customerId',      label: 'Customer',    render: (_v, r: any) => <span className="text-sm font-medium">{quotationPartyName(r)}</span> },
+          { key: '_email',          label: 'Email',       render: (_v, r: any) => <span className="text-sm text-muted-foreground">{quotationPartyEmail(r) || '—'}</span> },
+          { key: 'subject',         label: 'Subject',     render: (v) => <span className="text-sm">{v}</span> },
+          { key: 'quotationDate',   label: 'Date',        width: '110px', render: (v) => <DateCell value={v} /> },
+          { key: 'validUntil',      label: 'Valid Until', width: '110px', render: (v) => <DateCell value={v} /> },
+          { key: 'totalAmount',     label: 'Amount',      width: '120px', align: 'right', render: (v) => <span className="font-semibold tabular-nums">{formatMoney(v)}</span> },
+          { key: 'status',          label: 'Status',      width: '120px', render: (v) => <ErpBadge status={v} /> },
+        ] as Column[]}
+        title="Ready to Send (Internally Approved)"
+        emptyMessage="No approved quotations. Submit for approval on the Quotations page first."
+        actions={[
+          {
+            label: 'Preview',
+            icon: <Eye className="h-3.5 w-3.5" />,
+            onClick: (r: any) => { setSelectedQuotation(r); setPreviewOpen(true) },
+          },
+          {
+            label: 'Send to Customer',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (r: any) => setSendConfirmId(r.id),
+            disabled: (r: any) => !quotationPartyEmail(r),
+          },
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Sent quotations — history</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {sentQuotations.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No sent or closed quotations yet. Sent items appear here after you send a draft.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quotation #</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Sent at</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sentQuotations.map((quotation) => (
-                  <TableRow key={quotation.id}>
-                    <TableCell className="font-medium font-mono text-xs">{quotation.quotationNumber}</TableCell>
-                    <TableCell>{quotationPartyName(quotation)}</TableCell>
-                    <TableCell className="max-w-[220px] truncate">{quotation.subject}</TableCell>
-                    <TableCell className="font-semibold">{formatMoney(quotation.totalAmount)}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusStyle(quotation.status)}>{quotation.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-600">
-                      {quotation.sentAt ? new Date(quotation.sentAt).toLocaleString() : '—'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="outline" onClick={() => handlePreview(quotation)}>
-                        <Eye className="w-4 h-4 mr-1" /> View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* History */}
+      <DataTable
+        data={sentQuotations}
+        columns={[
+          { key: 'quotationNumber', label: 'Quotation #', width: '130px', render: (v) => <MonoCell value={v} /> },
+          { key: 'customerId',      label: 'Customer',    render: (_v, r: any) => <span className="text-sm font-medium">{quotationPartyName(r)}</span> },
+          { key: 'subject',         label: 'Subject',     render: (v) => <span className="text-sm">{v}</span> },
+          { key: 'totalAmount',     label: 'Amount',      width: '120px', align: 'right', render: (v) => <span className="font-semibold tabular-nums">{formatMoney(v)}</span> },
+          { key: 'status',          label: 'Status',      width: '120px', render: (v) => <ErpBadge status={v} /> },
+          { key: 'sentAt',          label: 'Sent At',     width: '160px', render: (v) => <span className="text-xs text-muted-foreground">{v ? new Date(v).toLocaleString() : '—'}</span> },
+        ] as Column[]}
+        title="Sent Quotations — History"
+        emptyMessage="No sent quotations yet."
+        actions={[{
+          label: 'View',
+          icon: <Eye className="h-3.5 w-3.5" />,
+          onClick: (r: any) => { setSelectedQuotation(r); setPreviewOpen(true) },
+        }]}
+      />
 
       <Dialog open={!!sendConfirmId} onOpenChange={(open) => !open && setSendConfirmId(null)}>
         <DialogContent className="sm:max-w-md">

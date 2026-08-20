@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Plus, X, Save, Trash2, FileText, Clock, CheckCircle2, XCircle, Eye, Send, Download } from 'lucide-react'
+import { PageHeader, StatsRow, StatCard } from '@/components/ui/erp-shared'
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { useAuth } from '@/contexts/AuthContext'
 import { DocumentAttachments } from '@/components/widgets/document-attachments'
@@ -135,28 +136,27 @@ export default function CreateInvoicesPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center mb-5">
-        <div>
-          <h1 className="text-3xl font-bold">Create Invoices</h1>
-          <p className="text-gray-500">Create and manage customer invoices</p>
-        </div>
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Create Invoices"
+        subtitle="Create and manage customer invoices"
+        icon={<FileText className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Create Invoices' }]}
+        actions={
+          !adding && (
+            <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-4 w-4" /> New Invoice
+            </button>
+          )
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        {[
-          { label: 'Total', value: stats.total, icon: FileText, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Draft', value: stats.draft, icon: Clock, cls: 'text-gray-500 bg-gray-100' },
-          { label: 'Paid', value: stats.paid, icon: CheckCircle2, cls: 'text-emerald-600 bg-emerald-50' },
-          { label: 'Overdue', value: stats.overdue, icon: XCircle, cls: 'text-red-500 bg-red-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total"   value={stats.total}   icon={<FileText     className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft"   value={stats.draft}   icon={<Clock        className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Paid"    value={stats.paid}    icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Overdue" value={stats.overdue} icon={<XCircle      className="h-5 w-5" />} variant="rose"  />
+      </StatsRow>
 
       {/* Inline form panel */}
       {adding && (

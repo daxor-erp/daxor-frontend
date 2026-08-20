@@ -78,6 +78,7 @@ interface ProductForm {
   expenseAccount: string
   stockAccount: string
   status: string
+  billControlPolicy: string
   // Smart-button data (read-only, hydrated from GET_PRODUCT — only populated when editing)
   onHandQty: number
   forecastedQty: number
@@ -111,6 +112,7 @@ const EMPTY: ProductForm = {
   expenseAccount: '',
   stockAccount: '',
   status: 'active',
+  billControlPolicy: '',
   onHandQty: 0,
   forecastedQty: 0,
   purchasedQty: 0,
@@ -244,6 +246,7 @@ export default function ProductsPage() {
         incomeAccount: p.incomeAccount ?? '',
         expenseAccount: p.expenseAccount ?? '',
         stockAccount: p.stockAccount ?? '',
+        billControlPolicy: p.billControlPolicy ?? '',
         status: p.status ?? 'active',
         onHandQty: p.onHandQty ?? 0,
         forecastedQty: p.forecastedQty ?? 0,
@@ -406,6 +409,7 @@ export default function ProductsPage() {
       incomeAccount: form.incomeAccount || undefined,
       expenseAccount: form.expenseAccount || undefined,
       stockAccount: form.stockAccount || undefined,
+      billControlPolicy: form.billControlPolicy || undefined,
       status: form.status,
     }
     if (form.id) {
@@ -833,6 +837,25 @@ export default function ProductsPage() {
             </FormSection>
 
             {form.canBePurchased && (
+              <>
+              <FormSection title="Bill Control Policy" description="How vendor bills are created from this product's PO lines (Odoo 19: per-product policy)." className="pt-5 border-t border-border mt-5">
+                <FieldGrid cols={2}>
+                  <div className="space-y-1.5">
+                    <Label>Billing Policy</Label>
+                    <select
+                      value={form.billControlPolicy}
+                      onChange={(e) => setF('billControlPolicy', e.target.value)}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="">Use PO default</option>
+                      <option value="ordered_quantities">Ordered Quantities — bill on PO confirm</option>
+                      <option value="received_quantities">Received Quantities — bill only after receipt</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground">Overrides the PO-level bill control policy for this specific product.</p>
+                  </div>
+                </FieldGrid>
+              </FormSection>
+
               <FormSection title="Packaging" description="Selectable packaging options (e.g. Box of 10) shown on Purchase Order lines." className="pt-5 border-t border-border mt-5">
                 <div className="space-y-2">
                   {form.packagings.map((pkg, idx) => (
@@ -883,6 +906,7 @@ export default function ProductsPage() {
                   </Button>
                 </div>
               </FormSection>
+              </>
             )}
           </TabsContent>
 

@@ -1,10 +1,10 @@
-
-
-export default function SalesPage() {
+'use client'
+import { ComingSoon } from '@/components/ui/erp-shared'
+export default function SalesLandingPage() {
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold">Sales</h1>
-      <p className="text-gray-500">Manage all sales operations</p>
-    </div>
+    <ComingSoon
+      title="Sales Module"
+      description="Use the sidebar to navigate to individual Sales sections: Sales Orders, Quotations, Invoices, Delivery Orders, and more."
+    />
   )
 }

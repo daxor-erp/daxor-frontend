@@ -18,6 +18,7 @@ import {
   mapSalesCustomers,
   customerDisplayName,
 } from '@/lib/sales-customer-options'
+import { PageHeader, StatsRow, StatCard, ErpBadge } from '@/components/ui/erp-shared'
 
 const SO_STATUS: Record<string, { label: string; cls: string }> = {
   draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
@@ -106,8 +107,7 @@ export default function DeliveryOrderPage() {
                 <td className="px-3 py-2 border-r border-gray-200">{formatDate(o.orderDate)}</td>
                 <td className="px-3 py-2 border-r border-gray-200 font-semibold">{formatMoney(o.totalAmount || 0)}</td>
                 <td className="px-3 py-2 border-r border-gray-200">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
-                </td>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>                </td>
                 {showAction && (
                   <td className="px-3 py-2">
                     <Button size="sm" onClick={() => setSelected(o)} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
@@ -124,32 +124,19 @@ export default function DeliveryOrderPage() {
   )
 
   return (
-    
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center mb-5">
-        <div>
-          <h1 className="text-3xl font-bold">Delivery Order</h1>
-          <p className="text-gray-500">Process and track sales order deliveries</p>
-        </div>
-      </div>
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
-          { label: 'Pending Delivery', value: stats.pending,   icon: Clock,        color: 'text-amber-600',   bg: 'bg-amber-50' },
-          { label: 'Delivered',        value: stats.delivered, icon: PackageCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Total Orders',     value: stats.total,     icon: Truck,        color: 'text-blue-600',    bg: 'bg-blue-50' },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className="border shadow-sm">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className={`${bg} p-2 rounded-lg`}><Icon className={`h-5 w-5 ${color}`} /></div>
-              <div>
-                <p className="text-xs text-gray-500">{label}</p>
-                <p className="text-xl font-bold text-gray-800">{value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+    <div className="p-6 space-y-5">
+      <PageHeader
+        title="Delivery Order"
+        subtitle="Process and track sales order deliveries"
+        icon={<Truck className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Delivery Order' }]}
+      />
+
+      <StatsRow cols={3}>
+        <StatCard label="Pending Delivery" value={stats.pending}   icon={<Clock        className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Delivered"         value={stats.delivered} icon={<PackageCheck className="h-5 w-5" />} variant="green" />
+        <StatCard label="Total Orders"      value={stats.total}     icon={<Truck        className="h-5 w-5" />} variant="blue" />
+      </StatsRow>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
