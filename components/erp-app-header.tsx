@@ -106,26 +106,33 @@ function VendorApprovalDetails({ vendorId }: { vendorId: string }) {
     | {
         name?: string | null
         seqNo?: string | null
-        contactPerson?: string | null
         email?: string | null
         phone?: string | null
-        taxNumber?: string | null
-        paymentTerms?: string | null
-        address?: string | null
-        city?: string | null
-        state?: string | null
-        country?: string | null
-        zipCode?: string | null
-        notes?: string | null
+        mobile?: string | null
+        gstin?: string | null
+        pan?: string | null
+        address?: { street?: string | null; city?: string | null; zip?: string | null; country?: string | null } | null
+        purchase?: { paymentTerms?: string | null } | null
+        internalNotes?: string | null
         status?: string | null
         orgApprovalStatus?: string | null
       }
     | undefined
 
-  const cell = (label: string, value?: string | null) => (
+  const formatCellValue = (value: unknown): string => {
+    if (value == null) return '—'
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      return trimmed || '—'
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+    return '—'
+  }
+
+  const cell = (label: string, value?: unknown) => (
     <div className="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-x-2 gap-y-0.5 text-xs leading-snug">
       <span className="text-muted-foreground font-medium shrink-0">{label}</span>
-      <span className="text-foreground break-words min-w-0">{value?.trim() ? value : '—'}</span>
+      <span className="text-foreground break-words min-w-0">{formatCellValue(value)}</span>
     </div>
   )
 
@@ -150,17 +157,16 @@ function VendorApprovalDetails({ vendorId }: { vendorId: string }) {
       <div className="space-y-1.5">
         {cell('Vendor name', v.name)}
         {cell('Code', v.seqNo)}
-        {cell('Contact person', v.contactPerson)}
         {cell('Email', v.email)}
-        {cell('Phone', v.phone)}
-        {cell('Tax number', v.taxNumber)}
-        {cell('Payment terms', v.paymentTerms)}
-        {cell('Address', v.address)}
-        {cell('City', v.city)}
-        {cell('State', v.state)}
-        {cell('Country', v.country)}
-        {cell('Postal / ZIP', v.zipCode)}
-        {cell('Notes', v.notes)}
+        {cell('Phone', v.phone ?? v.mobile)}
+        {cell('GSTIN', v.gstin)}
+        {cell('PAN', v.pan)}
+        {cell('Payment terms', v.purchase?.paymentTerms)}
+        {cell('Address', v.address?.street)}
+        {cell('City', v.address?.city)}
+        {cell('Country', v.address?.country)}
+        {cell('Postal / ZIP', v.address?.zip)}
+        {cell('Notes', v.internalNotes)}
       </div>
       <div className="pt-2 mt-2 border-t border-border/70 text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
         <span>
