@@ -5,6 +5,9 @@ import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
+import { InputFloating } from '@/components/ui/input-floating'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import {
   GET_CLIENTS,
   GET_CUSTOMERS,
@@ -14,20 +17,13 @@ import {
 } from '@/gql/queries'
 import { buildBillToOptions } from '@/lib/bill-to-options'
 import { CUSTOMER_PAYMENT_METHOD_OPTIONS } from '@/lib/customer-payment-methods'
-import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
-import { formatMoney } from '@/lib/format-money'
-import { PiggyBank, RefreshCw, XCircle } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
-
-const labelCell = wsLabelCell
-const cell = wsCell
-const headerCell = wsHeaderCell
-const moneyClass = wsMoney
+import { PiggyBank, XCircle, Plus, DollarSign, Users } from 'lucide-react'
 
 export default function RecordCustomerDepositsPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
+  const [formOpen, setFormOpen] = useState(false)
   const [customerId, setCustomerId] = useState('')
   const [depositDate, setDepositDate] = useState(() => new Date().toISOString().split('T')[0])
   const [depositMethod, setDepositMethod] = useState('bank_transfer')
@@ -47,7 +43,7 @@ export default function RecordCustomerDepositsPage() {
   })
 
   const { data: depData, loading: depLoading, refetch: refetchDep } = useQuery(GET_CUSTOMER_DEPOSITS, {
-    variables: { organizationId: orgId, page: 1, limit: 40 },
+    variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
   })
 
@@ -57,12 +53,13 @@ export default function RecordCustomerDepositsPage() {
       setAmount('')
       setNotes('')
       setError('')
+      setFormOpen(false)
       void refetchDep()
     },
     onError: (e) => setError(e.message),
   })
 
-  const [cancelDeposit, { loading: cancelling }] = useMutation(CANCEL_CUSTOMER_DEPOSIT, {
+  const [cancelDeposit] = useMutation(CANCEL_CUSTOMER_DEPOSIT, {
     onCompleted: () => void refetchDep(),
     onError: (e) => setError(e.message),
   })
@@ -74,7 +71,13 @@ export default function RecordCustomerDepositsPage() {
     [clients, customers],
   )
 
-  const deposits = depData?.customerDeposits ?? []
+  const deposits: any[] = depData?.customerDeposits ?? []
+
+  const stats = {
+    total: deposits.length,
+    amount: deposits.reduce((s: number, d: any) => s + Number(d.amount ?? 0), 0),
+    contacts: clients.length + customers.length,
+  }
 
   const submit = () => {
     setError('')
@@ -102,208 +105,159 @@ export default function RecordCustomerDepositsPage() {
     })
   }
 
+  const columns: Column[] = [
+    { key: 'depositNumber', label: 'Deposit #', width: '140px', render: (v) => <MonoCell value={v} /> },
+    {
+      key: 'customer',
+      label: 'Bill-to',
+      render: (v) => (
+        <span className="text-sm">
+          <span className="font-medium">{v?.name ?? '—'}</span>
+          {v?.docNumber ? <span className="text-muted-foreground ml-1 text-xs">{v.docNumber}</span> : null}
+        </span>
+      ),
+    },
+    { key: 'depositDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    {
+      key: 'depositMethod',
+      label: 'Method',
+      width: '120px',
+      render: (v) => <span className="text-xs capitalize">{String(v ?? '—').replace(/_/g, ' ')}</span>,
+    },
+    { key: 'amount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+  ]
+
   return (
-    <div className="p-6 space-y-6 max-w-[1100px]">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <PiggyBank className="h-8 w-8 text-violet-700" />
-          Record Customer Deposits
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Record customer prepayments or on-account deposits (liability). Apply them to invoices elsewhere in your
-          process when ready.
-        </p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Record Customer Deposits"
+        subtitle="Record customer prepayments or on-account deposits (liability)"
+        icon={<PiggyBank className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Customers' }, { label: 'Record Deposits' }]}
+        actions={
+          <Button
+            onClick={() => {
+              setFormOpen(true)
+              setError('')
+            }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> New Deposit
+          </Button>
+        }
+      />
 
-      <div className="rounded border-2 border-gray-400 overflow-hidden bg-white shadow-sm">
-        <div className="bg-violet-800 text-white px-3 py-1.5 text-xs font-semibold flex items-center justify-between">
-          <span>Deposit worksheet</span>
-          <span className="opacity-90">Customer liability</span>
-        </div>
+      <StatsRow cols={3}>
+        <StatCard label="Total Deposits" value={stats.total} icon={<PiggyBank className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Bill-to Contacts" value={stats.contacts} icon={<Users className="h-5 w-5" />} variant="blue" />
+        <StatCard
+          label="Total Amount"
+          value={`₹${(stats.amount / 1000).toFixed(1)}k`}
+          icon={<DollarSign className="h-5 w-5" />}
+          variant="green"
+        />
+      </StatsRow>
 
-        <div className="p-3 overflow-x-auto">
-          <table className="w-full border-collapse text-xs min-w-[720px]">
-            <tbody>
-              <tr>
-                <td className={labelCell}>Bill-to</td>
-                <td className={`${cell} min-w-[280px]`} colSpan={3}>
-                  <SelectFloating
-                    label=""
-                    value={customerId}
-                    onChange={(v) => {
-                      const next = typeof v === 'string' ? v : v.target.value
-                      setCustomerId(next)
-                      setError('')
-                    }}
-                    options={customerOptions}
-                    className="h-8 text-xs border-0 shadow-none bg-transparent p-0"
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Deposit date</td>
-                <td className={cell}>
-                  <input
-                    type="date"
-                    className="w-full bg-transparent outline-none font-mono"
-                    value={depositDate}
-                    onChange={(e) => setDepositDate(e.target.value)}
-                  />
-                </td>
-                <td className={labelCell}>Method</td>
-                <td className={cell}>
-                  <select
-                    className="w-full bg-transparent outline-none"
-                    value={depositMethod}
-                    onChange={(e) => setDepositMethod(e.target.value)}
-                  >
-                    {CUSTOMER_PAYMENT_METHOD_OPTIONS.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Reference #</td>
-                <td className={cell}>
-                  <input
-                    className="w-full bg-transparent outline-none font-mono"
-                    placeholder="Cheque / bank ref"
-                    value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value)}
-                  />
-                </td>
-                <td className={labelCell}>Amount</td>
-                <td className={`${cell} ${moneyClass}`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="w-full bg-transparent outline-none font-mono text-right"
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Notes</td>
-                <td className={cell} colSpan={3}>
-                  <input
-                    className="w-full bg-transparent outline-none"
-                    placeholder="Optional"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      {formOpen && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-4 mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <PiggyBank className="h-4 w-4 text-primary" />
+              New deposit
+            </h2>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setFormOpen(false)}>
+              Close
+            </Button>
+          </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <SelectFloating
+              label="Bill-to *"
+              value={customerId}
+              onChange={(v) => {
+                const next = typeof v === 'string' ? v : v.target.value
+                setCustomerId(next)
+                setError('')
+              }}
+              options={customerOptions}
+            />
+            <InputFloating
+              label="Deposit date *"
+              type="date"
+              value={depositDate}
+              onChange={(e) => setDepositDate(e.target.value)}
+            />
+            <SelectFloating
+              label="Method"
+              value={depositMethod}
+              onChange={(v) => setDepositMethod(typeof v === 'string' ? v : v.target.value)}
+              options={CUSTOMER_PAYMENT_METHOD_OPTIONS}
+            />
+            <InputFloating
+              label="Reference #"
+              value={referenceNumber}
+              onChange={(e) => setReferenceNumber(e.target.value)}
+              placeholder="Cheque / bank ref"
+            />
+            <InputFloating
+              label="Amount *"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+            />
+            <InputFloating
+              label="Notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              size="sm"
-              className="h-9 text-xs bg-violet-800 hover:bg-violet-900 text-white"
               onClick={submit}
               disabled={saving || !orgId}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {saving ? 'Saving…' : 'Record deposit'}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 text-xs"
-              onClick={() => refetchDep()}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${depLoading ? 'animate-spin' : ''}`} />
-              Refresh list
-            </Button>
           </div>
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5 mt-2">{error}</p>
+            <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-2 py-1.5">
+              {error}
+            </p>
           )}
         </div>
-      </div>
+      )}
 
-      <div className="rounded border border-gray-300 overflow-hidden bg-white shadow-sm">
-        <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-800">
-          Recent deposits
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-xs min-w-[800px]">
-            <thead>
-              <tr>
-                <th className={`${headerCell} text-left`}>Deposit #</th>
-                <th className={`${headerCell} text-left`}>Bill-to</th>
-                <th className={`${headerCell} text-left`}>Date</th>
-                <th className={`${headerCell} text-left`}>Method</th>
-                <th className={`${headerCell} ${moneyClass}`}>Amount</th>
-                <th className={`${headerCell} text-center w-24`}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!deposits.length && (
-                <tr>
-                  <td colSpan={6} className={`${cell} text-center text-gray-500 py-8`}>
-                    {depLoading ? 'Loading…' : 'No deposits recorded yet.'}
-                  </td>
-                </tr>
-              )}
-              {deposits.map(
-                (d: {
-                  id: string
-                  depositNumber: string
-                  customer?: { name?: string; docNumber?: string }
-                  depositDate: string
-                  depositMethod: string
-                  amount: number
-                }) => (
-                  <tr key={d.id} className="hover:bg-gray-50">
-                    <td className={`${cell} font-mono`}>{d.depositNumber}</td>
-                    <td className={cell}>
-                      <span className="font-medium">{d.customer?.name ?? '—'}</span>
-                      {d.customer?.docNumber ? (
-                        <span className="text-gray-500 ml-1">{d.customer.docNumber}</span>
-                      ) : null}
-                    </td>
-                    <td className={`${cell} font-mono`}>
-                      {d.depositDate ? formatDate(d.depositDate) : '—'}
-                    </td>
-                    <td className={cell}>{d.depositMethod.replace(/_/g, ' ')}</td>
-                    <td className={`${cell} ${moneyClass}`}>{formatMoney(Number(d.amount ?? 0))}</td>
-                    <td className={`${cell} text-center`}>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-[11px] text-gray-600"
-                        disabled={cancelling}
-                        onClick={() => {
-                          if (
-                            confirm(
-                              `Cancel deposit ${d.depositNumber}? This removes it from the register (soft cancel).`,
-                            )
-                          ) {
-                            setError('')
-                            cancelDeposit({ variables: { id: d.id } })
-                          }
-                        }}
-                      >
-                        <XCircle className="h-3 w-3 mr-0.5 inline" />
-                        Cancel
-                      </Button>
-                    </td>
-                  </tr>
-                ),
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        data={deposits}
+        columns={columns}
+        loading={depLoading}
+        title="All Customer Deposits"
+        searchable
+        searchPlaceholder="Search deposits…"
+        emptyMessage="No deposits recorded yet."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Cancel',
+            icon: <XCircle className="h-3.5 w-3.5" />,
+            onClick: (r: any) => {
+              if (
+                confirm(
+                  `Cancel deposit ${r.depositNumber}? This removes it from the register (soft cancel).`,
+                )
+              ) {
+                setError('')
+                cancelDeposit({ variables: { id: r.id } })
+              }
+            },
+          },
+        ]}
+      />
     </div>
   )
 }

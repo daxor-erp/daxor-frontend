@@ -122,7 +122,7 @@ export default function EnterBillsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Vendor Bills"
         subtitle="Record and manage accounts payable invoices from vendors"

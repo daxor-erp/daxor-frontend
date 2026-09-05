@@ -189,7 +189,7 @@ export default function OrgAdminUsersAndCustomRolesPage() {
 
   if (!orgId) {
     return (
-      <div className="p-8">
+      <div className="erp-shell">
         <p className="text-sm text-slate-600">No organization on this account.</p>
       </div>
     )
@@ -205,7 +205,7 @@ export default function OrgAdminUsersAndCustomRolesPage() {
               Dashboard
             </Link>
           </Button>
-          <h1 className="text-xl font-bold text-slate-900">Users &amp; custom roles</h1>
+          <h1 className="erp-page-title">Users &amp; custom roles</h1>
           <p className="text-sm text-slate-600 max-w-2xl">
             Define tenant-specific roles with API permissions, then assign them when creating users. Standard role
             templates stay available. Existing users are unchanged and still listed on the{' '}
@@ -231,7 +231,7 @@ export default function OrgAdminUsersAndCustomRolesPage() {
 
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-          <h2 className="text-sm font-semibold text-slate-900">Custom roles for your organization</h2>
+          <h2 className="text-sm font-semibold text-foreground">Custom roles for your organization</h2>
           <p className="text-xs text-slate-600 mt-0.5">
             Names must be UPPER_SNAKE_CASE and cannot match a built-in template (e.g. SALES_MANAGER).
           </p>
@@ -360,7 +360,7 @@ export default function OrgAdminUsersAndCustomRolesPage() {
 
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-          <h2 className="text-sm font-semibold text-slate-900">Create a user in your organization</h2>
+          <h2 className="text-sm font-semibold text-foreground">Create a user in your organization</h2>
           <p className="text-xs text-slate-600 mt-0.5">Choose a standard role or a custom role you defined above.</p>
         </div>
         <div className="p-4 grid sm:grid-cols-2 gap-3">
@@ -414,7 +414,7 @@ export default function OrgAdminUsersAndCustomRolesPage() {
             <Button
               type="button"
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary hover:bg-primary/90"
               disabled={creatingUser}
               onClick={() => void submitUser()}
             >

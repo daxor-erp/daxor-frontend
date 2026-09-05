@@ -58,7 +58,7 @@ export async function createBankAccountViaApi(
         bankName: 'E2E Bank',
         branchName: 'Main',
         accountType: 'checking',
-        currency: 'USD',
+        currency: 'INR',
         openingBalance: 1000,
       },
     },

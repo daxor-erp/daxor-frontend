@@ -81,14 +81,14 @@ export default function SubTenantsPage() {
   const rows: any[] = data?.subTenants ?? []
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="erp-shell">
       <div className="flex justify-between items-center">
         <div>
-          <div className="flex items-center gap-2 text-blue-600 mb-1">
+          <div className="flex items-center gap-2 text-primary mb-1">
             <Building2 className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">Admin · Multi-tenant</span>
           </div>
-          <h1 className="text-3xl font-bold">Sub-tenants</h1>
+          <h1 className="erp-page-title">Sub-tenants</h1>
           <p className="text-gray-500 text-sm">
             Tenant organizations created under <span className="font-medium">{parentOrg?.name ?? 'your org'}</span>. Each
             sub-tenant has its own data, users, and admin.

@@ -54,7 +54,7 @@ export default function PurchasesDeliveryOrderPage() {
         {[
           { label: 'Awaiting Delivery', value: pending.length, icon: Truck, cls: 'text-amber-600 bg-amber-50' },
           { label: 'Delivered', value: delivered.length, icon: PackageCheck, cls: 'text-emerald-600 bg-emerald-50' },
-          { label: 'Total POs', value: orders.length, icon: CheckCircle2, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Total POs', value: orders.length, icon: CheckCircle2, cls: 'text-primary bg-primary/10' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
             <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
@@ -67,9 +67,9 @@ export default function PurchasesDeliveryOrderPage() {
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md border border-gray-200">
-            <div className="flex items-center justify-between px-4 py-3 bg-blue-600 rounded-t-lg">
+            <div className="flex items-center justify-between px-4 py-3 bg-primary rounded-t-lg">
               <span className="text-sm font-semibold text-white flex items-center gap-2"><PackageCheck className="h-4 w-4" /> Confirm Delivery</span>
-              <button onClick={() => { setSelected(null); setDeliveryDate(''); setDateErr('') }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+              <button onClick={() => { setSelected(null); setDeliveryDate(''); setDateErr('') }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
             </div>
             <div className="p-4 space-y-3">
               <div className="bg-gray-50 border border-gray-200 rounded p-3 text-xs space-y-1">
@@ -98,13 +98,13 @@ export default function PurchasesDeliveryOrderPage() {
         <div className="flex border-b border-gray-300">
           {(['pending', 'delivered'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`px-4 py-2 text-xs font-semibold capitalize transition-colors ${tab === t ? 'bg-white border-b-2 border-blue-600 text-blue-600' : 'bg-gray-50 text-gray-500 hover:text-gray-700'}`}>
+              className={`px-4 py-2 text-xs font-semibold capitalize transition-colors ${tab === t ? 'bg-white border-b-2 border-primary text-primary' : 'bg-gray-50 text-gray-500 hover:text-gray-700'}`}>
               {t === 'pending' ? `Pending (${pending.length})` : `Delivered (${delivered.length})`}
             </button>
           ))}
         </div>
 
-        <div className="flex bg-[#f0f0f0] border-b border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+        <div className="flex bg-muted/70 border-b border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wide">
           {[['w-8','#'],['w-24','PO #'],['flex-1','Vendor'],['w-28','Order Date'],['w-24','Amount'],['w-24','Status'],['w-28','']].map(([w,h]) => (
             <div key={h} className={`${w} border-r border-gray-300 last:border-r-0 px-2 py-2`}>{h}</div>
           ))}
@@ -118,7 +118,7 @@ export default function PurchasesDeliveryOrderPage() {
             <p className="text-xs">{tab === 'pending' ? 'No pending deliveries.' : 'No delivered orders yet.'}</p>
           </div>
         ) : rows.map((o, idx) => (
-          <div key={o.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 text-xs ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+          <div key={o.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-primary/5 text-xs ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
             <div className="w-8 border-r border-gray-200 flex items-center justify-center text-gray-300 py-2">{idx + 1}</div>
             <div className="w-24 border-r border-gray-200 px-2 py-2 font-mono text-gray-400">{o.seqNo || '—'}</div>
             <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800 truncate">{getVendor(o.vendorId)}</div>
@@ -127,8 +127,8 @@ export default function PurchasesDeliveryOrderPage() {
             <div className="w-24 border-r border-gray-200 px-2 py-2">
               <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
                 o.status === 'received' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                o.status === 'sent' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                'bg-blue-50 text-blue-700 border-blue-200'
+                o.status === 'sent' ? 'bg-primary/10 text-primary border-primary/20' :
+                'bg-primary/10 text-primary border-primary/20'
               }`}>{o.status}</span>
             </div>
             <div className="w-28 px-2 py-1.5 flex items-center">

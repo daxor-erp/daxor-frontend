@@ -263,7 +263,7 @@ export default function IntercompanyTransferPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Intercompany Transfer"
         subtitle="Log stock movements between legal entities / organizations"
@@ -327,7 +327,7 @@ export default function IntercompanyTransferPage() {
             <div>
               <div className="flex justify-between mb-1">
                 <span className="font-semibold text-gray-600">Lines</span>
-                <button type="button" className="text-blue-600 flex items-center gap-1" onClick={addLine}>
+                <button type="button" className="text-primary flex items-center gap-1" onClick={addLine}>
                   <Plus className="h-3.5 w-3.5" /> Add
                 </button>
               </div>

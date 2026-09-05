@@ -28,7 +28,7 @@ const emptyLine = (): LineItem => ({ description: '', qty: '', unitPrice: '' })
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
   active:    { label: 'Active',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  completed: { label: 'Completed', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  completed: { label: 'Completed', cls: 'bg-primary/10 text-primary border-primary/20' },
   cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
 }
 
@@ -121,26 +121,26 @@ export default function EnterCashSalesPage() {
 
   return (
     
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div className="flex justify-between items-center mb-5">
         <div>
-          <h1 className="text-3xl font-bold">Enter Cash Sales</h1>
-          <p className="text-gray-500">Record immediate cash sale transactions</p>
+          <h1 className="erp-page-title">Enter Cash Sales</h1>
+          <p className="erp-page-desc">Record immediate cash sale transactions</p>
         </div>
       </div>
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Total Sales',   value: stats.total,   icon: ShoppingBag, color: 'text-blue-600',    bg: 'bg-blue-50',    fmt: (v: number) => String(v) },
+          { label: 'Total Sales',   value: stats.total,   icon: ShoppingBag, color: 'text-primary',    bg: 'bg-primary/10',    fmt: (v: number) => String(v) },
           { label: "Today's Sales", value: stats.today,   icon: TrendingUp,  color: 'text-emerald-600', bg: 'bg-emerald-50', fmt: (v: number) => String(v) },
-          { label: 'Total Revenue', value: stats.revenue, icon: DollarSign,  color: 'text-indigo-600',  bg: 'bg-indigo-50',  fmt: (v: number) => formatMoney(v) },
+          { label: 'Total Revenue', value: stats.revenue, icon: DollarSign,  color: 'text-primary',  bg: 'bg-primary/10',  fmt: (v: number) => formatMoney(v) },
         ].map(({ label, value, icon: Icon, color, bg, fmt }) => (
           <Card key={label} className="border shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`${bg} p-2 rounded-lg`}><Icon className={`h-5 w-5 ${color}`} /></div>
               <div>
                 <p className="text-xs text-gray-500">{label}</p>
-                <p className="text-xl font-bold text-gray-800">{fmt(value)}</p>
+                <p className="erp-page-title">{fmt(value)}</p>
               </div>
             </CardContent>
           </Card>
@@ -151,7 +151,7 @@ export default function EnterCashSalesPage() {
       <Card className="shadow-sm border">
         <CardHeader className="flex flex-row items-center justify-between py-4 px-6 border-b">
           <CardTitle className="text-base font-semibold text-gray-800">Cash Sales</CardTitle>
-          <Button size="sm" onClick={() => setOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button size="sm" onClick={() => setOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Plus className="mr-1.5 h-4 w-4" /> New Cash Sale
           </Button>
         </CardHeader>
@@ -202,7 +202,7 @@ export default function EnterCashSalesPage() {
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
-              <div className="bg-blue-50 p-1.5 rounded-md"><ShoppingBag className="h-4 w-4 text-blue-600" /></div>
+              <div className="bg-primary/10 p-1.5 rounded-md"><ShoppingBag className="h-4 w-4 text-primary" /></div>
               New Cash Sale
             </DialogTitle>
           </DialogHeader>
@@ -322,7 +322,7 @@ export default function EnterCashSalesPage() {
 
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]">
+              <Button type="submit" disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[140px]">
                 {saving ? 'Saving…' : 'Record Sale'}
               </Button>
             </DialogFooter>

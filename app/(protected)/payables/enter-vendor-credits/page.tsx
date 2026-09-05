@@ -59,7 +59,7 @@ export default function VendorCreditsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Vendor Credits"
         subtitle="Record credit notes received from vendors"
@@ -77,7 +77,7 @@ export default function VendorCreditsPage() {
 
       <DataTable
         data={records} columns={columns} loading={loading}
-        title="Vendor Credits" searchable searchPlaceholder="Search credits…"
+        title="All Vendor Credits" searchable searchPlaceholder="Search credits…"
         emptyMessage="No vendor credits recorded."
         pageSize={25}
         actions={[{

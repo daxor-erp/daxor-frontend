@@ -54,17 +54,17 @@ function glTransactionPdfBody(row: GeneralLedgerView): string {
 function GlTransactionInlinePanel({ row, onClose }: { row: GeneralLedgerView; onClose: () => void }) {
   const statusColor: Record<string, string> = {
     active: 'bg-green-100 text-green-700',
-    posted: 'bg-blue-100 text-blue-700',
+    posted: 'bg-primary/10 text-primary',
     pending: 'bg-yellow-100 text-yellow-700',
   }
 
   return (
-    <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+    <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-primary">
         <span className="text-xs font-semibold text-white">
           Ledger transaction — {row.transactionNumber || row.id}
         </span>
-        <button type="button" onClick={onClose} className="text-blue-200 hover:text-white" aria-label="Close">
+        <button type="button" onClick={onClose} className="text-primary-foreground/80 hover:text-white" aria-label="Close">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -93,14 +93,14 @@ function GlTransactionInlinePanel({ row, onClose }: { row: GeneralLedgerView; on
           {glSourceRoute(row.referenceModule, row.referenceId) && (
             <Link
               href={glSourceRoute(row.referenceModule, row.referenceId)!}
-              className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+              className="inline-flex items-center gap-1 text-primary hover:underline"
             >
               Open document
               <ExternalLink className="h-3 w-3" />
             </Link>
           )}
         </p>
-        <p className="text-gray-500">
+        <p className="erp-page-desc">
           Fiscal {row.fiscalYear || '—'} / {row.fiscalPeriod || '—'}
           {row.status && (
             <span className={`ml-2 px-2 py-0.5 rounded capitalize ${statusColor[row.status] ?? 'bg-gray-100 text-gray-700'}`}>
@@ -119,7 +119,7 @@ function GlTransactionInlinePanel({ row, onClose }: { row: GeneralLedgerView; on
           type="button"
           size="sm"
           variant="outline"
-          className="h-8 text-xs"
+         
           onClick={() =>
             downloadPdf({
               html: wrapHtmlForPdf({

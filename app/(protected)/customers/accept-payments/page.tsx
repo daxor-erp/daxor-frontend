@@ -5,6 +5,8 @@ import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import {
   GET_CUSTOMERS,
   GET_CLIENTS,
@@ -15,7 +17,7 @@ import {
 import { buildBillToOptions } from '@/lib/bill-to-options'
 import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
-import { Banknote, Save, RefreshCw, FileSpreadsheet } from 'lucide-react'
+import { Banknote, Save, FileSpreadsheet, Plus, Users, DollarSign } from 'lucide-react'
 import { CUSTOMER_PAYMENT_METHOD_OPTIONS } from '@/lib/customer-payment-methods'
 import { formatDate } from '@/lib/format-date'
 
@@ -30,6 +32,7 @@ export default function AcceptCustomerPaymentsPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
+  const [formOpen, setFormOpen] = useState(true)
   const [customerId, setCustomerId] = useState('')
   const [payByInvoice, setPayByInvoice] = useState<Record<string, string>>({})
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0])
@@ -54,7 +57,7 @@ export default function AcceptCustomerPaymentsPage() {
   })
 
   const { data: payData, loading: payLoading, refetch: refetchPay } = useQuery(GET_CUSTOMER_PAYMENTS, {
-    variables: { organizationId: orgId, page: 1, limit: 50 },
+    variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
   })
 
@@ -156,308 +159,286 @@ export default function AcceptCustomerPaymentsPage() {
     })
   }
 
-  const recentPayments = payData?.customerPayments ?? []
+  const payments: any[] = payData?.customerPayments ?? []
+
+  const stats = {
+    contacts: clients.length + customers.length,
+    openInvoices: openInvoices.length,
+    payments: payments.length,
+    paymentTotal: payments.reduce((s: number, p: any) => s + Number(p.totalAmount ?? 0), 0),
+  }
+
+  const columns: Column[] = [
+    { key: 'paymentNumber', label: 'Receipt #', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'paymentDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    {
+      key: 'customer',
+      label: 'Customer',
+      render: (v) => <span className="text-sm font-medium">{v?.name ?? '—'}</span>,
+    },
+    {
+      key: 'paymentMethod',
+      label: 'Method',
+      width: '130px',
+      render: (v) => <span className="text-xs capitalize">{String(v ?? '—').replace(/_/g, ' ')}</span>,
+    },
+    {
+      key: 'totalAmount',
+      label: 'Amount',
+      width: '120px',
+      align: 'right',
+      render: (v) => <AmountCell value={v} />,
+    },
+  ]
 
   return (
-    <div className="p-6 space-y-6 max-w-[1200px]">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <FileSpreadsheet className="h-8 w-8 text-emerald-700" />
-          Accept Customer Payments
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Record receipts against open customer invoices in a worksheet-style layout.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          {
-            label: 'Bill-to contacts',
-            value: clients.length + customers.length,
-            icon: Banknote,
-            cls: 'text-emerald-700 bg-emerald-50',
-          },
-          {
-            label: 'Open invoices (this customer)',
-            value: openInvoices.length,
-            icon: FileSpreadsheet,
-            cls: 'text-blue-700 bg-blue-50',
-          },
-          {
-            label: 'This payment total',
-            value: `$${formatMoney(allocationTotal)}`,
-            icon: Save,
-            cls: 'text-violet-700 bg-violet-50',
-          },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div
-            key={label}
-            className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm"
+    <div className="erp-shell">
+      <PageHeader
+        title="Accept Customer Payments"
+        subtitle="Record receipts against open customer invoices in a worksheet-style layout"
+        icon={<FileSpreadsheet className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Customers' }, { label: 'Accept Payments' }]}
+        actions={
+          <Button
+            onClick={() => setFormOpen(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}>
-              <Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">{label}</p>
-              <p className="text-lg font-bold text-gray-800">{value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+            <Plus className="h-4 w-4 mr-1.5" /> New Payment
+          </Button>
+        }
+      />
 
-      {/* Excel-style worksheet */}
-      <div className="rounded border-2 border-gray-400 overflow-hidden bg-white shadow-sm">
-        <div className="bg-[#217346] text-white px-3 py-1.5 text-xs font-semibold flex items-center justify-between">
-          <span>Payment worksheet</span>
-          <span className="opacity-90">Customer receipts</span>
-        </div>
+      <StatsRow cols={4}>
+        <StatCard label="Bill-to Contacts" value={stats.contacts} icon={<Users className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Open Invoices" value={customerId ? stats.openInvoices : '—'} icon={<FileSpreadsheet className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Payments" value={stats.payments} icon={<Banknote className="h-5 w-5" />} variant="green" />
+        <StatCard
+          label="Total Received"
+          value={`₹${(stats.paymentTotal / 1000).toFixed(1)}k`}
+          icon={<DollarSign className="h-5 w-5" />}
+          variant="amber"
+        />
+      </StatsRow>
 
-        <div className="p-3 overflow-x-auto">
-          <table className="w-full border-collapse text-xs min-w-[720px]">
-            <tbody>
-              <tr>
-                <td className={labelCell}>Bill-to</td>
-                <td className={`${cell} min-w-[280px]`} colSpan={3}>
-                  <SelectFloating
-                    label=""
-                    value={customerId}
-                    onChange={(v) => {
-                      const next = typeof v === 'string' ? v : v.target.value
-                      setCustomerId(next)
-                      setPayByInvoice({})
-                      setErrors({})
-                    }}
-                    options={customerOptions}
-                    className="h-8 text-xs border-0 shadow-none bg-transparent p-0"
-                  />
-                  {errors.customer && (
-                    <p className="text-red-600 text-[11px] mt-1">{errors.customer}</p>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Payment date</td>
-                <td className={cell}>
-                  <input
-                    type="date"
-                    className="w-full bg-transparent outline-none font-mono"
-                    value={paymentDate}
-                    onChange={(e) => setPaymentDate(e.target.value)}
-                  />
-                  {errors.date && <p className="text-red-600 text-[11px] mt-1">{errors.date}</p>}
-                </td>
-                <td className={labelCell}>Method</td>
-                <td className={cell}>
-                  <select
-                    className="w-full bg-transparent outline-none"
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  >
-                    {PAYMENT_METHODS.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Reference #</td>
-                <td className={cell}>
-                  <input
-                    className="w-full bg-transparent outline-none font-mono"
-                    placeholder="Cheque / bank ref"
-                    value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value)}
-                  />
-                </td>
-                <td className={labelCell}>Notes</td>
-                <td className={cell}>
-                  <input
-                    className="w-full bg-transparent outline-none"
-                    placeholder="Optional"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={fillOutstanding}
-              disabled={!customerId || !openInvoices.length}
-            >
-              Fill outstanding
-            </Button>
-            <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={clearAmounts}>
-              Clear amounts
+      {formOpen && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden mb-4">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/40">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Banknote className="h-4 w-4 text-primary" />
+              Payment worksheet
+            </h2>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setFormOpen(false)}>
+              Close
             </Button>
           </div>
 
-          <p className="text-[11px] text-gray-500 mt-2">
-            Choose the same bill-to as on the invoice (CRM <strong>Client</strong> or registered{' '}
-            <strong>Customer</strong>). Enter amounts in <strong>Pay now</strong> for one or more lines.
-          </p>
-
-          <table className="w-full border-collapse mt-3 min-w-[720px]">
-            <thead>
-              <tr>
-                <th className={`${headerCell} text-left`}>Invoice #</th>
-                <th className={`${headerCell} text-left`}>Invoice date</th>
-                <th className={`${headerCell} ${moneyClass}`}>Total</th>
-                <th className={`${headerCell} ${moneyClass}`}>Paid</th>
-                <th className={`${headerCell} ${moneyClass}`}>Outstanding</th>
-                <th className={`${headerCell} ${moneyClass} min-w-[100px]`}>Pay now</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!customerId && (
+          <div className="p-4 overflow-x-auto">
+            <table className="w-full border-collapse text-xs min-w-[720px]">
+              <tbody>
                 <tr>
-                  <td colSpan={6} className={`${cell} text-center text-gray-400 py-8`}>
-                    Choose a customer to load invoices.
+                  <td className={labelCell}>Bill-to</td>
+                  <td className={`${cell} min-w-[280px]`} colSpan={3}>
+                    <SelectFloating
+                      label=""
+                      value={customerId}
+                      onChange={(v) => {
+                        const next = typeof v === 'string' ? v : v.target.value
+                        setCustomerId(next)
+                        setPayByInvoice({})
+                        setErrors({})
+                      }}
+                      options={customerOptions}
+                      className="h-8 text-xs border-0 shadow-none bg-transparent p-0"
+                    />
+                    {errors.customer && (
+                      <p className="text-destructive text-[11px] mt-1">{errors.customer}</p>
+                    )}
                   </td>
                 </tr>
-              )}
-              {customerId && invLoading && (
                 <tr>
-                  <td colSpan={6} className={`${cell} text-center text-gray-500 py-6`}>
-                    Loading invoices…
-                  </td>
-                </tr>
-              )}
-              {customerId && !invLoading && !openInvoices.length && (
-                <tr>
-                  <td colSpan={6} className={`${cell} text-center text-gray-500 py-6`}>
-                    No open invoices for this customer. Create invoices from Sales → Create Invoices first.
-                  </td>
-                </tr>
-              )}
-              {openInvoices.map((inv: any) => (
-                <tr key={inv.id} className="hover:bg-[#fafafa]">
-                  <td className={`${cell} font-mono font-medium`}>{inv.seqNo}</td>
+                  <td className={labelCell}>Payment date</td>
                   <td className={cell}>
-                    {inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}
-                  </td>
-                  <td className={`${cell} ${moneyClass}`}>{formatMoney(inv.totalAmount ?? 0)}</td>
-                  <td className={`${cell} ${moneyClass} text-green-700`}>
-                    {formatMoney(inv.paidAmount ?? 0)}
-                  </td>
-                  <td className={`${cell} ${moneyClass} text-amber-800 font-semibold`}>
-                    {formatMoney(inv.outstandingAmount ?? 0)}
-                  </td>
-                  <td className={`${cell} ${moneyClass} p-0`}>
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="w-full h-full min-h-[32px] px-2 py-1.5 bg-[#fffef7] font-mono text-right outline-none focus:bg-amber-50/80"
-                      placeholder="0.00"
-                      value={payByInvoice[inv.id] ?? ''}
-                      onChange={(e) => setPayCell(inv.id, e.target.value)}
+                      type="date"
+                      className="w-full bg-transparent outline-none font-mono"
+                      value={paymentDate}
+                      onChange={(e) => setPaymentDate(e.target.value)}
+                    />
+                    {errors.date && <p className="text-destructive text-[11px] mt-1">{errors.date}</p>}
+                  </td>
+                  <td className={labelCell}>Method</td>
+                  <td className={cell}>
+                    <select
+                      className="w-full bg-transparent outline-none"
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                    >
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={labelCell}>Reference #</td>
+                  <td className={cell}>
+                    <input
+                      className="w-full bg-transparent outline-none font-mono"
+                      placeholder="Cheque / bank ref"
+                      value={referenceNumber}
+                      onChange={(e) => setReferenceNumber(e.target.value)}
+                    />
+                  </td>
+                  <td className={labelCell}>Notes</td>
+                  <td className={cell}>
+                    <input
+                      className="w-full bg-transparent outline-none"
+                      placeholder="Optional"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
                     />
                   </td>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={5} className={`${labelCell} text-right`}>
-                  Payment total
-                </td>
-                <td className={`${cell} ${moneyClass} font-bold text-emerald-800 bg-[#e8f5e9]`}>
-                  ${formatMoney(allocationTotal)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+              </tbody>
+            </table>
 
-          {errors.allocations && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5 mt-2">
-              {errors.allocations}
-            </p>
-          )}
-          {errors.submit && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5 mt-2">
-              {errors.submit}
-            </p>
-          )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={fillOutstanding}
+                disabled={!customerId || !openInvoices.length}
+              >
+                Fill outstanding
+              </Button>
+              <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={clearAmounts}>
+                Clear amounts
+              </Button>
+            </div>
 
-          <div className="flex justify-end gap-2 mt-4">
-            <Button
-              size="sm"
-              className="h-9 text-xs bg-[#217346] hover:bg-[#1a5c38] text-white min-w-[160px]"
-              onClick={handleSubmit}
-              disabled={saving || !customerId}
-            >
-              {saving ? (
-                'Saving…'
-              ) : (
-                <>
-                  <Save className="h-3.5 w-3.5 mr-1.5 inline" />
-                  Record payment (${formatMoney(allocationTotal)})
-                </>
-              )}
-            </Button>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Choose the same bill-to as on the invoice (CRM <strong>Client</strong> or registered{' '}
+              <strong>Customer</strong>). Enter amounts in <strong>Pay now</strong> for one or more lines.
+            </p>
+
+            <table className="w-full border-collapse mt-3 min-w-[720px]">
+              <thead>
+                <tr>
+                  <th className={`${headerCell} text-left`}>Invoice #</th>
+                  <th className={`${headerCell} text-left`}>Invoice date</th>
+                  <th className={`${headerCell} ${moneyClass}`}>Total</th>
+                  <th className={`${headerCell} ${moneyClass}`}>Paid</th>
+                  <th className={`${headerCell} ${moneyClass}`}>Outstanding</th>
+                  <th className={`${headerCell} ${moneyClass} min-w-[100px]`}>Pay now</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!customerId && (
+                  <tr>
+                    <td colSpan={6} className={`${cell} text-center text-muted-foreground py-8`}>
+                      Choose a customer to load invoices.
+                    </td>
+                  </tr>
+                )}
+                {customerId && invLoading && (
+                  <tr>
+                    <td colSpan={6} className={`${cell} text-center text-muted-foreground py-6`}>
+                      Loading invoices…
+                    </td>
+                  </tr>
+                )}
+                {customerId && !invLoading && !openInvoices.length && (
+                  <tr>
+                    <td colSpan={6} className={`${cell} text-center text-muted-foreground py-6`}>
+                      No open invoices for this customer. Create invoices from Sales → Create Invoices first.
+                    </td>
+                  </tr>
+                )}
+                {openInvoices.map((inv: any) => (
+                  <tr key={inv.id} className="hover:bg-muted/40">
+                    <td className={`${cell} font-mono font-medium`}>{inv.seqNo}</td>
+                    <td className={cell}>
+                      {inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}
+                    </td>
+                    <td className={`${cell} ${moneyClass}`}>{formatMoney(inv.totalAmount ?? 0)}</td>
+                    <td className={`${cell} ${moneyClass} text-green-700`}>
+                      {formatMoney(inv.paidAmount ?? 0)}
+                    </td>
+                    <td className={`${cell} ${moneyClass} text-amber-800 font-semibold`}>
+                      {formatMoney(inv.outstandingAmount ?? 0)}
+                    </td>
+                    <td className={`${cell} ${moneyClass} p-0`}>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full h-full min-h-[32px] px-2 py-1.5 bg-amber-50/40 font-mono text-right outline-none focus:bg-amber-50/80"
+                        placeholder="0.00"
+                        value={payByInvoice[inv.id] ?? ''}
+                        onChange={(e) => setPayCell(inv.id, e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={5} className={`${labelCell} text-right`}>
+                    Payment total
+                  </td>
+                  <td className={`${cell} ${moneyClass} font-bold text-foreground bg-muted/60`}>
+                    ₹{formatMoney(allocationTotal)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+
+            {errors.allocations && (
+              <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-2 py-1.5 mt-2">
+                {errors.allocations}
+              </p>
+            )}
+            {errors.submit && (
+              <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-2 py-1.5 mt-2">
+                {errors.submit}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                size="sm"
+                className="h-9 text-xs bg-primary text-primary-foreground hover:bg-primary/90 min-w-[160px]"
+                onClick={handleSubmit}
+                disabled={saving || !customerId}
+              >
+                {saving ? (
+                  'Saving…'
+                ) : (
+                  <>
+                    <Save className="h-3.5 w-3.5 mr-1.5 inline" />
+                    Record payment (₹{formatMoney(allocationTotal)})
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Recent receipts */}
-      <div className="rounded border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
-          <h2 className="text-sm font-semibold text-gray-800">Recent customer payments</h2>
-          <button
-            type="button"
-            onClick={() => refetchPay()}
-            className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${payLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-xs min-w-[640px]">
-            <thead>
-              <tr>
-                <th className={headerCell}>Receipt #</th>
-                <th className={headerCell}>Date</th>
-                <th className={headerCell}>Customer</th>
-                <th className={headerCell}>Method</th>
-                <th className={`${headerCell} ${moneyClass}`}>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!recentPayments.length && (
-                <tr>
-                  <td colSpan={5} className={`${cell} text-center text-gray-400 py-6`}>
-                    No payments recorded yet.
-                  </td>
-                </tr>
-              )}
-              {recentPayments.map((p: any) => (
-                <tr key={p.id} className="hover:bg-gray-50">
-                  <td className={`${cell} font-mono`}>{p.paymentNumber}</td>
-                  <td className={cell}>
-                    {p.paymentDate ? formatDate(p.paymentDate) : '—'}
-                  </td>
-                  <td className={cell}>{p.customer?.name ?? '—'}</td>
-                  <td className={cell}>{p.paymentMethod?.replace('_', ' ')}</td>
-                  <td className={`${cell} ${moneyClass} font-semibold`}>
-                    ${formatMoney(p.totalAmount ?? 0)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        data={payments}
+        columns={columns}
+        loading={payLoading}
+        title="All Customer Payments"
+        searchable
+        searchPlaceholder="Search payments…"
+        emptyMessage="No payments recorded yet."
+        pageSize={25}
+      />
     </div>
   )
 }

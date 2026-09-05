@@ -59,7 +59,7 @@ export default function VendorsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Vendors"
         subtitle="Manage your suppliers and vendors"

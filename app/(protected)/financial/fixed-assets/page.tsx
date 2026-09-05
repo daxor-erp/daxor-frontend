@@ -12,8 +12,8 @@ import {
   POST_FIXED_ASSET_DEPRECIATION,
   DISPOSE_FIXED_ASSET,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
-import { StatCard } from '@/components/dashboard/stat-card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, SectionPanel, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,14 +27,11 @@ import {
   Calculator,
   Boxes,
   Building,
-  Search,
   ArrowDownToLine,
   PackageX,
   CheckCircle2,
 } from 'lucide-react'
-import { formatMoney, formatMoneyCompact, formatNumber } from '@/lib/format-money'
-import { cn } from '@/lib/utils'
-import { formatDate } from '@/lib/format-date'
+import { formatMoneyCompact } from '@/lib/format-money'
 
 const CATEGORIES = ['LAND', 'BUILDING', 'PLANT_MACHINERY', 'FURNITURE', 'VEHICLE', 'COMPUTER', 'SOFTWARE', 'OFFICE_EQUIPMENT', 'OTHER']
 const METHODS = ['STRAIGHT_LINE', 'DECLINING_BALANCE', 'WDV', 'UNITS']
@@ -84,7 +81,6 @@ export default function FixedAssetsPage() {
   const orgId = user?.organizationId ?? ''
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<AssetForm>(EMPTY)
-  const [search, setSearch] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
   const [depOpen, setDepOpen] = useState<null | { id: string; name: string }>(null)
   const [depForm, setDepForm] = useState({ periodEndDate: new Date().toISOString().slice(0, 10), amount: '' as string | number, notes: '' })
@@ -123,20 +119,6 @@ export default function FixedAssetsPage() {
 
   const assets: any[] = listQ.data?.fixedAssets ?? []
   const summary: any[] = summaryQ.data?.fixedAssetSummaryByCategory ?? []
-
-  const filtered = useMemo(() => {
-    return assets.filter((a) => {
-      if (search.trim()) {
-        const q = search.toLowerCase()
-        if (
-          !a.name?.toLowerCase().includes(q) &&
-          !a.assetCode?.toLowerCase().includes(q) &&
-          !a.serialNumber?.toLowerCase().includes(q)
-        ) return false
-      }
-      return true
-    })
-  }, [assets, search])
 
   const totals = useMemo(() => {
     return assets.reduce(
@@ -219,35 +201,44 @@ export default function FixedAssetsPage() {
     })
   }
 
+  const columns: Column[] = [
+    { key: 'assetCode', label: 'Code', width: '110px', render: (v) => <MonoCell value={v} className="font-semibold text-foreground" /> },
+    { key: 'name', label: 'Name', sortable: true, render: (v) => <span className="text-sm font-medium">{v}</span> },
+    { key: 'category', label: 'Category', width: '140px', render: (v) => <span className="text-sm text-muted-foreground">{String(v || '').replace(/_/g, ' ')}</span> },
+    { key: 'purchaseDate', label: 'Purchased', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'acquisitionCost', label: 'Cost', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'accumulatedDepreciation', label: 'Accum. Dep.', width: '120px', align: 'right', render: (v) => <AmountCell value={v} className="text-rose-700" /> },
+    { key: 'bookValue', label: 'Book Value', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'status', label: 'Status', width: '130px', render: (v) => <ErpBadge status={String(v).toLowerCase()} /> },
+  ]
+
   return (
-    <div className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Fixed Assets"
-        description="Asset register, depreciation schedules and disposal tracking."
+        subtitle="Asset register, depreciation schedules and disposal tracking."
+        icon={<Boxes className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Financial' }, { label: 'Fixed Assets' }]}
         actions={
-          <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" />
-            Add asset
+          <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> Add Asset
           </Button>
         }
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Assets" value={formatNumber(assets.length)} icon={<Boxes className="h-5 w-5" />} tone="brand" />
-        <StatCard label="Acquisition cost" value={formatMoneyCompact(totals.cost)} icon={<Building className="h-5 w-5" />} tone="sky" />
-        <StatCard label="Accumulated depreciation" value={formatMoneyCompact(totals.accum)} icon={<TrendingDown className="h-5 w-5" />} tone="warn" />
-        <StatCard label="Net book value" value={formatMoneyCompact(totals.book)} icon={<CheckCircle2 className="h-5 w-5" />} tone="emerald" />
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Assets" value={assets.length} icon={<Boxes className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Acquisition Cost" value={formatMoneyCompact(totals.cost)} icon={<Building className="h-5 w-5" />} variant="teal" />
+        <StatCard label="Accum. Depreciation" value={formatMoneyCompact(totals.accum)} icon={<TrendingDown className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Net Book Value" value={formatMoneyCompact(totals.book)} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
-      {/* Category summary */}
-      <SectionCard title="By category" description="Snapshot of assets grouped by class">
-        {summary.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No assets yet.</p>
-        ) : (
+      {summary.length > 0 && (
+        <SectionPanel title="By category" description="Snapshot of assets grouped by class">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {summary.map((s) => (
-              <div key={s.category} className="rounded-xl border border-border p-3">
-                <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{s.category.replace('_', ' ')}</p>
+              <div key={s.category} className="rounded-lg border border-border p-3">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{s.category.replace(/_/g, ' ')}</p>
                 <p className="mt-1 text-base font-bold tabular-nums">{formatMoneyCompact(s.bookValue)}</p>
                 <p className="text-[11px] text-muted-foreground tabular-nums">
                   {s.count} asset{s.count === 1 ? '' : 's'} · cost {formatMoneyCompact(s.acquisitionCost)}
@@ -255,117 +246,58 @@ export default function FixedAssetsPage() {
               </div>
             ))}
           </div>
-        )}
-      </SectionCard>
+        </SectionPanel>
+      )}
 
-      {/* Register */}
-      <SectionCard
-        title="Asset register"
-        description={`${filtered.length} of ${assets.length} assets`}
-        action={
-          <div className="flex items-center gap-2">
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="rounded-lg border border-border bg-secondary/40 py-1.5 px-2 text-xs focus:ring-2 focus:ring-primary/40"
-            >
-              <option value="">All categories</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
-            </select>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Code / name / serial"
-                className="rounded-lg border border-border bg-secondary/40 py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-2 focus:ring-primary/40 w-48"
-              />
-            </div>
-          </div>
-        }
-        bodyClassName="p-0"
-      >
-        {listQ.loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center">
-            <Boxes className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No fixed assets yet</p>
-            <p className="text-xs text-muted-foreground mb-3">Add machinery, vehicles, computers, buildings — anything that depreciates.</p>
-            <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-              <Plus className="h-4 w-4" /> Add first asset
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Code</th>
-                  <th className="px-3 py-3 font-medium">Name</th>
-                  <th className="px-3 py-3 font-medium">Category</th>
-                  <th className="px-3 py-3 font-medium">Purchased</th>
-                  <th className="px-3 py-3 font-medium text-right">Cost</th>
-                  <th className="px-3 py-3 font-medium text-right">Accum. dep.</th>
-                  <th className="px-3 py-3 font-medium text-right">Book value</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((a: any) => (
-                  <tr key={a.id} className="border-t hover:bg-secondary/30">
-                    <td className="px-5 py-3 font-mono text-xs font-semibold">{a.assetCode}</td>
-                    <td className="px-3 py-3 font-medium">{a.name}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{a.category?.replace('_', ' ')}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{a.purchaseDate ? formatDate(a.purchaseDate) : '—'}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{formatMoney(a.acquisitionCost ?? 0)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums text-rose-700">{formatMoney(a.accumulatedDepreciation ?? 0)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums font-semibold">{formatMoney(a.bookValue ?? 0)}</td>
-                    <td className="px-3 py-3">
-                      <StatusBadge status={a.status} />
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        <button
-                          onClick={() => setDepOpen({ id: a.id, name: a.name })}
-                          title="Post depreciation"
-                          className="h-7 w-7 grid place-items-center rounded-md text-amber-600 hover:bg-amber-50"
-                        >
-                          <ArrowDownToLine className="h-3.5 w-3.5" />
-                        </button>
-                        <button onClick={() => openEdit(a)} title="Edit" className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-secondary">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            const d = prompt('Disposal date (YYYY-MM-DD)', new Date().toISOString().slice(0, 10))
-                            if (!d) return
-                            disposeMutation({ variables: { id: a.id, disposalDate: d } })
-                          }}
-                          title="Dispose"
-                          className="h-7 w-7 grid place-items-center rounded-md text-violet-600 hover:bg-violet-50"
-                        >
-                          <PackageX className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => { if (confirm(`Delete ${a.assetCode}?`)) deleteMutation({ variables: { id: a.id } }) }}
-                          title="Delete"
-                          className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <div className="flex justify-end">
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="rounded-lg border border-border bg-card py-1.5 px-2 text-xs focus:ring-2 focus:ring-primary/40"
+        >
+          <option value="">All categories</option>
+          {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
+        </select>
+      </div>
 
-      {/* Add/Edit modal */}
+      <DataTable
+        data={assets}
+        columns={columns}
+        loading={listQ.loading}
+        title="All Fixed Assets"
+        searchable
+        searchPlaceholder="Search code / name / serial…"
+        emptyMessage="No fixed assets found."
+        pageSize={25}
+        onRowClick={(r: any) => openEdit(r)}
+        actions={[
+          {
+            label: 'Post Depreciation',
+            icon: <ArrowDownToLine className="h-3.5 w-3.5" />,
+            onClick: (r: any) => setDepOpen({ id: r.id, name: r.name }),
+          },
+          {
+            label: 'Edit',
+            icon: <Pencil className="h-3.5 w-3.5" />,
+            onClick: (r: any) => openEdit(r),
+          },
+          {
+            label: 'Dispose',
+            icon: <PackageX className="h-3.5 w-3.5" />,
+            onClick: (r: any) => {
+              const d = prompt('Disposal date (YYYY-MM-DD)', new Date().toISOString().slice(0, 10))
+              if (!d) return
+              disposeMutation({ variables: { id: r.id, disposalDate: d } })
+            },
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => { if (confirm(`Delete ${r.assetCode}?`)) deleteMutation({ variables: { id: r.id } }) },
+          },
+        ]}
+      />
+
       <FormModal
         open={open}
         onOpenChange={setOpen}
@@ -390,13 +322,13 @@ export default function FixedAssetsPage() {
             <div className="space-y-1.5">
               <Label>Category</Label>
               <select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
+                {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
               <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                {STATUSES.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
+                {STATUSES.map((c) => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -444,7 +376,7 @@ export default function FixedAssetsPage() {
             <div className="space-y-1.5">
               <Label>Method</Label>
               <select value={form.depreciationMethod} onChange={(e) => setForm((p) => ({ ...p, depreciationMethod: e.target.value }))} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                {METHODS.map((m) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
+                {METHODS.map((m) => <option key={m} value={m}>{m.replace(/_/g, ' ')}</option>)}
               </select>
             </div>
             <div className="space-y-1.5">
@@ -480,7 +412,6 @@ export default function FixedAssetsPage() {
         </FormSection>
       </FormModal>
 
-      {/* Depreciation modal */}
       <FormModal
         open={!!depOpen}
         onOpenChange={(v) => !v && setDepOpen(null)}
@@ -515,22 +446,5 @@ export default function FixedAssetsPage() {
         </FormSection>
       </FormModal>
     </div>
-  )
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const s = String(status || '').toUpperCase()
-  const tone =
-    s === 'ACTIVE'
-      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : s === 'DISPOSED'
-        ? 'bg-rose-50 text-rose-700 border-rose-200'
-        : s === 'UNDER_MAINTENANCE'
-          ? 'bg-amber-50 text-amber-700 border-amber-200'
-          : 'bg-slate-100 text-slate-700 border-slate-200'
-  return (
-    <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase', tone)}>
-      {s.replace('_', ' ')}
-    </span>
   )
 }

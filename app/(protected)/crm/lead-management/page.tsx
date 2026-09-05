@@ -3,7 +3,8 @@
 import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
@@ -22,9 +23,8 @@ import {
   CONVERT_LEAD_TO_OPPORTUNITY,
   GET_USERS,
 } from '@/gql/queries'
-import { Trash2, Edit, X, Save, TrendingUp, Eye } from 'lucide-react'
+import { Trash2, Edit, X, Save, TrendingUp, Eye, Plus, Users, UserPlus, CheckCircle2, Clock } from 'lucide-react'
 import { formatMoney } from '@/lib/format-money'
-import { StatusBadge } from '@/components/ui/status-badge'
 import { useRouter } from 'next/navigation'
 
 const EMPTY_FORM = {
@@ -78,7 +78,7 @@ export default function LeadManagementPage() {
   })
 
   const [convertLead, { loading: converting }] = useMutation(CONVERT_LEAD_TO_OPPORTUNITY, {
-    onCompleted: (data) => {
+    onCompleted: () => {
       refetch()
       setConvertModal({ show: false, lead: null })
       router.push('/crm/opportunity-management')
@@ -149,60 +149,51 @@ export default function LeadManagementPage() {
     converted: leads.filter((l: any) => l.status === 'converted').length,
   }
 
-  const statusColor: Record<string, string> = {
-    new: 'bg-blue-100 text-blue-700',
-    contacted: 'bg-yellow-100 text-yellow-700',
-    qualified: 'bg-green-100 text-green-700',
-    unqualified: 'bg-red-100 text-red-700',
-    converted: 'bg-purple-100 text-purple-700',
-    pending_approval: 'bg-amber-100 text-amber-900',
-    approval_rejected: 'bg-rose-100 text-rose-800',
-  }
-
   const ratingColor: Record<string, string> = {
     hot: 'bg-red-100 text-red-700',
     warm: 'bg-orange-100 text-orange-700',
-    cold: 'bg-blue-100 text-blue-700',
+    cold: 'bg-primary/10 text-primary',
   }
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
-    { key: 'firstName', label: 'Name', sortable: true, render: (v, row) => <span className="font-medium">{v} {row.lastName}</span> },
-    { key: 'company', label: 'Company', render: v => <span className="text-xs">{v || '—'}</span> },
-    { key: 'email', label: 'Email', render: v => <span className="text-xs">{v || '—'}</span> },
-    { key: 'phone', label: 'Phone', width: '120px' },
-    { key: 'status', label: 'Status', width: '110px', render: (v) => <StatusBadge status={String(v)} /> },
-    { key: 'rating', label: 'Rating', width: '80px', render: v => v ? <span className={`px-2 py-0.5 rounded text-xs ${ratingColor[v]}`}>{v}</span> : '—' },
-    { key: 'estimatedValue', label: 'Value', width: '120px', render: v => v ? formatMoney(v) : '—' },
+    { key: 'seqNo', label: 'Code', width: '100px', render: (v) => <MonoCell value={v} /> },
+    { key: 'firstName', label: 'Name', sortable: true, render: (v, row) => <span className="text-sm font-medium">{v} {row.lastName}</span> },
+    { key: 'company', label: 'Company', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'email', label: 'Email', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'phone', label: 'Phone', width: '120px', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'status', label: 'Status', width: '110px', render: (v) => <ErpBadge status={String(v)} /> },
+    { key: 'rating', label: 'Rating', width: '80px', render: (v) => v ? <span className={`px-2 py-0.5 rounded text-xs ${ratingColor[v]}`}>{v}</span> : '—' },
+    { key: 'estimatedValue', label: 'Value', width: '120px', align: 'right', render: (v) => v ? <AmountCell value={v} /> : '—' },
+    { key: 'expectedCloseDate', label: 'Close', width: '110px', render: (v) => <DateCell value={v} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Lead Management</h1>
-        <p className="text-gray-500">Track and manage sales leads</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Lead Management"
+        subtitle="Track and manage sales leads"
+        icon={<Users className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'CRM' }, { label: 'Lead Management' }]}
+        actions={
+          <Button onClick={() => { reset(); setEditing(null); setAdding(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Lead
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-5 gap-3">
-        {[
-          { label: 'Total', value: stats.total, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'New', value: stats.new, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Contacted', value: stats.contacted, cls: 'text-yellow-600 bg-yellow-50' },
-          { label: 'Qualified', value: stats.qualified, cls: 'text-green-600 bg-green-50' },
-          { label: 'Converted', value: stats.converted, cls: 'text-purple-600 bg-purple-50' },
-        ].map(({ label, value, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3">
-            <p className="text-xs text-gray-400">{label}</p>
-            <p className="text-lg font-bold text-gray-800">{value}</p>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={5}>
+        <StatCard label="Total" value={stats.total} icon={<Users className="h-5 w-5" />} variant="slate" />
+        <StatCard label="New" value={stats.new} icon={<UserPlus className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Contacted" value={stats.contacted} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Qualified" value={stats.qualified} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Converted" value={stats.converted} icon={<TrendingUp className="h-5 w-5" />} variant="violet" />
+      </StatsRow>
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-card border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editing ? 'Edit Lead' : 'New Lead'}</span>
-            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-3 gap-3">
@@ -228,7 +219,7 @@ export default function LeadManagementPage() {
             <InputFloating label="Notes" multiline rows={2} value={form.notes} onChange={e => setF('notes', e.target.value)} className="text-xs" />
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" size="sm" onClick={() => { setAdding(false); setEditing(null); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[110px]">
+              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[110px]">
                 <Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving…' : editing ? 'Update' : 'Save Lead'}
               </Button>
             </div>
@@ -241,28 +232,29 @@ export default function LeadManagementPage() {
         columns={columns}
         loading={loading}
         title="All Leads"
-        onAdd={() => { reset(); setAdding(true) }}
-        addLabel="New Lead"
         searchable
-        searchPlaceholder="Search leads..."
-        emptyMessage="No leads yet. Click 'New Lead' to create one."
+        searchPlaceholder="Search leads…"
+        emptyMessage="No leads yet. Click New Lead to create one."
+        pageSize={25}
         onRowClick={handleEdit}
         actions={[
           {
             label: 'View',
             icon: <Eye className="h-3.5 w-3.5" />,
-            onClick: row => setLeadView(row),
-            variant: 'ghost',
+            onClick: (row) => setLeadView(row),
           },
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
+          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: (row) => handleEdit(row) },
           {
             label: 'Convert',
             icon: <TrendingUp className="h-3.5 w-3.5" />,
-            onClick: row => setConvertModal({ show: true, lead: row }),
-            variant: 'ghost',
+            onClick: (row) => setConvertModal({ show: true, lead: row }),
             show: (row: any) => row.status !== 'converted' && row.status !== 'pending_approval',
           },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this lead?')) deleteLead({ variables: { id: row.id } }) }, variant: 'ghost' },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (row) => { if (confirm('Delete this lead?')) deleteLead({ variables: { id: row.id } }) },
+          },
         ]}
       />
 
@@ -286,32 +278,32 @@ export default function LeadManagementPage() {
 
       {convertModal.show && convertModal.lead && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full mx-4 border border-border">
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <h3 className="text-lg font-semibold">Convert Lead to Opportunity</h3>
-              <button onClick={() => setConvertModal({ show: false, lead: null })} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setConvertModal({ show: false, lead: null })} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-4 space-y-3">
-              <p className="text-sm text-gray-600">
+              <p className="erp-page-desc">
                 Are you sure you want to convert this lead to an opportunity?
               </p>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+              <div className="bg-muted/50 rounded-lg p-3 space-y-1">
                 <p className="text-sm font-medium">{convertModal.lead.firstName} {convertModal.lead.lastName}</p>
-                {convertModal.lead.company && <p className="text-xs text-gray-600">{convertModal.lead.company}</p>}
-                {convertModal.lead.email && <p className="text-xs text-gray-600">{convertModal.lead.email}</p>}
-                {convertModal.lead.estimatedValue && <p className="text-xs text-gray-600">Value: {formatMoney(convertModal.lead.estimatedValue)}</p>}
+                {convertModal.lead.company && <p className="text-xs text-muted-foreground">{convertModal.lead.company}</p>}
+                {convertModal.lead.email && <p className="text-xs text-muted-foreground">{convertModal.lead.email}</p>}
+                {convertModal.lead.estimatedValue && <p className="text-xs text-muted-foreground">Value: {formatMoney(convertModal.lead.estimatedValue)}</p>}
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 This will create a new opportunity and mark the lead as converted.
               </p>
             </div>
-            <div className="flex justify-end gap-2 px-4 py-3 bg-gray-50 rounded-b-lg">
+            <div className="flex justify-end gap-2 px-4 py-3 bg-muted/30 rounded-b-lg">
               <Button variant="outline" size="sm" onClick={() => setConvertModal({ show: false, lead: null })} disabled={converting}>
                 Cancel
               </Button>
-              <Button size="sm" onClick={() => convertLead({ variables: { id: convertModal.lead.id } })} disabled={converting} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button size="sm" onClick={() => convertLead({ variables: { id: convertModal.lead.id } })} disabled={converting} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 <TrendingUp className="h-4 w-4 mr-1" />
                 {converting ? 'Converting...' : 'Convert to Opportunity'}
               </Button>

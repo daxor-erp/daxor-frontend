@@ -36,6 +36,57 @@ export async function ensureVendor(
   return created.createVendor.id
 }
 
+/** Ensure vendor has at least one bank account (required before vendor payments). */
+export async function ensureVendorBankForPayments(
+  request: APIRequestContext,
+  token: string,
+  organizationId: string,
+  vendorId: string,
+  tag: string,
+): Promise<void> {
+  const vendor = await gql<{
+    vendor: { bankAccounts: Array<{ id: string }> }
+  }>(
+    request,
+    `query($id: ID!) { vendor(id: $id) { bankAccounts { id } } }`,
+    { id: vendorId },
+    token,
+  )
+  if (vendor.vendor.bankAccounts?.length) return
+
+  const bank = await gql<{ createBank: { id: string } }>(
+    request,
+    `mutation($input: CreateBankInput!) {
+      createBank(input: $input) { id }
+    }`,
+    {
+      input: {
+        organizationId,
+        name: `E2E Pay Bank ${tag}`,
+        bankIdentifierCode: `E2E${tag.replace(/\D/g, '').slice(-6)}`,
+      },
+    },
+    token,
+  )
+
+  await gql(
+    request,
+    `mutation($vendorId: ID!, $input: VendorBankAccountInput!) {
+      addVendorBankAccount(vendorId: $vendorId, input: $input) { id }
+    }`,
+    {
+      vendorId,
+      input: {
+        accountNumber: `ACC${tag.replace(/\D/g, '').slice(-8)}`,
+        bankId: bank.createBank.id,
+        currency: 'INR',
+        sendMoney: true,
+      },
+    },
+    token,
+  )
+}
+
 export async function createAndApproveVendorBillViaApi(
   request: APIRequestContext,
   token: string,

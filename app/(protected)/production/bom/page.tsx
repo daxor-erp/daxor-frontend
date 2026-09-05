@@ -10,17 +10,16 @@ import {
   DELETE_BOM,
   GET_ITEMS,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
-import { StatCard } from '@/components/dashboard/stat-card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell } from '@/components/ui/erp-shared'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { LineItemsEditor, type LineColumn } from '@/components/forms/line-items-editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Layers, Search, Boxes, Calculator, CircleDollarSign } from 'lucide-react'
-import { formatMoney, formatMoneyCompact, formatNumber } from '@/lib/format-money'
-import { cn } from '@/lib/utils'
+import { Plus, Pencil, Trash2, Layers, Boxes, Calculator, CircleDollarSign } from 'lucide-react'
+import { formatMoney } from '@/lib/format-money'
 
 interface BOMComponent {
   id?: string
@@ -71,7 +70,6 @@ export default function BOMPage() {
   const orgId = user?.organizationId ?? ''
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<BOMForm>(EMPTY_FORM)
-  const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
   const listQ = useQuery(GET_BOMS, {
@@ -106,21 +104,12 @@ export default function BOMPage() {
 
   const boms: any[] = listQ.data?.billsOfMaterials ?? []
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return boms
-    const q = search.toLowerCase()
-    return boms.filter(
-      (b) =>
-        b.bomCode?.toLowerCase().includes(q) ||
-        b.parentItemName?.toLowerCase().includes(q),
-    )
-  }, [boms, search])
-
   const stats = useMemo(() => {
     const active = boms.filter((b) => String(b.status).toUpperCase() === 'ACTIVE').length
+    const draft = boms.filter((b) => String(b.status).toUpperCase() === 'DRAFT').length
     const totalCost = boms.reduce((s, b) => s + Number(b.totalCost ?? 0), 0)
     const components = boms.reduce((s, b) => s + (b.components?.length ?? 0), 0)
-    return { active, totalCost, components }
+    return { active, draft, totalCost, components }
   }, [boms])
 
   const componentColumns: LineColumn<BOMComponent>[] = [
@@ -233,112 +222,72 @@ export default function BOMPage() {
     }
   }
 
+  const columns: Column[] = [
+    { key: 'bomCode', label: 'Code', width: '130px', render: (v) => <MonoCell value={v} /> },
+    { key: 'parentItemName', label: 'Parent item', render: (v) => <span className="text-sm font-medium">{v || '—'}</span> },
+    { key: 'version', label: 'Version', width: '90px', render: (v) => <MonoCell value={v} /> },
+    { key: 'components', label: 'Components', width: '110px', align: 'right', render: (v) => <span className="text-sm tabular-nums">{Array.isArray(v) ? v.length : 0}</span> },
+    { key: 'totalMaterialCost', label: 'Material cost', width: '130px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'totalCost', label: 'Total cost', width: '130px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'status', label: 'Status', width: '110px', render: (v) => <ErpBadge status={String(v)} /> },
+  ]
+
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Bill of Materials"
-        description="Define what items + costs go into producing each manufactured product."
+        subtitle="Define what items + costs go into producing each manufactured product"
+        icon={<Layers className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Production' }, { label: 'BOM' }]}
         actions={
-          <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" />
-            New BOM
+          <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New BOM
           </Button>
         }
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Total BOMs" value={formatNumber(boms.length)} icon={<Layers className="h-5 w-5" />} tone="brand" />
-        <StatCard label="Active" value={formatNumber(stats.active)} icon={<Boxes className="h-5 w-5" />} tone="emerald" />
-        <StatCard label="Components" value={formatNumber(stats.components)} icon={<Calculator className="h-5 w-5" />} tone="sky" />
-        <StatCard label="Total BOM cost" value={formatMoneyCompact(stats.totalCost)} icon={<CircleDollarSign className="h-5 w-5" />} tone="warn" />
+      <StatsRow cols={4}>
+        <StatCard label="Total BOMs" value={boms.length} icon={<Layers className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Active" value={stats.active} icon={<Boxes className="h-5 w-5" />} variant="green" />
+        <StatCard label="Draft" value={stats.draft} icon={<Calculator className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Total BOM cost" value={`₹${(stats.totalCost / 1000).toFixed(1)}k`} icon={<CircleDollarSign className="h-5 w-5" />} variant="rose" />
+      </StatsRow>
+
+      <div className="flex justify-end">
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-lg border border-border bg-secondary/40 py-1.5 px-2 text-xs focus:ring-2 focus:ring-primary/40"
+        >
+          <option value="">All statuses</option>
+          {['DRAFT', 'ACTIVE', 'OBSOLETE', 'ARCHIVED'].map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
       </div>
 
-      <SectionCard
-        title="BOM register"
-        description={`${filtered.length} of ${boms.length} BOMs`}
-        action={
-          <div className="flex items-center gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-lg border border-border bg-secondary/40 py-1.5 px-2 text-xs focus:ring-2 focus:ring-primary/40"
-            >
-              <option value="">All statuses</option>
-              {['DRAFT', 'ACTIVE', 'OBSOLETE', 'ARCHIVED'].map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search code / parent"
-                className="rounded-lg border border-border bg-secondary/40 py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-2 focus:ring-primary/40 w-56"
-              />
-            </div>
-          </div>
-        }
-        bodyClassName="p-0"
-      >
-        {listQ.loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center">
-            <Layers className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No BOMs yet</p>
-            <p className="text-xs text-muted-foreground mb-3">Define the recipe for each manufactured product.</p>
-            <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-              <Plus className="h-4 w-4" /> New BOM
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Code</th>
-                  <th className="px-3 py-3 font-medium">Parent item</th>
-                  <th className="px-3 py-3 font-medium">Version</th>
-                  <th className="px-3 py-3 font-medium text-right">Components</th>
-                  <th className="px-3 py-3 font-medium text-right">Material cost</th>
-                  <th className="px-3 py-3 font-medium text-right">Total cost</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((b: any) => (
-                  <tr key={b.id} className="border-t hover:bg-secondary/30 cursor-pointer" onClick={() => openEdit(b)}>
-                    <td className="px-5 py-3 font-mono text-xs font-semibold">{b.bomCode}</td>
-                    <td className="px-3 py-3 font-medium">{b.parentItemName}</td>
-                    <td className="px-3 py-3 text-muted-foreground font-mono text-xs">{b.version}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{b.components?.length ?? 0}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{formatMoney(b.totalMaterialCost ?? 0)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums font-semibold">{formatMoney(b.totalCost ?? 0)}</td>
-                    <td className="px-3 py-3">
-                      <BOMStatusBadge status={b.status} />
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => openEdit(b)} className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-secondary">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => { if (confirm(`Delete ${b.bomCode}?`)) deleteMutation({ variables: { id: b.id } }) }}
-                          className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <DataTable
+        data={boms}
+        columns={columns}
+        loading={listQ.loading}
+        title="All BOMs"
+        searchable
+        searchPlaceholder="Search code / parent…"
+        emptyMessage="No BOMs found."
+        pageSize={25}
+        onRowClick={openEdit}
+        actions={[
+          {
+            label: 'Edit',
+            icon: <Pencil className="h-3.5 w-3.5" />,
+            onClick: (r: any) => openEdit(r),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => { if (confirm(`Delete ${r.bomCode}?`)) deleteMutation({ variables: { id: r.id } }) },
+          },
+        ]}
+      />
 
-      {/* Add / Edit modal */}
       <FormModal
         open={open}
         onOpenChange={setOpen}
@@ -456,14 +405,4 @@ export default function BOMPage() {
       </FormModal>
     </div>
   )
-}
-
-function BOMStatusBadge({ status }: { status: string }) {
-  const s = String(status || '').toUpperCase()
-  const tone =
-    s === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : s === 'DRAFT' ? 'bg-slate-100 text-slate-700 border-slate-200'
-        : s === 'OBSOLETE' ? 'bg-amber-50 text-amber-700 border-amber-200'
-          : 'bg-rose-50 text-rose-700 border-rose-200'
-  return <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase', tone)}>{s}</span>
 }

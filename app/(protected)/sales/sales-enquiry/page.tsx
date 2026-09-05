@@ -34,7 +34,7 @@ const EMPTY_FORM = {
   estimatedStartDate: '',
   estimatedEndDate: '',
   budget: '',
-  currency: 'SGD',
+  currency: 'INR',
   assignedTo: '',
   priority: 'normal',
   notes: '',
@@ -62,12 +62,12 @@ const PROJECT_TYPE_OPTS = [
 ]
 
 const CURRENCY_OPTS = [
-  { value: 'SGD', label: 'SGD' },
+  { value: 'INR', label: 'INR' },
   { value: 'USD', label: 'USD' },
+  { value: 'SGD', label: 'SGD' },
   { value: 'EUR', label: 'EUR' },
   { value: 'GBP', label: 'GBP' },
   { value: 'AUD', label: 'AUD' },
-  { value: 'INR', label: 'INR' },
 ]
 
 const PRIORITY_OPTS = [
@@ -129,10 +129,10 @@ export default function SalesEnquiryPage() {
   )
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Sales Enquiry</h1>
-        <p className="text-gray-500">
+        <h1 className="erp-page-title">Sales Enquiry</h1>
+        <p className="erp-page-desc">
           Create a new enquiry. Use the <span className="font-semibold text-slate-700">eye</span> button (top
           right) to open past enquiries, send them for approval, and inspect details.
         </p>
@@ -149,8 +149,8 @@ export default function SalesEnquiryPage() {
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{errorMsg}</div>
       )}
 
-      <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 bg-blue-600">
+      <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2 bg-primary">
           <span className="text-xs font-semibold text-white">New Sales Enquiry</span>
         </div>
         <div className="p-4 space-y-4">
@@ -314,7 +314,7 @@ export default function SalesEnquiryPage() {
               size="sm"
               onClick={handleSubmit}
               disabled={submitting || !orgId}
-              className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
+              className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[120px]"
             >
               <Save className="h-3.5 w-3.5 mr-1" />
               {submitting ? 'Saving…' : 'Save Enquiry'}

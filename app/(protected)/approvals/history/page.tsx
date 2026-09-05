@@ -115,7 +115,7 @@ export default function ApprovalsHistoryPage() {
   const empty = useMemo(() => !loading && rows.length === 0, [loading, rows.length])
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Approval history"
         description="Approval requests assigned to you. Switch the role filter to also see requests you sent."
@@ -195,7 +195,7 @@ export default function ApprovalsHistoryPage() {
                 const isRequester = String(r.requesterUserId ?? '') === myUid
                 return (
                   <TableRow key={r.id}>
-                    <TableCell className="font-medium text-slate-900">
+                    <TableCell className="font-medium text-foreground">
                       <div className="leading-tight">
                         <div>{r.title ?? '—'}</div>
                         {r.resolutionNote ? (

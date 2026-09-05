@@ -155,19 +155,19 @@ export default function LeaveTypePage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="erp-shell">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-blue-600 mb-1">
+          <div className="flex items-center gap-2 text-primary mb-1">
             <Palmtree className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">HR · Leave</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Leave type</h1>
+          <h1 className="erp-page-title">Leave type</h1>
           <p className="text-gray-500 mt-1">
             Define paid / unpaid categories, default entitlements, and carry-forward rules for salary processing.
           </p>
         </div>
-        <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white shrink-0">
+        <Button onClick={openCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0">
           <Plus className="h-4 w-4 mr-2" /> New leave type
         </Button>
       </div>
@@ -208,11 +208,11 @@ export default function LeaveTypePage() {
             </TableHeader>
             <TableBody>
               {rows.map((r: (typeof rows)[0]) => (
-                <TableRow key={r.id} className="hover:bg-blue-50/40">
+                <TableRow key={r.id} className="hover:bg-primary/5/40">
                   <TableCell className="font-mono text-sm font-medium">{r.code}</TableCell>
                   <TableCell className="text-sm">{r.name}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={r.paid ? 'border-blue-200 text-blue-700 bg-blue-50' : ''}>
+                    <Badge variant="outline" className={r.paid ? 'border-primary/20 text-primary bg-primary/10' : ''}>
                       {r.paid ? 'Paid' : 'Unpaid'}
                     </Badge>
                   </TableCell>
@@ -320,7 +320,7 @@ export default function LeaveTypePage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700" disabled={busy} onClick={submit}>
+            <Button className="bg-primary hover:bg-primary/90" disabled={busy} onClick={submit}>
               {busy ? 'Saving…' : 'Save'}
             </Button>
           </DialogFooter>

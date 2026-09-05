@@ -27,15 +27,15 @@ export default function WorkshopDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Workshop Dashboard</h1>
-        <p className="text-gray-500">Workshop operations and task tracking</p>
+        <h1 className="erp-page-title">Workshop Dashboard</h1>
+        <p className="erp-page-desc">Workshop operations and task tracking</p>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Total Tasks', value: stats.totalTasks, icon: Wrench, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Total Tasks', value: stats.totalTasks, icon: Wrench, cls: 'text-primary bg-primary/10' },
           { label: 'In Progress', value: stats.inProgress, icon: Clock, cls: 'text-orange-600 bg-orange-50' },
           { label: 'Completed', value: stats.completed, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
           { label: 'Blocked', value: stats.blocked, icon: Users, cls: 'text-red-600 bg-red-50' },
@@ -62,7 +62,7 @@ export default function WorkshopDashboard() {
                     <span className="font-semibold">{count}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className={`h-2 rounded-full ${priority === 'critical' ? 'bg-red-500' : priority === 'high' ? 'bg-orange-500' : priority === 'medium' ? 'bg-blue-500' : 'bg-gray-400'}`} style={{ width: `${stats.totalTasks > 0 ? (count / stats.totalTasks) * 100 : 0}%` }} />
+                    <div className={`h-2 rounded-full ${priority === 'critical' ? 'bg-red-500' : priority === 'high' ? 'bg-orange-500' : priority === 'medium' ? 'bg-primary/100' : 'bg-gray-400'}`} style={{ width: `${stats.totalTasks > 0 ? (count / stats.totalTasks) * 100 : 0}%` }} />
                   </div>
                 </div>
               )
@@ -93,7 +93,7 @@ export default function WorkshopDashboard() {
                   {allTasks.slice(0, 10).map((task: any, idx: number) => (
                     <tr key={idx} className="border-b hover:bg-gray-50">
                       <td className="p-2">{task.name}</td>
-                      <td className="p-2"><span className={`px-2 py-0.5 rounded ${task.status === 'completed' ? 'bg-green-100 text-green-800' : task.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{task.status}</span></td>
+                      <td className="p-2"><span className={`px-2 py-0.5 rounded ${task.status === 'completed' ? 'bg-green-100 text-green-800' : task.status === 'in-progress' ? 'bg-primary/10 text-primary' : 'bg-yellow-100 text-yellow-800'}`}>{task.status}</span></td>
                       <td className="p-2"><span className="capitalize">{task.priority}</span></td>
                       <td className="p-2">{task.dueDate ? formatDate(task.dueDate) : '—'}</td>
                     </tr>

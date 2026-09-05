@@ -123,7 +123,10 @@ export default function SettingsPage() {
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFS)
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>(DEFAULT_NOTIF)
   useEffect(() => {
-    setPrefs(readPrefs<Preferences>(PREFS_KEY, DEFAULT_PREFS))
+    const loaded = readPrefs<Preferences>(PREFS_KEY, DEFAULT_PREFS)
+    const next = { ...loaded, currency: 'INR' as const }
+    writePrefs(PREFS_KEY, next)
+    setPrefs(next)
     setNotifPrefs(readPrefs<NotifPrefs>(NOTIF_PREFS_KEY, DEFAULT_NOTIF))
   }, [])
 
@@ -191,7 +194,7 @@ export default function SettingsPage() {
   }, [user?.roles])
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Settings"
         description="Manage your profile, preferences, notifications and access."
@@ -212,7 +215,7 @@ export default function SettingsPage() {
           <SectionCard title="Your profile" description="Personal information shown across the app">
             <form onSubmit={submitProfile} className="space-y-6">
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-grad-brand text-white grid place-items-center text-xl font-bold elev-brand">
+                <div className="h-16 w-16 rounded-2xl grid place-items-center text-xl font-bold elev-brand">
                   {initials}
                 </div>
                 <div>
@@ -247,7 +250,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button type="submit" disabled={saving} className="bg-grad-brand text-white border-none gap-1.5">
+                <Button type="submit" disabled={saving} className="gap-1.5">
                   <Save className="h-4 w-4" />
                   {saving ? 'Saving…' : 'Save changes'}
                 </Button>
@@ -382,39 +385,12 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Currency</Label>
-                <RadioGroup
-                  value={prefs.currency}
-                  onValueChange={(v) => {
-                    updatePrefs({ currency: v as Preferences['currency'] })
-                    if (user?.id) {
-                      updateUser({ variables: { id: user.id, input: { currency: v } } })
-                    }
-                    if (typeof window !== 'undefined') window.location.reload()
-                  }}
-                  className="grid grid-cols-2 gap-2"
-                >
-                  {[
-                    { v: 'INR', label: '₹ Rupee (INR)' },
-                    { v: 'USD', label: '$ US Dollar (USD)' },
-                    { v: 'SGD', label: 'S$ Singapore Dollar (SGD)' },
-                    { v: 'MYR', label: 'RM Malaysian Ringgit (MYR)' },
-                  ].map((o) => (
-                    <label
-                      key={o.v}
-                      className={cn(
-                        'flex items-center gap-2 rounded-lg border p-2.5 cursor-pointer text-sm',
-                        prefs.currency === o.v ? 'border-primary bg-primary-soft/40' : 'hover:bg-secondary',
-                      )}
-                    >
-                      <RadioGroupItem value={o.v} className="sr-only" />
-                      <div className={cn('h-2 w-2 rounded-full', prefs.currency === o.v ? 'bg-primary' : 'bg-border')} />
-                      {o.label}
-                    </label>
-                  ))}
-                </RadioGroup>
-                <p className="text-xs text-muted-foreground">
-                  Applies to all monetary fields. Changing reloads the page.
-                </p>
+                <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm">
+                  <span className="font-medium">₹ Indian Rupee (INR)</span>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Company currency is INR. All KPIs, invoices, and money fields display in ₹.
+                  </p>
+                </div>
               </div>
               <div className="space-y-3">
                 <Label>Stat card decorations</Label>
@@ -483,7 +459,7 @@ export default function SettingsPage() {
                 <Input id="confirm" type="password" autoComplete="new-password" />
               </div>
               <div className="sm:col-span-2 flex justify-end">
-                <Button type="submit" className="bg-grad-brand text-white border-none">Update password</Button>
+                <Button type="submit">Update password</Button>
               </div>
             </form>
             <div className="mt-4 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-100 text-amber-900 px-3 py-2 text-xs">
@@ -528,7 +504,7 @@ export default function SettingsPage() {
         <TabsContent value="access" className="mt-6 space-y-6">
           <SectionCard title="Your module access" description="What you can do in each module" bodyClassName="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="erp-table">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground border-b">
                     <th className="px-5 py-3 font-medium">Module</th>

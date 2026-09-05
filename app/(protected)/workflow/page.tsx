@@ -97,9 +97,9 @@ function StatCard({ k, v }: { k: string; v: number }) {
         : 'bg-white border-gray-200'
     }`}>
       <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
-        isAlert && v > 0 ? 'bg-orange-100' : 'bg-blue-50'
+        isAlert && v > 0 ? 'bg-orange-100' : 'bg-primary/10'
       }`}>
-        <Icon className={`h-4 w-4 ${isAlert && v > 0 ? 'text-orange-500' : 'text-blue-600'}`} />
+        <Icon className={`h-4 w-4 ${isAlert && v > 0 ? 'text-orange-500' : 'text-primary'}`} />
       </div>
       <div>
         <p className="text-[11px] text-gray-400">{label}</p>
@@ -114,7 +114,7 @@ function StatCard({ k, v }: { k: string; v: number }) {
 function GraphSkeleton() {
   return (
     <div className="w-full h-full flex items-center justify-center bg-gray-50">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   )
 }
@@ -161,7 +161,7 @@ function WorkflowPageInner() {
     : []
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 text-gray-900">
+    <div className="flex flex-col h-full bg-gray-50 text-foreground">
 
       {/* Header */}
       <div className="shrink-0 border-b border-gray-200 bg-white px-5 py-3 shadow-sm">
@@ -172,8 +172,8 @@ function WorkflowPageInner() {
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <GitBranch className="h-4 w-4 text-blue-600" />
-          <span className="text-sm font-semibold text-gray-900">Workflow Graph</span>
+          <GitBranch className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold text-foreground">Workflow Graph</span>
           {data && (
             <>
               <span className="text-sm text-gray-500 truncate max-w-lg">— {data.title}</span>

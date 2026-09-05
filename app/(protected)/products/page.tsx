@@ -18,16 +18,15 @@ import {
   UPDATE_PRODUCT_QUANTITY,
   REPLENISH_PRODUCT,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell } from '@/components/ui/erp-shared'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { formatMoney } from '@/lib/format-money'
 import { uploadDocument, buildDownloadUrl } from '@/lib/upload'
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 import {
@@ -419,84 +418,95 @@ export default function ProductsPage() {
     }
   }
 
+  const columns: Column[] = [
+    {
+      key: 'internalReference',
+      label: 'Reference',
+      width: '130px',
+      render: (v, r) => <MonoCell value={v || r.seqNo} />,
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (v) => <span className="text-sm font-medium">{v}</span>,
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      render: (v) => <span className="text-sm text-muted-foreground">{v?.fullPath || '—'}</span>,
+    },
+    {
+      key: 'uom',
+      label: 'UoM',
+      width: '100px',
+      render: (v) => <span className="text-sm text-muted-foreground">{v?.name || '—'}</span>,
+    },
+    {
+      key: 'salesPrice',
+      label: 'Sales Price',
+      width: '120px',
+      align: 'right',
+      render: (v) => (v != null && v !== '' ? <AmountCell value={v} /> : <span className="text-muted-foreground">—</span>),
+    },
+    {
+      key: 'costPrice',
+      label: 'Cost',
+      width: '120px',
+      align: 'right',
+      render: (v) => (v != null && v !== '' ? <AmountCell value={v} /> : <span className="text-muted-foreground">—</span>),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: '100px',
+      render: (v) => <ErpBadge status={String(v)} />,
+    },
+  ]
+
   return (
-    <div className="mx-auto w-full max-w-[1300px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Products"
-        description="Shared catalogue for Inventory and Purchasing — the same product master feeds PO lines, GRN, and stock."
+        subtitle="Shared catalogue for Inventory and Purchasing — the same product master feeds PO lines, GRN, and stock."
+        icon={<Package className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Products' }, { label: 'Catalogue' }]}
         actions={
-          <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" /> New Product
+          <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Product
           </Button>
         }
       />
 
-      <div className="grid grid-cols-3 gap-3">
-        <Stat label="Total Products" value={stats.total} icon={<Package className="h-4 w-4" />} />
-        <Stat label="Purchasable" value={stats.purchasable} icon={<ShoppingCart className="h-4 w-4" />} />
-        <Stat label="Sellable" value={stats.sellable} icon={<Boxes className="h-4 w-4" />} />
-      </div>
+      <StatsRow cols={3}>
+        <StatCard label="Total Products" value={stats.total} icon={<Package className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Purchasable" value={stats.purchasable} icon={<ShoppingCart className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Sellable" value={stats.sellable} icon={<Boxes className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
-      <SectionCard title="All products" bodyClassName="p-0">
-        {loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : products.length === 0 ? (
-          <div className="p-10 text-center">
-            <Package className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No products yet</p>
-            <Button onClick={openNew} className="mt-3 bg-grad-brand text-white border-none gap-1.5">
-              <Plus className="h-4 w-4" /> New Product
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Reference</th>
-                  <th className="px-3 py-3 font-medium">Name</th>
-                  <th className="px-3 py-3 font-medium">Category</th>
-                  <th className="px-3 py-3 font-medium">UoM</th>
-                  <th className="px-3 py-3 font-medium text-right">Sales Price</th>
-                  <th className="px-3 py-3 font-medium text-right">Cost</th>
-                  <th className="px-3 py-3 font-medium">Flags</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => (
-                  <tr key={p.id} className="border-t hover:bg-secondary/30 cursor-pointer" onClick={() => openEdit(p)}>
-                    <td className="px-5 py-3 font-mono text-xs">{p.internalReference || p.seqNo || '—'}</td>
-                    <td className="px-3 py-3 font-medium">{p.name}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{p.category?.fullPath || '—'}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{p.uom?.name || '—'}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{p.salesPrice ? formatMoney(p.salesPrice) : '—'}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{p.costPrice ? formatMoney(p.costPrice) : '—'}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex gap-1">
-                        {p.canBePurchased && <Badge variant="outline" className="text-[10px]">Purchase</Badge>}
-                        {p.canBeSold && <Badge variant="outline" className="text-[10px]">Sales</Badge>}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 capitalize">{p.status}</td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => openEdit(p)} className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-secondary">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button onClick={() => handleDelete(p.id)} className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <DataTable
+        data={products}
+        columns={columns}
+        loading={loading}
+        title="All Products"
+        searchable
+        searchPlaceholder="Search products…"
+        emptyMessage="No products found."
+        pageSize={25}
+        onRowClick={(r: any) => openEdit(r)}
+        actions={[
+          {
+            label: 'Edit',
+            icon: <Pencil className="h-3.5 w-3.5" />,
+            onClick: (r: any) => openEdit(r),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => handleDelete(r.id),
+          },
+        ]}
+      />
 
       <FormModal
         open={open}
@@ -1029,14 +1039,3 @@ function SmartButton({
   )
 }
 
-function Stat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-      <div className="p-2 rounded-md bg-blue-50 text-blue-600">{icon}</div>
-      <div>
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="text-lg font-bold text-gray-800">{value}</p>
-      </div>
-    </div>
-  )
-}

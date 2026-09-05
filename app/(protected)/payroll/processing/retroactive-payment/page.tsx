@@ -276,7 +276,7 @@ export default function RetroactivePaymentPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="erp-shell">
       <nav className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
         <Link href="/payroll-management" className="hover:text-gray-800 hover:underline">
           Payroll
@@ -295,7 +295,7 @@ export default function RetroactivePaymentPage() {
             <History className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Processing</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Retroactive payment</h1>
+          <h1 className="erp-page-title">Retroactive payment</h1>
           <p className="text-gray-500 mt-1">
             Capture back-pay, rate arrears, and corrections with the original eligibility window and a planned payout date.
             Persisted per organization on the server.
@@ -311,8 +311,8 @@ export default function RetroactivePaymentPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-indigo-200 bg-indigo-50/60 px-4 py-3 max-w-md">
-        <p className="text-xs font-semibold uppercase text-indigo-800">Workflow queue</p>
+      <div className="rounded-lg border border-primary/20 bg-primary/10/60 px-4 py-3 max-w-md">
+        <p className="text-xs font-semibold uppercase text-primary">Workflow queue</p>
         <p className="text-lg font-semibold text-indigo-950 tabular-nums">{pendingDrafts} open adjustments</p>
       </div>
 
@@ -330,12 +330,12 @@ export default function RetroactivePaymentPage() {
       ) : null}
 
       {open ? (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">
               {editingId ? 'Edit retro payment' : 'New retro payment'}
             </span>
-            <button type="button" onClick={closeDialog} className="text-blue-200 hover:text-white" aria-label="Close">
+            <button type="button" onClick={closeDialog} className="text-primary-foreground/80 hover:text-white" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -434,14 +434,14 @@ export default function RetroactivePaymentPage() {
               className="text-xs min-h-[72px]"
             />
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={closeDialog} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={closeDialog}>
                 Cancel
               </Button>
               <Button
                 size="sm"
                 onClick={submit}
                 disabled={busy}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[120px]"
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {busy ? 'Saving…' : editingId ? 'Update' : 'Save'}
@@ -480,7 +480,7 @@ export default function RetroactivePaymentPage() {
                 <TableRow key={r.id} className="hover:bg-slate-50/60">
                   <TableCell>
                     <div className="font-mono text-xs text-gray-600">{r.employeeNo}</div>
-                    <div className="text-sm text-gray-900">{r.employeeName || '—'}</div>
+                    <div className="text-sm text-foreground">{r.employeeName || '—'}</div>
                   </TableCell>
                   <TableCell className="text-sm">
                     {SCENARIO_OPTIONS.find((s) => s.value === r.scenario)?.label ?? r.scenario}

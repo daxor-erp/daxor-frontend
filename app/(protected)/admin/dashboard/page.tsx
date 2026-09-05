@@ -384,7 +384,7 @@ export default function AdminDashboardPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="erp-table">
                   <thead>
                     <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground border-b">
                       <th className="px-5 py-3 font-medium">Name</th>
@@ -399,7 +399,7 @@ export default function AdminDashboardPage() {
                       <tr key={o.id} className="border-b last:border-0 hover:bg-secondary/30 transition-colors">
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-lg bg-grad-brand text-white grid place-items-center font-semibold text-xs uppercase">
+                            <div className="h-8 w-8 rounded-lg grid place-items-center font-semibold text-xs uppercase">
                               {(o.name || '?').slice(0, 2)}
                             </div>
                             <span className="font-medium">{o.name}</span>
@@ -591,7 +591,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       {/* Hero */}
       <div className="relative overflow-hidden rounded-2xl bg-grad-admin-hero text-white elev-2">
         <div className="absolute inset-0 bg-dotgrid opacity-[0.1]" />
@@ -605,7 +605,7 @@ export default function AdminDashboardPage() {
               <ShieldCheck className="h-3 w-3" />
               Platform Administration
             </div>
-            <h1 className="mt-3 text-2xl sm:text-3xl lg:text-[34px] font-bold tracking-tight">
+            <h1 className="erp-page-title">
               Welcome, {user?.firstName || 'Admin'}
             </h1>
             <p className="mt-1.5 text-sm text-white/85">
@@ -615,7 +615,7 @@ export default function AdminDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <button className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white/90 transition-colors">
+                <button className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-white/90 transition-colors">
                   <Plus className="h-4 w-4" />
                   New organization
                 </button>
@@ -759,7 +759,7 @@ export default function AdminDashboardPage() {
                     <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={saving} className="bg-grad-brand text-white border-none">
+                    <Button type="submit" disabled={saving}>
                       {saving ? 'Creating…' : 'Create organization + admin'}
                     </Button>
                   </DialogFooter>

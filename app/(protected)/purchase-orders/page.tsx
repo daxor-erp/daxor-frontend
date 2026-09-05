@@ -247,7 +247,7 @@ export default function PurchaseOrdersPage() {
   }
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Purchase Orders"
         subtitle="Manage RFQs, purchase orders, receipts and vendor bills"

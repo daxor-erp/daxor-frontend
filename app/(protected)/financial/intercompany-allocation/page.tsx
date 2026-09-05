@@ -10,18 +10,16 @@ import {
   POST_INTERCOMPANY_ALLOCATION,
   GET_ORGANIZATIONS,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
-import { StatCard } from '@/components/dashboard/stat-card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { LineItemsEditor, type LineColumn } from '@/components/forms/line-items-editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Plus, Layers, CheckCircle2, Trash2, Send } from 'lucide-react'
-import { formatMoney, formatMoneyCompact, formatNumber } from '@/lib/format-money'
+import { Plus, Layers, CheckCircle2, Trash2, Send, CircleDollarSign } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { formatDate } from '@/lib/format-date'
 
 const METHODS = ['FIXED_PERCENT', 'HEADCOUNT', 'REVENUE_SHARE', 'CUSTOM']
 
@@ -81,7 +79,8 @@ export default function IntercompanyAllocationPage() {
   const stats = useMemo(() => {
     const total = allocations.reduce((s, a) => s + Number(a.totalAllocated ?? 0), 0)
     const posted = allocations.filter((a) => a.status === 'POSTED').length
-    return { total, posted }
+    const draft = allocations.filter((a) => a.status === 'DRAFT').length
+    return { total, posted, draft }
   }, [allocations])
 
   function resetForm() {
@@ -127,7 +126,7 @@ export default function IntercompanyAllocationPage() {
     }
     if (form.lines.length === 0) return toast.error('Add at least one allocation line')
     const sum = form.lines.reduce((s, l) => s + Number(l.percentage ?? 0), 0)
-    if (Math.abs(sum - 100) > 0.01) return toast.error(`Percentages must sum to 100 (currently {formatMoney(sum)})`)
+    if (Math.abs(sum - 100) > 0.01) return toast.error(`Percentages must sum to 100 (currently ${sum})`)
     const cleanLines = form.lines.filter((l) => l.targetOrganizationId && Number(l.percentage) > 0)
     if (cleanLines.length === 0) return toast.error('At least one valid allocation line is required')
     createMutation({
@@ -156,76 +155,60 @@ export default function IntercompanyAllocationPage() {
     })
   }
 
+  const columns: Column[] = [
+    { key: 'scheduleCode', label: 'Code', width: '130px', render: (v) => <MonoCell value={v} /> },
+    { key: 'name', label: 'Name', render: (v) => <span className="text-sm font-medium">{v || '—'}</span> },
+    { key: 'sourceAccount', label: 'Source account', width: '150px', render: (v) => <MonoCell value={v} /> },
+    { key: 'basisDate', label: 'Basis date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'basisAmount', label: 'Basis amount', width: '130px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'lines', label: 'Targets', width: '90px', align: 'right', render: (v) => <span className="text-sm tabular-nums">{Array.isArray(v) ? v.length : 0}</span> },
+    { key: 'status', label: 'Status', width: '110px', render: (v) => <ErpBadge status={String(v)} /> },
+  ]
+
   return (
-    <div className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Intercompany Allocation"
-        description="Distribute a source amount across target organizations by % share. Posts to intercompany journal on approval."
+        subtitle="Distribute a source amount across target organizations by % share"
+        icon={<Layers className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Financial' }, { label: 'Intercompany Allocation' }]}
         actions={
-          <Button onClick={() => { resetForm(); setOpen(true) }} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" /> New schedule
+          <Button onClick={() => { resetForm(); setOpen(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New schedule
           </Button>
         }
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        <StatCard label="Schedules" value={formatNumber(allocations.length)} icon={<Layers className="h-5 w-5" />} tone="brand" />
-        <StatCard label="Posted" value={formatNumber(stats.posted)} icon={<CheckCircle2 className="h-5 w-5" />} tone="emerald" />
-        <StatCard label="Total allocated" value={formatMoneyCompact(stats.total)} icon={<Layers className="h-5 w-5" />} tone="warn" />
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Schedules" value={allocations.length} icon={<Layers className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft" value={stats.draft} icon={<Layers className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Posted" value={stats.posted} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Total allocated" value={`₹${(stats.total / 1000).toFixed(1)}k`} icon={<CircleDollarSign className="h-5 w-5" />} variant="rose" />
+      </StatsRow>
 
-      <SectionCard title="Schedules" bodyClassName="p-0">
-        {listQ.loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : allocations.length === 0 ? (
-          <div className="p-10 text-center">
-            <Layers className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No allocation schedules</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Code</th>
-                  <th className="px-3 py-3 font-medium">Name</th>
-                  <th className="px-3 py-3 font-medium">Source account</th>
-                  <th className="px-3 py-3 font-medium">Basis date</th>
-                  <th className="px-3 py-3 font-medium text-right">Basis amount</th>
-                  <th className="px-3 py-3 font-medium text-right">Targets</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allocations.map((a: any) => (
-                  <tr key={a.id} className="border-t hover:bg-secondary/30">
-                    <td className="px-5 py-3 font-mono text-xs font-semibold">{a.scheduleCode}</td>
-                    <td className="px-3 py-3 font-medium">{a.name}</td>
-                    <td className="px-3 py-3 font-mono text-xs">{a.sourceAccount}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{a.basisDate ? formatDate(a.basisDate) : '—'}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{formatMoney(a.basisAmount ?? 0)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{a.lines?.length ?? 0}</td>
-                    <td className="px-3 py-3"><AllocStatus status={a.status} /></td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        {(a.status === 'DRAFT' || a.status === 'ACTIVE') && (
-                          <button onClick={() => postMutation({ variables: { id: a.id } })} className="h-7 w-7 grid place-items-center rounded-md text-emerald-600 hover:bg-emerald-50" title="Post">
-                            <Send className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                        <button onClick={() => { if (confirm(`Delete ${a.scheduleCode}?`)) deleteMutation({ variables: { id: a.id } }) }} className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <DataTable
+        data={allocations}
+        columns={columns}
+        loading={listQ.loading}
+        title="All Allocation Schedules"
+        searchable
+        searchPlaceholder="Search schedules…"
+        emptyMessage="No allocation schedules found."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Post',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (r: any) => postMutation({ variables: { id: r.id } }),
+            show: (r: any) => r.status === 'DRAFT' || r.status === 'ACTIVE',
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => { if (confirm(`Delete ${r.scheduleCode}?`)) deleteMutation({ variables: { id: r.id } }) },
+          },
+        ]}
+      />
 
       <FormModal
         open={open}
@@ -288,14 +271,4 @@ export default function IntercompanyAllocationPage() {
       </FormModal>
     </div>
   )
-}
-
-function AllocStatus({ status }: { status: string }) {
-  const s = String(status || '').toUpperCase()
-  const tone =
-    s === 'POSTED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : s === 'REVERSED' ? 'bg-rose-50 text-rose-700 border-rose-200'
-        : s === 'ACTIVE' ? 'bg-sky-50 text-sky-700 border-sky-200'
-          : 'bg-slate-100 text-slate-700 border-slate-200'
-  return <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase', tone)}>{s}</span>
 }

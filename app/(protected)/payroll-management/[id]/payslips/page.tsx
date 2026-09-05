@@ -40,10 +40,10 @@ export default function PayrollRunPayslipsPage() {
   const totalNet = rows.reduce((s: number, r: any) => s + (r.netPay || 0), 0)
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Payroll Run Payslips</h1>
+          <h1 className="erp-page-title">Payroll Run Payslips</h1>
           <p className="text-gray-500 text-sm">Run ID: {payrollRunId}</p>
         </div>
         <div className="flex gap-2">
@@ -132,7 +132,7 @@ export default function PayrollRunPayslipsPage() {
                         href={`/api/payslip/${p.id}/pdf`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center text-blue-600 hover:underline text-xs"
+                        className="inline-flex items-center text-primary hover:underline text-xs"
                       >
                         <FileText className="h-3.5 w-3.5 mr-1" /> PDF
                       </a>

@@ -5,16 +5,10 @@ import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, AmountCell, MonoCell, DateCell, ErpBadge } from '@/components/ui/erp-shared'
 import { GET_CASH_BANKS, GET_BANK_ACCOUNTS, RECONCILE_CASH_BANK } from '@/gql/queries'
-import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
-import { formatMoney } from '@/lib/format-money'
-import { CheckCircle, ClipboardList, RefreshCw } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
-
-const labelCell = wsLabelCell
-const cell = wsCell
-const headerCell = wsHeaderCell
-const moneyClass = wsMoney
+import { CheckCircle, CheckCircle2, ClipboardList, Clock, RefreshCw } from 'lucide-react'
 
 type Row = {
   id: string
@@ -103,7 +97,10 @@ export default function ReconcileAccountStatementPage() {
     [pendingData],
   )
   const done: Row[] = useMemo(() => (doneData?.cashBanks ?? []) as Row[], [doneData])
-  const doneRecent = useMemo(() => [...done].sort((a, b) => (b.transactionDate > a.transactionDate ? 1 : -1)).slice(0, 30), [done])
+  const doneRecent = useMemo(
+    () => [...done].sort((a, b) => (b.transactionDate > a.transactionDate ? 1 : -1)).slice(0, 30),
+    [done],
+  )
 
   const refresh = () => {
     setError('')
@@ -130,212 +127,172 @@ export default function ReconcileAccountStatementPage() {
     }
   }
 
+  const pendingColumns: Column[] = [
+    { key: 'transactionNumber', label: 'Transaction #', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'transactionDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    {
+      key: 'transactionType',
+      label: 'Type',
+      width: '110px',
+      render: (v) => <span className="text-xs capitalize">{String(v ?? '—').replace(/_/g, ' ')}</span>,
+    },
+    { key: 'description', label: 'Description', render: (v) => <span className="text-sm">{v || '—'}</span> },
+    {
+      key: 'referenceId',
+      label: 'Ref',
+      width: '160px',
+      render: (v, r) => <MonoCell value={`${r.referenceModule} / ${v}`} />,
+    },
+    { key: 'amount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+  ]
+
+  const doneColumns: Column[] = [
+    { key: 'transactionNumber', label: 'Transaction #', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'transactionDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'description', label: 'Description', render: (v) => <span className="text-sm">{v || '—'}</span> },
+    { key: 'amount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    {
+      key: 'reconciliationStatus',
+      label: 'Status',
+      width: '130px',
+      render: (v) => <ErpBadge status={v} />,
+    },
+    {
+      key: 'reconciliationDate',
+      label: 'Reconciled',
+      width: '160px',
+      render: (v) =>
+        v ? (
+          <span className="text-xs font-mono text-muted-foreground">{new Date(v).toLocaleString()}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+  ]
+
   return (
-    <div className="p-6 space-y-6 max-w-[1200px]">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <ClipboardList className="h-8 w-8 text-slate-700" />
-          Reconcile account statement
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Match register lines to your bank statement. Mark items as reconciled when they appear on the statement.
-        </p>
-      </div>
-
-      <div className="rounded border-2 border-gray-400 overflow-hidden bg-white shadow-sm">
-        <div className="bg-slate-800 text-white px-3 py-1.5 text-xs font-semibold flex items-center justify-between">
-          <span>Account &amp; period</span>
-          <span className="opacity-90">
-            {selected ? (selected.accountHolder || selected.accountName) : '—'}
-          </span>
-        </div>
-        <div className="p-3">
-          <table className="w-full border-collapse text-xs min-w-[480px]">
-            <tbody>
-              <tr>
-                <td className={labelCell}>Account holder &amp; account</td>
-                <td className={`${cell} min-w-[360px]`} colSpan={2}>
-                  <SelectFloating
-                    label=""
-                    value={accountNumber}
-                    onChange={(v) => {
-                      const next = typeof v === 'string' ? v : v.target.value
-                      setAccountNumber(next)
-                      setError('')
-                    }}
-                    options={bankOptions}
-                    className="h-8 text-xs border-0 shadow-none bg-transparent p-0"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          {acctLoading && <p className="text-xs text-gray-500 mt-2">Loading bank accounts…</p>}
-        </div>
-      </div>
-
-      {!accountNumber && orgId && !acctLoading && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-          Select a bank account to load unreconciled and reconciled register lines.
-        </p>
-      )}
-
-      {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>
-      )}
-
-      {accountNumber && (
-        <>
+    <div className="erp-shell">
+      <PageHeader
+        title="Reconcile Account"
+        subtitle="Match register lines to your bank statement. Mark items as reconciled when they appear on the statement."
+        icon={<ClipboardList className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Banks' }, { label: 'Reconcile Account' }]}
+        actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={() => refresh()}
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 mr-1 ${pendingLoading || doneLoading ? 'animate-spin' : ''}`}
-              />
-              Refresh
-            </Button>
-            {pending.length > 0 && (
+            {accountNumber && (
+              <Button type="button" variant="outline" size="sm" onClick={() => refresh()}>
+                <RefreshCw
+                  className={`h-3.5 w-3.5 mr-1.5 ${pendingLoading || doneLoading ? 'animate-spin' : ''}`}
+                />
+                Refresh
+              </Button>
+            )}
+            {accountNumber && pending.length > 0 && (
               <Button
                 type="button"
                 size="sm"
-                className="h-8 text-xs bg-slate-800 hover:bg-slate-900"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={recOne}
                 onClick={() => {
                   if (confirm(`Mark all ${pending.length} pending line(s) as reconciled?`)) {
                     void reconcileAllPending()
                   }
                 }}
-                disabled={recOne}
               >
+                <CheckCircle className="h-4 w-4 mr-1.5" />
                 Reconcile all pending
               </Button>
             )}
           </div>
+        }
+      />
 
-          <div className="rounded border border-gray-300 overflow-hidden bg-white shadow-sm">
-            <div className="px-3 py-2 bg-amber-50 border-b border-amber-200 text-sm font-semibold text-amber-950">
-              Pending reconciliation ({pending.length})
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs min-w-[900px]">
-                <thead>
-                  <tr>
-                    <th className={`${headerCell} text-left`}>#</th>
-                    <th className={`${headerCell} text-left`}>Date</th>
-                    <th className={`${headerCell} text-left`}>Type</th>
-                    <th className={`${headerCell} text-left`}>Description</th>
-                    <th className={`${headerCell} text-left`}>Ref</th>
-                    <th className={`${headerCell} ${moneyClass}`}>Amount</th>
-                    <th className={`${headerCell} text-center w-32`} />
-                  </tr>
-                </thead>
-                <tbody>
-                  {!pending.length && !pendingLoading && (
-                    <tr>
-                      <td colSpan={7} className={`${cell} text-center text-gray-500 py-8`}>
-                        No pending lines for this account.
-                      </td>
-                    </tr>
-                  )}
-                  {pendingLoading && (
-                    <tr>
-                      <td colSpan={7} className={`${cell} text-center text-gray-500 py-8`}>
-                        Loading…
-                      </td>
-                    </tr>
-                  )}
-                  {pending.map((d) => (
-                    <tr key={d.id} className="hover:bg-gray-50">
-                      <td className={`${cell} font-mono`}>{d.transactionNumber}</td>
-                      <td className={`${cell} font-mono`}>
-                        {d.transactionDate ? formatDate(d.transactionDate) : '—'}
-                      </td>
-                      <td className={cell}>{d.transactionType}</td>
-                      <td className={cell}>{d.description}</td>
-                      <td className={`${cell} font-mono`}>
-                        {d.referenceModule} / {d.referenceId}
-                      </td>
-                      <td className={`${cell} ${moneyClass}`}>
-                        {d.currency ? `${d.currency} ` : ''}
-                        {formatMoney(Number(d.amount ?? 0))}
-                      </td>
-                      <td className={`${cell} text-center`}>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-[11px]"
-                          disabled={recOne}
-                          onClick={() => onReconcile(d.id)}
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Reconciled
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+      {accountNumber && (
+        <StatsRow cols={2}>
+          <StatCard
+            label="Pending"
+            value={pending.length}
+            icon={<Clock className="h-5 w-5" />}
+            variant="amber"
+          />
+          <StatCard
+            label="Reconciled"
+            value={done.length}
+            icon={<CheckCircle2 className="h-5 w-5" />}
+            variant="green"
+          />
+        </StatsRow>
+      )}
 
-          <div className="rounded border border-gray-300 overflow-hidden bg-white shadow-sm">
-            <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-800">
-              Recently reconciled (last 30)
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs min-w-[800px]">
-                <thead>
-                  <tr>
-                    <th className={`${headerCell} text-left`}>#</th>
-                    <th className={`${headerCell} text-left`}>Date</th>
-                    <th className={`${headerCell} text-left`}>Description</th>
-                    <th className={`${headerCell} ${moneyClass}`}>Amount</th>
-                    <th className={`${headerCell} text-left`}>Reconciled</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!doneRecent.length && !doneLoading && (
-                    <tr>
-                      <td colSpan={5} className={`${cell} text-center text-gray-500 py-6`}>
-                        No reconciled items yet.
-                      </td>
-                    </tr>
-                  )}
-                  {doneLoading && !doneRecent.length && (
-                    <tr>
-                      <td colSpan={5} className={`${cell} text-center text-gray-500 py-6`}>
-                        Loading…
-                      </td>
-                    </tr>
-                  )}
-                  {doneRecent.map((d) => (
-                    <tr key={d.id} className="hover:bg-gray-50">
-                      <td className={`${cell} font-mono`}>{d.transactionNumber}</td>
-                      <td className={`${cell} font-mono`}>
-                        {d.transactionDate ? formatDate(d.transactionDate) : '—'}
-                      </td>
-                      <td className={cell}>{d.description}</td>
-                      <td className={`${cell} ${moneyClass} text-slate-800`}>
-                        {d.currency ? `${d.currency} ` : ''}
-                        {formatMoney(Number(d.amount ?? 0))}
-                      </td>
-                      <td className={`${cell} font-mono`}>
-                        {d.reconciliationDate
-                          ? new Date(d.reconciliationDate).toLocaleString()
-                          : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 mb-4">
+        <h2 className="text-sm font-semibold text-foreground">
+          Account
+          {selected ? (
+            <span className="text-muted-foreground font-normal">
+              {' '}
+              — {(selected.accountHolder || selected.accountName) ?? '—'} · {selected.bankName}
+            </span>
+          ) : null}
+        </h2>
+        <div className="max-w-xl">
+          <SelectFloating
+            label="Account (by holder) *"
+            value={accountNumber}
+            onChange={(v) => {
+              const next = typeof v === 'string' ? v : v.target.value
+              setAccountNumber(next)
+              setError('')
+            }}
+            options={[{ value: '', label: 'Select account…' }, ...bankOptions]}
+          />
+        </div>
+        {acctLoading && <p className="text-sm text-muted-foreground">Loading bank accounts…</p>}
+      </div>
+
+      {!accountNumber && orgId && !acctLoading && (
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-4">
+          Select a bank account to load unreconciled and reconciled register lines.
+        </p>
+      )}
+
+      {error && (
+        <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2 mb-4">
+          {error}
+        </p>
+      )}
+
+      {accountNumber && (
+        <div className="space-y-4">
+          <DataTable
+            data={pending}
+            columns={pendingColumns}
+            loading={pendingLoading}
+            title="All Pending Lines"
+            searchable
+            searchPlaceholder="Search pending lines…"
+            emptyMessage="No pending lines for this account."
+            pageSize={25}
+            actions={[
+              {
+                label: 'Reconcile',
+                icon: <CheckCircle className="h-3.5 w-3.5" />,
+                onClick: (r: Row) => void onReconcile(r.id),
+                disabled: () => recOne,
+              },
+            ]}
+          />
+
+          <DataTable
+            data={doneRecent}
+            columns={doneColumns}
+            loading={doneLoading}
+            title="All Recently Reconciled"
+            searchable
+            searchPlaceholder="Search reconciled…"
+            emptyMessage="No reconciled items yet."
+            pageSize={25}
+          />
+        </div>
       )}
     </div>
   )

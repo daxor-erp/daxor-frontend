@@ -79,7 +79,9 @@ test.describe('Customers & banks flow (flows/customers-banks-flow.pdf)', () => {
   })
 
   test('04 — customers & cash-bank pages smoke', async ({ page }) => {
-    await smokeModulePage(page, '/customers', /Customer/i)
+    // /customers uses ErpListPage without an h1 — assert primary CTA instead
+    await page.goto('/customers')
+    await expect(page.getByRole('button', { name: /New customer/i })).toBeVisible({ timeout: 25_000 })
     await smokeModulePage(page, '/customers/accept-payments', /Payment|Accept/i)
     await smokeModulePage(page, '/cash-bank', /Cash|Bank/i)
   })

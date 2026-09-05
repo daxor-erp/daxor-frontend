@@ -18,10 +18,10 @@ export default function ScanQRCodePage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Scan QR Code</h1>
-        <p className="text-gray-500">Scan module QR codes for tracking</p>
+        <h1 className="erp-page-title">Scan QR Code</h1>
+        <p className="erp-page-desc">Scan module QR codes for tracking</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -33,8 +33,8 @@ export default function ScanQRCodePage() {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
               {scanning ? (
                 <div className="space-y-3">
-                  <Camera className="h-16 w-16 text-blue-600 mx-auto animate-pulse" />
-                  <p className="text-sm text-gray-600">Scanning...</p>
+                  <Camera className="h-16 w-16 text-primary mx-auto animate-pulse" />
+                  <p className="erp-page-desc">Scanning...</p>
                 </div>
               ) : scannedData ? (
                 <div className="space-y-3">
@@ -44,7 +44,7 @@ export default function ScanQRCodePage() {
               ) : (
                 <div className="space-y-3">
                   <QrCode className="h-16 w-16 text-gray-400 mx-auto" />
-                  <p className="text-sm text-gray-600">Ready to scan</p>
+                  <p className="erp-page-desc">Ready to scan</p>
                 </div>
               )}
             </div>

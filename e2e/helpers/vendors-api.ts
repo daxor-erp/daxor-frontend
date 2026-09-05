@@ -27,8 +27,9 @@ export async function createVendorViaApi(
         name: `E2E Vendor ${tag}`,
         address: { street: '1 Test Street', city: 'Chennai', zip: '600001', country: 'India' },
         gstTreatment: 'registered_business_regular',
-        gstin: '33ABCDE1234F1Z5',
-        pan: 'ABCDE1234F',
+        // Unique per run — GSTIN is unique per org
+        gstin: `33ABCDE${tag.replace(/\D/g, '').slice(-4).padStart(4, '0')}F1Z5`,
+        pan: `ABCDE${tag.replace(/\D/g, '').slice(-4).padStart(4, '0')}F`,
         phone: '9876543210',
         email: `e2e.vendor.${tag}@example.com`,
         organizationId,

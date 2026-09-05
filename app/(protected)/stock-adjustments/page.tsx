@@ -157,7 +157,7 @@ export default function StockAdjustmentsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Stock Adjustments"
         subtitle="Correct inventory quantities after physical stock counts"

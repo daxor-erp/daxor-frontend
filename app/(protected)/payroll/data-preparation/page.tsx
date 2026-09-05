@@ -21,9 +21,9 @@ const CARDS = [
 
 export default function DataPreparationIndexPage() {
   return (
-    <div className="space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Data preparation</h1>
+        <h1 className="erp-page-title">Data preparation</h1>
         <p className="text-gray-500 mt-1 max-w-2xl">
           Enter or paste payroll source data in Excel-style sheets. Data is kept in the browser for this
           organization until you clear it or import a new file.
@@ -39,7 +39,7 @@ export default function DataPreparationIndexPage() {
               <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-100 text-sky-800">
                 <Table2 className="h-4 w-4" />
               </div>
-              <h2 className="font-semibold text-gray-900">{c.title}</h2>
+              <h2 className="font-semibold text-foreground">{c.title}</h2>
               <p className="mt-1 text-sm text-gray-500 leading-relaxed">{c.text}</p>
             </Link>
           </li>

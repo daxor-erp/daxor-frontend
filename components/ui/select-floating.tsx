@@ -16,7 +16,11 @@ export type SelectFloatingProps = {
   style?: React.CSSProperties
   containerClassName?: string
   hideDisabledInDropdown?: boolean
-  options: Array<{ value: string; label: string; disabled?: boolean }>
+  options: ReadonlyArray<{
+    readonly value: string
+    readonly label: string
+    readonly disabled?: boolean
+  }>
   onScroll?: () => void
   onSearch?: (query: string) => void
   onChange?: (value: string | React.ChangeEvent<HTMLSelectElement>) => void

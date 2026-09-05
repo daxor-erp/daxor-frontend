@@ -12,10 +12,10 @@ export default function ProjectDocumentsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Project Documents</h1>
-        <p className="text-gray-500">View and manage project documentation</p>
+        <h1 className="erp-page-title">Project Documents</h1>
+        <p className="erp-page-desc">View and manage project documentation</p>
       </div>
 
       <Card>
@@ -46,7 +46,7 @@ export default function ProjectDocumentsPage() {
                     <td className="p-2">{doc.size}</td>
                     <td className="p-2">
                       <div className="flex gap-2">
-                        <button className="text-blue-600 hover:text-blue-800"><Eye className="h-4 w-4" /></button>
+                        <button className="text-primary hover:text-primary"><Eye className="h-4 w-4" /></button>
                         <button className="text-green-600 hover:text-green-800"><Download className="h-4 w-4" /></button>
                       </div>
                     </td>

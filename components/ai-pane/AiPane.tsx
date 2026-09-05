@@ -43,10 +43,10 @@ function WorkflowGraphView({
         className={`px-3 py-1.5 bg-[#161b27] border-b border-white/8 flex items-center gap-1.5
           ${onExpand ? 'cursor-pointer hover:bg-white/5 transition-colors' : ''}`}
       >
-        <GitBranch className="h-3 w-3 text-blue-400 shrink-0" />
+        <GitBranch className="h-3 w-3 text-primary shrink-0" />
         <span className="text-[10px] text-gray-300 font-medium truncate">{graph.title ?? 'Workflow Graph'}</span>
         <span className="ml-auto text-[10px] text-gray-500 shrink-0">{graph.nodes.length} nodes · {graph.edges.length} edges</span>
-        {onExpand && <Maximize2 className="h-3 w-3 text-gray-500 hover:text-blue-400 transition-colors ml-1 shrink-0" />}
+        {onExpand && <Maximize2 className="h-3 w-3 text-gray-500 hover:text-primary transition-colors ml-1 shrink-0" />}
       </div>
 
       {/* Graph canvas — clicking it also expands */}
@@ -698,7 +698,7 @@ function ChatContent({
         {loading && !streaming && (
           <div className="flex items-start gap-2">
             <div className="bg-white border border-gray-200 rounded-xl rounded-bl-sm px-3 py-2 shadow-sm flex items-center gap-2">
-              <Loader2 className="h-3.5 w-3.5 text-blue-500 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
               <span className="text-xs text-gray-500">Connecting…</span>
             </div>
           </div>
@@ -925,7 +925,7 @@ export function AiPane() {
       <button
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-2 bg-grad-brand text-white px-2 py-5 rounded-l-2xl shadow-2xl hover:brightness-110 transition-all border border-white/10 group duration-300 ease-in-out",
+          "fixed right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-2 px-2 py-5 rounded-l-2xl shadow-2xl hover:brightness-110 transition-all border border-white/10 group duration-300 ease-in-out",
           open ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
         )}
       >
@@ -944,7 +944,7 @@ export function AiPane() {
         open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
       )}>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-grad-brand text-white shrink-0 shadow-md">
+        <div className="flex items-center justify-between px-4 py-3 shrink-0 shadow-md">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shadow-inner">
               <Bot className="h-4 w-4" />

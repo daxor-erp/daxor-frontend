@@ -740,7 +740,7 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
                 className="ml-1 inline-flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-secondary transition-colors"
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-grad-brand text-white text-xs font-semibold">
+                  <AvatarFallback className="text-xs font-semibold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>

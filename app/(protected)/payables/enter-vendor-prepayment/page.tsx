@@ -58,7 +58,7 @@ export default function VendorPrepaymentPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Vendor Prepayments"
         subtitle="Record advance payments made to vendors before invoice"
@@ -76,7 +76,7 @@ export default function VendorPrepaymentPage() {
 
       <DataTable
         data={records} columns={columns} loading={loading}
-        title="Vendor Prepayments" searchable searchPlaceholder="Search prepayments…"
+        title="All Vendor Prepayments" searchable searchPlaceholder="Search prepayments…"
         emptyMessage="No prepayments recorded."
         pageSize={25}
         actions={[{

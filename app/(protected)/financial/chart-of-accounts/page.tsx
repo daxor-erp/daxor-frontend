@@ -3,12 +3,13 @@
 import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell } from '@/components/ui/erp-shared'
 import { GET_CHART_OF_ACCOUNTS, CREATE_CHART_OF_ACCOUNT, UPDATE_CHART_OF_ACCOUNT, DELETE_CHART_OF_ACCOUNT } from '@/gql/queries'
-import { Trash2, Edit, X, Save } from 'lucide-react'
+import { Trash2, Edit, X, Save, BookOpen, Plus, CheckCircle2 } from 'lucide-react'
 
 const EMPTY_FORM = {
   accountNumber: '',
@@ -89,36 +90,49 @@ export default function ChartOfAccountsPage() {
   }
 
   const accounts = data?.chartOfAccounts || []
-
-  const typeColor: Record<string, string> = {
-    asset: 'bg-blue-100 text-blue-700',
-    liability: 'bg-red-100 text-red-700',
-    equity: 'bg-purple-100 text-purple-700',
-    revenue: 'bg-green-100 text-green-700',
-    expense: 'bg-orange-100 text-orange-700',
+  const stats = {
+    total: accounts.length,
+    active: accounts.filter((a: any) => a.isActive !== false).length,
+    assets: accounts.filter((a: any) => a.accountType === 'asset').length,
   }
 
   const columns: Column[] = [
-    { key: 'accountCode', label: 'Code', width: '100px', sortable: true, render: v => <span className="font-mono text-xs font-medium">{v}</span> },
-    { key: 'accountNumber', label: 'Account #', width: '120px', sortable: true, render: v => <span className="font-mono text-xs text-gray-600">{v || '—'}</span> },
-    { key: 'accountName', label: 'Account Name', sortable: true, render: v => <span className="font-medium">{v}</span> },
-    { key: 'accountType', label: 'Type', width: '110px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${typeColor[v]}`}>{v}</span> },
-    { key: 'level', label: 'Level', width: '80px', render: v => <span className="text-xs">{v}</span> },
-    { key: 'isActive', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${v ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{v ? 'Active' : 'Inactive'}</span> },
+    { key: 'accountCode', label: 'Code', width: '100px', sortable: true, render: (v) => <MonoCell value={v} className="font-medium text-foreground" /> },
+    { key: 'accountNumber', label: 'Account #', width: '120px', sortable: true, render: (v) => <MonoCell value={v} /> },
+    { key: 'accountName', label: 'Account Name', sortable: true, render: (v) => <span className="text-sm font-medium">{v}</span> },
+    { key: 'accountType', label: 'Type', width: '110px', render: (v) => <ErpBadge status={String(v)} label={String(v).replace(/\b\w/g, (c: string) => c.toUpperCase())} /> },
+    { key: 'level', label: 'Level', width: '80px', render: (v) => <span className="text-sm tabular-nums">{v}</span> },
+    { key: 'isActive', label: 'Status', width: '100px', render: (v) => <ErpBadge status={v ? 'active' : 'inactive'} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Chart of Accounts</h1>
-        <p className="text-gray-500">Manage your account hierarchy</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Chart of Accounts"
+        subtitle="Manage your account hierarchy"
+        icon={<BookOpen className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Financial' }, { label: 'Chart of Accounts' }]}
+        actions={
+          <Button
+            onClick={() => { reset(); setEditing(null); setAdding(true) }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> New Account
+          </Button>
+        }
+      />
+
+      <StatsRow cols={3}>
+        <StatCard label="Total Accounts" value={stats.total} icon={<BookOpen className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Active" value={stats.active} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Asset Accounts" value={stats.assets} icon={<BookOpen className="h-5 w-5" />} variant="blue" />
+      </StatsRow>
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-card border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editing ? 'Edit Account' : 'New Account'}</span>
-            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-3 gap-3">
@@ -143,7 +157,7 @@ export default function ChartOfAccountsPage() {
             <InputFloating label="Description" multiline rows={2} value={form.description} onChange={e => setF('description', e.target.value)} className="text-xs" />
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" size="sm" onClick={() => { setAdding(false); setEditing(null); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[110px]">
+              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[110px]">
                 <Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving…' : editing ? 'Update' : 'Save'}
               </Button>
             </div>
@@ -156,15 +170,14 @@ export default function ChartOfAccountsPage() {
         columns={columns}
         loading={loading}
         title="All Accounts"
-        onAdd={() => { reset(); setAdding(true) }}
-        addLabel="New Account"
         searchable
-        searchPlaceholder="Search accounts..."
-        emptyMessage="No accounts yet. Click 'New Account' to create one."
+        searchPlaceholder="Search accounts…"
+        emptyMessage="No accounts found."
+        pageSize={25}
         onRowClick={handleEdit}
         actions={[
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this account?')) deleteAccount({ variables: { id: row.id } }) }, variant: 'ghost' },
+          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: (row) => handleEdit(row) },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: (row) => { if (confirm('Delete this account?')) deleteAccount({ variables: { id: row.id } }) } },
         ]}
       />
     </div>

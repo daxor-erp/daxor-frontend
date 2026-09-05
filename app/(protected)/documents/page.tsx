@@ -98,12 +98,12 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Documents"
         description="Attachments uploaded across the workspace — invoices, contracts, drawings, exports."
         actions={
-          <Button onClick={() => setOpen(true)} className="bg-grad-brand text-white border-none gap-1.5">
+          <Button size="sm" onClick={() => setOpen(true)} className="gap-1.5">
             <Upload className="h-4 w-4" />
             Upload document
           </Button>
@@ -148,7 +148,7 @@ export default function DocumentsPage() {
             <FileText className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
             <p className="text-sm font-medium">No documents yet</p>
             <p className="text-xs text-muted-foreground mb-3">Upload contracts, invoices, drawings, exports — anything.</p>
-            <Button onClick={() => setOpen(true)} className="bg-grad-brand text-white border-none gap-1.5">
+            <Button size="sm" onClick={() => setOpen(true)} className="gap-1.5">
               <Upload className="h-4 w-4" /> Upload your first document
             </Button>
           </div>

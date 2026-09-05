@@ -98,7 +98,7 @@ export default function OrgAdminUsersPage() {
 
   if (!orgId) {
     return (
-      <div className="p-8">
+      <div className="erp-shell">
         <p className="text-sm text-slate-600">No organization on this account.</p>
       </div>
     )
@@ -114,7 +114,7 @@ export default function OrgAdminUsersPage() {
               Dashboard
             </Link>
           </Button>
-          <h1 className="text-xl font-bold text-slate-900">Users in your organization</h1>
+          <h1 className="erp-page-title">Users in your organization</h1>
         </div>
       </div>
 
@@ -138,12 +138,12 @@ export default function OrgAdminUsersPage() {
       </div>
 
       {open && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">Create user</span>
             <button
               type="button"
-              className="text-blue-200 hover:text-white text-sm"
+              className="text-primary-foreground/80 hover:text-white text-sm"
               onClick={() => setOpen(false)}
             >
               Close
@@ -200,7 +200,7 @@ export default function OrgAdminUsersPage() {
               <Button
                 type="button"
                 size="sm"
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-primary hover:bg-primary/90"
                 disabled={creating}
                 onClick={submit}
               >
@@ -236,7 +236,7 @@ export default function OrgAdminUsersPage() {
                 }) => (
                   <TableRow key={u.id}>
                     <TableCell>
-                      <div className="font-medium text-slate-900">
+                      <div className="font-medium text-foreground">
                         {u.firstName} {u.lastName}
                       </div>
                       <div className="text-xs text-slate-500">{u.email}</div>

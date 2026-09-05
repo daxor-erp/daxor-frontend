@@ -225,14 +225,14 @@ export default function LoanRepaymentPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="erp-shell">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-amber-800 mb-1">
             <Wallet className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Others</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Loan repayment</h1>
+          <h1 className="erp-page-title">Loan repayment</h1>
           <p className="text-gray-500 mt-1">
             Record employee loan recoveries: deduction amount, loan reference, and the pay period they apply
             to.
@@ -257,15 +257,15 @@ export default function LoanRepaymentPage() {
       )}
 
       {open && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">
               {editingId ? 'Edit loan repayment' : 'New loan repayment'}
             </span>
             <button
               type="button"
               onClick={closeDialog}
-              className="text-blue-200 hover:text-white"
+              className="text-primary-foreground/80 hover:text-white"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -373,14 +373,14 @@ export default function LoanRepaymentPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={closeDialog} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={closeDialog}>
                 Cancel
               </Button>
               <Button
                 size="sm"
                 onClick={submit}
                 disabled={busy}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[160px]"
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[160px]"
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {busy ? 'Saving…' : editingId ? 'Update' : 'Save loan repayment'}

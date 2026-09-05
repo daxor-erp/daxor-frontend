@@ -5,7 +5,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { summarizeJournalPage } from '@/lib/ledger-totals'
 import { LedgerSummaryCards } from '@/components/financial/ledger-summary-cards'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,11 +18,10 @@ import {
   GET_CUSTOMER_INVOICES,
   GET_OUTSTANDING_VENDOR_BILLS,
 } from '@/gql/queries'
-import { Trash2, X, Save, Plus, Minus, CheckCircle, Download, Eye } from 'lucide-react'
+import { Trash2, X, Save, Plus, Minus, CheckCircle, Download, Eye, BookOpen, CheckCircle2, Clock, CircleDollarSign } from 'lucide-react'
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { formatMoney } from '@/lib/format-money'
 import { formatDate } from '@/lib/format-date'
-import { StatusBadge } from '@/components/ui/status-badge'
 import { downloadCsv } from '@/lib/csv-download'
 import { JournalEntryViewPanel, type JournalEntryView } from '@/components/financial/journal-entry-view-panel'
 
@@ -176,19 +176,21 @@ export default function MakeJournalEntriesPage() {
   const totalCredit = form.lines.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0)
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01
 
-  const statusColor: Record<string, string> = {
-    draft: 'bg-yellow-100 text-yellow-700',
-    posted: 'bg-green-100 text-green-700',
-  }
+  const pageStats = useMemo(() => {
+    const draft = entries.filter((e) => e.status === 'draft').length
+    const posted = entries.filter((e) => e.status === 'posted').length
+    const debitSum = entries.reduce((s, e) => s + Number(e.totalDebit ?? 0), 0)
+    return { draft, posted, debitSum }
+  }, [entries])
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
-    { key: 'entryNumber', label: 'Entry #', sortable: true, render: v => <span className="font-medium">{v}</span> },
-    { key: 'entryDate', label: 'Date', width: '110px', render: v => formatDate(v) },
-    { key: 'description', label: 'Description', render: v => <span className="text-xs">{v}</span> },
-    { key: 'totalDebit', label: 'Debit', width: '100px', render: v => formatMoney(v) },
-    { key: 'totalCredit', label: 'Credit', width: '100px', render: v => formatMoney(v) },
-    { key: 'status', label: 'Status', width: '90px', render: (v) => <StatusBadge status={String(v)} /> },
+    { key: 'seqNo', label: 'Code', width: '100px', render: (v) => <MonoCell value={v} /> },
+    { key: 'entryNumber', label: 'Entry #', sortable: true, render: (v) => <MonoCell value={v} className="font-medium text-foreground" /> },
+    { key: 'entryDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'description', label: 'Description', render: (v) => <span className="text-sm">{v}</span> },
+    { key: 'totalDebit', label: 'Debit', width: '110px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'totalCredit', label: 'Credit', width: '110px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'status', label: 'Status', width: '90px', render: (v) => <ErpBadge status={String(v)} /> },
   ]
 
   const exportCsv = () => {
@@ -209,17 +211,34 @@ export default function MakeJournalEntriesPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Make Journal Entries</h1>
-        <p className="text-gray-500">Create manual journal entries — click a row to view details in the panel above the table</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Make Journal Entries"
+        subtitle="Create manual journal entries — click a row to view details"
+        icon={<BookOpen className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Financial' }, { label: 'Journal Entries' }]}
+        actions={
+          <Button
+            onClick={() => { reset(); setAdding(true); setViewEntry(null) }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> New Entry
+          </Button>
+        }
+      />
+
+      <StatsRow cols={4}>
+        <StatCard label="Total Entries" value={entries.length} icon={<BookOpen className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft" value={pageStats.draft} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Posted" value={pageStats.posted} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Total Debit" value={`₹${(pageStats.debitSum / 1000).toFixed(1)}k`} icon={<CircleDollarSign className="h-5 w-5" />} variant="rose" />
+      </StatsRow>
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-card border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">New Journal Entry</span>
-            <button onClick={() => { setAdding(false); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={() => { setAdding(false); reset() }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-4 gap-3">
@@ -279,7 +298,7 @@ export default function MakeJournalEntriesPage() {
 
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" size="sm" onClick={() => { setAdding(false); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || !isBalanced} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[110px]">
+              <Button size="sm" onClick={handleSubmit} disabled={saving || !isBalanced} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[110px]">
                 <Save className="h-3.5 w-3.5 mr-1" />{saving ? 'Saving…' : 'Save Entry'}
               </Button>
             </div>
@@ -303,24 +322,23 @@ export default function MakeJournalEntriesPage() {
         loading={loading}
         title="All Journal Entries"
         description={viewEntry ? 'Click another row to switch entry' : 'Click a row to view in the panel above'}
-        onAdd={() => { reset(); setAdding(true); setViewEntry(null) }}
-        addLabel="New Entry"
         searchable
-        searchPlaceholder="Search entries..."
-        emptyMessage="No journal entries yet. Click 'New Entry' to create one."
+        searchPlaceholder="Search entries…"
+        emptyMessage="No journal entries found."
+        pageSize={25}
         exportable
         onExport={exportCsv}
         onRowClick={(row) => openView(row as JournalEntryView)}
         actions={[
-          { label: 'View', icon: <Eye className="h-3.5 w-3.5" />, onClick: row => openView(row as JournalEntryView), variant: 'ghost' },
-          { label: 'Post', icon: <CheckCircle className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Post this entry?')) postEntry({ variables: { id: row.id } }) }, variant: 'ghost', show: (row: any) => row.status === 'draft' },
-          { label: 'Download PDF', icon: <Download className="h-3.5 w-3.5" />, onClick: row => downloadDocumentPdf('journal-entry', row.id, row.entryNumber ?? row.seqNo ?? undefined).catch(() => {}), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this entry?')) { deleteEntry({ variables: { id: row.id } }); if (viewEntry?.id === row.id) setViewEntry(null) } }, variant: 'ghost', show: (row: any) => row.status === 'draft' },
+          { label: 'View', icon: <Eye className="h-3.5 w-3.5" />, onClick: (row) => openView(row as JournalEntryView) },
+          { label: 'Post', icon: <CheckCircle className="h-3.5 w-3.5" />, onClick: (row) => { if (confirm('Post this entry?')) postEntry({ variables: { id: row.id } }) }, show: (row: any) => row.status === 'draft' },
+          { label: 'Download PDF', icon: <Download className="h-3.5 w-3.5" />, onClick: (row) => downloadDocumentPdf('journal-entry', row.id, row.entryNumber ?? row.seqNo ?? undefined).catch(() => {}) },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: (row) => { if (confirm('Delete this entry?')) { deleteEntry({ variables: { id: row.id } }); if (viewEntry?.id === row.id) setViewEntry(null) } }, show: (row: any) => row.status === 'draft' },
         ]}
       />
 
       {accounts.length > 0 && (
-        <p className="text-xs text-gray-400">{accounts.length} chart of accounts loaded for line coding.</p>
+        <p className="text-xs text-muted-foreground">{accounts.length} chart of accounts loaded for line coding.</p>
       )}
     </div>
   )

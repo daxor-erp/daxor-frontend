@@ -30,14 +30,24 @@ import {
   CLOSE_PURCHASE_ORDER_LINE,
   DUPLICATE_PURCHASE_ORDER,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
+import { DataTable, type Column } from '@/components/DataTable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CellInput } from '@/components/ui/cell-input'
 import { CellSelect } from '@/components/ui/cell-select'
+import { SectionCard } from '@/components/dashboard/section-card'
+import {
+  PageHeader,
+  StatsRow,
+  StatCard,
+  ErpBadge,
+  AmountCell,
+  MonoCell,
+  DateCell,
+} from '@/components/ui/erp-shared'
 import { downloadDocumentPdf } from '@/lib/pdf-download'
 import { uploadDocument, buildDownloadUrl, humanFileSize } from '@/lib/upload'
 import { useAuth } from '@/contexts/AuthContext'
@@ -64,6 +74,7 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  Send,
 } from 'lucide-react'
 
 // rfq -> rfq_sent -> submitted -> approved -> purchase_order -> sent
@@ -71,21 +82,7 @@ import {
 // cancelled | rejected | locked are terminal/side states.
 const STATUS_BAR_STEPS = ['rfq', 'submitted', 'approved', 'purchase_order', 'sent', 'received'] as const
 
-const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  rfq: { label: 'RFQ', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  rfq_sent: { label: 'RFQ Sent', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
-  submitted: { label: 'Pending approval', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  approved: { label: 'Approved', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  purchase_order: { label: 'Purchase Order', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  sent: { label: 'Sent', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  received: { label: 'Received', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  partially_received: { label: 'Partially Received', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  billed: { label: 'Billed', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
-  partially_billed: { label: 'Partially Billed', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
-  cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
-  rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-800 border-red-300' },
-  locked: { label: 'Locked', cls: 'bg-slate-100 text-slate-700 border-slate-300' },
-}
+const EDITABLE_STATUSES = new Set(['rfq', 'rfq_sent'])
 
 interface Line {
   lineType: 'product' | 'section' | 'note'
@@ -118,19 +115,6 @@ const emptyLine = (): Line => ({
   note: '',
 })
 const today = () => new Date().toISOString().split('T')[0]
-
-const RECEIPT_STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  not_received: { label: 'Not Received', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  partially_received: { label: 'Partially Received', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  received: { label: 'Received', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-}
-const BILLING_STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  not_billed: { label: 'Not Billed', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  partially_billed: { label: 'Partially Billed', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  billed: { label: 'Billed', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
-}
-
-const EDITABLE_STATUSES = new Set(['rfq', 'rfq_sent'])
 
 export default function EnterPurchaseOrdersPage() {
   const { user } = useAuth()
@@ -492,181 +476,178 @@ export default function EnterPurchaseOrdersPage() {
     received: orders.filter((o: any) => ['received', 'partially_received'].includes(o.status)).length,
   }
 
+  const columns: Column[] = [
+    {
+      key: 'seqNo',
+      label: 'PO #',
+      width: '140px',
+      render: (v) => <MonoCell value={v} />,
+    },
+    {
+      key: 'vendorName',
+      label: 'Vendor',
+      render: (_v, r) => (
+        <span className="text-sm font-medium">
+          {r.vendorName || (r.vendorId ? getVendor(r.vendorId) : '—')}
+        </span>
+      ),
+    },
+    {
+      key: 'orderDate',
+      label: 'Order Date',
+      width: '110px',
+      render: (v) => <DateCell value={v} />,
+    },
+    {
+      key: 'totalAmount',
+      label: 'Total',
+      width: '120px',
+      align: 'right',
+      render: (v) => <AmountCell value={v} />,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: '130px',
+      render: (v) => <ErpBadge status={v} />,
+    },
+    {
+      key: 'receiptStatus',
+      label: 'Receipt',
+      width: '120px',
+      render: (v) => <ErpBadge status={v || 'not_received'} />,
+    },
+    {
+      key: 'billingStatus',
+      label: 'Billing',
+      width: '120px',
+      render: (v) => <ErpBadge status={v || 'not_billed'} />,
+    },
+  ]
+
   return (
-    <div className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Purchase Orders"
-        description="Create an RFQ, send it to the vendor, route it for org approval, then confirm it into a formal Purchase Order."
+        subtitle="Create an RFQ, send it to the vendor, route for approval, then confirm into a purchase order."
+        icon={<ShoppingCart className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Purchases' }, { label: 'Enter Purchase Orders' }]}
         actions={
-          <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" /> New RFQ
+          <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New RFQ
           </Button>
         }
       />
 
-      <div className="grid grid-cols-4 gap-3">
-        <Stat label="Total" value={stats.total} icon={<ShoppingCart className="h-4 w-4" />} />
-        <Stat label="RFQ" value={stats.rfq} />
-        <Stat label="Confirmed / Sent" value={stats.confirmed} />
-        <Stat label="Received" value={stats.received} />
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total" value={stats.total} icon={<ShoppingCart className="h-5 w-5" />} variant="slate" />
+        <StatCard label="RFQ" value={stats.rfq} icon={<FileText className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Confirmed / Sent" value={stats.confirmed} icon={<Send className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Received" value={stats.received} icon={<PackageCheck className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
-      <SectionCard title="Purchase Orders" bodyClassName="p-0">
-        {loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : orders.length === 0 ? (
-          <div className="p-10 text-center">
-            <ShoppingCart className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No purchase orders yet</p>
-            <Button onClick={openNew} className="mt-3 bg-grad-brand text-white border-none gap-1.5">
-              <Plus className="h-4 w-4" /> New RFQ
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">No.</th>
-                  <th className="px-3 py-3 font-medium">Vendor</th>
-                  <th className="px-3 py-3 font-medium">Project</th>
-                  <th className="px-3 py-3 font-medium">Order Date</th>
-                  <th className="px-3 py-3 font-medium text-right">Total</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-3 py-3 font-medium">Receipt</th>
-                  <th className="px-3 py-3 font-medium">Billing</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((o: any) => {
-                  const s = STATUS_CFG[o.status] ?? STATUS_CFG.rfq
-                  return (
-                    <tr key={o.id} className="border-t hover:bg-secondary/30 cursor-pointer" onClick={() => openEdit(o)}>
-                      <td className="px-5 py-3 font-mono text-xs">{o.seqNo || '—'}</td>
-                      <td className="px-3 py-3 font-medium">{o.vendorName || (o.vendorId ? getVendor(o.vendorId) : '—')}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{o.projectName || (o.projectId ? getProject(o.projectId) : '—')}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{o.orderDate ? formatDate(o.orderDate) : '—'}</td>
-                      <td className="px-3 py-3 text-right tabular-nums font-semibold">{formatMoney(o.totalAmount || 0)}</td>
-                      <td className="px-3 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
-                      </td>
-                      <td className="px-3 py-3">
-                        {(() => {
-                          const rs = RECEIPT_STATUS_CFG[o.receiptStatus] ?? RECEIPT_STATUS_CFG.not_received
-                          return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${rs.cls}`}>{rs.label}</span>
-                        })()}
-                      </td>
-                      <td className="px-3 py-3">
-                        {(() => {
-                          const bs = BILLING_STATUS_CFG[o.billingStatus] ?? BILLING_STATUS_CFG.not_billed
-                          return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${bs.cls}`}>{bs.label}</span>
-                        })()}
-                      </td>
-                      <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="inline-flex items-center gap-1 flex-wrap justify-end">
-                          <button
-                            type="button"
-                            title="Print RFQ"
-                            onClick={() => {
-                              markPrinted({ variables: { id: o.id } })
-                              downloadDocumentPdf('purchase-order', o.id, `RFQ-${o.seqNo}`).catch(() => {})
-                            }}
-                            className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-secondary"
-                          >
-                            <Printer className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            title="Duplicate RFQ"
-                            onClick={() => duplicatePO({ variables: { id: o.id } })}
-                            disabled={duplicating}
-                            className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-secondary"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            title="Attachments"
-                            onClick={() => setAttachingPoId(attachingPoId === o.id ? null : o.id)}
-                            className={`h-7 w-7 grid place-items-center rounded-md hover:bg-secondary ${attachingPoId === o.id ? 'text-blue-600' : 'text-muted-foreground'}`}
-                          >
-                            <Paperclip className="h-3.5 w-3.5" />
-                          </button>
-                          {o.status === 'rfq' && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => markRfqSent({ variables: { id: o.id } })}>
-                              Send RFQ
-                            </Button>
-                          )}
-                          {(o.status === 'rfq' || o.status === 'rfq_sent') && (
-                            <Button size="sm" className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white" onClick={() => submitPO({ variables: { id: o.id } })}>
-                              Send for approval
-                            </Button>
-                          )}
-                          {o.status === 'submitted' && (
-                            <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => approvePO({ variables: { id: o.id } })}>
-                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve
-                            </Button>
-                          )}
-                          {o.status === 'approved' && (
-                            <Button size="sm" className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => confirmPO({ variables: { id: o.id } })}>
-                              Confirm Order
-                            </Button>
-                          )}
-                          {o.status === 'purchase_order' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-xs gap-1"
-                              disabled={sendingEmail}
-                              onClick={() => sendPOEmail({ variables: { id: o.id } })}
-                            >
-                              <Mail className="h-3.5 w-3.5" /> Send by Email
-                            </Button>
-                          )}
-                          {['purchase_order', 'sent', 'partially_received'].includes(o.status) && (
-                            <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1" onClick={() => openReceive(o)}>
-                              <PackageCheck className="h-3.5 w-3.5" /> Receive
-                            </Button>
-                          )}
-                          {['purchase_order', 'sent', 'received', 'partially_received', 'partially_billed'].includes(o.status) && (
-                            <Button size="sm" className="h-7 text-xs bg-teal-600 hover:bg-teal-700 text-white gap-1" onClick={() => openBillDialog(o)}>
-                              <FileText className="h-3.5 w-3.5" /> Bill
-                            </Button>
-                          )}
-                          {['purchase_order', 'sent', 'received', 'billed', 'partially_received', 'partially_billed'].includes(o.status) && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => lockPO({ variables: { id: o.id } })}>
-                              <Lock className="h-3.5 w-3.5" /> Lock
-                            </Button>
-                          )}
-                          {!['received', 'partially_received', 'billed', 'partially_billed', 'locked', 'cancelled'].includes(o.status) && (
-                            <button
-                              type="button"
-                              title="Cancel"
-                              onClick={() => cancelPO({ variables: { id: o.id } })}
-                              className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                            >
-                              <Ban className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            title="Download PDF"
-                            onClick={() => downloadDocumentPdf('purchase-order', o.id, o.seqNo).catch(() => {})}
-                            className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-secondary"
-                          >
-                            <Download className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <DataTable
+        data={orders}
+        columns={columns}
+        loading={loading}
+        title="All Purchase Orders"
+        searchable
+        searchPlaceholder="Search orders…"
+        emptyMessage="No purchase orders found."
+        pageSize={25}
+        onRowClick={(r: any) => {
+          if (EDITABLE_STATUSES.has(r.status)) openEdit(r)
+        }}
+        isRowClickable={(r: any) => EDITABLE_STATUSES.has(r.status)}
+        actions={[
+          {
+            label: 'Send RFQ',
+            icon: <Mail className="h-3.5 w-3.5" />,
+            onClick: (r: any) => markRfqSent({ variables: { id: r.id } }),
+            show: (r: any) => r.status === 'rfq',
+          },
+          {
+            label: 'Send for approval',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (r: any) => submitPO({ variables: { id: r.id } }),
+            show: (r: any) => r.status === 'rfq' || r.status === 'rfq_sent',
+          },
+          {
+            label: 'Approve',
+            icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => approvePO({ variables: { id: r.id } }),
+            show: (r: any) => r.status === 'submitted',
+          },
+          {
+            label: 'Confirm order',
+            icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => confirmPO({ variables: { id: r.id } }),
+            show: (r: any) => r.status === 'approved',
+          },
+          {
+            label: 'Send by email',
+            icon: <Mail className="h-3.5 w-3.5" />,
+            onClick: (r: any) => sendPOEmail({ variables: { id: r.id } }),
+            disabled: sendingEmail,
+            show: (r: any) => r.status === 'purchase_order',
+          },
+          {
+            label: 'Receive',
+            icon: <PackageCheck className="h-3.5 w-3.5" />,
+            onClick: (r: any) => openReceive(r),
+            show: (r: any) => ['purchase_order', 'sent', 'partially_received'].includes(r.status),
+          },
+          {
+            label: 'Create bill',
+            icon: <FileText className="h-3.5 w-3.5" />,
+            onClick: (r: any) => openBillDialog(r),
+            show: (r: any) =>
+              ['purchase_order', 'sent', 'received', 'partially_received', 'partially_billed'].includes(r.status),
+          },
+          {
+            label: 'Print PDF',
+            icon: <Printer className="h-3.5 w-3.5" />,
+            onClick: (r: any) => {
+              markPrinted({ variables: { id: r.id } })
+              downloadDocumentPdf('purchase-order', r.id, `RFQ-${r.seqNo}`).catch(() => {})
+            },
+          },
+          {
+            label: 'Download PDF',
+            icon: <Download className="h-3.5 w-3.5" />,
+            onClick: (r: any) => downloadDocumentPdf('purchase-order', r.id, r.seqNo).catch(() => {}),
+          },
+          {
+            label: 'Duplicate',
+            icon: <Copy className="h-3.5 w-3.5" />,
+            onClick: (r: any) => duplicatePO({ variables: { id: r.id } }),
+            disabled: duplicating,
+          },
+          {
+            label: 'Attachments',
+            icon: <Paperclip className="h-3.5 w-3.5" />,
+            onClick: (r: any) => setAttachingPoId(attachingPoId === r.id ? null : r.id),
+          },
+          {
+            label: 'Lock',
+            icon: <Lock className="h-3.5 w-3.5" />,
+            onClick: (r: any) => lockPO({ variables: { id: r.id } }),
+            show: (r: any) =>
+              ['purchase_order', 'sent', 'received', 'billed', 'partially_received', 'partially_billed'].includes(
+                r.status,
+              ),
+          },
+          {
+            label: 'Cancel',
+            icon: <Ban className="h-3.5 w-3.5" />,
+            onClick: (r: any) => cancelPO({ variables: { id: r.id } }),
+            show: (r: any) =>
+              !['received', 'partially_received', 'billed', 'partially_billed', 'locked', 'cancelled'].includes(
+                r.status,
+              ),
+          },
+        ]}
+      />
 
       {/* Attachments panel — shown below the list when a PO row's Attach button is clicked */}
       {attachingPoId && (
@@ -677,7 +658,7 @@ export default function EnterPurchaseOrdersPage() {
               <div key={doc.id} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs bg-white">
                 <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <div>
-                  <a href={buildDownloadUrl(doc.downloadUrl)} target="_blank" rel="noopener noreferrer" className="font-medium hover:underline text-blue-600">{doc.filename}</a>
+                  <a href={buildDownloadUrl(doc.downloadUrl)} target="_blank" rel="noopener noreferrer" className="font-medium hover:underline text-primary">{doc.filename}</a>
                   <p className="text-muted-foreground">{humanFileSize(doc.sizeBytes ?? 0)} · {doc.createdAt ? formatDate(doc.createdAt) : ''}</p>
                 </div>
                 <button onClick={() => handleDeleteAttachment(doc.id)} className="text-destructive ml-1"><X className="h-3 w-3" /></button>
@@ -716,13 +697,15 @@ export default function EnterPurchaseOrdersPage() {
               <Label htmlFor="po-vendor-ref">Vendor reference</Label>
               <Input id="po-vendor-ref" value={form.vendorReference} onChange={(e) => setF('vendorReference', e.target.value)} />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="po-project">Project</Label>
-              <select id="po-project" value={form.projectId} onChange={(e) => setF('projectId', e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                <option value="">None</option>
-                {projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
+            {projects.length > 0 && (
+              <div className="space-y-1.5">
+                <Label htmlFor="po-project">Project</Label>
+                <select id="po-project" value={form.projectId} onChange={(e) => setF('projectId', e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <option value="">None</option>
+                  {projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="po-order-date">Order date *</Label>
               <Input id="po-order-date" type="date" value={form.orderDate} onChange={(e) => setF('orderDate', e.target.value)} />
@@ -1058,18 +1041,6 @@ export default function EnterPurchaseOrdersPage() {
           </div>
         )}
       </FormModal>
-    </div>
-  )
-}
-
-function Stat({ label, value, icon }: { label: string; value: number; icon?: React.ReactNode }) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-      {icon && <div className="p-2 rounded-md bg-blue-50 text-blue-600">{icon}</div>}
-      <div>
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="text-lg font-bold text-gray-800">{value}</p>
-      </div>
     </div>
   )
 }

@@ -48,13 +48,13 @@ export function JournalEntryViewPanel({
   const label = entityRefLabel(entry.entryNumber, entry.seqNo)
 
   return (
-    <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+    <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-primary">
         <span className="text-xs font-semibold text-white">
           Journal entry — {label}
           {subtitle ? ` · ${subtitle}` : ''}
         </span>
-        <button type="button" onClick={onClose} className="text-blue-200 hover:text-white" aria-label="Close">
+        <button type="button" onClick={onClose} className="text-primary-foreground/80 hover:text-white" aria-label="Close">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -87,7 +87,7 @@ export function JournalEntryViewPanel({
 
       <div className="p-2">
         <div className="border border-gray-300 rounded overflow-hidden">
-          <div className="flex bg-[#f0f0f0] border-b border-gray-300">
+          <div className="flex bg-muted/70 border-b border-gray-300">
             <div className="w-8 border-r border-gray-300 py-1.5 text-center text-xs font-semibold text-gray-600">#</div>
             <div className="flex-1 border-r border-gray-300 px-2 py-1.5 text-xs font-semibold text-gray-600">Account</div>
             <div className="w-28 border-r border-gray-300 px-2 py-1.5 text-xs font-semibold text-gray-600 text-right">Debit</div>
@@ -127,7 +127,7 @@ export function JournalEntryViewPanel({
             type="button"
             size="sm"
             variant="outline"
-            className="h-8 text-xs"
+           
             onClick={() =>
               downloadDocumentPdf('journal-entry', entry.id, label).catch(() =>
                 alert('Could not download PDF. Sign in again or try later.'),

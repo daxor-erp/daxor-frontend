@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { useMutation, useQuery, gql } from '@apollo/client'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, Send } from 'lucide-react'
+import { CheckCircle2, Send, ShoppingCart, FileText, Clock } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { CREATE_SALES_ORDER, GET_SALES_ORDERS, SUBMIT_SALES_ORDER } from '@/gql/queries'
 import { formatMoney } from '@/lib/format-money'
-import { formatDate } from '@/lib/format-date'
 import { quotationPartyId } from '@/lib/sales-customer-options'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 
 const GET_QUOTATIONS = gql`
   query GetQuotationsForSalesOrder($organizationId: ID) {
@@ -31,17 +32,6 @@ const GET_QUOTATIONS = gql`
 `
 
 const today = () => new Date().toISOString().split('T')[0]
-
-const SO_STATUS: Record<string, { label: string; cls: string }> = {
-  draft: { label: 'Draft', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  submitted: { label: 'Pending approval', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
-  approved: { label: 'Approved', cls: 'bg-blue-50 text-blue-800 border-blue-200' },
-  rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-800 border-red-300' },
-  active: { label: 'Active', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
-  completed: { label: 'Completed', cls: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
-  cancelled: { label: 'Cancelled', cls: 'bg-gray-100 text-gray-500 border-gray-200' },
-  refunded: { label: 'Refunded', cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-}
 
 export default function EnterSalesOrderPage() {
   const { user } = useAuth()
@@ -105,6 +95,13 @@ export default function EnterSalesOrderPage() {
   const filteredQuotations = allQuotations.filter((q: any) => mapStatus(q.status) === formData.quotationStatus)
   const selectedQuotation = filteredQuotations.find((q: any) => q.id === formData.quotationId)
 
+  const stats = {
+    total: orders.length,
+    draft: orders.filter((o: any) => String(o.status).toLowerCase() === 'draft').length,
+    pending: orders.filter((o: any) => String(o.status).toLowerCase() === 'submitted').length,
+    approved: orders.filter((o: any) => ['approved', 'active'].includes(String(o.status).toLowerCase())).length,
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
@@ -162,242 +159,202 @@ export default function EnterSalesOrderPage() {
     }
   }
 
+  const columns: Column[] = [
+    { key: 'seqNo', label: 'Seq No', width: '100px', render: (v) => <MonoCell value={v} /> },
+    { key: 'quotationId', label: 'Quotation', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'quotationStatus', label: 'Quotation Status', width: '120px', render: (v) => <span className="text-sm capitalize">{v || '—'}</span> },
+    { key: 'customerId', label: 'Customer', render: (v) => <MonoCell value={v} /> },
+    { key: 'projectId', label: 'Project', width: '120px', render: (v) => <MonoCell value={v} /> },
+    { key: 'totalAmount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'orderDate', label: 'Order Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'status', label: 'Status', width: '130px', render: (v) => <ErpBadge status={String(v)} /> },
+  ]
+
   return (
-    <div className="p-6 space-y-5">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold">Enter Sales Order</h2>
-        <p className="text-sm text-muted-foreground">Create a sales order from an accepted quotation</p>
-      </div>
-        {successMsg && (
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-4">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            {successMsg}
-          </div>
-        )}
-        {errorMsg && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
-            {errorMsg}
-          </div>
-        )}
+    <div className="erp-shell">
+      <PageHeader
+        title="Enter Sales Order"
+        subtitle="Create a sales order from an accepted quotation"
+        icon={<ShoppingCart className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Enter Sales Order' }]}
+      />
 
-        <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
-            <span className="text-sm font-semibold text-gray-700">Sales Order Entry</span>
-          </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total Orders" value={stats.total} icon={<FileText className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft" value={stats.draft} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Pending Approval" value={stats.pending} icon={<Send className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Approved / Active" value={stats.approved} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
-          <form onSubmit={handleSubmit} className="p-2 space-y-3">
-            <div className="border border-gray-300 rounded overflow-x-auto">
-              <div className="grid bg-[#f0f0f0] border-b border-gray-300" style={{ gridTemplateColumns: '11rem 18rem 14rem 10rem 11rem 11rem 12rem' }}>
-                {['Quotation Status', 'Quotation', 'Customer ID', 'Project ID', 'Total Amount', 'Order Date', 'Organization ID'].map((h, i) => (
-                  <div key={i} className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</div>
-                ))}
+      {successMsg && (
+        <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          {successMsg}
+        </div>
+      )}
+      {errorMsg && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {errorMsg}
+        </div>
+      )}
+
+      <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border">
+          <span className="text-sm font-semibold">Sales Order Entry</span>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-2 space-y-3">
+          <div className="border border-border rounded overflow-x-auto">
+            <div className="grid bg-muted/70 border-b border-border" style={{ gridTemplateColumns: '11rem 18rem 14rem 10rem 11rem 11rem 12rem' }}>
+              {['Quotation Status', 'Quotation', 'Customer ID', 'Project ID', 'Total Amount', 'Order Date', 'Organization ID'].map((h, i) => (
+                <div key={i} className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-r border-border last:border-r-0">{h}</div>
+              ))}
+            </div>
+
+            <div className="grid min-w-[87rem]" style={{ gridTemplateColumns: '11rem 18rem 14rem 10rem 11rem 11rem 12rem' }}>
+              <div className="border-r border-border px-1 py-1">
+                <select
+                  id="quotationStatus"
+                  name="quotationStatus"
+                  value={formData.quotationStatus}
+                  onChange={handleChange}
+                  className="w-full h-8 px-2 border border-border rounded text-xs bg-background outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="rejected">Rejected</option>
+                </select>
               </div>
 
-              <div className="grid min-w-[87rem]" style={{ gridTemplateColumns: '11rem 18rem 14rem 10rem 11rem 11rem 12rem' }}>
-                <div className="border-r border-gray-200 px-1 py-1">
-                  <select
-                    id="quotationStatus"
-                    name="quotationStatus"
-                    value={formData.quotationStatus}
-                    onChange={handleChange}
-                    className="w-full h-8 px-2 border border-gray-300 rounded text-xs bg-white outline-none focus:ring-1 focus:ring-blue-400"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="accepted">Accepted</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
-                </div>
-
-                <div className="border-r border-gray-200 px-1 py-1">
-                  <select
-                    id="quotationId"
-                    name="quotationId"
-                    value={formData.quotationId}
-                    onChange={handleChange}
-                    className="w-full h-8 px-2 border border-gray-300 rounded text-xs bg-white outline-none focus:ring-1 focus:ring-blue-400"
-                    required
-                  >
-                    <option value="">
-                      {quotationLoading ? 'Loading...' : `Select ${formData.quotationStatus}`}
+              <div className="border-r border-border px-1 py-1">
+                <select
+                  id="quotationId"
+                  name="quotationId"
+                  value={formData.quotationId}
+                  onChange={handleChange}
+                  className="w-full h-8 px-2 border border-border rounded text-xs bg-background outline-none focus:ring-1 focus:ring-primary"
+                  required
+                >
+                  <option value="">
+                    {quotationLoading ? 'Loading...' : `Select ${formData.quotationStatus}`}
+                  </option>
+                  {filteredQuotations.map((q: any) => (
+                    <option key={q.id} value={q.id}>
+                      {q.quotationNumber} - {formatMoney(q.totalAmount || 0)}
                     </option>
-                    {filteredQuotations.map((q: any) => (
-                      <option key={q.id} value={q.id}>
-                        {q.quotationNumber} - {formatMoney(q.totalAmount || 0)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  ))}
+                </select>
+              </div>
 
-                <div className="border-r border-gray-200 px-1 py-1">
-                  <input
-                    id="customerId"
-                    name="customerId"
-                    type="text"
-                    value={formData.customerId}
-                    readOnly
-                    className="w-full h-8 px-2 border border-gray-300 rounded text-xs bg-gray-50 text-gray-700"
-                  />
-                </div>
+              <div className="border-r border-border px-1 py-1">
+                <input
+                  id="customerId"
+                  name="customerId"
+                  type="text"
+                  value={formData.customerId}
+                  readOnly
+                  className="w-full h-8 px-2 border border-border rounded text-xs bg-muted text-muted-foreground"
+                />
+              </div>
 
-                <div className="border-r border-gray-200 px-1 py-1">
-                  <input
-                    id="projectId"
-                    name="projectId"
-                    type="text"
-                    value={formData.projectId}
-                    onChange={handleChange}
-                    placeholder="Optional"
-                    className="w-full h-8 px-2 border border-gray-300 rounded text-xs bg-white outline-none focus:ring-1 focus:ring-blue-400"
-                  />
-                </div>
+              <div className="border-r border-border px-1 py-1">
+                <input
+                  id="projectId"
+                  name="projectId"
+                  type="text"
+                  value={formData.projectId}
+                  onChange={handleChange}
+                  placeholder="Optional"
+                  className="w-full h-8 px-2 border border-border rounded text-xs bg-background outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
 
-                <div className="border-r border-gray-200 px-1 py-1">
-                  <input
-                    id="totalAmount"
-                    name="totalAmount"
-                    type="number"
-                    step="0.01"
-                    value={formData.totalAmount}
-                    readOnly
-                    className="w-full h-8 px-2 border border-gray-300 rounded text-xs bg-gray-50 text-gray-700"
-                  />
-                </div>
+              <div className="border-r border-border px-1 py-1">
+                <input
+                  id="totalAmount"
+                  name="totalAmount"
+                  type="number"
+                  step="0.01"
+                  value={formData.totalAmount}
+                  readOnly
+                  className="w-full h-8 px-2 border border-border rounded text-xs bg-muted text-muted-foreground"
+                />
+              </div>
 
-                <div className="border-r border-gray-200 px-1 py-1">
-                  <input
-                    id="orderDate"
-                    name="orderDate"
-                    type="date"
-                    value={formData.orderDate}
-                    onChange={handleChange}
-                    required
-                    className="w-full h-8 px-2 border border-gray-300 rounded text-xs bg-white outline-none focus:ring-1 focus:ring-blue-400"
-                  />
-                </div>
+              <div className="border-r border-border px-1 py-1">
+                <input
+                  id="orderDate"
+                  name="orderDate"
+                  type="date"
+                  value={formData.orderDate}
+                  onChange={handleChange}
+                  required
+                  className="w-full h-8 px-2 border border-border rounded text-xs bg-background outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
 
-                <div className="px-1 py-1">
-                  <input
-                    id="organizationId"
-                    name="organizationId"
-                    type="text"
-                    value={formData.organizationId}
-                    readOnly
-                    className="w-full h-8 px-2 border border-gray-300 rounded text-xs bg-gray-50 text-gray-700"
-                  />
-                </div>
+              <div className="px-1 py-1">
+                <input
+                  id="organizationId"
+                  name="organizationId"
+                  type="text"
+                  value={formData.organizationId}
+                  readOnly
+                  className="w-full h-8 px-2 border border-border rounded text-xs bg-muted text-muted-foreground"
+                />
               </div>
             </div>
-
-            <div className="flex gap-2">
-              <Button
-                type="submit"
-                disabled={saving}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white px-4"
-              >
-                {saving ? 'Creating...' : 'Create Sales Order'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-8 text-xs"
-                onClick={() => setFormData({
-                  quotationStatus: 'pending',
-                  quotationId: '',
-                  customerId: '',
-                  projectId: '',
-                  totalAmount: '',
-                  orderDate: today(),
-                  organizationId: orgId
-                })}
-              >
-                Reset
-              </Button>
-            </div>
-          </form>
-        </div>
-
-        <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm mt-4">
-          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
-            <div>
-              <span className="text-sm font-semibold text-gray-700">Created Sales Orders</span>
-              <p className="text-[11px] text-gray-500 mt-0.5 max-w-xl">
-                New orders start as Draft. Use Send for approval to route to the Sales approver (Org admin → Approvals); they act in the header inbox.
-              </p>
-            </div>
-            <span className="text-xs text-gray-500">{orders.length} records</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-[1100px] w-full text-xs">
-              <thead>
-                <tr className="bg-[#f0f0f0] border-b border-gray-300">
-                  {['Seq No', 'Quotation ID', 'Quotation Status', 'Customer', 'Project', 'Amount', 'Order Date', 'Status', 'Organization', 'Actions'].map((h) => (
-                    <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {ordersLoading ? (
-                  <tr>
-                    <td className="px-3 py-3 text-gray-500" colSpan={10}>Loading sales orders...</td>
-                  </tr>
-                ) : orders.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-3 text-gray-500" colSpan={10}>No sales orders created yet.</td>
-                  </tr>
-                ) : (
-                  orders.map((order: any, idx: number) => (
-                    <tr key={order.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                      <td className="px-3 py-2 border-r border-gray-200">{order.seqNo || '—'}</td>
-                      <td className="px-3 py-2 border-r border-gray-200 font-mono text-[11px]">{order.quotationId || '—'}</td>
-                      <td className="px-3 py-2 border-r border-gray-200">{order.quotationStatus || '—'}</td>
-                      <td className="px-3 py-2 border-r border-gray-200 font-mono text-[11px]">{order.customerId || '—'}</td>
-                      <td className="px-3 py-2 border-r border-gray-200 font-mono text-[11px]">{order.projectId || '—'}</td>
-                      <td className="px-3 py-2 border-r border-gray-200">{formatMoney(order.totalAmount || 0)}</td>
-                      <td className="px-3 py-2 border-r border-gray-200">
-                        {order.orderDate ? formatDate(order.orderDate) : '—'}
-                      </td>
-                      <td className="px-3 py-2 border-r border-gray-200 align-top">
-                        {(() => {
-                          const raw = String(order.status ?? '').toLowerCase()
-                          const m = SO_STATUS[raw]
-                          const label = m?.label ?? (order.status || '—')
-                          const cls = m?.cls ?? 'bg-gray-50 text-gray-600 border-gray-200'
-                          return (
-                            <span className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-semibold ${cls}`}>
-                              {label}
-                            </span>
-                          )
-                        })()}
-                      </td>
-                      <td className="px-3 py-2 border-r border-gray-200">{order.organizationId || '—'}</td>
-                      <td className="px-3 py-2 align-top whitespace-nowrap">
-                        {order.cashSale ? (
-                          <span className="text-[11px] text-gray-400">—</span>
-                        ) : ['draft', 'rejected'].includes(String(order.status).toLowerCase()) ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-[11px] gap-1"
-                            disabled={submittingOrder}
-                            onClick={() => submitSalesOrder({ variables: { id: order.id } })}
-                          >
-                            <Send className="h-3 w-3" />
-                            Send for approval
-                          </Button>
-                        ) : (
-                          <span className="text-[11px] text-gray-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              disabled={saving}
+              className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground px-4"
+            >
+              {saving ? 'Creating...' : 'Create Sales Order'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setFormData({
+                quotationStatus: 'pending',
+                quotationId: '',
+                customerId: '',
+                projectId: '',
+                totalAmount: '',
+                orderDate: today(),
+                organizationId: orgId,
+              })}
+            >
+              Reset
+            </Button>
           </div>
-        </div>
+        </form>
+      </div>
+
+      <DataTable
+        data={orders}
+        columns={columns}
+        loading={ordersLoading}
+        title="All Sales Orders"
+        description="New orders start as Draft. Use Send for approval to route to the Sales approver."
+        searchable
+        searchPlaceholder="Search sales orders…"
+        emptyMessage="No sales orders created yet."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Send for approval',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (order: any) => submitSalesOrder({ variables: { id: order.id } }),
+            show: (order: any) =>
+              !order.cashSale && ['draft', 'rejected'].includes(String(order.status).toLowerCase()),
+            disabled: submittingOrder,
+          },
+        ]}
+      />
     </div>
   )
 }

@@ -56,16 +56,16 @@ export default function ReportsAnalyticsPage() {
   const budgetVariance = totalBudget > 0 ? Math.round(((totalActualCost - totalBudget) / totalBudget) * 100) : 0
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Reports & Analytics</h1>
-        <p className="text-gray-500">Project performance insights and analytics</p>
+        <h1 className="erp-page-title">Reports & Analytics</h1>
+        <p className="erp-page-desc">Project performance insights and analytics</p>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Total Budget', value: formatMoneyCompact(totalBudget), icon: DollarSign, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Total Budget', value: formatMoneyCompact(totalBudget), icon: DollarSign, cls: 'text-primary bg-primary/10' },
           { label: 'Actual Cost', value: formatMoneyCompact(totalActualCost), icon: TrendingUp, cls: 'text-green-600 bg-green-50' },
           { label: 'Budget Variance', value: `${budgetVariance > 0 ? '+' : ''}${budgetVariance}%`, icon: BarChart3, cls: budgetVariance > 0 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50' },
           { label: 'Avg Progress', value: `${avgProgress}%`, icon: CheckCircle, cls: 'text-purple-600 bg-purple-50' },
@@ -88,7 +88,7 @@ export default function ReportsAnalyticsPage() {
             <div className="space-y-3">
               {[
                 { label: 'Active', value: projectStats.active, total: projectStats.total, color: 'bg-green-500' },
-                { label: 'Completed', value: projectStats.completed, total: projectStats.total, color: 'bg-blue-500' },
+                { label: 'Completed', value: projectStats.completed, total: projectStats.total, color: 'bg-primary/100' },
                 { label: 'Inactive', value: projectStats.inactive, total: projectStats.total, color: 'bg-gray-400' },
               ].map(({ label, value, total, color }) => (
                 <div key={label}>
@@ -114,7 +114,7 @@ export default function ReportsAnalyticsPage() {
             <div className="space-y-3">
               {[
                 { label: 'Completed', value: taskStats.completed, total: taskStats.total, color: 'bg-green-500' },
-                { label: 'In Progress', value: taskStats.inProgress, total: taskStats.total, color: 'bg-blue-500' },
+                { label: 'In Progress', value: taskStats.inProgress, total: taskStats.total, color: 'bg-primary/100' },
                 { label: 'Pending', value: taskStats.pending, total: taskStats.total, color: 'bg-yellow-500' },
                 { label: 'Blocked', value: taskStats.blocked, total: taskStats.total, color: 'bg-red-500' },
               ].map(({ label, value, total, color }) => (
@@ -212,7 +212,7 @@ export default function ReportsAnalyticsPage() {
                       <td className="p-2">{plan.progress || 0}%</td>
                       <td className="p-2">{formatMoney(plan.budget || 0)}</td>
                       <td className="p-2">{formatMoney(plan.actualCost || 0)}</td>
-                      <td className="p-2"><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">{plan.status}</span></td>
+                      <td className="p-2"><span className="px-2 py-0.5 bg-primary/10 text-primary rounded">{plan.status}</span></td>
                     </tr>
                   ))}
                 </tbody>

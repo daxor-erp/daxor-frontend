@@ -176,7 +176,7 @@ export default function OrgAdminDashboardPage() {
               <div className="p-8 text-center text-muted-foreground text-sm">No users yet.</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="erp-table">
                   <thead>
                     <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground border-b">
                       <th className="px-5 py-3 font-medium">Name</th>
@@ -192,7 +192,7 @@ export default function OrgAdminDashboardPage() {
                         <tr key={u.id} className="border-b last:border-0 hover:bg-secondary/30 transition-colors">
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-2.5">
-                              <div className="h-8 w-8 rounded-full bg-grad-brand text-white grid place-items-center font-semibold text-xs">
+                              <div className="h-8 w-8 rounded-full grid place-items-center font-semibold text-xs">
                                 {ini}
                               </div>
                               <span className="font-medium">
@@ -305,7 +305,7 @@ export default function OrgAdminDashboardPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       {/* Hero */}
       <div className="relative overflow-hidden rounded-2xl bg-grad-tenant-hero text-white elev-2">
         <div className="absolute inset-0 bg-dotgrid opacity-[0.1]" />
@@ -319,7 +319,7 @@ export default function OrgAdminDashboardPage() {
               <Building2 className="h-3 w-3" />
               Tenant administration
             </div>
-            <h1 className="mt-3 text-2xl sm:text-3xl lg:text-[34px] font-bold tracking-tight">
+            <h1 className="erp-page-title">
               {org?.name ? org.name : 'Your organization'}
             </h1>
             <p className="mt-1.5 text-sm text-white/85">
@@ -335,7 +335,7 @@ export default function OrgAdminDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               href="/org-admin/users"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white/90 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-white/90 transition-colors"
             >
               <UserPlus className="h-4 w-4" />
               Manage users

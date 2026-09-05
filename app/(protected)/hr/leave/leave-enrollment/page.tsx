@@ -122,14 +122,14 @@ export default function LeaveEnrollmentPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="erp-shell">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-blue-600 mb-1">
+          <div className="flex items-center gap-2 text-primary mb-1">
             <ClipboardList className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">HR · Leave</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Employee leave enrollment</h1>
+          <h1 className="erp-page-title">Employee leave enrollment</h1>
           <p className="text-gray-500 mt-1">
             Set annual entitlements per employee and leave type. Salary processing uses <strong>used</strong> vs{' '}
             <strong>entitled + carried forward</strong> when applications are approved.
@@ -153,7 +153,7 @@ export default function LeaveEnrollmentPage() {
               setForm((f) => ({ ...f, calendarYear: String(filterYear) }))
               setOpen(true)
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Plus className="h-4 w-4 mr-2" /> New enrollment
           </Button>
@@ -174,7 +174,7 @@ export default function LeaveEnrollmentPage() {
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-semibold flex items-center justify-between">
           <span>Enrollments · {filterYear}</span>
-          <span className="text-blue-100 font-normal text-xs">{rows.length} record(s)</span>
+          <span className="text-primary-foreground/80 font-normal text-xs">{rows.length} record(s)</span>
         </div>
         {loading ? (
           <div className="p-12 text-center text-gray-400 text-sm">Loading…</div>
@@ -200,7 +200,7 @@ export default function LeaveEnrollmentPage() {
                 const bal =
                   Number(r.entitledDays) + Number(r.carriedForward || 0) - Number(r.usedDays || 0)
                 return (
-                  <TableRow key={r.id} className="hover:bg-blue-50/40">
+                  <TableRow key={r.id} className="hover:bg-primary/5/40">
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-3.5 w-3.5 text-gray-400" />
@@ -212,7 +212,7 @@ export default function LeaveEnrollmentPage() {
                     <TableCell className="text-right text-sm">{r.carriedForward}</TableCell>
                     <TableCell className="text-right text-sm">{r.usedDays}</TableCell>
                     <TableCell className="text-right">
-                      <Badge className={bal >= 0 ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-red-50 text-red-800'}>
+                      <Badge className={bal >= 0 ? 'bg-primary/10 text-primary border-primary/20' : 'bg-red-50 text-red-800'}>
                         {bal.toFixed(1)}
                       </Badge>
                     </TableCell>
@@ -313,7 +313,7 @@ export default function LeaveEnrollmentPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700" disabled={saving} onClick={submit}>
+            <Button className="bg-primary hover:bg-primary/90" disabled={saving} onClick={submit}>
               {saving ? 'Saving…' : 'Save'}
             </Button>
           </DialogFooter>

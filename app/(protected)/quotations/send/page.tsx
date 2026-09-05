@@ -135,7 +135,7 @@ export default function SendQuotationsPage() {
       submitted: 'bg-amber-600 text-white border-transparent',
       approval_declined: 'bg-red-500 text-white border-transparent',
       approved: 'bg-teal-600 text-white border-transparent',
-      sent: 'bg-blue-600 text-white border-transparent',
+      sent: 'bg-primary text-white border-transparent',
       accepted: 'bg-emerald-600 text-white border-transparent',
       rejected: 'bg-red-600 text-white border-transparent',
       expired: 'bg-orange-600 text-white border-transparent',
@@ -158,7 +158,7 @@ export default function SendQuotationsPage() {
   const sentQuotations = rows.filter((q) => q.status !== 'approved')
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Send Quotations"
         subtitle="Internally approved quotations appear here ready to email to customers"
@@ -232,7 +232,7 @@ export default function SendQuotationsPage() {
           <DialogHeader>
             <DialogTitle>Send quotation to customer?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-600">
+          <p className="erp-page-desc">
             Sends the full quotation (lines, totals, terms) to the customer using SMTP (Nodemailer). The API must have
             EMAIL_USER and EMAIL_PASSWORD set. The quotation is only marked sent after the email succeeds.
           </p>
@@ -254,21 +254,21 @@ export default function SendQuotationsPage() {
           </DialogHeader>
           {selectedQuotation && (
             <div className="space-y-4">
-              <div className="bg-blue-600 text-white p-6 rounded-t-lg text-center">
+              <div className="bg-primary text-white p-6 rounded-t-lg text-center">
                 <h2 className="text-2xl font-bold">Quotation {selectedQuotation.quotationNumber}</h2>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="erp-shell">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Customer</p>
+                    <p className="erp-page-desc">Customer</p>
                     <p className="font-semibold">{quotationPartyName(selectedQuotation)}</p>
                     <p className="text-sm">{quotationPartyEmail(selectedQuotation) || '—'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Quotation date</p>
+                    <p className="erp-page-desc">Quotation date</p>
                     <p className="font-semibold">{formatDate(selectedQuotation.quotationDate)}</p>
-                    <p className="text-sm text-gray-500 mt-2">Valid until</p>
+                    <p className="erp-page-desc">Valid until</p>
                     <p className="font-semibold">{formatDate(selectedQuotation.validUntil)}</p>
                   </div>
                 </div>
@@ -318,7 +318,7 @@ export default function SendQuotationsPage() {
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
                     <span>Total amount:</span>
-                    <span className="text-blue-600">{formatMoney(selectedQuotation.totalAmount)}</span>
+                    <span className="text-primary">{formatMoney(selectedQuotation.totalAmount)}</span>
                   </div>
                 </div>
 

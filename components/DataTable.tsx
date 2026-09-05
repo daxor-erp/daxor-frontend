@@ -176,16 +176,16 @@ export function DataTable<T extends Record<string, any>>({
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               icon={<Search className="h-3.5 w-3.5" />}
-              className="h-7 text-xs w-48"
+              className="h-8 w-52 text-xs"
             />
           )}
           {exportable && (
-            <Button variant="outline" size="sm" onClick={onExport} className="h-7 text-xs">
+            <Button variant="outline" size="sm" onClick={onExport}>
               <Download className="h-3.5 w-3.5 mr-1" />Export
             </Button>
           )}
           {onAdd && (
-            <Button size="sm" onClick={onAdd} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
+            <Button size="sm" onClick={onAdd}>
               <Plus className="h-3.5 w-3.5 mr-1" />{addLabel}
             </Button>
           )}
@@ -194,29 +194,30 @@ export function DataTable<T extends Record<string, any>>({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className={`w-full border-collapse text-xs ${bordered ? 'border border-gray-200' : ''}`}>
+        <table className={cn('erp-table', bordered && 'border border-border')}>
           <thead>
-            <tr className="bg-[#f0f0f0] border-b border-gray-300">
-              <th className="border-r border-gray-300 py-2 w-8 text-center font-semibold text-gray-400">#</th>
+            <tr className="border-b border-border bg-muted/70">
+              <th className="w-8 border-r border-border py-2 text-center font-semibold text-muted-foreground">#</th>
               {columns.map(column => (
                 <th
                   key={column.key}
-                  className={`border-r border-gray-300 last:border-r-0 px-3 py-2 font-semibold text-gray-600 uppercase tracking-wide text-left whitespace-nowrap ${
-                    column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
-                  }`}
+                  className={cn(
+                    'whitespace-nowrap border-r border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground last:border-r-0',
+                    column.sortable && 'cursor-pointer hover:bg-muted',
+                  )}
                   style={{ width: column.width }}
                   onClick={() => column.sortable && handleSort(column.key)}
                 >
                   <div className="flex items-center gap-1">
                     {column.label}
                     {column.sortable && sortConfig?.key === column.key && (
-                      <span className="text-blue-600">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                      <span className="text-primary">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                     )}
                   </div>
                 </th>
               ))}
               {actions.length > 0 && (
-                <th className="min-w-[10rem] px-2 py-2 font-semibold text-gray-600 uppercase tracking-wide text-right">
+                <th className="min-w-[10rem] px-2 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Actions
                 </th>
               )}
@@ -227,7 +228,7 @@ export function DataTable<T extends Record<string, any>>({
               <tr>
                 <td
                   colSpan={columns.length + 1 + (actions.length > 0 ? 1 : 0)}
-                  className="py-12 text-center text-gray-400 text-sm"
+                  className="py-10 text-center text-sm text-muted-foreground"
                 >
                   Loading…
                 </td>
@@ -236,11 +237,11 @@ export function DataTable<T extends Record<string, any>>({
               <tr>
                 <td
                   colSpan={columns.length + 1 + (actions.length > 0 ? 1 : 0)}
-                  className="py-12 text-center text-gray-400"
+                  className="py-10 text-center text-muted-foreground"
                 >
                   <div className="flex flex-col items-center">
-                    {emptyIcon || <Filter className="h-8 w-8 mb-2 opacity-30" />}
-                    <p className="text-xs">{emptyMessage}</p>
+                    {emptyIcon || <Filter className="mb-2 h-7 w-7 opacity-30" />}
+                    <p className="text-sm">{emptyMessage}</p>
                   </div>
                 </td>
               </tr>
@@ -248,32 +249,35 @@ export function DataTable<T extends Record<string, any>>({
               pagedData.map((row, rowIdx) => (
                 <tr
                   key={row[rowKey] || rowIdx}
-                  className={`border-b border-gray-200 ${striped && rowIdx % 2 === 1 ? 'bg-gray-50/50' : 'bg-white'} ${
-                    hoverable ? 'hover:bg-blue-50/30 transition-colors' : ''
-                  } ${onRowClick && (!isRowClickable || isRowClickable(row)) ? 'cursor-pointer' : ''}`}
+                  className={cn(
+                    'border-b border-border',
+                    striped && rowIdx % 2 === 1 ? 'bg-muted/40' : 'bg-card',
+                    hoverable && 'transition-colors hover:bg-primary/5',
+                    onRowClick && (!isRowClickable || isRowClickable(row)) && 'cursor-pointer',
+                  )}
                   onClick={onRowClick ? (e) => handleRowClick(row, e) : undefined}
                   title={onRowClick && (!isRowClickable || isRowClickable(row)) ? 'Click to view or edit' : undefined}
                 >
-                  <td className="border-r border-gray-200 text-center text-gray-300 py-2 w-8">
+                  <td className="w-8 border-r border-border py-2 text-center text-xs text-muted-foreground/60">
                     {safePage * pageSize + rowIdx + 1}
                   </td>
                   {columns.map(column => (
                     <td
                       key={column.key}
-                      className={`border-r border-gray-200 last:border-r-0 px-3 py-2 overflow-hidden ${
-                        column.align === 'center'
-                          ? 'text-center'
-                          : column.align === 'right'
-                            ? 'text-right'
-                            : 'text-left'
-                      } ${compact ? 'py-1' : ''}`}
+                      className={cn(
+                        'overflow-hidden border-r border-border px-3 py-2 text-sm last:border-r-0',
+                        column.align === 'center' && 'text-center',
+                        column.align === 'right' && 'text-right',
+                        !column.align && 'text-left',
+                        compact && 'py-1.5',
+                      )}
                     >
                       <div className="truncate">{column.render ? column.render(row[column.key], row) : row[column.key]}</div>
                     </td>
                   ))}
                   {actions.length > 0 && (
                     <td className="px-2 py-2">
-                      <div className="flex items-center justify-end gap-1 flex-wrap min-w-[7.5rem]">
+                      <div className="flex min-w-[7.5rem] flex-wrap items-center justify-end gap-1">
                         {actions.map((action, actionIdx) => {
                           if (action.show && !action.show(row)) return null
                           const disabled =
@@ -285,14 +289,14 @@ export function DataTable<T extends Record<string, any>>({
                             <Button
                               key={actionIdx}
                               variant={action.variant || 'ghost'}
-                              size="sm"
+                              size="xs"
                               disabled={disabled}
                               title={tip}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 if (!disabled) action.onClick(row)
                               }}
-                              className={`h-6 px-2 text-xs ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={disabled ? 'cursor-not-allowed opacity-50' : undefined}
                             >
                               {action.icon ?? action.label}
                             </Button>
@@ -309,34 +313,38 @@ export function DataTable<T extends Record<string, any>>({
       </div>
       {/* Pagination footer */}
       {!loading && sortedData.length > 0 && (
-        <div className="flex items-center justify-between px-3 py-2 border-t border-gray-200 bg-gray-50">
-          <span className="text-xs text-gray-400">
+        <div className="flex items-center justify-between border-t border-border bg-muted/40 px-3 py-2">
+          <span className="text-xs text-muted-foreground">
             {from}–{to} of {sortedData.length} records
           </span>
           {totalPages > 1 && (
             <div className="flex items-center gap-1">
               <button
+                type="button"
                 onClick={() => setPage(0)}
                 disabled={safePage === 0}
-                className="h-6 w-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-xs text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-30"
               >«</button>
               <button
+                type="button"
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={safePage === 0}
-                className="h-6 w-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
-              ><ChevronLeft className="h-3 w-3" /></button>
-              <span className="text-xs text-gray-600 px-2">
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-30"
+              ><ChevronLeft className="h-3.5 w-3.5" /></button>
+              <span className="px-2 text-xs text-muted-foreground">
                 Page {safePage + 1} of {totalPages}
               </span>
               <button
+                type="button"
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={safePage === totalPages - 1}
-                className="h-6 w-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
-              ><ChevronRight className="h-3 w-3" /></button>
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-30"
+              ><ChevronRight className="h-3.5 w-3.5" /></button>
               <button
+                type="button"
                 onClick={() => setPage(totalPages - 1)}
                 disabled={safePage === totalPages - 1}
-                className="h-6 w-6 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-xs text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-30"
               >»</button>
             </div>
           )}

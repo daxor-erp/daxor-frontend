@@ -1,6 +1,6 @@
 /**
- * Currency formatting helpers. Active currency comes from user preferences
- * (`localStorage['daxor:preferences'].currency`). Defaults to INR.
+ * Currency formatting helpers.
+ * App base currency is INR (₹). Display always uses INR for KPIs and money fields.
  */
 
 export type CurrencyCode = 'INR' | 'USD' | 'SGD' | 'MYR'
@@ -20,22 +20,36 @@ const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
 }
 
 const PREFS_KEY = 'daxor:preferences'
-const DEFAULT_CURRENCY: CurrencyCode = 'INR'
-
-export function getActiveCurrency(): CurrencyMeta {
-  if (typeof window === 'undefined') return CURRENCY_META[DEFAULT_CURRENCY]
-  try {
-    const raw = window.localStorage.getItem(PREFS_KEY)
-    const code = raw ? (JSON.parse(raw) as { currency?: string }).currency : undefined
-    if (code && code in CURRENCY_META) return CURRENCY_META[code as CurrencyCode]
-  } catch { /* fall through */ }
-  return CURRENCY_META[DEFAULT_CURRENCY]
-}
-
+/** Company base / display currency for the ERP. */
+export const DEFAULT_CURRENCY: CurrencyCode = 'INR'
 export const APP_CURRENCY: CurrencyCode = DEFAULT_CURRENCY
 export const APP_LOCALE = CURRENCY_META[DEFAULT_CURRENCY].locale
 
-/** Formats a number using the active currency. */
+/** One-time: rewrite localStorage preference to INR when it was SGD/USD/etc. */
+function migratePrefsToInr() {
+  if (typeof window === 'undefined') return
+  try {
+    const raw = window.localStorage.getItem(PREFS_KEY)
+    if (!raw) {
+      window.localStorage.setItem(PREFS_KEY, JSON.stringify({ currency: DEFAULT_CURRENCY }))
+      return
+    }
+    const prefs = JSON.parse(raw) as { currency?: string }
+    if (prefs.currency !== DEFAULT_CURRENCY) {
+      window.localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ ...prefs, currency: DEFAULT_CURRENCY }),
+      )
+    }
+  } catch { /* ignore */ }
+}
+
+export function getActiveCurrency(): CurrencyMeta {
+  migratePrefsToInr()
+  return CURRENCY_META[DEFAULT_CURRENCY]
+}
+
+/** Formats a number as INR. */
 export function formatMoney(n: number | null | undefined, opts?: Intl.NumberFormatOptions): string {
   const value = Number.isFinite(Number(n)) ? Number(n) : 0
   const m = getActiveCurrency()
@@ -48,24 +62,18 @@ export function formatMoney(n: number | null | undefined, opts?: Intl.NumberForm
   }).format(value)
 }
 
-/** Compact currency formatter for KPI tiles. INR → L/Cr, others → K/M/B. */
+/** Compact INR formatter for KPI tiles (K / L / Cr). */
 export function formatMoneyCompact(n: number | null | undefined): string {
   const value = Number.isFinite(Number(n)) ? Number(n) : 0
   const m = getActiveCurrency()
   const abs = Math.abs(value)
-  if (m.compact === 'INDIAN') {
-    if (abs >= 1_00_00_000) return `${m.symbol}${(value / 1_00_00_000).toFixed(2).replace(/\.?0+$/, '')}Cr`
-    if (abs >= 1_00_000) return `${m.symbol}${(value / 1_00_000).toFixed(2).replace(/\.?0+$/, '')}L`
-    if (abs >= 1_000) return `${m.symbol}${(value / 1_000).toFixed(1).replace(/\.?0+$/, '')}K`
-    return `${m.symbol}${value.toFixed(0)}`
-  }
-  if (abs >= 1_000_000_000) return `${m.symbol}${(value / 1_000_000_000).toFixed(2).replace(/\.?0+$/, '')}B`
-  if (abs >= 1_000_000) return `${m.symbol}${(value / 1_000_000).toFixed(2).replace(/\.?0+$/, '')}M`
+  if (abs >= 1_00_00_000) return `${m.symbol}${(value / 1_00_00_000).toFixed(2).replace(/\.?0+$/, '')}Cr`
+  if (abs >= 1_00_000) return `${m.symbol}${(value / 1_00_000).toFixed(2).replace(/\.?0+$/, '')}L`
   if (abs >= 1_000) return `${m.symbol}${(value / 1_000).toFixed(1).replace(/\.?0+$/, '')}K`
   return `${m.symbol}${value.toFixed(0)}`
 }
 
-/** Plain numeric formatter using the active locale grouping. */
+/** Plain numeric formatter using en-IN grouping. */
 export function formatNumber(n: number | null | undefined, opts?: Intl.NumberFormatOptions): string {
   const value = Number.isFinite(Number(n)) ? Number(n) : 0
   return new Intl.NumberFormat(getActiveCurrency().locale, opts).format(value)
@@ -73,7 +81,10 @@ export function formatNumber(n: number | null | undefined, opts?: Intl.NumberFor
 
 export function formatAmount(n: number | null | undefined): string {
   const value = Number.isFinite(Number(n)) ? Number(n) : 0
-  return value.toLocaleString(getActiveCurrency().locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return value.toLocaleString(getActiveCurrency().locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 export function getCurrencySymbol(): string {

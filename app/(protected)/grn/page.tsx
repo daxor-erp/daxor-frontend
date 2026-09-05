@@ -144,7 +144,7 @@ export default function GRNPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Goods Receipt Notes"
         subtitle="Record physical receipt of goods against purchase orders"

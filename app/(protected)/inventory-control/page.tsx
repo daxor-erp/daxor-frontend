@@ -250,7 +250,7 @@ export default function InventoryControlPage() {
     '2rem 12rem 6rem 5rem 4rem 4rem 4rem 5rem 10rem 7rem 7rem 6rem'
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="erp-shell">
       <PageHeader
         title="Inventory Control"
         subtitle="Bin-level stock levels, adjustments, and physical count worksheets"
@@ -314,7 +314,7 @@ export default function InventoryControlPage() {
             ].map((h) => (
               <div
                 key={h}
-                className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-b border-r border-gray-300 bg-[#f0f0f0] last:border-r-0"
+                className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-b border-r border-gray-300 bg-muted/70 last:border-r-0"
               >
                 {h}
               </div>
@@ -442,7 +442,7 @@ export default function InventoryControlPage() {
         </div>
 
         {!loading && orgId && rows.length === 0 && (
-          <p className="text-sm text-gray-500 px-3 py-6 text-center border-t border-gray-200">
+          <p className="erp-page-desc">
             No inventory rows yet. Add items under Inventory → Items, create a warehouse, then use Add row.
           </p>
         )}

@@ -1,16 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery, useMutation, gql } from '@apollo/client'
+import { useQuery, useMutation } from '@apollo/client'
 import { GET_SALES_ORDERS, UPDATE_SALES_ORDER, GET_PROJECTS } from '@/gql/queries'
-
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Truck, PackageCheck, Clock, CheckCircle2, Building2, FolderKanban, CalendarDays, DollarSign, ArrowRight } from 'lucide-react'
+import { Truck, PackageCheck, Clock, CheckCircle2, Building2, FolderKanban, DollarSign, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney } from '@/lib/format-money'
 import {
@@ -18,16 +16,8 @@ import {
   mapSalesCustomers,
   customerDisplayName,
 } from '@/lib/sales-customer-options'
-import { PageHeader, StatsRow, StatCard, ErpBadge } from '@/components/ui/erp-shared'
-
-const SO_STATUS: Record<string, { label: string; cls: string }> = {
-  draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  submitted: { label: 'Submitted', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  approved:  { label: 'Approved',  cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  active:    { label: 'Active',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  completed: { label: 'Delivered', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
-}
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell, AmountCell } from '@/components/ui/erp-shared'
 
 export default function DeliveryOrderPage() {
   const { user } = useAuth()
@@ -60,14 +50,10 @@ export default function DeliveryOrderPage() {
 
   const pending = allOrders.filter(o => ['draft', 'submitted', 'approved', 'active'].includes(o.status))
   const delivered = allOrders.filter(o => o.status === 'completed')
+  const rows = activeTab === 'pending' ? pending : delivered
 
   const getProjectName = (id: string) => projects.find((x) => x.id === id)?.name ?? '—'
   const getCustomerDisplay = (id: string) => customerDisplayName(customers, id)
-  const formatDate = (value: string | null | undefined) => {
-    if (!value) return '—'
-    const d = new Date(value)
-    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString()
-  }
 
   const stats = {
     pending: pending.length,
@@ -86,45 +72,25 @@ export default function DeliveryOrderPage() {
     })
   }
 
-  const OrderTable = ({ orders, showAction }: { orders: any[]; showAction: boolean }) => (
-    <div className="overflow-x-auto">
-      <table className="min-w-[1150px] w-full text-xs">
-        <thead>
-          <tr className="bg-[#f0f0f0] border-b border-gray-300">
-            {['Order #', 'Customer (Name + ID)', 'Project', 'Order Date', 'Amount', 'Status', showAction ? 'Action' : ''].filter(Boolean).map((h) => (
-              <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((o, idx) => {
-            const s = SO_STATUS[o.status] ?? SO_STATUS.draft
-            return (
-              <tr key={o.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                <td className="px-3 py-2 border-r border-gray-200 font-mono">{o.seqNo || '—'}</td>
-                <td className="px-3 py-2 border-r border-gray-200">{getCustomerDisplay(o.customerId || o.clientId || '—')}</td>
-                <td className="px-3 py-2 border-r border-gray-200">{o.projectId ? getProjectName(o.projectId) : '—'}</td>
-                <td className="px-3 py-2 border-r border-gray-200">{formatDate(o.orderDate)}</td>
-                <td className="px-3 py-2 border-r border-gray-200 font-semibold">{formatMoney(o.totalAmount || 0)}</td>
-                <td className="px-3 py-2 border-r border-gray-200">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>                </td>
-                {showAction && (
-                  <td className="px-3 py-2">
-                    <Button size="sm" onClick={() => setSelected(o)} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
-                      <Truck className="h-3 w-3 mr-1" /> Deliver
-                    </Button>
-                  </td>
-                )}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
+  const columns: Column[] = [
+    { key: 'seqNo', label: 'Order #', width: '130px', render: v => <MonoCell value={v || '—'} /> },
+    {
+      key: 'customerId',
+      label: 'Customer',
+      render: (_v, r) => <span className="text-sm font-medium">{getCustomerDisplay(r.customerId || r.clientId || '')}</span>,
+    },
+    {
+      key: 'projectId',
+      label: 'Project',
+      render: v => <span className="text-sm text-muted-foreground">{v ? getProjectName(v) : '—'}</span>,
+    },
+    { key: 'orderDate', label: 'Order Date', width: '110px', render: v => <DateCell value={v} /> },
+    { key: 'totalAmount', label: 'Amount', width: '120px', align: 'right', render: v => <AmountCell value={v || 0} /> },
+    { key: 'status', label: 'Status', width: '120px', render: v => <ErpBadge status={String(v)} /> },
+  ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Delivery Order"
         subtitle="Process and track sales order deliveries"
@@ -138,79 +104,80 @@ export default function DeliveryOrderPage() {
         <StatCard label="Total Orders"      value={stats.total}     icon={<Truck        className="h-5 w-5" />} variant="blue" />
       </StatsRow>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-4 bg-muted p-1 rounded-lg w-fit">
         {(['pending', 'delivered'] as const).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === tab ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === tab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
             {tab === 'pending' ? `Pending (${stats.pending})` : `Delivered (${stats.delivered})`}
           </button>
         ))}
       </div>
 
-      <Card className="shadow-sm border">
-        <CardHeader className="py-4 px-6 border-b">
-          <CardTitle className="text-base font-semibold text-gray-800">
-            {activeTab === 'pending' ? 'Orders Awaiting Delivery' : 'Delivered Orders'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-16 text-gray-400 text-sm">Loading…</div>
-          ) : (activeTab === 'pending' ? pending : delivered).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <Truck className="h-10 w-10 mb-3 opacity-30" />
-              <p className="text-sm">{activeTab === 'pending' ? 'No orders pending delivery.' : 'No delivered orders yet.'}</p>
-            </div>
-          ) : (
-            <OrderTable orders={activeTab === 'pending' ? pending : delivered} showAction={activeTab === 'pending'} />
-          )}
-        </CardContent>
-      </Card>
+      <DataTable
+        data={rows}
+        columns={columns}
+        loading={loading}
+        title={activeTab === 'pending' ? 'All Pending Deliveries' : 'All Delivered Orders'}
+        searchable
+        searchPlaceholder="Search orders…"
+        emptyMessage={activeTab === 'pending' ? 'No orders pending delivery.' : 'No delivered orders yet.'}
+        pageSize={25}
+        actions={
+          activeTab === 'pending'
+            ? [{
+                label: 'Deliver',
+                icon: <Truck className="h-3.5 w-3.5" />,
+                onClick: (r: any) => setSelected(r),
+              }]
+            : undefined
+        }
+      />
 
-      {/* Delivery Confirmation Dialog */}
       <Dialog open={!!selected} onOpenChange={v => { if (!v) setSelected(null) }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
-              <div className="bg-blue-50 p-1.5 rounded-md"><Truck className="h-4 w-4 text-blue-600" /></div>
+              <div className="bg-primary/10 p-1.5 rounded-md"><Truck className="h-4 w-4 text-primary" /></div>
               Confirm Delivery
             </DialogTitle>
           </DialogHeader>
           {selected && (
             <form onSubmit={handleDeliver} className="space-y-5 pt-1">
-              {/* Order summary */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Order Details</p>
+              <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Order Details</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-start gap-2">
-                    <ArrowRight className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-400">Order #</p>
-                      <p className="text-sm font-semibold font-mono text-gray-800">{selected.seqNo || '—'}</p>
+                      <p className="text-xs text-muted-foreground">Order #</p>
+                      <p className="text-sm font-semibold font-mono">{selected.seqNo || '—'}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Building2 className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                    <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-400">Customer</p>
-                      <p className="text-sm font-medium text-gray-800">{getCustomerDisplay(selected.customerId || selected.clientId)}</p>
+                      <p className="text-xs text-muted-foreground">Customer</p>
+                      <p className="text-sm font-medium">{getCustomerDisplay(selected.customerId || selected.clientId)}</p>
                     </div>
                   </div>
                   {selected.projectId && (
                     <div className="flex items-start gap-2">
-                      <FolderKanban className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                      <FolderKanban className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                       <div>
-                        <p className="text-xs text-gray-400">Project</p>
-                        <p className="text-sm font-medium text-gray-800">{getProjectName(selected.projectId)}</p>
+                        <p className="text-xs text-muted-foreground">Project</p>
+                        <p className="text-sm font-medium">{getProjectName(selected.projectId)}</p>
                       </div>
                     </div>
                   )}
                   <div className="flex items-start gap-2">
-                    <DollarSign className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                    <DollarSign className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-xs text-gray-400">Order Amount</p>
-                      <p className="text-base font-bold text-gray-800">{formatMoney(selected.totalAmount)}</p>
+                      <p className="text-xs text-muted-foreground">Order Amount</p>
+                      <p className="text-base font-bold">{formatMoney(selected.totalAmount)}</p>
                     </div>
                   </div>
                 </div>

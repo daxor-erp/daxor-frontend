@@ -1,17 +1,15 @@
 'use client'
 
 import { useQuery, useMutation } from '@apollo/client'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_PRODUCTION_PLANNINGS, CREATE_PRODUCTION_PLANNING, UPDATE_PRODUCTION_PLANNING, DELETE_PRODUCTION_PLANNING, GET_PROJECTS, GET_USERS } from '@/gql/queries'
-import { Trash2, Edit, X, Save, FolderKanban, Plus, Minus } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
-import { StatusBadge } from '@/components/ui/status-badge'
-import { formatMoney } from '@/lib/format-money'
+import { Trash2, Edit, X, Save, FolderKanban, Plus, Minus, CheckCircle2, Clock, CircleDollarSign } from 'lucide-react'
 
 const EMPTY_FORM = {
   docDate: new Date().toISOString().split('T')[0],
@@ -148,27 +146,51 @@ export default function ProductionPlanningPage() {
   const projects = projectsData?.projects || []
   const users = usersData?.usersByOrganization?.users || []
 
+  const stats = useMemo(() => {
+    const draft = items.filter((r: any) => String(r.status).toUpperCase() === 'DRAFT').length
+    const active = items.filter((r: any) => String(r.status).toUpperCase() === 'ACTIVE').length
+    const totalBudget = items.reduce((s: number, r: any) => s + Number(r.budget ?? 0), 0)
+    return { draft, active, totalBudget }
+  }, [items])
+
   const columns: Column[] = [
-    { key: 'docNumber', label: 'Doc #', width: '150px', render: v => <span className="font-mono text-xs">{v}</span> },
-    { key: 'docDate', label: 'Date', width: '110px', render: v => v ? formatDate(v) : '—' },
-    { key: 'progress', label: 'Progress', width: '100px', render: v => <span>{v || 0}%</span> },
-    { key: 'budget', label: 'Budget', width: '120px', render: v => v ? formatMoney(v) : '—' },
-    { key: 'actualCost', label: 'Actual Cost', width: '120px', render: v => v ? formatMoney(v) : '—' },
-    { key: 'status', label: 'Status', width: '100px', render: (v) => <StatusBadge status={String(v)} /> },
+    { key: 'docNumber', label: 'Doc #', width: '150px', render: (v) => <MonoCell value={v} /> },
+    { key: 'docDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'progress', label: 'Progress', width: '100px', render: (v) => <span className="text-sm tabular-nums">{v || 0}%</span> },
+    { key: 'budget', label: 'Budget', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'actualCost', label: 'Actual Cost', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'status', label: 'Status', width: '100px', render: (v) => <ErpBadge status={String(v)} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Production Planning</h1>
-        <p className="text-gray-500">Manage production planning with tasks and milestones</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Production Planning"
+        subtitle="Manage production planning with tasks and milestones"
+        icon={<FolderKanban className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Production' }, { label: 'Planning' }]}
+        actions={
+          <Button
+            onClick={() => { reset(); setEditing(null); setAdding(true) }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> New Plan
+          </Button>
+        }
+      />
+
+      <StatsRow cols={4}>
+        <StatCard label="Total Plans" value={items.length} icon={<FolderKanban className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft" value={stats.draft} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Active" value={stats.active} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Total Budget" value={`₹${(stats.totalBudget / 1000).toFixed(1)}k`} icon={<CircleDollarSign className="h-5 w-5" />} variant="rose" />
+      </StatsRow>
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-card border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editing ? 'Edit Record' : 'New Record'}</span>
-            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-4">
             <div className="grid grid-cols-3 gap-3">
@@ -189,7 +211,7 @@ export default function ProductionPlanningPage() {
                 <Button size="sm" variant="outline" onClick={addTask} className="h-6 text-xs"><Plus className="h-3 w-3 mr-1" />Add Task</Button>
               </div>
               {form.tasks.map((task: any, idx: number) => (
-                <div key={idx} className="grid grid-cols-6 gap-2 mb-2 p-2 bg-gray-50 rounded">
+                <div key={idx} className="grid grid-cols-6 gap-2 mb-2 p-2 bg-muted/40 rounded">
                   <InputFloating label="Task Name" value={task.name} onChange={e => updateTask(idx, 'name', e.target.value)} className="h-6 text-xs" />
                   <SelectFloating label="Assigned To" value={task.assignedTo} onChange={e => updateTask(idx, 'assignedTo', typeof e === 'string' ? e : e.target.value)} options={[{ value: '', label: 'None' }, ...users.map((u: any) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` }))]} className="h-6 text-xs" />
                   <SelectFloating label="Status" value={task.status} onChange={e => updateTask(idx, 'status', typeof e === 'string' ? e : e.target.value)} options={[{ value: 'pending', label: 'Pending' }, { value: 'in-progress', label: 'In Progress' }, { value: 'completed', label: 'Completed' }, { value: 'blocked', label: 'Blocked' }]} className="h-6 text-xs" />
@@ -206,7 +228,7 @@ export default function ProductionPlanningPage() {
                 <Button size="sm" variant="outline" onClick={addMilestone} className="h-6 text-xs"><Plus className="h-3 w-3 mr-1" />Add Milestone</Button>
               </div>
               {form.milestones.map((milestone: any, idx: number) => (
-                <div key={idx} className="grid grid-cols-4 gap-2 mb-2 p-2 bg-gray-50 rounded">
+                <div key={idx} className="grid grid-cols-4 gap-2 mb-2 p-2 bg-muted/40 rounded">
                   <InputFloating label="Milestone Name" value={milestone.name} onChange={e => updateMilestone(idx, 'name', e.target.value)} className="h-6 text-xs" />
                   <InputFloating label="Description" value={milestone.description} onChange={e => updateMilestone(idx, 'description', e.target.value)} className="h-6 text-xs" />
                   <InputFloating label="Due Date" type="date" value={milestone.dueDate} onChange={e => updateMilestone(idx, 'dueDate', e.target.value)} className="h-6 text-xs" />
@@ -217,7 +239,7 @@ export default function ProductionPlanningPage() {
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" size="sm" onClick={() => { setAdding(false); setEditing(null); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[110px]">
+              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[110px]">
                 <Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving…' : editing ? 'Update' : 'Save'}
               </Button>
             </div>
@@ -229,16 +251,15 @@ export default function ProductionPlanningPage() {
         data={items}
         columns={columns}
         loading={loading}
-        title="All Records"
-        onAdd={() => { reset(); setAdding(true) }}
-        addLabel="New Record"
+        title="All Production Plans"
         searchable
-        searchPlaceholder="Search records..."
-        emptyMessage="No records yet. Click 'New Record' to create one."
+        searchPlaceholder="Search plans…"
+        emptyMessage="No production plans found."
+        pageSize={25}
         onRowClick={handleEdit}
         actions={[
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this record?')) deleteRecord({ variables: { id: row.id } }) }, variant: 'ghost' },
+          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: (row) => handleEdit(row) },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: (row) => { if (confirm('Delete this record?')) deleteRecord({ variables: { id: row.id } }) } },
         ]}
       />
     </div>

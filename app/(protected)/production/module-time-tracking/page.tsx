@@ -26,10 +26,10 @@ export default function ModuleTimeTrackingPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Module Wise Time Tracking</h1>
-        <p className="text-gray-500">Track time spent on production modules</p>
+        <h1 className="erp-page-title">Module Wise Time Tracking</h1>
+        <p className="erp-page-desc">Track time spent on production modules</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -39,7 +39,7 @@ export default function ModuleTimeTrackingPage() {
           { label: 'Completed', value: plans.filter((p: any) => p.status === 'COMPLETED').length, icon: Clock },
         ].map(({ label, value, icon: Icon }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className="p-2 rounded-md bg-blue-50"><Icon className="h-4 w-4 text-blue-600" /></div>
+            <div className="p-2 rounded-md bg-primary/10"><Icon className="h-4 w-4 text-primary" /></div>
             <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
           </div>
         ))}
@@ -70,12 +70,12 @@ export default function ModuleTimeTrackingPage() {
                     <td className="p-2">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
-                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${plan.progress || 0}%` }} />
+                          <div className="bg-primary h-2 rounded-full" style={{ width: `${plan.progress || 0}%` }} />
                         </div>
                         <span>{plan.progress || 0}%</span>
                       </div>
                     </td>
-                    <td className="p-2"><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">{plan.status}</span></td>
+                    <td className="p-2"><span className="px-2 py-0.5 bg-primary/10 text-primary rounded">{plan.status}</span></td>
                   </tr>
                 ))}
               </tbody>

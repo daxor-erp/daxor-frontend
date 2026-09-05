@@ -143,7 +143,7 @@ export default function ProductionOverviewPage() {
   }, [workOrders])
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       {/* Hero */}
       <div className="relative overflow-hidden rounded-2xl bg-grad-hero text-white elev-2">
         <div className="absolute inset-0 bg-dotgrid opacity-[0.1]" />
@@ -157,7 +157,7 @@ export default function ProductionOverviewPage() {
               <Factory className="h-3 w-3" />
               Production Management
             </div>
-            <h1 className="mt-3 text-2xl sm:text-3xl lg:text-[34px] font-bold tracking-tight">
+            <h1 className="erp-page-title">
               Shop floor & manufacturing
             </h1>
             <p className="mt-1.5 text-sm text-white/85">
@@ -167,7 +167,7 @@ export default function ProductionOverviewPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               href="/production-planning"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-white/90 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-white/90 transition-colors"
             >
               New production plan
             </Link>
@@ -344,7 +344,7 @@ export default function ProductionOverviewPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="erp-table">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground border-b">
                   <th className="px-5 py-3 font-medium">Doc #</th>

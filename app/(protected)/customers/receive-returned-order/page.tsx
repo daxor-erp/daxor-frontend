@@ -96,9 +96,9 @@ export default function ReceiveReturnedOrderPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-[1000px]">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
+        <h1 className="erp-page-title flex items-center gap-2">
           <PackageCheck className="h-8 w-8 text-teal-700" />
           Receive Returned Order
         </h1>

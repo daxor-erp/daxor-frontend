@@ -63,7 +63,8 @@ export async function fetchInventoryQtyByItemName(
 
 export async function createReceivedPoViaApi(
   request: APIRequestContext,
-  token: string,
+  submitterToken: string,
+  approverToken: string,
   organizationId: string,
   vendorId: string,
   totalAmount: number,
@@ -82,36 +83,46 @@ export async function createReceivedPoViaApi(
         items: [
           {
             itemDescription: 'E2E PO line',
+            productName: 'E2E PO line',
             quantity: 1,
             unitPrice: totalAmount,
-            lineTotal: totalAmount,
           },
         ],
-        subtotal: totalAmount,
-        taxAmount: 0,
-        totalAmount,
       },
     },
-    token,
+    submitterToken,
   )
   const poId = created.createPurchaseOrder.id
   await gql(
     request,
+    `mutation($id: ID!) { markPurchaseOrderRfqSent(id: $id) { id status } }`,
+    { id: poId },
+    submitterToken,
+  )
+  await gql(
+    request,
     `mutation($id: ID!) { submitPurchaseOrder(id: $id) { id status } }`,
     { id: poId },
-    token,
+    submitterToken,
   )
+  // Approver must differ from submitter (segregation of duties).
   await gql(
     request,
     `mutation($id: ID!) { approvePurchaseOrder(id: $id) { id status } }`,
     { id: poId },
-    token,
+    approverToken,
+  )
+  await gql(
+    request,
+    `mutation($id: ID!) { confirmPurchaseOrder(id: $id) { id status } }`,
+    { id: poId },
+    approverToken,
   )
   await gql(
     request,
     `mutation($id: ID!) { receivePurchaseOrder(id: $id) { id status } }`,
     { id: poId },
-    token,
+    approverToken,
   )
   return { poId, seqNo: created.createPurchaseOrder.seqNo }
 }

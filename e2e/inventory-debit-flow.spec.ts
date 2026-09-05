@@ -35,6 +35,7 @@ test.describe('Inventory & debit note extensions', () => {
   const vendorName = `E2E Vendor DN ${tag}`
 
   let orgAdminToken = ''
+  let purchaseToken = ''
   let orgId = ''
   let vendorId = ''
   let grnId = ''
@@ -52,6 +53,13 @@ test.describe('Inventory & debit note extensions', () => {
     orgAdminToken = session.token
     orgId = session.organizationId
     vendorId = await ensureVendor(request, orgAdminToken, orgId, vendorName)
+
+    const purchaseEmail = process.env.E2E_USER_PURCHASE_EMAIL
+    const purchasePassword = process.env.E2E_USER_PURCHASE_PASSWORD
+    if (!purchaseEmail || !purchasePassword) {
+      test.skip(true, 'Set E2E_USER_PURCHASE_* in .env.e2e.local')
+    }
+    purchaseToken = (await apiLogin(request, purchaseEmail, purchasePassword)).token
   })
 
   test.beforeEach(async ({ page }) => {
@@ -92,6 +100,7 @@ test.describe('Inventory & debit note extensions', () => {
   test('03 — vendor debit note on received PO', async ({ request }) => {
     const po = await createReceivedPoViaApi(
       request,
+      purchaseToken,
       orgAdminToken,
       orgId,
       vendorId,

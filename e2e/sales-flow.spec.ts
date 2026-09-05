@@ -106,7 +106,7 @@ test.describe('Sales flow (flows/sales-flow.pdf)', () => {
   // PDF: Create Sales Quotation
   test('03 — create quotation', async ({ page }) => {
     await page.goto('/quotations')
-    await page.getByRole('button', { name: /New quotation/i }).click()
+    await page.getByRole('button', { name: /New quotation/i }).first().click()
     await fillQuotationForm(page, { subject: quotationSubject, customerId })
     await saveQuotation(page)
     await expect(page.getByText(quotationSubject).first()).toBeVisible()
@@ -294,7 +294,6 @@ test.describe('Sales flow (flows/sales-flow.pdf)', () => {
       { path: '/sales/issue-credit-memos', heading: /Credit Memo/i },
       { path: '/sales-returns', heading: /Sales Return/i },
       { path: '/sales/project', heading: /Project/i },
-      { path: '/customers', heading: /Customer/i },
     ]
     for (const { path, heading } of routes) {
       await page.goto(path)
@@ -303,5 +302,9 @@ test.describe('Sales flow (flows/sales-flow.pdf)', () => {
         timeout: 25_000,
       })
     }
+    // /customers uses ErpListPage without an h1
+    await page.goto('/customers')
+    await expect(page).not.toHaveURL(/\/login/)
+    await expect(page.getByRole('button', { name: /New customer/i })).toBeVisible({ timeout: 25_000 })
   })
 })

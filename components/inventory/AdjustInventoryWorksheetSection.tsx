@@ -176,25 +176,25 @@ export function AdjustInventoryWorksheetSection({ organizationId: orgId, warehou
                 '2rem minmax(8rem,1.2fr) 5.5rem 5.5rem 4rem 4.5rem 2rem',
             }}
           >
-            <div className="px-2 py-2 font-semibold text-gray-600 bg-[#f0f0f0] border-b border-r border-gray-300">
+            <div className="px-2 py-2 font-semibold text-gray-600 bg-muted/70 border-b border-r border-gray-300">
               #
             </div>
-            <div className="px-2 py-2 font-semibold text-gray-600 bg-[#f0f0f0] border-b border-r border-gray-300">
+            <div className="px-2 py-2 font-semibold text-gray-600 bg-muted/70 border-b border-r border-gray-300">
               Item / description
             </div>
-            <div className="px-2 py-2 font-semibold text-gray-600 bg-[#f0f0f0] border-b border-r border-gray-300 text-right">
+            <div className="px-2 py-2 font-semibold text-gray-600 bg-muted/70 border-b border-r border-gray-300 text-right">
               Book qty
             </div>
-            <div className="px-2 py-2 font-semibold text-gray-600 bg-[#f0f0f0] border-b border-r border-gray-300 text-right">
+            <div className="px-2 py-2 font-semibold text-gray-600 bg-muted/70 border-b border-r border-gray-300 text-right">
               Count qty
             </div>
-            <div className="px-2 py-2 font-semibold text-gray-600 bg-[#f0f0f0] border-b border-r border-gray-300 text-right">
+            <div className="px-2 py-2 font-semibold text-gray-600 bg-muted/70 border-b border-r border-gray-300 text-right">
               Var
             </div>
-            <div className="px-2 py-2 font-semibold text-gray-600 bg-[#f0f0f0] border-b border-r border-gray-300">
+            <div className="px-2 py-2 font-semibold text-gray-600 bg-muted/70 border-b border-r border-gray-300">
               Unit
             </div>
-            <div className="px-2 py-2 font-semibold text-gray-600 bg-[#f0f0f0] border-b border-gray-300" />
+            <div className="px-2 py-2 font-semibold text-gray-600 bg-muted/70 border-b border-gray-300" />
 
             {lines.map((line, idx) => (
               <div key={idx} className="contents">
@@ -268,14 +268,14 @@ export function AdjustInventoryWorksheetSection({ organizationId: orgId, warehou
           <button
             type="button"
             onClick={addLine}
-            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+            className="flex items-center gap-1 text-xs text-primary hover:text-primary"
           >
             <Plus className="h-3.5 w-3.5" /> Add worksheet row
           </button>
           <Button
             type="button"
             size="sm"
-            className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+            className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
             disabled={saving}
             onClick={handleSubmit}
           >

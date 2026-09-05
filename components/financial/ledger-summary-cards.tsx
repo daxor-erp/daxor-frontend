@@ -56,7 +56,7 @@ export function LedgerSummaryCards({
           ? `Credits match (double-entry) · ${debitBreakdown}`
           : debitBreakdown,
         icon: ArrowDownLeft,
-        cls: 'text-blue-600 bg-blue-50',
+        cls: 'text-primary bg-primary/10',
       },
       ...(totalsMatch
         ? []
@@ -66,7 +66,7 @@ export function LedgerSummaryCards({
               value: formatMoney(journalCredit),
               sub: creditBreakdown,
               icon: ArrowUpRight,
-              cls: 'text-indigo-600 bg-indigo-50',
+              cls: 'text-primary bg-primary/10',
             },
           ]),
       {
@@ -107,7 +107,7 @@ export function LedgerSummaryCards({
       value: formatMoney(journalDebit),
       sub: debitBreakdown,
       icon: ArrowDownLeft,
-      cls: 'text-blue-600 bg-blue-50',
+      cls: 'text-primary bg-primary/10',
     },
     {
       label: 'Credit side (journal)',
@@ -116,7 +116,7 @@ export function LedgerSummaryCards({
         ? `Equals debits (balanced books) · ${creditBreakdown}`
         : creditBreakdown,
       icon: ArrowUpRight,
-      cls: 'text-indigo-600 bg-indigo-50',
+      cls: 'text-primary bg-primary/10',
     },
     {
       label: 'Open receivable',

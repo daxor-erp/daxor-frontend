@@ -39,8 +39,8 @@ const CREDIT_REASONS = [
 
 const INV_STATUS: Record<string, { label: string; cls: string }> = {
   draft:          { label: 'Draft',         cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  approved:       { label: 'Approved',      cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  sent:           { label: 'Sent',          cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  approved:       { label: 'Approved',      cls: 'bg-primary/10 text-primary border-primary/20' },
+  sent:           { label: 'Sent',          cls: 'bg-primary/10 text-primary border-primary/20' },
   partially_paid: { label: 'Partial',       cls: 'bg-amber-50 text-amber-700 border-amber-200' },
   paid:           { label: 'Paid',          cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   overdue:        { label: 'Overdue',       cls: 'bg-red-50 text-red-700 border-red-200' },
@@ -170,18 +170,18 @@ export default function IssueCreditMemosPage() {
 
   return (
     
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div className="flex justify-between items-center mb-5">
         <div>
-          <h1 className="text-3xl font-bold">Issue Credit Memos</h1>
-          <p className="text-gray-500">Issue credit memos against customer invoices</p>
+          <h1 className="erp-page-title">Issue Credit Memos</h1>
+          <p className="erp-page-desc">Issue credit memos against customer invoices</p>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Eligible Invoices', value: stats.eligible,      icon: FileText,    color: 'text-blue-600',   bg: 'bg-blue-50',  fmt: (v: number) => String(v) },
+          { label: 'Eligible Invoices', value: stats.eligible,      icon: FileText,    color: 'text-primary',   bg: 'bg-primary/10',  fmt: (v: number) => String(v) },
           { label: 'Credits Issued',    value: stats.issued,        icon: FileMinus,   color: 'text-rose-600',   bg: 'bg-rose-50',  fmt: (v: number) => String(v) },
           { label: 'Total Credited',    value: stats.totalCredited, icon: DollarSign,  color: 'text-amber-600',  bg: 'bg-amber-50', fmt: (v: number) => formatMoney(v) },
         ].map(({ label, value, icon: Icon, color, bg, fmt }) => (
@@ -190,7 +190,7 @@ export default function IssueCreditMemosPage() {
               <div className={`${bg} p-2 rounded-lg`}><Icon className={`h-5 w-5 ${color}`} /></div>
               <div>
                 <p className="text-xs text-gray-500">{label}</p>
-                <p className="text-xl font-bold text-gray-800">{fmt(value)}</p>
+                <p className="erp-page-title">{fmt(value)}</p>
               </div>
             </CardContent>
           </Card>

@@ -63,21 +63,21 @@ export default function ManualEntryPage() {
   }, [])
 
   if (!orgId) {
-    return <p className="text-sm text-gray-500">Select an organization to use data preparation.</p>
+    return <p className="erp-page-desc">Select an organization to use data preparation.</p>
   }
 
   if (!ready) {
-    return <p className="text-sm text-gray-500">Loading sheet…</p>
+    return <p className="erp-page-desc">Loading sheet…</p>
   }
 
   return (
-    <div className="space-y-4">
+    <div className="erp-shell">
       <div>
         <div className="flex items-center gap-2 text-slate-600 mb-1">
           <Briefcase className="h-6 w-6" />
           <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Data preparation</span>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">Manual entry</h1>
+        <h1 className="erp-page-title">Manual entry</h1>
         <p className="text-gray-500 mt-1 max-w-2xl">
           Enter adjustments, allowances, or hours when you do not have machine exports. UoM ties the number to
           hours, days, or currency, depending on your pay rules.

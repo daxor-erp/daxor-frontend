@@ -12,6 +12,7 @@ import {
 } from './helpers/accounting-api'
 import {
   ensureVendor,
+  ensureVendorBankForPayments,
   createAndApproveVendorBillViaApi,
   payVendorBillViaApi,
 } from './helpers/payables-api'
@@ -42,6 +43,7 @@ test.describe('Payables flow (purchases-payables-flow.pdf)', () => {
     orgAdminToken = session.token
     orgId = session.organizationId
     vendorId = await ensureVendor(request, orgAdminToken, orgId, vendorName)
+    await ensureVendorBankForPayments(request, orgAdminToken, orgId, vendorId, tag)
   })
 
   test.beforeEach(async ({ page }) => {

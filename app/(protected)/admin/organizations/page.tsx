@@ -9,7 +9,8 @@ import {
   CREATE_ORGANIZATION,
   CREATE_USER,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { DataTable, type Column } from '@/components/DataTable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,17 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Building2, Search, Pencil, Trash2, CheckCircle2, AlertCircle, Plus, UserPlus } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
+import { Building2, Pencil, Trash2, CheckCircle2, AlertCircle, Plus, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const STATUS_TONE: Record<string, string> = {
-  ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-  SUSPENDED: 'bg-rose-50 text-rose-700 border-rose-200',
-  INACTIVE: 'bg-slate-100 text-slate-700 border-slate-200',
-  DELETED: 'bg-rose-50 text-rose-700 border-rose-200',
-}
 
 interface OrgRow {
   id: string
@@ -56,7 +48,6 @@ interface OrgRow {
 }
 
 export default function AdminOrganizationsPage() {
-  const [search, setSearch] = useState('')
   const [creatingOrg, setCreatingOrg] = useState(false)
   const [addingAdminFor, setAddingAdminFor] = useState<OrgRow | null>(null)
   const [editing, setEditing] = useState<OrgRow | null>(null)
@@ -99,17 +90,6 @@ export default function AdminOrganizationsPage() {
   })
 
   const orgs: OrgRow[] = data?.organizations ?? []
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return orgs
-    return orgs.filter(
-      (o) =>
-        (o.name || '').toLowerCase().includes(q) ||
-        (o.code || '').toLowerCase().includes(q) ||
-        (o.email || '').toLowerCase().includes(q),
-    )
-  }, [orgs, search])
-
   const stats = useMemo(() => {
     const total = orgs.length
     const active = orgs.filter((o) => String(o.status).toUpperCase() === 'ACTIVE').length
@@ -118,23 +98,39 @@ export default function AdminOrganizationsPage() {
     return { total, active, pending, suspended }
   }, [orgs])
 
+  const columns: Column[] = [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (v) => <span className="text-sm font-medium">{v}</span>,
+    },
+    { key: 'code', label: 'Code', width: '110px', render: (v) => <MonoCell value={v || '—'} /> },
+    { key: 'email', label: 'Email', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'phone', label: 'Phone', width: '120px', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'createdAt', label: 'Created', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'status', label: 'Status', width: '110px', render: (v) => <ErpBadge status={String(v)} /> },
+  ]
+
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <PageHeader
-          title="Organizations"
-          description="Manage tenant organizations across the platform. Create an organization, then add its admin."
-        />
-        <Button onClick={() => setCreatingOrg(true)} className="bg-grad-brand text-white border-none gap-1.5 mt-1 shrink-0">
-          <Plus className="h-4 w-4" />
-          New organization
-        </Button>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Organizations"
+        subtitle="Manage tenant organizations across the platform. Create an organization, then add its admin."
+        icon={<Building2 className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Admin' }, { label: 'Organizations' }]}
+        actions={
+          <Button onClick={() => setCreatingOrg(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5">
+            <Plus className="h-4 w-4" />
+            New organization
+          </Button>
+        }
+      />
 
       {banner && (
         <div
           className={cn(
-            'flex items-center gap-2 rounded-xl border px-4 py-3 text-sm',
+            'flex items-center gap-2 rounded-xl border px-4 py-3 text-sm mb-4',
             banner.ok
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
               : 'bg-rose-50 border-rose-200 text-rose-800',
@@ -145,110 +141,41 @@ export default function AdminOrganizationsPage() {
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Total" value={stats.total} tone="brand" />
-        <StatTile label="Active" value={stats.active} tone="emerald" />
-        <StatTile label="Pending" value={stats.pending} tone="warn" />
-        <StatTile label="Suspended" value={stats.suspended} tone="rose" />
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total" value={stats.total} icon={<Building2 className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Active" value={stats.active} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Pending" value={stats.pending} icon={<AlertCircle className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Suspended" value={stats.suspended} icon={<AlertCircle className="h-5 w-5" />} variant="rose" />
+      </StatsRow>
 
-      <SectionCard
-        title="All organizations"
-        description={`${filtered.length} of ${orgs.length} shown`}
-        action={
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, code, email…"
-              className="rounded-lg border border-border bg-secondary/40 py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary w-64"
-            />
-          </div>
-        }
-        bodyClassName="p-0"
-      >
-        {loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">
-            {search ? 'No organizations match your search.' : 'No organizations yet.'}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground border-b">
-                  <th className="px-5 py-3 font-medium">Name</th>
-                  <th className="px-3 py-3 font-medium">Code</th>
-                  <th className="px-3 py-3 font-medium">Email</th>
-                  <th className="px-3 py-3 font-medium">Phone</th>
-                  <th className="px-3 py-3 font-medium">Created</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((o) => (
-                  <tr key={o.id} className="border-b last:border-0 hover:bg-secondary/30 transition-colors">
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-grad-brand text-white grid place-items-center font-semibold text-xs uppercase shrink-0">
-                          {(o.name || '?').slice(0, 2)}
-                        </div>
-                        <span className="font-medium">{o.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 font-mono text-xs text-muted-foreground">{o.code || '—'}</td>
-                    <td className="px-3 py-3 text-xs">{o.email || '—'}</td>
-                    <td className="px-3 py-3 text-xs">{o.phone || '—'}</td>
-                    <td className="px-3 py-3 text-xs text-muted-foreground">{formatDate(o.createdAt)}</td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={cn(
-                          'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase',
-                          STATUS_TONE[String(o.status).toUpperCase()] || STATUS_TONE.INACTIVE,
-                        )}
-                      >
-                        {o.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setAddingAdminFor(o)}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-primary hover:bg-primary-soft"
-                          aria-label={`Add admin to ${o.name}`}
-                        >
-                          <UserPlus className="h-3 w-3" />
-                          Add admin
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditing(o)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary"
-                          aria-label={`Edit ${o.name}`}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleting(o)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-rose-600 hover:bg-rose-50"
-                          aria-label={`Delete ${o.name}`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <DataTable
+        data={orgs}
+        columns={columns}
+        loading={loading}
+        title="All Organizations"
+        searchable
+        searchPlaceholder="Search by name, code, email…"
+        emptyMessage="No organizations yet."
+        pageSize={25}
+        onRowClick={(o) => setEditing(o)}
+        actions={[
+          {
+            label: 'Add admin',
+            icon: <UserPlus className="h-3.5 w-3.5" />,
+            onClick: (o) => setAddingAdminFor(o),
+          },
+          {
+            label: 'Edit',
+            icon: <Pencil className="h-3.5 w-3.5" />,
+            onClick: (o) => setEditing(o),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (o) => setDeleting(o),
+          },
+        ]}
+      />
 
       <CreateOrgDialog
         open={creatingOrg}
@@ -291,34 +218,6 @@ export default function AdminOrganizationsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  )
-}
-
-function StatTile({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: number
-  tone: 'brand' | 'emerald' | 'warn' | 'rose'
-}) {
-  const toneCls: Record<string, string> = {
-    brand: 'bg-primary-soft text-primary',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    warn: 'bg-amber-50 text-amber-600',
-    rose: 'bg-rose-50 text-rose-600',
-  }
-  return (
-    <div className="rounded-xl border bg-card p-4 flex items-center gap-3">
-      <div className={cn('rounded-lg p-2.5', toneCls[tone])}>
-        <Building2 className="h-5 w-5" />
-      </div>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-xl font-bold tabular-nums">{value}</p>
-      </div>
     </div>
   )
 }
@@ -407,7 +306,6 @@ function EditOrgDialog({
           <Button
             disabled={saving}
             onClick={() => onSave({ name: form.name, email: form.email, phone: form.phone, status: form.status, allowSubTenants: form.allowSubTenants })}
-            className="bg-grad-brand text-white border-none"
           >
             {saving ? 'Saving…' : 'Save changes'}
           </Button>
@@ -488,7 +386,6 @@ function CreateOrgDialog({
               if (form.contactPerson.trim()) input.contactPerson = form.contactPerson.trim()
               onSave(input)
             }}
-            className="bg-grad-brand text-white border-none"
           >
             {saving ? 'Creating…' : 'Create organization'}
           </Button>
@@ -549,7 +446,6 @@ function AddOrgAdminDialog({
           <Button
             disabled={saving || !form.email || !form.firstName || !form.lastName || !form.password}
             onClick={() => onSave({ email: form.email.trim(), firstName: form.firstName.trim(), lastName: form.lastName.trim(), password: form.password })}
-            className="bg-grad-brand text-white border-none"
           >
             {saving ? 'Creating…' : 'Create admin'}
           </Button>

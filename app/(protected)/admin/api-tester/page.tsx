@@ -95,7 +95,7 @@ export default function ApiTesterPage() {
   const orgId = user?.organizationId ?? ''
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="API Tester"
         description="Run GraphQL queries, hit REST endpoints, and check the health of every backend operation — all from inside Daxor."
@@ -244,7 +244,7 @@ function GraphQLConsole({ orgId }: { orgId: string }) {
           title={activePreset.name}
           description={`${activePreset.group} · ${graphqlUrl()}`}
           action={
-            <Button onClick={run} disabled={running} className="bg-grad-brand text-white border-none gap-1.5">
+            <Button onClick={run} disabled={running} className="gap-1.5">
               {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               Run
             </Button>
@@ -438,7 +438,7 @@ function RestConsole() {
           <Label>URL</Label>
           <Input value={url} onChange={(e) => setUrl(e.target.value)} className="font-mono text-xs" />
         </div>
-        <Button onClick={run} disabled={running} className="bg-grad-brand text-white border-none gap-1.5 h-10">
+        <Button onClick={run} disabled={running} className="gap-1.5 h-10">
           {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
           Send
         </Button>
@@ -601,7 +601,7 @@ function HealthCheckPanel({ orgId }: { orgId: string }) {
                 className="w-14 rounded-md border border-input bg-background px-2 py-1 text-xs"
               />
             </label>
-            <Button onClick={runAll} disabled={running} className="bg-grad-brand text-white border-none gap-1.5">
+            <Button onClick={runAll} disabled={running} className="gap-1.5">
               {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {running ? 'Running…' : 'Run all'}
             </Button>

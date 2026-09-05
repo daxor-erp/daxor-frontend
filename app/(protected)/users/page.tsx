@@ -17,9 +17,9 @@ export default function UsersPage() {
   })
 
   return (
-    <div className="p-8">
+    <div className="erp-shell">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Users</h1>
+        <h1 className="erp-page-title">Users</h1>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
           New User

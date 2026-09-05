@@ -75,7 +75,7 @@ function stageBadgeClass(stage: RunStage): string {
     case 'INITIALIZED':
       return 'bg-slate-50 text-slate-800 border-slate-200'
     case 'POOL_LOCKED':
-      return 'bg-indigo-50 text-indigo-900 border-indigo-200'
+      return 'bg-primary/10 text-indigo-900 border-primary/20'
     case 'CALCULATED':
       return 'bg-sky-50 text-sky-900 border-sky-200'
     case 'UNDER_REVIEW':
@@ -290,21 +290,21 @@ export default function PayrollRunsWorkflowPage() {
   )
 
   if (!orgId) {
-    return <p className="text-sm text-gray-500">Select an organization to drive payroll workflow runs.</p>
+    return <p className="erp-page-desc">Select an organization to drive payroll workflow runs.</p>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="erp-shell">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-slate-600 mb-1">
             <Gauge className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Workflow</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Payroll runs</h1>
+          <h1 className="erp-page-title">Payroll runs</h1>
           <p className="text-gray-500 mt-1">
             Operational workflow for locking the{' '}
-            <Link href="/payroll/workflow/timesheet-pool" className="text-blue-600 hover:underline">
+            <Link href="/payroll/workflow/timesheet-pool" className="text-primary hover:underline">
               timesheet pool
             </Link>
             , calculating pay, approving, and posting. Distinct refs from Payroll management (
@@ -331,7 +331,7 @@ export default function PayrollRunsWorkflowPage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
           <p className="text-xs font-semibold uppercase text-slate-500">New / initialized</p>
-          <p className="text-2xl font-bold tabular-nums text-slate-900">{funnel.openRun}</p>
+          <p className="text-2xl font-bold tabular-nums text-foreground">{funnel.openRun}</p>
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50/70 px-4 py-3">
           <p className="text-xs font-semibold uppercase text-amber-900">In progress</p>
@@ -355,12 +355,12 @@ export default function PayrollRunsWorkflowPage() {
       ) : null}
 
       {open ? (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">
               {editingId ? 'Edit workflow run' : 'New workflow run'}
             </span>
-            <button type="button" onClick={closeDialog} className="text-blue-200 hover:text-white" aria-label="Close">
+            <button type="button" onClick={closeDialog} className="text-primary-foreground/80 hover:text-white" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -444,14 +444,14 @@ export default function PayrollRunsWorkflowPage() {
               className="text-xs min-h-[56px]"
             />
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={closeDialog} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={closeDialog}>
                 Cancel
               </Button>
               <Button
                 size="sm"
                 onClick={submit}
                 disabled={busy}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]"
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[100px]"
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {busy ? 'Saving…' : 'Save'}
@@ -490,7 +490,7 @@ export default function PayrollRunsWorkflowPage() {
                   <TableRow key={r.id} className="hover:bg-slate-50/60">
                     <TableCell className="font-mono text-sm font-semibold text-gray-800">{r.runRef}</TableCell>
                     <TableCell>
-                      <div className="text-sm text-gray-900">{r.title || '—'}</div>
+                      <div className="text-sm text-foreground">{r.title || '—'}</div>
                       <div className="text-xs text-gray-500">
                         {r.runOwnerLabel || 'No owner'} {r.linesExpected > 0 ? `· ${r.linesExpected} lines` : null}
                       </div>

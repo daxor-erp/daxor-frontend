@@ -92,7 +92,7 @@ export function WidgetBuilderPanel({ userId, orgId, page }: WidgetBuilderPanelPr
       {/* ── Builder prompt bar ─────────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-4 w-4 text-blue-500" />
+          <Sparkles className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-gray-700">AI Widget Builder</h2>
           <span className="ml-auto text-xs text-gray-400">Powered by Gemini</span>
         </div>
@@ -112,7 +112,7 @@ export function WidgetBuilderPanel({ userId, orgId, page }: WidgetBuilderPanelPr
           <Button
             onClick={handleGenerate}
             disabled={loading || !input.trim()}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 disabled:opacity-50"
+            className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg flex items-center gap-2 disabled:opacity-50"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {loading ? 'Generating…' : 'Generate'}
@@ -126,7 +126,7 @@ export function WidgetBuilderPanel({ userId, orgId, page }: WidgetBuilderPanelPr
               <button
                 key={s}
                 onClick={() => handleSuggestion(s)}
-                className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                className="text-xs px-2.5 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-primary/30 hover:text-primary hover:bg-primary/5 transition-colors"
               >
                 {s}
               </button>
@@ -136,11 +136,11 @@ export function WidgetBuilderPanel({ userId, orgId, page }: WidgetBuilderPanelPr
 
         {/* Loading state */}
         {loading && (
-          <div className="mt-4 flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-            <Loader2 className="h-5 w-5 text-blue-500 animate-spin flex-shrink-0" />
+          <div className="mt-4 flex items-center gap-3 p-4 bg-primary/10 rounded-lg">
+            <Loader2 className="h-5 w-5 text-primary animate-spin flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-blue-700">Building your widget…</p>
-              <p className="text-xs text-blue-500 mt-0.5">
+              <p className="text-sm font-medium text-primary">Building your widget…</p>
+              <p className="text-xs text-primary mt-0.5">
                 AI is querying your data and selecting the best chart type
               </p>
             </div>
@@ -163,15 +163,15 @@ export function WidgetBuilderPanel({ userId, orgId, page }: WidgetBuilderPanelPr
 
         {/* Preview state */}
         {preview && !loading && (
-          <div className="mt-4 border border-blue-200 rounded-xl overflow-hidden bg-blue-50/30">
+          <div className="mt-4 border border-primary/20 rounded-xl overflow-hidden bg-primary/10/30">
             {/* Preview header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-blue-50 border-b border-blue-100">
+            <div className="flex items-center justify-between px-4 py-3 bg-primary/10 border-b border-primary/15">
               <div className="flex items-center gap-2">
-                <span className="text-blue-500">{TYPE_ICONS[preview.type] ?? <BarChart2 className="h-3.5 w-3.5" />}</span>
-                <p className="text-sm font-semibold text-blue-700">{preview.title}</p>
-                <span className="text-xs text-blue-400 bg-blue-100 px-2 py-0.5 rounded-full">Preview</span>
+                <span className="text-primary">{TYPE_ICONS[preview.type] ?? <BarChart2 className="h-3.5 w-3.5" />}</span>
+                <p className="text-sm font-semibold text-primary">{preview.title}</p>
+                <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">Preview</span>
               </div>
-              <p className="text-xs text-blue-400 hidden sm:block">
+              <p className="text-xs text-primary hidden sm:block">
                 "{currentPrompt}"
               </p>
             </div>
@@ -182,7 +182,7 @@ export function WidgetBuilderPanel({ userId, orgId, page }: WidgetBuilderPanelPr
             </div>
 
             {/* Approve / Discard */}
-            <div className="flex items-center justify-end gap-3 px-4 py-3 bg-blue-50 border-t border-blue-100">
+            <div className="flex items-center justify-end gap-3 px-4 py-3 bg-primary/10 border-t border-primary/15">
               <button
                 onClick={discard}
                 className="flex items-center gap-1.5 px-3.5 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 hover:border-gray-300 bg-white rounded-lg transition-colors"

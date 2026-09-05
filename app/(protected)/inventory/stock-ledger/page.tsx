@@ -52,7 +52,7 @@ function movementTypeStyle(t: string): string {
   if (u === 'IN' || u === 'RECEIPT') return 'bg-emerald-50 text-emerald-800 border-emerald-200'
   if (u === 'OUT' || u === 'ISSUE') return 'bg-rose-50 text-rose-800 border-rose-200'
   if (u === 'ADJUSTMENT' || u === 'ADJUST') return 'bg-amber-50 text-amber-800 border-amber-200'
-  if (u === 'TRANSFER') return 'bg-blue-50 text-blue-800 border-blue-200'
+  if (u === 'TRANSFER') return 'bg-primary/10 text-primary border-primary/20'
   return 'bg-gray-50 text-gray-700 border-gray-200'
 }
 
@@ -205,7 +205,7 @@ export default function StockLedgerPage() {
   const topTypes = useMemo(() => Array.from(stats.byType.entries()).slice(0, 4), [stats.byType])
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Stock Ledger"
         subtitle="Chronological log of inventory movements — receipts, issues, adjustments, transfers"
@@ -234,7 +234,7 @@ export default function StockLedgerPage() {
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 text-xs"
+         
           disabled={!orgId || loading}
           onClick={() => void refetch()}
         >

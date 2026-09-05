@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { GET_DELIVERY_CHALLANS, CREATE_DELIVERY_CHALLAN, SUBMIT_DELIVERY_CHALLAN_FOR_APPROVAL } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { Button } from '@/components/ui/button'
-import { Plus, Save, X } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
+import { InputFloating } from '@/components/ui/input-floating'
+import { Plus, Save, X, Send, Truck, Clock, CheckCircle2 } from 'lucide-react'
 
 function dcStatusLabel(st: string) {
   const u = String(st || '').toUpperCase()
@@ -32,14 +33,12 @@ export default function DeliveryChallansPage() {
     variables: { organizationId: user?.organizationId },
     skip: !user?.organizationId,
   })
+
   const [createDeliveryChallan, { loading: creating }] = useMutation(CREATE_DELIVERY_CHALLAN, {
     onCompleted: () => {
       setAdding(false)
       setError('')
-      setForm({
-        docDate: new Date().toISOString().split('T')[0],
-        organizationId: orgId,
-      })
+      setForm({ docDate: new Date().toISOString().split('T')[0], organizationId: orgId })
       refetch()
     },
     onError: (err) => setError(err.message),
@@ -49,141 +48,101 @@ export default function DeliveryChallansPage() {
     onCompleted: () => refetch(),
   })
 
-  const items = data?.deliverychallans || []
+  const items: any[] = data?.deliverychallans || []
+  const draft = items.filter((i) => ['DRAFT', 'APPROVAL_DECLINED'].includes(String(i.status).toUpperCase())).length
+  const approved = items.filter((i) => String(i.status).toUpperCase() === 'APPROVED').length
+
   const handleSave = () => {
     if (!form.docDate) {
       setError('Document date is required.')
       return
     }
     createDeliveryChallan({
-      variables: {
-        input: {
-          docDate: form.docDate,
-          organizationId: orgId,
-        },
-      },
+      variables: { input: { docDate: form.docDate, organizationId: orgId } },
     })
   }
 
+  const columns: Column[] = [
+    { key: 'docNumber', label: 'Document #', width: '140px', render: (v) => <MonoCell value={v || '—'} /> },
+    { key: 'docDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    {
+      key: 'status',
+      label: 'Status',
+      width: '140px',
+      render: (v) => <ErpBadge status={dcStatusLabel(v)} />,
+    },
+    { key: 'createdAt', label: 'Created', width: '110px', render: (v) => <DateCell value={v} /> },
+  ]
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Delivery Challans</h1>
-          <p className="text-gray-500">Manage delivery challans</p>
-        </div>
-        <Button onClick={() => { setAdding(true); setError('') }}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Record
-        </Button>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Delivery Challans"
+        subtitle="Manage delivery challans"
+        icon={<Truck className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Delivery Challans' }]}
+        actions={
+          <Button
+            onClick={() => { setAdding(true); setError('') }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> New Challan
+          </Button>
+        }
+      />
+
+      <StatsRow cols={3}>
+        <StatCard label="Total" value={items.length} icon={<Truck className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Awaiting action" value={draft} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Approved" value={approved} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-card border border-primary/30 rounded-lg shadow-sm overflow-hidden mb-4">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">New Delivery Challan</span>
-            <button type="button" onClick={() => { setAdding(false); setError('') }} className="text-blue-200 hover:text-white">
+            <button type="button" onClick={() => { setAdding(false); setError('') }} className="text-primary-foreground/80 hover:text-white">
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="p-2">
-            <div className="border border-gray-300 rounded overflow-x-auto">
-              <div className="grid bg-[#f0f0f0] border-b border-gray-300" style={{ gridTemplateColumns: '11rem 14rem 7rem' }}>
-                {['Doc Date', 'Organization', 'Action'].map((h, i) => (
-                  <div key={i} className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</div>
-                ))}
-              </div>
-              <div className="grid min-w-[32rem]" style={{ gridTemplateColumns: '11rem 14rem 7rem' }}>
-                <div className="border-r border-gray-200 px-1 py-1">
-                  <input
-                    type="date"
-                    value={form.docDate}
-                    onChange={(e) => setForm((p) => ({ ...p, docDate: e.target.value }))}
-                    className="w-full h-8 px-2 border border-gray-300 rounded text-xs bg-white outline-none focus:ring-1 focus:ring-blue-400"
-                  />
-                </div>
-                <div className="border-r border-gray-200 px-1 py-1">
-                  <input
-                    type="text"
-                    value={orgId}
-                    readOnly
-                    className="w-full h-8 px-2 border border-gray-300 rounded text-xs bg-gray-50 text-gray-700"
-                  />
-                </div>
-                <div className="px-1 py-1">
-                  <Button size="sm" onClick={handleSave} disabled={creating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white w-full">
-                    <Save className="h-3.5 w-3.5 mr-1" /> {creating ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              </div>
+          <div className="p-4 space-y-3 max-w-md">
+            <InputFloating
+              label="Doc Date *"
+              type="date"
+              value={form.docDate}
+              onChange={(e) => setForm((p) => ({ ...p, docDate: e.target.value }))}
+              className="h-7 text-xs"
+            />
+            <p className="text-xs text-muted-foreground">Saves as Draft. Send for approval from the list.</p>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setAdding(false); setError('') }}>Cancel</Button>
+              <Button size="sm" onClick={handleSave} disabled={creating}>
+                <Save className="h-3.5 w-3.5 mr-1" /> {creating ? 'Saving…' : 'Save'}
+              </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-2 px-1">Saves as <strong>Draft</strong>. Send for approval from the list.</p>
-            {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
           </div>
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Records: {items.length}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p>Loading...</p>
-          ) : items.length === 0 ? (
-            <p className="text-gray-500">No records found</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-[900px] w-full text-xs">
-                <thead>
-                  <tr className="bg-[#f0f0f0] border-b border-gray-300">
-                    {['Document #', 'Date', 'Status', 'Org approval', 'Created'].map((h) => (
-                      <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item: any, idx: number) => {
-                    const st = String(item.status || '').toUpperCase()
-                    const showSubmit = st === 'DRAFT' || st === 'APPROVAL_DECLINED'
-                    return (
-                      <tr key={item.id} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                        <td className="px-3 py-2 border-r border-gray-200 font-mono">{item.docNumber || 'N/A'}</td>
-                        <td className="px-3 py-2 border-r border-gray-200">{item.docDate ? formatDate(item.docDate) : 'N/A'}</td>
-                        <td className="px-3 py-2 border-r border-gray-200">
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs border border-blue-200">
-                            {dcStatusLabel(item.status)}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 border-r border-gray-200">
-                          {showSubmit ? (
-                            <select
-                              aria-label="Delivery challan approval action"
-                              className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2 max-w-[160px]"
-                              defaultValue=""
-                              onChange={(e) => {
-                                const val = e.target.value
-                                e.target.value = ''
-                                if (val === 'submit') void submitDeliveryChallanForApproval({ variables: { id: item.id } })
-                              }}
-                            >
-                              <option value="">Change status…</option>
-                              <option value="submit">Send for approval</option>
-                            </select>
-                          ) : (
-                            <span className="text-xs text-gray-400">—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">{item.createdAt ? formatDate(item.createdAt) : 'N/A'}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <DataTable
+        data={items}
+        columns={columns}
+        loading={loading}
+        title="All Delivery Challans"
+        searchable
+        searchPlaceholder="Search challans…"
+        emptyMessage="No delivery challans found."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Send for approval',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (r) => submitDeliveryChallanForApproval({ variables: { id: r.id } }),
+            show: (r) => ['DRAFT', 'APPROVAL_DECLINED'].includes(String(r.status || '').toUpperCase()),
+          },
+        ]}
+      />
     </div>
   )
 }

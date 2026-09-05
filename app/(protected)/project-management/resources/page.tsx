@@ -2,7 +2,8 @@
 
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard } from '@/components/ui/erp-shared'
 import { GET_USERS, GET_PRODUCTION_PLANNINGS } from '@/gql/queries'
 import { Users, Clock, CheckCircle } from 'lucide-react'
 
@@ -29,7 +30,7 @@ export default function ResourcesPage() {
     const assignedTasks = allTasks.filter((t: any) => t.assignedTo === u.id)
     const completedTasks = assignedTasks.filter((t: any) => t.status === 'completed')
     const inProgressTasks = assignedTasks.filter((t: any) => t.status === 'in-progress')
-    
+
     return {
       id: u.id,
       name: `${u.firstName} ${u.lastName}`,
@@ -48,49 +49,45 @@ export default function ResourcesPage() {
   }
 
   const columns: Column[] = [
-    { key: 'name', label: 'Resource Name', sortable: true, render: v => <span className="font-medium">{v}</span> },
-    { key: 'email', label: 'Email', render: v => <span className="text-xs text-gray-500">{v}</span> },
-    { key: 'totalTasks', label: 'Total Tasks', width: '110px', render: v => <span className="font-semibold">{v}</span> },
-    { key: 'inProgressTasks', label: 'In Progress', width: '110px', render: v => <span className="text-blue-600">{v}</span> },
-    { key: 'completedTasks', label: 'Completed', width: '110px', render: v => <span className="text-green-600">{v}</span> },
-    { key: 'utilization', label: 'Utilization', width: '110px', render: v => (
+    { key: 'name', label: 'Resource Name', sortable: true, render: v => <span className="text-sm font-medium">{v}</span> },
+    { key: 'email', label: 'Email', render: v => <span className="text-sm text-muted-foreground">{v}</span> },
+    { key: 'totalTasks', label: 'Total Tasks', width: '110px', render: v => <span className="font-semibold tabular-nums">{v}</span> },
+    { key: 'inProgressTasks', label: 'In Progress', width: '110px', render: v => <span className="text-primary tabular-nums">{v}</span> },
+    { key: 'completedTasks', label: 'Completed', width: '110px', render: v => <span className="text-emerald-600 tabular-nums">{v}</span> },
+    { key: 'utilization', label: 'Utilization', width: '140px', render: v => (
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-gray-200 rounded-full h-2">
-          <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${v}%` }} />
+        <div className="flex-1 bg-muted rounded-full h-2">
+          <div className="bg-primary h-2 rounded-full" style={{ width: `${v}%` }} />
         </div>
-        <span className="text-xs font-medium">{v}%</span>
+        <span className="text-xs font-medium tabular-nums">{v}%</span>
       </div>
     )},
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Resources</h1>
-        <p className="text-gray-500">Manage and track resource allocation and utilization</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Resources"
+        subtitle="Manage and track resource allocation and utilization"
+        icon={<Users className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Project Management' }, { label: 'Resources' }]}
+      />
 
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Total Resources', value: stats.totalResources, icon: Users, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Active Resources', value: stats.activeResources, icon: Clock, cls: 'text-green-600 bg-green-50' },
-          { label: 'Avg Utilization', value: `${stats.avgUtilization}%`, icon: CheckCircle, cls: 'text-purple-600 bg-purple-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={3}>
+        <StatCard label="Total Resources" value={stats.totalResources} icon={<Users className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Active Resources" value={stats.activeResources} icon={<Clock className="h-5 w-5" />} variant="green" />
+        <StatCard label="Avg Utilization" value={`${stats.avgUtilization}%`} icon={<CheckCircle className="h-5 w-5" />} variant="teal" />
+      </StatsRow>
 
       <DataTable
         data={resourceData}
         columns={columns}
         loading={usersLoading || plansLoading}
-        title="Resource Allocation"
+        title="All Resources"
         searchable
-        searchPlaceholder="Search resources..."
+        searchPlaceholder="Search resources…"
         emptyMessage="No resources available."
+        pageSize={25}
       />
     </div>
   )

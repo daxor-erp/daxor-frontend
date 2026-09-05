@@ -102,9 +102,9 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Attendance</h1>
+        <h1 className="erp-page-title">Attendance</h1>
         <Button onClick={() => setOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Mark Attendance

@@ -85,7 +85,7 @@ test.describe('Products catalog flow (categories, UoM, attributes, variants)', (
 
   test('05 — products page smoke: list renders and create dialog opens with all tabs', async ({ page }) => {
     await smokeModulePage(page, '/products', /Products/i)
-    await page.getByRole('button', { name: /New Product/i }).click()
+    await page.getByRole('button', { name: /New Product/i }).first().click()
     await expect(page.getByRole('dialog').filter({ hasText: 'New product' })).toBeVisible({ timeout: 10_000 })
     await expect(page.getByRole('tab', { name: 'Header' })).toBeVisible()
     await expect(page.getByRole('tab', { name: 'Attributes & Variants' })).toBeVisible()
@@ -137,7 +137,7 @@ test.describe('Products catalog flow (categories, UoM, attributes, variants)', (
 
   test('11 — gap fix UI: smart buttons and action buttons render when editing a saved product', async ({ page }) => {
     await smokeModulePage(page, '/products', /Products/i)
-    await page.getByRole('button', { name: /New Product/i }).click()
+    await page.getByRole('button', { name: /New Product/i }).first().click()
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10_000 })
     // On a brand-new (unsaved) product, smart buttons/actions are not shown yet — only header/tabs.
     await expect(page.getByRole('tab', { name: 'Inventory' })).toBeVisible()

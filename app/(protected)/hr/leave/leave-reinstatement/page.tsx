@@ -173,14 +173,14 @@ export default function LeaveReinstatementPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="erp-shell">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-blue-600 mb-1">
+          <div className="flex items-center gap-2 text-primary mb-1">
             <RotateCcw className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">HR · Leave</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Employee leave reinstatement</h1>
+          <h1 className="erp-page-title">Employee leave reinstatement</h1>
           <p className="text-gray-500 mt-1">
             Correct wrongly deducted leave or reinstate balance after a cancelled / erroneous approval. Approved requests reduce{' '}
             <strong>used days</strong> on enrollment for payroll accuracy.
@@ -202,7 +202,7 @@ export default function LeaveReinstatementPage() {
             </Select>
           </div>
           <Button variant="outline" size="sm" className="mb-0.5" onClick={() => refetch()}>Refresh</Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setOpen(true)}>
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setOpen(true)}>
             <Plus className="h-4 w-4 mr-2" /> New request
           </Button>
         </div>
@@ -242,7 +242,7 @@ export default function LeaveReinstatementPage() {
               </TableHeader>
               <TableBody>
                 {rows.map((r: (typeof rows)[0]) => (
-                  <TableRow key={r.id} className="hover:bg-blue-50/40">
+                  <TableRow key={r.id} className="hover:bg-primary/5/40">
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-3.5 w-3.5 text-gray-400 shrink-0" />
@@ -396,7 +396,7 @@ export default function LeaveReinstatementPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700" disabled={saving} onClick={submit}>
+            <Button className="bg-primary hover:bg-primary/90" disabled={saving} onClick={submit}>
               {saving ? 'Saving…' : 'Submit'}
             </Button>
           </DialogFooter>

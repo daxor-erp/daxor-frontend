@@ -3,73 +3,59 @@
 import { useQuery } from '@apollo/client'
 import { GET_VENDOR_PAYMENTS } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { CreditCard, CheckCircle2, Clock } from 'lucide-react'
 
 export default function VendorPaymentsPage() {
   const { user } = useAuth()
-  
+
   const { data, loading } = useQuery(GET_VENDOR_PAYMENTS, {
     variables: { organizationId: user?.organizationId },
     skip: !user?.organizationId,
   })
 
-  const items = data?.vendorpayments || []
+  const items: any[] = data?.vendorpayments || []
+  const active = items.filter((i) => String(i.status || 'Active').toLowerCase() === 'active').length
+  const draft = items.filter((i) => String(i.status || '').toLowerCase() === 'draft').length
+
+  const columns: Column[] = [
+    {
+      key: 'docNumber',
+      label: 'Document #',
+      width: '140px',
+      render: (v, r) => <MonoCell value={v || r.transactionNumber || r.warehouseCode || '—'} />,
+    },
+    { key: 'docDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'status', label: 'Status', width: '110px', render: (v) => <ErpBadge status={String(v || 'Active')} /> },
+    { key: 'createdAt', label: 'Created', width: '110px', render: (v) => <DateCell value={v} /> },
+  ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Vendor Payments</h1>
-          <p className="text-gray-500">Manage vendor payments</p>
-        </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Record
-        </Button>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Vendor Payments"
+        subtitle="Manage vendor payments"
+        icon={<CreditCard className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Payables' }, { label: 'Vendor Payments' }]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Records: {items.length}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p>Loading...</p>
-          ) : items.length === 0 ? (
-            <p className="text-gray-500">No records found</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Document #</th>
-                    <th className="text-left p-2">Date</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item: any) => (
-                    <tr key={item.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
-                      <td className="p-2">{item.docDate ? formatDate(item.docDate) : 'N/A'}</td>
-                      <td className="p-2">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                          {item.status || 'Active'}
-                        </span>
-                      </td>
-                      <td className="p-2">{formatDate(item.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <StatsRow cols={3}>
+        <StatCard label="Total Records" value={items.length} icon={<CreditCard className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Active" value={active} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Draft" value={draft} icon={<Clock className="h-5 w-5" />} variant="amber" />
+      </StatsRow>
+
+      <DataTable
+        data={items}
+        columns={columns}
+        loading={loading}
+        title="All Vendor Payments"
+        searchable
+        searchPlaceholder="Search payments…"
+        emptyMessage="No vendor payments found."
+        pageSize={25}
+      />
     </div>
   )
 }

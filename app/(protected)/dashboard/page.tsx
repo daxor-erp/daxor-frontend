@@ -547,7 +547,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="erp-table">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
                     <th className="px-5 py-3 font-medium">Invoice</th>
@@ -683,7 +683,7 @@ export default function DashboardPage() {
     .filter(Boolean)
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <HeroGreeting name={user?.firstName} ctas={heroCtas} />
 
       <PageHeader

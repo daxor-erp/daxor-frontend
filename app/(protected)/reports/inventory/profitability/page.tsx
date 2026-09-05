@@ -84,7 +84,7 @@ export default function InventoryProfitabilityPage() {
       </div>
       <p className="text-sm text-muted-foreground mb-3">Top items by selling rate (catalog view):</p>
       <div className="rounded-xl border border-border overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="erp-table">
           <thead className="bg-secondary/60">
             <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
               <th className="px-4 py-2.5 font-medium">Item</th>

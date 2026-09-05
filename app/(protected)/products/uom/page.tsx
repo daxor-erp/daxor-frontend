@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { GET_UOMS, CREATE_UOM, UPDATE_UOM, DELETE_UOM, ENSURE_DEFAULT_UOMS } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell } from '@/components/ui/erp-shared'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Ruler } from 'lucide-react'
+import { Plus, Pencil, Trash2, Ruler, Layers } from 'lucide-react'
 
 type UomRow = { id: string; name: string; category: string; ratio: number; type: string; gstUqc?: string | null; isActive: boolean }
 
@@ -39,15 +40,8 @@ export default function UomPage() {
   }, [orgId, data, ensureDefaults, refetch])
 
   const uoms: UomRow[] = useMemo(() => data?.uoms ?? [], [data])
-  const grouped = useMemo(() => {
-    const byCategory = new Map<string, UomRow[]>()
-    for (const u of uoms) {
-      const list = byCategory.get(u.category) ?? []
-      list.push(u)
-      byCategory.set(u.category, list)
-    }
-    return Array.from(byCategory.entries()).sort(([a], [b]) => a.localeCompare(b))
-  }, [uoms])
+  const categoryCount = useMemo(() => new Set(uoms.map((u) => u.category)).size, [uoms])
+  const activeCount = useMemo(() => uoms.filter((u) => u.isActive).length, [uoms])
 
   const [createMutation, { loading: creating }] = useMutation(CREATE_UOM, {
     onCompleted: () => {
@@ -100,69 +94,58 @@ export default function UomPage() {
     }
   }
 
+  const columns: Column[] = [
+    { key: 'name', label: 'Name', sortable: true, render: (v) => <span className="text-sm font-medium">{v}</span> },
+    { key: 'category', label: 'Category', width: '140px', render: (v) => <span className="text-sm">{v}</span> },
+    { key: 'type', label: 'Type', width: '130px', render: (v) => <span className="text-sm capitalize text-muted-foreground">{v}</span> },
+    { key: 'ratio', label: 'Ratio', width: '90px', align: 'right', render: (v) => <span className="tabular-nums text-sm">{v}</span> },
+    { key: 'gstUqc', label: 'GST UQC', width: '100px', render: (v) => <MonoCell value={v} /> },
+    { key: 'isActive', label: 'Status', width: '100px', render: (v) => <ErpBadge status={v ? 'active' : 'inactive'} /> },
+  ]
+
   return (
-    <div className="mx-auto w-full max-w-[1100px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Units of Measure"
-        description="Nos, Box, kg, ... — grouped by convertible category, with Indian GST UQC codes for HSN/GST filing."
+        subtitle="Nos, Box, kg, … — grouped by convertible category, with Indian GST UQC codes for HSN/GST filing."
+        icon={<Ruler className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Products' }, { label: 'Units of Measure' }]}
         actions={
-          <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" /> New UoM
+          <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New UoM
           </Button>
         }
       />
 
-      {loading ? (
-        <SectionCard><p className="text-sm text-muted-foreground text-center py-6">Loading…</p></SectionCard>
-      ) : grouped.length === 0 ? (
-        <SectionCard>
-          <div className="text-center py-6">
-            <Ruler className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No units of measure yet</p>
-          </div>
-        </SectionCard>
-      ) : (
-        grouped.map(([category, rows]) => (
-          <SectionCard key={category} title={category} bodyClassName="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-secondary/60">
-                  <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                    <th className="px-5 py-2.5 font-medium">Name</th>
-                    <th className="px-3 py-2.5 font-medium">Type</th>
-                    <th className="px-3 py-2.5 font-medium text-right">Ratio</th>
-                    <th className="px-3 py-2.5 font-medium">GST UQC</th>
-                    <th className="px-5 py-2.5 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((u) => (
-                    <tr key={u.id} className="border-t hover:bg-secondary/30 cursor-pointer" onClick={() => openEdit(u)}>
-                      <td className="px-5 py-2.5 font-medium">{u.name}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground capitalize">{u.type}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">{u.ratio}</td>
-                      <td className="px-3 py-2.5 font-mono text-xs">{u.gstUqc || '—'}</td>
-                      <td className="px-5 py-2.5 text-right">
-                        <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => openEdit(u)} className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-secondary">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => { if (confirm(`Delete ${u.name}?`)) deleteMutation({ variables: { id: u.id } }) }}
-                            className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </SectionCard>
-        ))
-      )}
+      <StatsRow cols={3}>
+        <StatCard label="Total UoMs" value={uoms.length} icon={<Ruler className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Categories" value={categoryCount} icon={<Layers className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Active" value={activeCount} icon={<Ruler className="h-5 w-5" />} variant="green" />
+      </StatsRow>
+
+      <DataTable
+        data={uoms}
+        columns={columns}
+        loading={loading}
+        title="All Units of Measure"
+        searchable
+        searchPlaceholder="Search UoMs…"
+        emptyMessage="No units of measure found."
+        pageSize={25}
+        onRowClick={(r: any) => openEdit(r)}
+        actions={[
+          {
+            label: 'Edit',
+            icon: <Pencil className="h-3.5 w-3.5" />,
+            onClick: (r: any) => openEdit(r),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => { if (confirm(`Delete ${r.name}?`)) deleteMutation({ variables: { id: r.id } }) },
+          },
+        ]}
+      />
 
       <FormModal
         open={open}

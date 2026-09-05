@@ -191,7 +191,7 @@ export default function CustomerInvoicesPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Customer Invoices"
         subtitle="Manage AR invoices, track payments and outstanding balances"

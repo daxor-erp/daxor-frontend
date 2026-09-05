@@ -9,11 +9,11 @@ import {
   GET_OUTSTANDING_VENDOR_BILLS,
 } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { DollarSign, BookOpen, Calendar, Download, Eye } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
 import { formatMoney } from '@/lib/format-money'
-import { StatusBadge } from '@/components/ui/status-badge'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { summarizeLedgerPage } from '@/lib/ledger-totals'
 import { LedgerSummaryCards } from '@/components/financial/ledger-summary-cards'
@@ -81,20 +81,14 @@ export default function GeneralLedgerPage() {
     [ledgers, journalEntries, accounts, customerInvoices, vendorBills],
   )
 
-  const statusColor: Record<string, string> = {
-    active: 'bg-green-100 text-green-700',
-    posted: 'bg-blue-100 text-blue-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-  }
-
   const columns: Column[] = [
-    { key: 'transactionNumber', label: 'Transaction #', sortable: true, render: v => <span className="font-mono text-xs font-medium">{v}</span> },
-    { key: 'transactionDate', label: 'Date', width: '110px', render: v => formatDate(v) },
-    { key: 'transactionType', label: 'Type', width: '120px', render: v => <span className="text-xs capitalize">{v}</span> },
-    { key: 'debitAccount', label: 'Debit Account', render: v => <span className="text-xs">{v}</span> },
-    { key: 'creditAccount', label: 'Credit Account', render: v => <span className="text-xs">{v}</span> },
-    { key: 'amount', label: 'Amount', width: '120px', render: v => formatMoney(v) },
-    { key: 'status', label: 'Status', width: '90px', render: (v) => <StatusBadge status={String(v)} /> },
+    { key: 'transactionNumber', label: 'Transaction #', sortable: true, render: (v) => <MonoCell value={v} /> },
+    { key: 'transactionDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'transactionType', label: 'Type', width: '120px', render: (v) => <span className="text-sm capitalize">{v}</span> },
+    { key: 'debitAccount', label: 'Debit Account', render: (v) => <span className="text-sm">{v}</span> },
+    { key: 'creditAccount', label: 'Credit Account', render: (v) => <span className="text-sm">{v}</span> },
+    { key: 'amount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'status', label: 'Status', width: '90px', render: (v) => <ErpBadge status={String(v)} /> },
   ]
 
   const exportCsv = () => {
@@ -117,28 +111,23 @@ export default function GeneralLedgerPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">General Ledger</h1>
-        <p className="text-gray-500">View financial transactions — click a row to open details in the panel above the table</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="General Ledger"
+        subtitle="View financial transactions — click a row to open details"
+        icon={<BookOpen className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Financial' }, { label: 'General Ledger' }]}
+      />
 
       {orgId && !ledgerLoading && (
         <LedgerSummaryCards summary={summary} variant="ledger" />
       )}
 
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Chart of Accounts', value: accounts.length, icon: BookOpen, cls: 'text-green-600 bg-green-50' },
-          { label: 'Current Fiscal Year', value: new Date().getFullYear(), icon: Calendar, cls: 'text-purple-600 bg-purple-50' },
-          { label: 'Open receivable', value: formatMoney(summary.openReceivable ?? 0), icon: DollarSign, cls: 'text-emerald-600 bg-emerald-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800 tabular-nums">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={3}>
+        <StatCard label="Chart of Accounts" value={accounts.length} icon={<BookOpen className="h-5 w-5" />} variant="green" />
+        <StatCard label="Current Fiscal Year" value={new Date().getFullYear()} icon={<Calendar className="h-5 w-5" />} variant="violet" />
+        <StatCard label="Open Receivable" value={formatMoney(summary.openReceivable ?? 0)} icon={<DollarSign className="h-5 w-5" />} variant="teal" />
+      </StatsRow>
 
       {viewRow && (
         <div ref={viewPanelRef}>
@@ -157,8 +146,9 @@ export default function GeneralLedgerPage() {
         title="All Transactions"
         description={viewRow ? 'Click another row to switch transaction' : 'Click a row to view in the panel above'}
         searchable
-        searchPlaceholder="Search transactions..."
+        searchPlaceholder="Search transactions…"
         emptyMessage="No transactions found."
+        pageSize={25}
         exportable
         onExport={exportCsv}
         onRowClick={(row) => openView(row as GeneralLedgerView)}
@@ -167,14 +157,12 @@ export default function GeneralLedgerPage() {
             label: 'View',
             icon: <Eye className="h-3.5 w-3.5" />,
             onClick: (row) => openView(row as GeneralLedgerView),
-            variant: 'ghost',
           },
           {
             label: 'Download journal PDF',
             icon: <Download className="h-3.5 w-3.5" />,
             onClick: (row) =>
               downloadGeneralLedgerJournalPdf(row as GeneralLedgerView, journalEntries),
-            variant: 'ghost',
           },
         ]}
       />

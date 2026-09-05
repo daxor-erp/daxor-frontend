@@ -12,7 +12,8 @@ import {
   GET_CUSTOMERS,
   GET_SALES_ORDERS,
 } from '@/gql/queries'
-import { PageHeader, SectionPanel as SectionCard, StatCard } from '@/components/ui/erp-shared'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { DataTable, type Column } from '@/components/DataTable'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { LineItemsEditor, type LineColumn } from '@/components/forms/line-items-editor'
 import { Button } from '@/components/ui/button'
@@ -20,14 +21,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { formatStatus } from '@/lib/format-status'
-import { StatusBadge } from '@/components/ui/status-badge'
 import {
-  Plus, Truck, Package, CheckCircle2, Trash2, Search,
-  ArrowRight, Send, Ban,
+  Plus, Truck, Package, CheckCircle2, Trash2, Send, Ban,
 } from 'lucide-react'
 import { formatNumber } from '@/lib/format-money'
-import { cn } from '@/lib/utils'
-import { formatDate } from '@/lib/format-date'
 
 const STATUSES = ['DRAFT', 'READY', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'RETURNED']
 
@@ -45,7 +42,6 @@ export default function DeliveryOrdersPage() {
   const orgId = user?.organizationId ?? ''
   const [open, setOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
-  const [search, setSearch] = useState('')
   const [form, setForm] = useState({
     docNumber: '',
     customerId: '',
@@ -105,14 +101,6 @@ export default function DeliveryOrdersPage() {
   const customers: any[] = customersQ.data?.customers ?? []
   const salesOrders: any[] = sosQ.data?.salesorders ?? []
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return docs
-    const q = search.toLowerCase()
-    return docs.filter(
-      (d) => d.docNumber?.toLowerCase().includes(q) || d.customerName?.toLowerCase().includes(q) || d.trackingNumber?.toLowerCase().includes(q),
-    )
-  }, [docs, search])
-
   const stats = useMemo(() => {
     const dispatched = docs.filter((d) => ['DISPATCHED', 'IN_TRANSIT'].includes(String(d.status).toUpperCase())).length
     const delivered = docs.filter((d) => String(d.status).toUpperCase() === 'DELIVERED').length
@@ -139,11 +127,21 @@ export default function DeliveryOrdersPage() {
     })
   }
 
-  const columns: LineColumn<DeliveryRow>[] = [
+  const lineColumns: LineColumn<DeliveryRow>[] = [
     { key: 'itemName', header: 'Item', minWidth: 180, placeholder: 'Item description' },
     { key: 'quantity', header: 'Qty', type: 'number', align: 'right', minWidth: 90 },
     { key: 'unit', header: 'Unit', minWidth: 80 },
     { key: 'notes', header: 'Notes', minWidth: 180 },
+  ]
+
+  const columns: Column[] = [
+    { key: 'docNumber', label: 'Doc #', width: '130px', render: (v) => <MonoCell value={v} /> },
+    { key: 'customerName', label: 'Customer', render: (v) => <span className="text-sm font-medium">{v || '—'}</span> },
+    { key: 'deliveryDate', label: 'Delivery Date', width: '120px', render: (v) => <DateCell value={v} /> },
+    { key: 'carrier', label: 'Carrier', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'trackingNumber', label: 'Tracking', width: '130px', render: (v) => <MonoCell value={v} /> },
+    { key: 'totalQuantity', label: 'Qty', width: '80px', align: 'right', render: (v) => <span className="tabular-nums text-sm">{Number(v ?? 0)}</span> },
+    { key: 'status', label: 'Status', width: '130px', render: (v) => <ErpBadge status={String(v)} /> },
   ]
 
   const submit = () => {
@@ -180,118 +178,77 @@ export default function DeliveryOrdersPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Delivery Orders"
         subtitle="Track shipments — from preparation through dispatch, transit, and customer signature."
-        actions={
-          <Button onClick={() => { resetForm(); setOpen(true) }} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" /> New delivery
-          </Button>
-        }
-      />
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Total"                    value={formatNumber(docs.length)}       icon={<Truck       className="h-5 w-5" />} variant="blue"   />
-        <StatCard label="Dispatched / in transit"  value={formatNumber(stats.dispatched)}  icon={<Send        className="h-5 w-5" />} variant="violet" />
-        <StatCard label="Delivered"                value={formatNumber(stats.delivered)}   icon={<CheckCircle2 className="h-5 w-5" />} variant="green"  />
-        <StatCard label="Total units shipped"      value={formatNumber(stats.totalQty)}    icon={<Package     className="h-5 w-5" />} variant="amber"  />
-      </div>
-
-      <SectionCard
-        title="Delivery register"
-        description={`${filtered.length} of ${docs.length}`}
+        icon={<Truck className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Delivery Orders' }]}
         actions={
           <div className="flex items-center gap-2">
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-border bg-secondary/40 py-1.5 px-2 text-xs">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+            >
               <option value="">All statuses</option>
               {STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
             </select>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Doc / customer / tracking"
-                className="rounded-lg border border-border bg-secondary/40 py-1.5 pl-8 pr-3 text-xs w-56 focus:ring-2 focus:ring-primary/40 outline-none"
-              />
-            </div>
-          </div>
-        }
-        noPadding
-      >
-        {listQ.loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center">
-            <Truck className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No delivery orders</p>
-            <p className="text-xs text-muted-foreground mb-3">Create one to start tracking customer shipments.</p>
-            <Button onClick={() => { resetForm(); setOpen(true) }} className="bg-grad-brand text-white border-none gap-1.5">
-              <Plus className="h-4 w-4" /> New delivery
+            <Button onClick={() => { resetForm(); setOpen(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-4 w-4 mr-1.5" /> New Delivery
             </Button>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Doc #</th>
-                  <th className="px-3 py-3 font-medium">Customer</th>
-                  <th className="px-3 py-3 font-medium">Delivery date</th>
-                  <th className="px-3 py-3 font-medium">Carrier</th>
-                  <th className="px-3 py-3 font-medium">Tracking</th>
-                  <th className="px-3 py-3 font-medium text-right">Qty</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((d: any) => (
-                  <tr key={d.id} className="border-t hover:bg-secondary/30">
-                    <td className="px-5 py-3 font-mono text-xs font-semibold">{d.docNumber}</td>
-                    <td className="px-3 py-3">{d.customerName || '—'}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{d.deliveryDate ? formatDate(d.deliveryDate) : '—'}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{d.carrier || '—'}</td>
-                    <td className="px-3 py-3 font-mono text-xs">{d.trackingNumber || '—'}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{Number(d.totalQuantity ?? 0)}</td>
-                    <td className="px-3 py-3"><DOStatus status={d.status} /></td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        {d.status === 'READY' && (
-                          <button onClick={() => transitionMutation({ variables: { id: d.id, status: 'DISPATCHED' } })} title="Dispatch" className="h-7 w-7 grid place-items-center rounded-md text-sky-600 hover:bg-sky-50">
-                            <Send className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                        {['DISPATCHED', 'IN_TRANSIT'].includes(d.status) && (
-                          <button onClick={() => transitionMutation({ variables: { id: d.id, status: 'DELIVERED' } })} title="Mark delivered" className="h-7 w-7 grid place-items-center rounded-md text-emerald-600 hover:bg-emerald-50">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                        {!['DELIVERED','CANCELLED'].includes(d.status) && (
-                          <button
-                            onClick={() => { if (confirm(`Cancel delivery order ${d.docNumber}? If already dispatched, stock will be reversed.`)) cancelMutation({ variables: { id: d.id } }) }}
-                            title="Cancel delivery order"
-                            className="h-7 w-7 grid place-items-center rounded-md text-amber-600 hover:bg-amber-50"
-                          >
-                            <Ban className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => { if (confirm(`Delete ${d.docNumber}?`)) deleteMutation({ variables: { id: d.id } }) }}
-                          className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+        }
+      />
+
+      <StatsRow cols={4}>
+        <StatCard label="Total" value={formatNumber(docs.length)} icon={<Truck className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Dispatched / In Transit" value={formatNumber(stats.dispatched)} icon={<Send className="h-5 w-5" />} variant="violet" />
+        <StatCard label="Delivered" value={formatNumber(stats.delivered)} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Units Shipped" value={formatNumber(stats.totalQty)} icon={<Package className="h-5 w-5" />} variant="amber" />
+      </StatsRow>
+
+      <DataTable
+        data={docs}
+        columns={columns}
+        loading={listQ.loading}
+        title="All Delivery Orders"
+        searchable
+        searchPlaceholder="Search deliveries…"
+        emptyMessage="No delivery orders found."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Dispatch',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (r: any) => transitionMutation({ variables: { id: r.id, status: 'DISPATCHED' } }),
+            show: (r: any) => r.status === 'READY',
+          },
+          {
+            label: 'Mark Delivered',
+            icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => transitionMutation({ variables: { id: r.id, status: 'DELIVERED' } }),
+            show: (r: any) => ['DISPATCHED', 'IN_TRANSIT'].includes(r.status),
+          },
+          {
+            label: 'Cancel',
+            icon: <Ban className="h-3.5 w-3.5" />,
+            onClick: (r: any) => {
+              if (confirm(`Cancel delivery order ${r.docNumber}? If already dispatched, stock will be reversed.`)) {
+                cancelMutation({ variables: { id: r.id } })
+              }
+            },
+            show: (r: any) => !['DELIVERED', 'CANCELLED'].includes(r.status),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => {
+              if (confirm(`Delete ${r.docNumber}?`)) deleteMutation({ variables: { id: r.id } })
+            },
+          },
+        ]}
+      />
 
       <FormModal
         open={open}
@@ -377,7 +334,7 @@ export default function DeliveryOrdersPage() {
 
         <FormSection title="Items" description="Add the items being shipped." className="pt-5 border-t border-border mt-5">
           <LineItemsEditor<DeliveryRow>
-            columns={columns}
+            columns={lineColumns}
             rows={form.items}
             onChange={(rows) => setForm({ ...form, items: rows })}
             buildRow={() => ({ itemName: '', quantity: 1, unit: 'unit' })}
@@ -389,8 +346,4 @@ export default function DeliveryOrdersPage() {
       </FormModal>
     </div>
   )
-}
-
-function DOStatus({ status }: { status: string }) {
-  return <StatusBadge status={status} className="text-[10px]" />
 }

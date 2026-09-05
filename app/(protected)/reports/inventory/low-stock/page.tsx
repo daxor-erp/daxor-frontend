@@ -80,9 +80,9 @@ export default function LowStockReportPage() {
             </div>
           </div>
           <div className="rounded-xl border border-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+            <table className="erp-table">
+              <thead>
+                <tr>
                   <th className="px-4 py-2.5 font-medium">Item</th>
                   <th className="px-3 py-2.5 font-medium text-right">Quantity</th>
                   <th className="px-3 py-2.5 font-medium text-right">Reorder point</th>

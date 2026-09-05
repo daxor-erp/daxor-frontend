@@ -72,21 +72,21 @@ export default function BiometricDataPage() {
   }, [])
 
   if (!orgId) {
-    return <p className="text-sm text-gray-500">Select an organization to use data preparation.</p>
+    return <p className="erp-page-desc">Select an organization to use data preparation.</p>
   }
 
   if (!ready) {
-    return <p className="text-sm text-gray-500">Loading sheet…</p>
+    return <p className="erp-page-desc">Loading sheet…</p>
   }
 
   return (
-    <div className="space-y-4">
+    <div className="erp-shell">
       <div>
         <div className="flex items-center gap-2 text-slate-600 mb-1">
           <Briefcase className="h-6 w-6" />
           <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Data preparation</span>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">Biometric data</h1>
+        <h1 className="erp-page-title">Biometric data</h1>
         <p className="text-gray-500 mt-1 max-w-2xl">
           One row per punch (or one row per day if you aggregate in your export). Use import to load vendor CSV
           files, then map columns to match the headers when you save from Excel.
