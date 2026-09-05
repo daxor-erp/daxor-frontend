@@ -93,7 +93,7 @@ export default function TrialBalancePage() {
         <span className="text-xs text-muted-foreground">{accounts.length} accounts</span>
       </div>
       <div className="rounded-xl border border-border overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="erp-table">
           <thead className="bg-secondary/60">
             <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
               <th className="px-4 py-2.5 font-medium">Account</th>

@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { DataTable, Column } from '@/components/DataTable'
-import { Trash2, Users, UserPlus, Building2, Mail, X, Save, Eye, CheckCircle2, Globe, Phone, MapPin, Briefcase, TrendingUp } from 'lucide-react'
+import { Trash2, Users, UserPlus, Building2, Mail, X, Save, Eye, CheckCircle2, Globe, Phone, MapPin, Briefcase, TrendingUp, Plus } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { PageHeader, StatsRow, StatCard, ErpBadge } from '@/components/ui/erp-shared'
 
 const GET_CLIENTS = gql`
   query GetClients($organizationId: ID) {
@@ -144,7 +145,7 @@ export default function ClientsPage() {
     const colors: Record<string, string> = {
       active: 'bg-green-50 text-green-700 border-green-200',
       inactive: 'bg-gray-100 text-gray-600 border-gray-200',
-      prospect: 'bg-blue-50 text-blue-700 border-blue-200',
+      prospect: 'bg-primary/10 text-primary border-primary/20',
       lead: 'bg-yellow-50 text-yellow-700 border-yellow-200',
     }
     return colors[status] || 'bg-gray-100 text-gray-600 border-gray-200'
@@ -165,79 +166,75 @@ export default function ClientsPage() {
       label: 'Name',
       sortable: true,
       width: '180px',
-      render: (value) => <span className="font-medium text-gray-800">{value}</span>
+      render: (value) => <span className="text-sm font-medium">{value}</span>
     },
     {
       key: 'email',
       label: 'Email',
       sortable: true,
       width: '200px',
-      render: (value) => <span className="text-gray-600">{value}</span>
+      render: (value) => <span className="text-sm text-muted-foreground">{value}</span>
     },
     {
       key: 'phone',
       label: 'Phone',
       width: '130px',
-      render: (value) => <span className="text-gray-600">{value || '—'}</span>
+      render: (value) => <span className="text-sm text-muted-foreground">{value || '—'}</span>
     },
     {
       key: 'company',
       label: 'Company',
       sortable: true,
       width: '160px',
-      render: (value) => <span className="text-gray-700">{value || '—'}</span>
+      render: (value) => <span className="text-sm text-muted-foreground">{value || '—'}</span>
     },
     {
       key: 'city',
       label: 'City',
       width: '120px',
-      render: (value) => <span className="text-gray-600">{value || '—'}</span>
+      render: (value) => <span className="text-sm text-muted-foreground">{value || '—'}</span>
     },
     {
       key: 'industry',
       label: 'Industry',
       width: '130px',
-      render: (value) => <span className="text-gray-600">{value || '—'}</span>
+      render: (value) => <span className="text-sm text-muted-foreground">{value || '—'}</span>
     },
     {
       key: 'status',
       label: 'Status',
       width: '110px',
-      render: (value) => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(value)}`}>
-          {value}
-        </span>
-      )
+      render: (value) => <ErpBadge status={String(value)} />
     },
   ]
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">CRM - Clients</h1>
-          <p className="text-gray-500">Manage your client relationships</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => { refetch(); setShowClientsPanel(true) }}
-            className="h-9 text-sm bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-            variant="outline"
-          >
-            <Users className="h-4 w-4 mr-2" />
-            View Clients ({clients.length})
-          </Button>
-          <Button
-            onClick={() => { setAdding(true); setViewClient(null) }}
-            className="h-9 text-sm bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            New Client
-          </Button>
-        </div>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Clients"
+        subtitle="Manage your client relationships"
+        icon={<Users className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'CRM' }, { label: 'Clients' }]}
+        actions={
+          <div className="flex gap-2">
+            <Button
+              onClick={() => { refetch(); setShowClientsPanel(true) }}
+              variant="outline"
+            >
+              <Users className="h-4 w-4 mr-1.5" />
+              View Clients ({clients.length})
+            </Button>
+            <Button
+              onClick={() => { setAdding(true); setViewClient(null) }}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              New Client
+            </Button>
+          </div>
+        }
+      />
 
-      {/* Success Message */}
       {successMsg && (
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -245,29 +242,20 @@ export default function ClientsPage() {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-6 gap-3">
-        {[
-          { label: 'Total Clients', value: stats.total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Active', value: stats.active, icon: UserPlus, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: 'Prospects', value: stats.prospect, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-          { label: 'Leads', value: stats.lead, icon: Mail, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-          { label: 'Inactive', value: stats.inactive, icon: Building2, color: 'text-red-500', bg: 'bg-red-50' },
-          { label: 'With Company', value: stats.withCompany, icon: Briefcase, color: 'text-purple-600', bg: 'bg-purple-50' },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${bg}`}><Icon className={`h-4 w-4 ${color}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={5}>
+        <StatCard label="Total Clients" value={stats.total} icon={<Users className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Active" value={stats.active} icon={<UserPlus className="h-5 w-5" />} variant="green" />
+        <StatCard label="Prospects" value={stats.prospect} icon={<TrendingUp className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Leads" value={stats.lead} icon={<Mail className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Inactive" value={stats.inactive} icon={<Building2 className="h-5 w-5" />} variant="rose" />
+      </StatsRow>
 
       {/* Inline form panel */}
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">New Client</span>
-            <button onClick={() => { setAdding(false); reset() }} className="text-blue-200 hover:text-white">
+            <button onClick={() => { setAdding(false); reset() }} className="text-primary-foreground/80 hover:text-white">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -313,7 +301,7 @@ export default function ClientsPage() {
               <div>{saveError && <p className="text-xs text-red-500">{saveError.message}</p>}</div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => { setAdding(false); reset() }} className="h-8 text-xs">Cancel</Button>
-                <Button size="sm" onClick={handleSubmit} disabled={saving} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]">
+                <Button size="sm" onClick={handleSubmit} disabled={saving} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[100px]">
                   <Save className="h-3.5 w-3.5 mr-1" />{saving ? 'Saving…' : 'Save Client'}
                 </Button>
               </div>
@@ -331,21 +319,20 @@ export default function ClientsPage() {
             loading={loading}
             title="All Clients"
             searchable
-            searchPlaceholder="Search clients..."
-            emptyMessage="No clients yet. Click 'New Client' to add one."
+            searchPlaceholder="Search clients…"
+            emptyMessage="No clients yet. Click New Client to add one."
+            pageSize={25}
             onRowClick={(row) => setViewClient(row)}
             actions={[
               {
                 label: 'View',
                 icon: <Eye className="h-3.5 w-3.5" />,
                 onClick: (row) => setViewClient(row),
-                variant: 'ghost',
               },
               {
                 label: 'Delete',
                 icon: <Trash2 className="h-3.5 w-3.5" />,
                 onClick: (row) => handleDelete(row.id),
-                variant: 'ghost',
               },
             ]}
           />
@@ -354,9 +341,9 @@ export default function ClientsPage() {
         {/* View Client Panel */}
         {viewClient && (
           <div className="w-80 shrink-0 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-blue-600">
+            <div className="flex items-center justify-between px-4 py-3 bg-primary">
               <span className="text-sm font-semibold text-white">Client Details</span>
-              <button onClick={() => setViewClient(null)} className="text-blue-200 hover:text-white">
+              <button onClick={() => setViewClient(null)} className="text-primary-foreground/80 hover:text-white">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -364,7 +351,7 @@ export default function ClientsPage() {
             <div className="p-4 space-y-4">
               {/* Avatar + Name */}
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-bold">
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white text-lg font-bold">
                   {viewClient.name?.[0]?.toUpperCase()}
                 </div>
                 <div>
@@ -434,7 +421,7 @@ export default function ClientsPage() {
                     <Globe className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-xs text-gray-400">Website</p>
-                      <a href={viewClient.website} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{viewClient.website}</a>
+                      <a href={viewClient.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">{viewClient.website}</a>
                     </div>
                   </div>
                 )}
@@ -472,12 +459,12 @@ export default function ClientsPage() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowClientsPanel(false)} />
           <div className="relative ml-auto w-[480px] h-full bg-white shadow-2xl flex flex-col">
             {/* Panel Header */}
-            <div className="flex items-center justify-between px-5 py-4 bg-blue-600">
+            <div className="flex items-center justify-between px-5 py-4 bg-primary">
               <div>
                 <p className="text-white font-semibold text-base">All Clients</p>
-                <p className="text-blue-200 text-xs">{clients.length} client{clients.length !== 1 ? 's' : ''} found</p>
+                <p className="text-primary-foreground/80 text-xs">{clients.length} client{clients.length !== 1 ? 's' : ''} found</p>
               </div>
-              <button onClick={() => setShowClientsPanel(false)} className="text-blue-200 hover:text-white">
+              <button onClick={() => setShowClientsPanel(false)} className="text-primary-foreground/80 hover:text-white">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -497,11 +484,11 @@ export default function ClientsPage() {
               {clients.map((client: any) => (
                 <div
                   key={client.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
+                  className="bg-white border border-gray-200 rounded-lg p-4 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer"
                   onClick={() => { setViewClient(client); setShowClientsPanel(false) }}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0">
                       {client.name?.[0]?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -528,7 +515,7 @@ export default function ClientsPage() {
             {/* Panel Footer */}
             <div className="px-4 py-3 border-t border-gray-200">
               <Button
-                className="w-full h-9 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full h-9 text-sm bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={() => { setShowClientsPanel(false); setAdding(true) }}
               >
                 <UserPlus className="h-4 w-4 mr-2" /> Add New Client

@@ -8,8 +8,8 @@ import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_PRODUCTION_PLANNINGS, UPDATE_PRODUCTION_PLANNING, GET_PROJECTS, GET_USERS } from '@/gql/queries'
-import { Trash2, Edit, X, Save, CheckCircle, Clock, AlertCircle } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { Trash2, Edit, X, Save, CheckCircle, Clock, AlertCircle, Plus, ListTodo } from 'lucide-react'
 
 const EMPTY_FORM = {
   name: '',
@@ -147,57 +147,50 @@ export default function TasksPage() {
   }
 
   const priorityColor: Record<string, string> = {
-    low: 'bg-gray-100 text-gray-700',
-    medium: 'bg-blue-100 text-blue-700',
+    low: 'bg-slate-100 text-slate-700',
+    medium: 'bg-primary/10 text-primary',
     high: 'bg-orange-100 text-orange-700',
     critical: 'bg-red-100 text-red-700',
   }
 
-  const statusColor: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-700',
-    'in-progress': 'bg-blue-100 text-blue-700',
-    completed: 'bg-green-100 text-green-700',
-    blocked: 'bg-red-100 text-red-700',
-  }
-
   const columns: Column[] = [
-    { key: 'name', label: 'Task Name', sortable: true, render: v => <span className="font-medium">{v}</span> },
-    { key: 'planDocNumber', label: 'Plan #', width: '120px', render: v => <span className="font-mono text-xs">{v}</span> },
+    { key: 'name', label: 'Task Name', sortable: true, render: v => <span className="text-sm font-medium">{v}</span> },
+    { key: 'planDocNumber', label: 'Plan #', width: '120px', render: v => <MonoCell value={v} /> },
     { key: 'assignedTo', label: 'Assigned To', width: '150px', render: v => {
       const u = users.find((user: any) => user.id === v)
       return u ? `${u.firstName} ${u.lastName}` : '—'
     }},
-    { key: 'status', label: 'Status', width: '110px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${statusColor[v]}`}>{v}</span> },
-    { key: 'priority', label: 'Priority', width: '100px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${priorityColor[v]}`}>{v}</span> },
-    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => v ? formatDate(v) : '—' },
+    { key: 'status', label: 'Status', width: '110px', render: v => <ErpBadge status={String(v)} /> },
+    { key: 'priority', label: 'Priority', width: '100px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${priorityColor[v] || ''}`}>{v}</span> },
+    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => <DateCell value={v} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Tasks</h1>
-        <p className="text-gray-500">Manage project tasks and assignments</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Tasks"
+        subtitle="Manage project tasks and assignments"
+        icon={<ListTodo className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Project Management' }, { label: 'Tasks' }]}
+        actions={
+          <Button onClick={() => { reset(); setAdding(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Task
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: 'Total', value: stats.total, icon: CheckCircle, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Pending', value: stats.pending, icon: Clock, cls: 'text-yellow-600 bg-yellow-50' },
-          { label: 'In Progress', value: stats.inProgress, icon: AlertCircle, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Completed', value: stats.completed, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total" value={stats.total} icon={<CheckCircle className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Pending" value={stats.pending} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="In Progress" value={stats.inProgress} icon={<AlertCircle className="h-5 w-5" />} variant="teal" />
+        <StatCard label="Completed" value={stats.completed} icon={<CheckCircle className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editing ? 'Edit Task' : 'New Task'}</span>
-            <button onClick={() => { setAdding(false); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={() => { setAdding(false); reset() }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -213,7 +206,7 @@ export default function TasksPage() {
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" size="sm" onClick={() => { setAdding(false); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[110px]">
+              <Button size="sm" onClick={handleSubmit} disabled={updating} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[110px]">
                 <Save className="h-3.5 w-3.5 mr-1" />{updating ? 'Saving…' : editing ? 'Update' : 'Save Task'}
               </Button>
             </div>
@@ -226,15 +219,14 @@ export default function TasksPage() {
         columns={columns}
         loading={loading}
         title="All Tasks"
-        onAdd={() => { reset(); setAdding(true) }}
-        addLabel="New Task"
         searchable
-        searchPlaceholder="Search tasks..."
+        searchPlaceholder="Search tasks…"
         emptyMessage="No tasks yet. Click 'New Task' to create one."
+        pageSize={25}
         onRowClick={handleEdit}
         actions={[
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => handleDelete(row), variant: 'ghost' },
+          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row) },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => handleDelete(row) },
         ]}
       />
     </div>

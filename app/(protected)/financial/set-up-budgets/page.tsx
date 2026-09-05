@@ -1,15 +1,15 @@
 'use client'
 
 import { useQuery, useMutation } from '@apollo/client'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import { GET_BUDGETS, CREATE_BUDGET, ACTIVATE_BUDGET, DELETE_BUDGET, GET_CHART_OF_ACCOUNTS } from '@/gql/queries'
-import { Trash2, X, Save, Plus, Minus, CheckCircle } from 'lucide-react'
+import { Trash2, X, Save, Plus, Minus, CheckCircle, Wallet, Clock, CheckCircle2, CircleDollarSign } from 'lucide-react'
 import { formatMoney } from '@/lib/format-money'
-import { formatDate } from '@/lib/format-date'
 
 const EMPTY_LINE = { accountCode: '', accountName: '', period: '', amount: '' }
 
@@ -108,36 +108,55 @@ export default function SetUpBudgetsPage() {
   }
 
   const budgets = data?.budgets || []
+  const accounts = accountsData?.chartOfAccounts || []
   const totalAmount = form.lines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0)
 
-  const statusColor: Record<string, string> = {
-    draft: 'bg-yellow-100 text-yellow-700',
-    active: 'bg-green-100 text-green-700',
-    closed: 'bg-gray-100 text-gray-700',
-  }
+  const stats = useMemo(() => {
+    const draft = budgets.filter((b: any) => b.status === 'draft').length
+    const active = budgets.filter((b: any) => b.status === 'active').length
+    const total = budgets.reduce((s: number, b: any) => s + Number(b.totalAmount ?? 0), 0)
+    return { draft, active, total }
+  }, [budgets])
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
-    { key: 'budgetName', label: 'Budget Name', sortable: true, render: v => <span className="font-medium">{v}</span> },
-    { key: 'fiscalYear', label: 'Fiscal Year', width: '110px' },
-    { key: 'startDate', label: 'Start Date', width: '110px', render: v => formatDate(v) },
-    { key: 'endDate', label: 'End Date', width: '110px', render: v => formatDate(v) },
-    { key: 'totalAmount', label: 'Total Amount', width: '120px', render: v => formatMoney(v) },
-    { key: 'status', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs capitalize ${statusColor[v]}`}>{v}</span> },
+    { key: 'seqNo', label: 'Code', width: '100px', render: (v) => <MonoCell value={v} /> },
+    { key: 'budgetName', label: 'Budget Name', sortable: true, render: (v) => <span className="text-sm font-medium">{v}</span> },
+    { key: 'fiscalYear', label: 'Fiscal Year', width: '110px', render: (v) => <MonoCell value={v} /> },
+    { key: 'startDate', label: 'Start Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'endDate', label: 'End Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'totalAmount', label: 'Total Amount', width: '130px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'status', label: 'Status', width: '100px', render: (v) => <ErpBadge status={String(v)} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Set Up Budgets</h1>
-        <p className="text-gray-500">Create and manage fiscal year budgets</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Set Up Budgets"
+        subtitle="Create and manage fiscal year budgets"
+        icon={<Wallet className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Financial' }, { label: 'Budgets' }]}
+        actions={
+          <Button
+            onClick={() => { reset(); setAdding(true) }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> New Budget
+          </Button>
+        }
+      />
+
+      <StatsRow cols={4}>
+        <StatCard label="Total Budgets" value={budgets.length} icon={<Wallet className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft" value={stats.draft} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Active" value={stats.active} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Total Amount" value={`₹${(stats.total / 1000).toFixed(1)}k`} icon={<CircleDollarSign className="h-5 w-5" />} variant="rose" />
+      </StatsRow>
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-card border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">New Budget</span>
-            <button onClick={() => { setAdding(false); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={() => { setAdding(false); reset() }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-4 gap-3">
@@ -152,7 +171,7 @@ export default function SetUpBudgetsPage() {
                 <span className="text-sm font-semibold">Budget Lines</span>
                 <Button size="sm" onClick={addLine} className="h-7 text-xs"><Plus className="h-3 w-3 mr-1" />Add Line</Button>
               </div>
-              
+
               {form.lines.map((line, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-start">
                   <div className="col-span-3">
@@ -184,7 +203,7 @@ export default function SetUpBudgetsPage() {
 
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" size="sm" onClick={() => { setAdding(false); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[110px]">
+              <Button size="sm" onClick={handleSubmit} disabled={saving} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[110px]">
                 <Save className="h-3.5 w-3.5 mr-1" />{saving ? 'Saving…' : 'Save Budget'}
               </Button>
             </div>
@@ -197,16 +216,19 @@ export default function SetUpBudgetsPage() {
         columns={columns}
         loading={loading}
         title="All Budgets"
-        onAdd={() => { reset(); setAdding(true) }}
-        addLabel="New Budget"
         searchable
-        searchPlaceholder="Search budgets..."
-        emptyMessage="No budgets yet. Click 'New Budget' to create one."
+        searchPlaceholder="Search budgets…"
+        emptyMessage="No budgets found."
+        pageSize={25}
         actions={[
-          { label: 'Activate', icon: <CheckCircle className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Activate this budget?')) activateBudget({ variables: { id: row.id } }) }, variant: 'ghost', show: (row: any) => row.status === 'draft' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this budget?')) deleteBudget({ variables: { id: row.id } }) }, variant: 'ghost', show: (row: any) => row.status === 'draft' },
+          { label: 'Activate', icon: <CheckCircle className="h-3.5 w-3.5" />, onClick: (row) => { if (confirm('Activate this budget?')) activateBudget({ variables: { id: row.id } }) }, show: (row: any) => row.status === 'draft' },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: (row) => { if (confirm('Delete this budget?')) deleteBudget({ variables: { id: row.id } }) }, show: (row: any) => row.status === 'draft' },
         ]}
       />
+
+      {accounts.length > 0 && (
+        <p className="text-xs text-muted-foreground">{accounts.length} chart of accounts available for line coding.</p>
+      )}
     </div>
   )
 }

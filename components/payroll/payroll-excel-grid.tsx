@@ -125,7 +125,7 @@ export function PayrollExcelGrid({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white p-0.5 shadow-sm">
-          <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={onAddRow}>
+          <Button type="button" variant="ghost" size="sm" onClick={onAddRow}>
             <Plus className="h-3.5 w-3.5 mr-1" />
             Row
           </Button>
@@ -133,7 +133,7 @@ export function PayrollExcelGrid({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8 text-xs"
+           
             onClick={onRemoveLastRow}
             title="Remove last row"
           >
@@ -146,7 +146,7 @@ export function PayrollExcelGrid({
           </Button>
         </div>
         <div className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white p-0.5 shadow-sm">
-          <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={downloadCsv}>
+          <Button type="button" variant="ghost" size="sm" onClick={downloadCsv}>
             <Download className="h-3.5 w-3.5 mr-1" />
             CSV
           </Button>

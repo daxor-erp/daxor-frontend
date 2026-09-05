@@ -276,7 +276,7 @@ export function AdjustInventoryQuickSection({ organizationId: orgId, warehouses 
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
-          { label: 'Total', value: stats.total, icon: ClipboardList, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Total', value: stats.total, icon: ClipboardList, cls: 'text-primary bg-primary/10' },
           { label: 'Draft', value: stats.draft, icon: FileEdit, cls: 'text-yellow-600 bg-yellow-50' },
           { label: 'Confirmed', value: stats.confirmed, icon: BadgeCheck, cls: 'text-green-600 bg-green-50' },
           { label: 'This month', value: stats.thisMonth, icon: CalendarDays, cls: 'text-purple-600 bg-purple-50' },
@@ -294,10 +294,10 @@ export function AdjustInventoryQuickSection({ organizationId: orgId, warehouses 
       </div>
 
       {adding && (
-        <div className="border border-blue-200 rounded-lg overflow-hidden bg-blue-50/30">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="border border-primary/20 rounded-lg overflow-hidden bg-primary/10/30">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">New stock adjustment</span>
-            <button type="button" onClick={closeForm} className="text-blue-200 hover:text-white">
+            <button type="button" onClick={closeForm} className="text-primary-foreground/80 hover:text-white">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -354,7 +354,7 @@ export function AdjustInventoryQuickSection({ organizationId: orgId, warehouses 
                 <button
                   type="button"
                   onClick={addLine}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                  className="flex items-center gap-1 text-xs text-primary hover:text-primary"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add line
                 </button>
@@ -377,7 +377,7 @@ export function AdjustInventoryQuickSection({ organizationId: orgId, warehouses 
                       <tr key={idx} className="border-t border-gray-100">
                         <td className="px-2 py-1">
                           <input
-                            className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400"
+                            className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-primary"
                             placeholder="Description"
                             value={line.itemDescription}
                             onChange={(e) => setLine(idx, 'itemDescription', e.target.value)}
@@ -442,7 +442,7 @@ export function AdjustInventoryQuickSection({ organizationId: orgId, warehouses 
             />
 
             <div className="flex justify-end gap-2 pt-1 border-t border-gray-200">
-              <Button variant="outline" size="sm" type="button" onClick={closeForm} className="h-8 text-xs">
+              <Button variant="outline" size="sm" type="button" onClick={closeForm}>
                 Cancel
               </Button>
               <Button
@@ -450,7 +450,7 @@ export function AdjustInventoryQuickSection({ organizationId: orgId, warehouses 
                 size="sm"
                 onClick={handleSubmit}
                 disabled={saving}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {saving ? 'Saving…' : 'Save'}

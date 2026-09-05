@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { GET_SALES_RETURNS, CREATE_SALES_RETURN, SUBMIT_SALES_RETURN_FOR_APPROVAL } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
-import { Save, Plus, X } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
+import { Save, Plus, X, Send, RotateCcw, Clock, CheckCircle2 } from 'lucide-react'
 
 function srStatusLabel(st: string) {
   const u = String(st || '').toUpperCase()
@@ -45,7 +46,9 @@ export default function SalesReturnsPage() {
     onCompleted: () => refetch(),
   })
 
-  const items = data?.salesreturns || []
+  const items: any[] = data?.salesreturns || []
+  const draft = items.filter((i) => ['DRAFT', 'APPROVAL_DECLINED'].includes(String(i.status).toUpperCase())).length
+  const approved = items.filter((i) => String(i.status).toUpperCase() === 'APPROVED').length
 
   const reset = () => {
     setFormData({ docDate: '' })
@@ -54,14 +57,8 @@ export default function SalesReturnsPage() {
 
   const openNew = () => {
     reset()
-    const today = new Date().toISOString().slice(0, 10)
-    setFormData({ docDate: today })
+    setFormData({ docDate: new Date().toISOString().slice(0, 10) })
     setShowNewRecord(true)
-  }
-
-  const setF = (k: keyof typeof formData, v: string) => {
-    setFormData((p) => ({ ...p, [k]: v }))
-    setFormError('')
   }
 
   const handleSubmit = () => {
@@ -75,156 +72,93 @@ export default function SalesReturnsPage() {
       return
     }
     createSalesReturn({
-      variables: {
-        input: {
-          docDate: formData.docDate,
-          organizationId: orgId,
-        },
-      },
+      variables: { input: { docDate: formData.docDate, organizationId: orgId } },
     })
   }
 
+  const columns: Column[] = [
+    {
+      key: 'docNumber',
+      label: 'Document #',
+      width: '140px',
+      render: (v, r) => <MonoCell value={v || r.transactionNumber || r.warehouseCode || '—'} />,
+    },
+    { key: 'docDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    {
+      key: 'status',
+      label: 'Status',
+      width: '140px',
+      render: (v) => <ErpBadge status={srStatusLabel(v)} />,
+    },
+    { key: 'createdAt', label: 'Created', width: '110px', render: (v) => <DateCell value={v} /> },
+  ]
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Sales Returns</h1>
-          <p className="text-gray-500">Manage sales returns</p>
-        </div>
-        <Button type="button" onClick={openNew} className="bg-blue-600 hover:bg-blue-700 text-white">
-          <Plus className="h-4 w-4 mr-2" />
-          New Record
-        </Button>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Sales Returns"
+        subtitle="Manage sales returns"
+        icon={<RotateCcw className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Sales Returns' }]}
+        actions={
+          <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Return
+          </Button>
+        }
+      />
+
+      <StatsRow cols={3}>
+        <StatCard label="Total" value={items.length} icon={<RotateCcw className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Awaiting action" value={draft} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Approved" value={approved} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
       {showNewRecord && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 bg-blue-600">
+        <div className="bg-card border border-primary/30 rounded-lg shadow-sm overflow-hidden mb-4">
+          <div className="flex items-center justify-between px-4 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">New Sales Return</span>
-            <button
-              type="button"
-              onClick={() => {
-                setShowNewRecord(false)
-                reset()
-              }}
-              className="text-blue-200 hover:text-white"
-            >
+            <button type="button" onClick={() => { setShowNewRecord(false); reset() }} className="text-primary-foreground/80 hover:text-white">
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-4 max-w-lg">
             {formError && <div className="text-xs text-red-500">{formError}</div>}
-
-            <div className="grid grid-cols-2 gap-3 max-w-lg">
-              <InputFloating
-                label="Document date *"
-                type="date"
-                value={formData.docDate}
-                onChange={(e) => setF('docDate', e.target.value)}
-                className="h-7 text-xs"
-              />
-              <div className="flex flex-col justify-end pb-1">
-                <span className="text-[10px] text-gray-400 px-1">Organization</span>
-                <span className="text-xs text-gray-700 border border-gray-200 rounded px-2 py-1.5 bg-gray-50 truncate" title={orgId}>
-                  {orgId || '—'}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-xs text-gray-500">New returns are saved as <strong>Draft</strong>. Use “Send for approval” from the list.</p>
-
+            <InputFloating
+              label="Document date *"
+              type="date"
+              value={formData.docDate}
+              onChange={(e) => { setFormData((p) => ({ ...p, docDate: e.target.value })); setFormError('') }}
+              className="h-7 text-xs"
+            />
+            <p className="text-xs text-muted-foreground">New returns are saved as Draft. Use “Send for approval” from the list.</p>
             <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowNewRecord(false)
-                  reset()
-                }}
-                className="h-8 text-xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleSubmit}
-                disabled={saving || !orgId}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]"
-              >
-                <Save className="h-3.5 w-3.5 mr-1" />
-                {saving ? 'Saving…' : 'Save Return'}
+              <Button type="button" variant="outline" size="sm" onClick={() => { setShowNewRecord(false); reset() }}>Cancel</Button>
+              <Button type="button" size="sm" onClick={handleSubmit} disabled={saving || !orgId}>
+                <Save className="h-3.5 w-3.5 mr-1" />{saving ? 'Saving…' : 'Save Return'}
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200">
-          <h2 className="text-sm font-semibold text-gray-800">All Returns</h2>
-          <p className="text-xs text-gray-500">Total records: {items.length}</p>
-        </div>
-        <div className="p-4">
-          {loading ? (
-            <p className="text-sm text-gray-500">Loading...</p>
-          ) : items.length === 0 ? (
-            <p className="text-sm text-gray-500">No records found. Click New Record to add one.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border border-gray-200 rounded">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left p-2 font-medium text-gray-600">Document #</th>
-                    <th className="text-left p-2 font-medium text-gray-600">Date</th>
-                    <th className="text-left p-2 font-medium text-gray-600">Status</th>
-                    <th className="text-left p-2 font-medium text-gray-600">Org approval</th>
-                    <th className="text-left p-2 font-medium text-gray-600">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item: any) => {
-                    const st = String(item.status || '').toUpperCase()
-                    const showSubmit = st === 'DRAFT' || st === 'APPROVAL_DECLINED'
-                    return (
-                      <tr key={item.id} className="border-t border-gray-100 hover:bg-gray-50/80">
-                        <td className="p-2 font-mono text-gray-600">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
-                        <td className="p-2">{item.docDate ? formatDate(item.docDate) : 'N/A'}</td>
-                        <td className="p-2">
-                          <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
-                            {srStatusLabel(item.status)}
-                          </span>
-                        </td>
-                        <td className="p-2">
-                          {showSubmit ? (
-                            <select
-                              aria-label="Sales return approval action"
-                              className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2 max-w-[160px]"
-                              defaultValue=""
-                              onChange={(e) => {
-                                const val = e.target.value
-                                e.target.value = ''
-                                if (val === 'submit') void submitSalesReturnForApproval({ variables: { id: item.id } })
-                              }}
-                            >
-                              <option value="">Change status…</option>
-                              <option value="submit">Send for approval</option>
-                            </select>
-                          ) : (
-                            <span className="text-xs text-gray-400">—</span>
-                          )}
-                        </td>
-                        <td className="p-2">{item.createdAt ? formatDate(item.createdAt) : '—'}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+      <DataTable
+        data={items}
+        columns={columns}
+        loading={loading}
+        title="All Sales Returns"
+        searchable
+        searchPlaceholder="Search returns…"
+        emptyMessage="No sales returns found."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Send for approval',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (r) => submitSalesReturnForApproval({ variables: { id: r.id } }),
+            show: (r) => ['DRAFT', 'APPROVAL_DECLINED'].includes(String(r.status || '').toUpperCase()),
+          },
+        ]}
+      />
     </div>
   )
 }

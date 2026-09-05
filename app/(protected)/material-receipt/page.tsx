@@ -124,7 +124,7 @@ export default function MaterialReceiptPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Material Receipts"
         subtitle="Record and manage incoming material receipts with quality inspection"

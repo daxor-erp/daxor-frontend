@@ -2,9 +2,10 @@
 
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { GET_PROJECTS } from '@/gql/queries'
-import { formatDate } from '@/lib/format-date'
+import { FolderKanban, CheckCircle2 } from 'lucide-react'
 
 export default function ProductionProjectMastersPage() {
   const { user } = useAuth()
@@ -16,22 +17,30 @@ export default function ProductionProjectMastersPage() {
   })
 
   const projects = data?.projects ?? []
+  const active = projects.filter((p: any) => p.status === 'active').length
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '120px', render: v => <span className="font-mono text-xs">{v || '—'}</span> },
-    { key: 'name', label: 'Project Name', sortable: true },
-    { key: 'description', label: 'Description', render: v => <span className="text-xs text-gray-500">{v || '—'}</span> },
-    { key: 'startDate', label: 'Start Date', width: '110px', render: v => v ? formatDate(v) : '—' },
-    { key: 'endDate', label: 'End Date', width: '110px', render: v => v ? formatDate(v) : '—' },
-    { key: 'status', label: 'Status', width: '100px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${v === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{v}</span> },
+    { key: 'seqNo', label: 'Code', width: '120px', render: v => <MonoCell value={v || '—'} /> },
+    { key: 'name', label: 'Project Name', sortable: true, render: v => <span className="text-sm font-medium">{v}</span> },
+    { key: 'description', label: 'Description', render: v => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'startDate', label: 'Start Date', width: '110px', render: v => <DateCell value={v} /> },
+    { key: 'endDate', label: 'End Date', width: '110px', render: v => <DateCell value={v} /> },
+    { key: 'status', label: 'Status', width: '100px', render: v => <ErpBadge status={String(v)} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Project Masters</h1>
-        <p className="text-gray-500">Production project master data</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Project Masters"
+        subtitle="Production project master data"
+        icon={<FolderKanban className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Production' }, { label: 'Masters' }, { label: 'Project Masters' }]}
+      />
+
+      <StatsRow cols={2}>
+        <StatCard label="Total Projects" value={projects.length} icon={<FolderKanban className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Active" value={active} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
       <DataTable
         data={projects}
@@ -39,8 +48,9 @@ export default function ProductionProjectMastersPage() {
         loading={loading}
         title="All Projects"
         searchable
-        searchPlaceholder="Search projects..."
+        searchPlaceholder="Search projects…"
         emptyMessage="No projects available."
+        pageSize={25}
       />
     </div>
   )

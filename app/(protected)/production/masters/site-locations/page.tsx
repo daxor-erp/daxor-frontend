@@ -7,7 +7,8 @@ import { DataTable, Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import { GET_SITE_LOCATIONS, CREATE_SITE_LOCATION, UPDATE_SITE_LOCATION, DELETE_SITE_LOCATION } from '@/gql/queries'
-import { MapPin, Save, X, Edit, Trash2 } from 'lucide-react'
+import { PageHeader, MonoCell } from '@/components/ui/erp-shared'
+import { MapPin, Save, X, Edit, Trash2, Plus } from 'lucide-react'
 
 const EMPTY_FORM = { name: '', address: '', city: '', state: '', country: '', zipCode: '', contactPerson: '', phone: '', email: '' }
 
@@ -80,26 +81,33 @@ export default function SiteLocationsPage() {
   const locations = data?.siteLocations || []
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
-    { key: 'name', label: 'Location Name', sortable: true },
-    { key: 'address', label: 'Address', render: v => <span className="text-xs">{v || '—'}</span> },
+    { key: 'seqNo', label: 'Code', width: '100px', render: v => <MonoCell value={v} /> },
+    { key: 'name', label: 'Location Name', sortable: true, render: v => <span className="text-sm font-medium">{v}</span> },
+    { key: 'address', label: 'Address', render: v => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
     { key: 'city', label: 'City', width: '120px' },
     { key: 'state', label: 'State', width: '80px' },
     { key: 'zipCode', label: 'Zip Code', width: '100px' },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Site Locations</h1>
-        <p className="text-gray-500">Manage production site locations</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Site Locations"
+        subtitle="Manage production site locations"
+        icon={<MapPin className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Production' }, { label: 'Masters' }, { label: 'Site Locations' }]}
+        actions={
+          <Button onClick={() => setAdding(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Location
+          </Button>
+        }
+      />
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editing ? 'Edit Location' : 'New Location'}</span>
-            <button onClick={reset} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={reset} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-3">
             <InputFloating label="Location Name *" value={form.name} onChange={e => setF('name', e.target.value)} error={errors.name} className="h-7 text-xs" />
@@ -116,8 +124,8 @@ export default function SiteLocationsPage() {
               <InputFloating label="Email" type="email" value={form.email} onChange={e => setF('email', e.target.value)} className="h-7 text-xs" />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={reset} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs"><Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving...' : 'Save'}</Button>
+              <Button variant="outline" size="sm" onClick={reset}>Cancel</Button>
+              <Button size="sm" onClick={handleSubmit} disabled={saving || updating}><Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving...' : 'Save'}</Button>
             </div>
           </div>
         </div>
@@ -128,15 +136,14 @@ export default function SiteLocationsPage() {
         columns={columns}
         loading={loading}
         title="All Locations"
-        onAdd={() => setAdding(true)}
-        addLabel="New Location"
         searchable
-        searchPlaceholder="Search locations..."
+        searchPlaceholder="Search locations…"
         emptyMessage="No locations yet."
+        pageSize={25}
         onRowClick={handleEdit}
         actions={[
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete?')) deleteLocation({ variables: { id: row.id } }) }, variant: 'ghost' },
+          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row) },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete?')) deleteLocation({ variables: { id: row.id } }) } },
         ]}
       />
     </div>

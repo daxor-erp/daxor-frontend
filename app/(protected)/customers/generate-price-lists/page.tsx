@@ -3,12 +3,14 @@
 import { useQuery, useMutation } from '@apollo/client'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { DataTable, type Column } from '@/components/DataTable'
 import { Button } from '@/components/ui/button'
 import { InputFloating } from '@/components/ui/input-floating'
+import { PageHeader, StatsRow, StatCard, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { GET_PRICE_LISTS, GENERATE_PRICE_LIST } from '@/gql/queries'
 import { wsCell, wsHeaderCell, wsMoney } from '@/lib/worksheet-styles'
 import { formatMoney } from '@/lib/format-money'
-import { List, Printer, RefreshCw, Tag } from 'lucide-react'
+import { List, Printer, RefreshCw, Tag, FileText } from 'lucide-react'
 
 export default function GeneratePriceListsPage() {
   const { user } = useAuth()
@@ -52,32 +54,69 @@ export default function GeneratePriceListsPage() {
     })
   }
 
+  const columns: Column[] = [
+    { key: 'listNumber', label: 'List #', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'title', label: 'Title', render: (v) => <span className="text-sm font-medium">{v || '—'}</span> },
+    {
+      key: 'lines',
+      label: 'Lines',
+      width: '90px',
+      align: 'right',
+      render: (_v, row) => <MonoCell value={String(row.lines?.length ?? 0)} />,
+    },
+    {
+      key: 'categoryFilter',
+      label: 'Category',
+      width: '160px',
+      render: (v) => <span className="text-sm text-muted-foreground">{v || 'All categories'}</span>,
+    },
+    {
+      key: 'createdAt',
+      label: 'Created',
+      width: '110px',
+      render: (v) => <DateCell value={v} />,
+    },
+  ]
+
   return (
-    <div className="p-6 space-y-6 max-w-[1100px] print:max-w-none">
+    <div className="erp-shell">
       <div className="print:hidden">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Tag className="h-8 w-8 text-sky-700" />
-          Generate Price Lists
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Build a snapshot from active inventory items. Optionally filter by category. Each run saves a new list
-          you can print or reference later.
-        </p>
+        <PageHeader
+          title="Generate Price Lists"
+          subtitle="Build a snapshot from active inventory items. Optionally filter by category. Each run saves a new list you can print or reference later."
+          icon={<Tag className="h-5 w-5" />}
+          breadcrumbs={[{ label: 'Customers' }, { label: 'Generate Price Lists' }]}
+          actions={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          }
+        />
+
+        <StatsRow cols={2}>
+          <StatCard
+            label="Saved Lists"
+            value={lists.length}
+            icon={<List className="h-5 w-5" />}
+            variant="slate"
+          />
+          <StatCard
+            label="Lines in Preview"
+            value={previewLines.length}
+            icon={<FileText className="h-5 w-5" />}
+            variant="blue"
+          />
+        </StatsRow>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 print:hidden">
-        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-          <p className="text-xs text-gray-400">Saved lists</p>
-          <p className="text-lg font-bold text-gray-800">{lists.length}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-          <p className="text-xs text-gray-400">Lines in preview</p>
-          <p className="text-lg font-bold text-gray-800">{previewLines.length}</p>
-        </div>
-      </div>
-
-      <div className="rounded border-2 border-gray-400 overflow-hidden bg-white shadow-sm print:border-0 print:shadow-none">
-        <div className="bg-sky-700 text-white px-3 py-1.5 text-xs font-semibold flex items-center justify-between print:bg-gray-800">
+      <div className="rounded border-2 border-border overflow-hidden bg-card shadow-sm print:border-0 print:shadow-none">
+        <div className="bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold flex items-center justify-between print:bg-muted print:text-foreground">
           <span>New price list</span>
           <span className="opacity-90">Items → snapshot</span>
         </div>
@@ -101,7 +140,7 @@ export default function GeneratePriceListsPage() {
             <Button
               type="button"
               size="sm"
-              className="h-9 text-xs bg-sky-700 hover:bg-sky-800 text-white"
+              className="h-9 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={handleGenerate}
               disabled={generating || !orgId}
             >
@@ -118,24 +157,14 @@ export default function GeneratePriceListsPage() {
               <Printer className="h-3.5 w-3.5 mr-1" />
               Print preview
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 text-xs"
-              onClick={() => refetch()}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
           </div>
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5">{error}</p>
+            <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-2 py-1.5">{error}</p>
           )}
         </div>
 
-        <div className="border-t border-gray-200 px-4 py-2 print:border-t-0">
-          <p className="text-sm font-semibold text-gray-800 mb-2 print:text-center">
+        <div className="border-t border-border px-4 py-2 print:border-t-0">
+          <p className="text-sm font-semibold text-foreground mb-2 print:text-center">
             {latest?.listNumber ? `${latest.listNumber} — ${latest.title}` : `Preview (${previewLines.length} lines)`}
           </p>
           <div className="overflow-x-auto">
@@ -152,13 +181,13 @@ export default function GeneratePriceListsPage() {
               <tbody>
                 {!previewLines.length && (
                   <tr>
-                    <td colSpan={5} className={`${wsCell} text-center text-gray-500 py-8`}>
+                    <td colSpan={5} className={`${wsCell} text-center text-muted-foreground py-8`}>
                       No items yet. Generate a list from active inventory items.
                     </td>
                   </tr>
                 )}
                 {previewLines.map((row: any, i: number) => (
-                  <tr key={`${row.itemId}-${i}`} className="hover:bg-gray-50">
+                  <tr key={`${row.itemId}-${i}`} className="hover:bg-muted/50">
                     <td className={`${wsCell} font-mono`}>{row.seqNo || '—'}</td>
                     <td className={`${wsCell} font-medium`}>{row.name}</td>
                     <td className={wsCell}>{row.category || '—'}</td>
@@ -172,25 +201,17 @@ export default function GeneratePriceListsPage() {
         </div>
       </div>
 
-      <div className="rounded border border-gray-200 bg-white shadow-sm overflow-hidden print:hidden">
-        <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <List className="h-4 w-4" />
-          Recent saved lists
-        </div>
-        <ul className="divide-y divide-gray-100 max-h-48 overflow-y-auto text-xs">
-          {!lists.length && (
-            <li className="px-3 py-4 text-gray-400 text-center">No saved price lists yet.</li>
-          )}
-          {lists.map((l: any) => (
-            <li key={l.id} className="px-3 py-2 flex justify-between gap-2">
-              <span className="font-mono text-gray-700">{l.listNumber}</span>
-              <span className="text-gray-600 truncate">{l.title}</span>
-              <span className="text-gray-400 shrink-0">
-                {l.lines?.length ?? 0} lines · {l.categoryFilter || 'all categories'}
-              </span>
-            </li>
-          ))}
-        </ul>
+      <div className="print:hidden">
+        <DataTable
+          data={lists}
+          columns={columns}
+          loading={loading}
+          title="All Price Lists"
+          searchable
+          searchPlaceholder="Search list #, title, category…"
+          emptyMessage="No saved price lists yet."
+          pageSize={25}
+        />
       </div>
     </div>
   )

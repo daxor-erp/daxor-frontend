@@ -68,7 +68,7 @@ export default function NotificationsPage() {
   })
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Notifications"
         description={unreadCount > 0 ? `${unreadCount} unread of ${items.length} total` : 'All caught up'}

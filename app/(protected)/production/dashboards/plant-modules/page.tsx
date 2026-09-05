@@ -27,15 +27,15 @@ export default function PlantModulesDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Plant Modules Dashboard</h1>
-        <p className="text-gray-500">Plant module production tracking and monitoring</p>
+        <h1 className="erp-page-title">Plant Modules Dashboard</h1>
+        <p className="erp-page-desc">Plant module production tracking and monitoring</p>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Total Modules', value: stats.totalModules, icon: Box, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Total Modules', value: stats.totalModules, icon: Box, cls: 'text-primary bg-primary/10' },
           { label: 'Active Modules', value: stats.activeModules, icon: Activity, cls: 'text-green-600 bg-green-50' },
           { label: 'Milestones', value: stats.totalMilestones, icon: TrendingUp, cls: 'text-purple-600 bg-purple-50' },
           { label: 'Completed', value: stats.completedMilestones, icon: TrendingUp, cls: 'text-orange-600 bg-orange-50' },
@@ -61,7 +61,7 @@ export default function PlantModulesDashboard() {
                     <span className="font-semibold">{plan.progress || 0}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${plan.progress || 0}%` }} />
+                    <div className="bg-primary/100 h-2 rounded-full" style={{ width: `${plan.progress || 0}%` }} />
                   </div>
                 </div>
               ))}
@@ -122,7 +122,7 @@ export default function PlantModulesDashboard() {
                       <td className="p-2">{plan.progress || 0}%</td>
                       <td className="p-2">{(plan.tasks || []).length}</td>
                       <td className="p-2">{(plan.milestones || []).length}</td>
-                      <td className="p-2"><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">{plan.status}</span></td>
+                      <td className="p-2"><span className="px-2 py-0.5 bg-primary/10 text-primary rounded">{plan.status}</span></td>
                     </tr>
                   ))}
                 </tbody>

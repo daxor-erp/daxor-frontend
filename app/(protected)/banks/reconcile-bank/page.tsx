@@ -4,7 +4,10 @@ import { useMutation, useQuery } from '@apollo/client'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { SelectFloating } from '@/components/ui/select-floating'
+import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, AmountCell, MonoCell, DateCell, ErpBadge } from '@/components/ui/erp-shared'
 import {
   GET_BANK_ACCOUNTS,
   GET_CASH_BANKS,
@@ -13,15 +16,7 @@ import {
   DELETE_BANK_STATEMENT_LINE,
   MATCH_BANK_STATEMENT_LINE,
 } from '@/gql/queries'
-import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
-import { formatMoney } from '@/lib/format-money'
-import { FileText, Link2, RefreshCw, Trash2 } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
-
-const labelCell = wsLabelCell
-const cell = wsCell
-const headerCell = wsHeaderCell
-const moneyClass = wsMoney
+import { CheckCircle2, Clock, FileText, Link2, Plus, RefreshCw, Trash2 } from 'lucide-react'
 
 const TOL = 0.01
 
@@ -55,6 +50,7 @@ type BookLine = {
   transactionType: string
   amount: number
   description: string
+  signedAmount?: number
 }
 
 export default function ReconcileBankStatementPage() {
@@ -63,6 +59,7 @@ export default function ReconcileBankStatementPage() {
 
   const [accountNumber, setAccountNumber] = useState('')
   const [error, setError] = useState('')
+  const [formOpen, setFormOpen] = useState(false)
 
   const [lineDate, setLineDate] = useState(() => new Date().toISOString().split('T')[0])
   const [lineKind, setLineKind] = useState<'credit' | 'debit'>('credit')
@@ -97,6 +94,7 @@ export default function ReconcileBankStatementPage() {
       setLineDesc('')
       setLineRef('')
       setError('')
+      setFormOpen(false)
       void refetchStmt()
     },
     onError: (e) => setError(e.message),
@@ -143,11 +141,19 @@ export default function ReconcileBankStatementPage() {
     [bankAccounts],
   )
 
+  const selected = useMemo(
+    () => bankAccounts.find((a: { accountNumber: string }) => a.accountNumber === accountNumber),
+    [bankAccounts, accountNumber],
+  ) as { accountHolder?: string; accountName?: string; bankName?: string } | undefined
+
   const bankLines: BankLine[] = useMemo(() => (stmtData?.bankStatementLines ?? []) as BankLine[], [stmtData])
   const unmatchedBank = useMemo(() => bankLines.filter((l) => !l.isMatched), [bankLines])
   const matchedBank = useMemo(() => bankLines.filter((l) => l.isMatched).slice(0, 40), [bankLines])
 
-  const bookPending: BookLine[] = useMemo(() => (bookData?.cashBanks ?? []) as BookLine[], [bookData])
+  const bookPending: BookLine[] = useMemo(() => {
+    const rows = (bookData?.cashBanks ?? []) as BookLine[]
+    return rows.map((b) => ({ ...b, signedAmount: signedBook(b) }))
+  }, [bookData])
 
   const bookOptionsFor = (bl: BankLine) => {
     const sl = signedLine(bl)
@@ -155,7 +161,7 @@ export default function ReconcileBankStatementPage() {
       .filter((b) => Math.abs(signedBook(b) - sl) <= TOL)
       .map((b) => ({
         value: b.id,
-        label: `${b.transactionNumber} · ${b.transactionType} · ${formatMoney(Math.abs(Number(b.amount)))}`,
+        label: `${b.transactionNumber} · ${b.transactionType} · ${Math.abs(Number(b.amount)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       }))
   }
 
@@ -201,301 +207,295 @@ export default function ReconcileBankStatementPage() {
     void refetchBook()
   }
 
-  return (
-    <div className="p-6 space-y-6 max-w-[1200px]">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <FileText className="h-8 w-8 text-sky-800" />
-          Reconcile bank statement
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Enter lines as they appear on your bank-issued statement (credit = money in, debit = money out). Link each
-          line to a pending book entry with the same amount and direction to mark it reconciled.
-        </p>
-      </div>
+  const unmatchedColumns: Column[] = [
+    { key: 'lineDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    {
+      key: 'lineKind',
+      label: 'Kind',
+      width: '100px',
+      render: (v) => <ErpBadge status={v} />,
+    },
+    { key: 'amount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'description', label: 'Description', render: (v) => <span className="text-sm">{v || '—'}</span> },
+    {
+      key: 'bankReference',
+      label: 'Ref',
+      width: '120px',
+      render: (v) => <MonoCell value={v || '—'} />,
+    },
+    {
+      key: 'linkBook',
+      label: 'Link to book line',
+      width: '260px',
+      render: (_v, row: BankLine) => {
+        const opts = bookOptionsFor(row)
+        return (
+          <div className="min-w-[200px]" onClick={(e) => e.stopPropagation()}>
+            <SelectFloating
+              label=""
+              value={linkByBankLine[row.id] ?? ''}
+              onChange={(v) => {
+                const next = typeof v === 'string' ? v : v.target.value
+                setLinkByBankLine((m) => ({ ...m, [row.id]: next }))
+              }}
+              options={[{ value: '', label: '— Select book line —' }, ...opts]}
+              className="h-8 text-xs"
+            />
+            {!opts.length && (
+              <p className="text-[10px] text-amber-800 mt-1">No book line with matching sign and amount</p>
+            )}
+          </div>
+        )
+      },
+    },
+  ]
 
-      <div className="rounded border-2 border-gray-400 overflow-hidden bg-white shadow-sm">
-        <div className="bg-slate-800 text-white px-3 py-1.5 text-xs font-semibold">Bank account</div>
-        <div className="p-3">
-          <table className="w-full border-collapse text-xs min-w-[400px]">
-            <tbody>
-              <tr>
-                <td className={labelCell}>Account</td>
-                <td className={`${cell} min-w-[360px]`}>
-                  <SelectFloating
-                    label=""
-                    value={accountNumber}
-                    onChange={(v) => {
-                      const next = typeof v === 'string' ? v : v.target.value
-                      setAccountNumber(next)
-                      setLinkByBankLine({})
-                      setError('')
-                    }}
-                    options={bankOptions}
-                    className="h-8 text-xs border-0 shadow-none bg-transparent p-0"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          {acctLoading && <p className="text-xs text-gray-500 mt-2">Loading…</p>}
+  const bookColumns: Column[] = [
+    { key: 'transactionNumber', label: 'Transaction #', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'transactionDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    {
+      key: 'transactionType',
+      label: 'Type',
+      width: '110px',
+      render: (v) => <span className="text-xs capitalize">{String(v ?? '—').replace(/_/g, ' ')}</span>,
+    },
+    { key: 'description', label: 'Description', render: (v) => <span className="text-sm">{v || '—'}</span> },
+    {
+      key: 'signedAmount',
+      label: 'Amount (sign)',
+      width: '130px',
+      align: 'right',
+      render: (v) => (
+        <span className="text-sm font-mono tabular-nums">
+          {Number(v ?? 0).toFixed(2)}
+        </span>
+      ),
+    },
+  ]
+
+  const matchedColumns: Column[] = [
+    { key: 'lineDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    {
+      key: 'lineKind',
+      label: 'Kind',
+      width: '100px',
+      render: (v) => <ErpBadge status={v} />,
+    },
+    { key: 'amount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'description', label: 'Description', render: (v) => <span className="text-sm">{v || '—'}</span> },
+    {
+      key: 'bankReference',
+      label: 'Ref',
+      width: '120px',
+      render: (v) => <MonoCell value={v || '—'} />,
+    },
+  ]
+
+  return (
+    <div className="erp-shell">
+      <PageHeader
+        title="Reconcile Bank Statement"
+        subtitle="Enter lines as they appear on your bank-issued statement. Link each line to a pending book entry with the same amount and direction."
+        icon={<FileText className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Banks' }, { label: 'Reconcile Bank' }]}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {accountNumber && (
+              <Button type="button" variant="outline" size="sm" onClick={() => refresh()}>
+                <RefreshCw
+                  className={`h-3.5 w-3.5 mr-1.5 ${stmtLoading || bookLoading ? 'animate-spin' : ''}`}
+                />
+                Refresh
+              </Button>
+            )}
+            {accountNumber && (
+              <Button
+                type="button"
+                size="sm"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={() => {
+                  setFormOpen(true)
+                  setError('')
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Add statement line
+              </Button>
+            )}
+          </div>
+        }
+      />
+
+      {accountNumber && (
+        <StatsRow cols={3}>
+          <StatCard
+            label="Unmatched"
+            value={unmatchedBank.length}
+            icon={<Clock className="h-5 w-5" />}
+            variant="amber"
+          />
+          <StatCard
+            label="Matched"
+            value={matchedBank.length}
+            icon={<CheckCircle2 className="h-5 w-5" />}
+            variant="green"
+          />
+          <StatCard
+            label="Pending book"
+            value={bookPending.length}
+            icon={<FileText className="h-5 w-5" />}
+            variant="slate"
+          />
+        </StatsRow>
+      )}
+
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 mb-4">
+        <h2 className="text-sm font-semibold text-foreground">
+          Bank account
+          {selected ? (
+            <span className="text-muted-foreground font-normal">
+              {' '}
+              — {(selected.accountHolder || selected.accountName) ?? '—'} · {selected.bankName}
+            </span>
+          ) : null}
+        </h2>
+        <div className="max-w-xl">
+          <SelectFloating
+            label="Account (by holder) *"
+            value={accountNumber}
+            onChange={(v) => {
+              const next = typeof v === 'string' ? v : v.target.value
+              setAccountNumber(next)
+              setLinkByBankLine({})
+              setError('')
+            }}
+            options={[{ value: '', label: 'Select account…' }, ...bankOptions]}
+          />
         </div>
+        {acctLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
       </div>
 
       {!accountNumber && orgId && !acctLoading && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-4">
           Select a bank account to add statement lines and link them to the register.
         </p>
       )}
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>
+        <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2 mb-4">
+          {error}
+        </p>
+      )}
+
+      {accountNumber && formOpen && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-4 mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground">Add line from bank statement</h2>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setFormOpen(false)}>
+              Close
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <InputFloating
+              label="Date *"
+              type="date"
+              value={lineDate}
+              onChange={(e) => setLineDate(e.target.value)}
+            />
+            <SelectFloating
+              label="Kind *"
+              value={lineKind}
+              onChange={(v) => setLineKind((typeof v === 'string' ? v : v.target.value) as 'credit' | 'debit')}
+              options={[
+                { value: 'credit', label: 'Credit (in)' },
+                { value: 'debit', label: 'Debit (out)' },
+              ]}
+            />
+            <InputFloating
+              label="Amount *"
+              type="number"
+              value={lineAmount}
+              onChange={(e) => setLineAmount(e.target.value)}
+            />
+            <div className="sm:col-span-2">
+              <InputFloating
+                label="Description (as on statement) *"
+                value={lineDesc}
+                onChange={(e) => setLineDesc(e.target.value)}
+                placeholder="Payee / memo"
+              />
+            </div>
+            <InputFloating
+              label="Bank reference"
+              value={lineRef}
+              onChange={(e) => setLineRef(e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+          <Button
+            type="button"
+            disabled={creating}
+            onClick={addStatementLine}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {creating ? 'Adding…' : 'Add statement line'}
+          </Button>
+        </div>
       )}
 
       {accountNumber && (
-        <>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => refresh()}>
-              <RefreshCw
-                className={`h-3.5 w-3.5 mr-1 ${stmtLoading || bookLoading ? 'animate-spin' : ''}`}
-              />
-              Refresh
-            </Button>
-          </div>
+        <div className="space-y-4">
+          <DataTable
+            data={unmatchedBank}
+            columns={unmatchedColumns}
+            loading={stmtLoading}
+            title="All Unmatched Statement Lines"
+            searchable
+            searchPlaceholder="Search unmatched lines…"
+            emptyMessage="No unmatched bank lines. Add lines from your bank statement above."
+            pageSize={25}
+            actions={[
+              {
+                label: 'Link',
+                icon: <Link2 className="h-3.5 w-3.5" />,
+                onClick: (r: BankLine) => linkToBook(r.id),
+                disabled: () => matching,
+              },
+              {
+                label: 'Delete',
+                icon: <Trash2 className="h-3.5 w-3.5" />,
+                variant: 'destructive',
+                onClick: (r: BankLine) => {
+                  if (confirm('Remove this bank statement line?')) {
+                    setError('')
+                    void removeLine({ variables: { id: r.id } })
+                  }
+                },
+              },
+            ]}
+          />
 
-          <div className="rounded border border-slate-200 bg-slate-50/80 p-3 space-y-3">
-            <h2 className="text-sm font-semibold text-slate-900">Add line from bank statement</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-              <div>
-                <label className="text-[10px] text-gray-500">Date</label>
-                <input
-                  type="date"
-                  className="w-full h-9 border rounded-md px-2 font-mono"
-                  value={lineDate}
-                  onChange={(e) => setLineDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500">Kind</label>
-                <select
-                  className="w-full h-9 border rounded-md px-2"
-                  value={lineKind}
-                  onChange={(e) => setLineKind(e.target.value as 'credit' | 'debit')}
-                >
-                  <option value="credit">Credit (in)</option>
-                  <option value="debit">Debit (out)</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500">Amount</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="w-full h-9 border rounded-md px-2 text-right font-mono"
-                  placeholder="0.00"
-                  value={lineAmount}
-                  onChange={(e) => setLineAmount(e.target.value)}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-[10px] text-gray-500">Description (as on statement)</label>
-                <input
-                  className="w-full h-9 border rounded-md px-2"
-                  value={lineDesc}
-                  onChange={(e) => setLineDesc(e.target.value)}
-                  placeholder="Payee / memo"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500">Bank reference</label>
-                <input
-                  className="w-full h-9 border rounded-md px-2 font-mono"
-                  value={lineRef}
-                  onChange={(e) => setLineRef(e.target.value)}
-                  placeholder="Optional"
-                />
-              </div>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              className="h-8 text-xs bg-slate-800 hover:bg-slate-900"
-              disabled={creating}
-              onClick={addStatementLine}
-            >
-              {creating ? 'Adding…' : 'Add statement line'}
-            </Button>
-          </div>
+          <DataTable
+            data={bookPending}
+            columns={bookColumns}
+            loading={bookLoading}
+            title="All Pending Book Lines"
+            searchable
+            searchPlaceholder="Search book lines…"
+            emptyMessage="No pending book lines."
+            pageSize={25}
+          />
 
-          <div className="rounded border border-gray-300 overflow-hidden bg-white shadow-sm">
-            <div className="px-3 py-2 bg-amber-50 border-b border-amber-200 text-sm font-semibold text-amber-950">
-              Unmatched statement lines ({unmatchedBank.length})
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs min-w-[960px]">
-                <thead>
-                  <tr>
-                    <th className={`${headerCell} text-left`}>Date</th>
-                    <th className={`${headerCell} text-left`}>Kind</th>
-                    <th className={`${headerCell} ${moneyClass}`}>Amount</th>
-                    <th className={`${headerCell} text-left`}>Description</th>
-                    <th className={`${headerCell} text-left`}>Ref</th>
-                    <th className={`${headerCell} text-left min-w-[220px]`}>Link to book line</th>
-                    <th className={`${headerCell} text-center w-24`} />
-                  </tr>
-                </thead>
-                <tbody>
-                  {!unmatchedBank.length && !stmtLoading && (
-                    <tr>
-                      <td colSpan={7} className={`${cell} text-center text-gray-500 py-8`}>
-                        No unmatched bank lines. Add lines from your bank statement above.
-                      </td>
-                    </tr>
-                  )}
-                  {stmtLoading && (
-                    <tr>
-                      <td colSpan={7} className={`${cell} text-center text-gray-500 py-8`}>
-                        Loading…
-                      </td>
-                    </tr>
-                  )}
-                  {unmatchedBank.map((bl) => {
-                    const opts = bookOptionsFor(bl)
-                    return (
-                      <tr key={bl.id} className="hover:bg-gray-50">
-                        <td className={`${cell} font-mono`}>
-                          {bl.lineDate ? formatDate(bl.lineDate) : '—'}
-                        </td>
-                        <td className={cell}>{bl.lineKind}</td>
-                        <td className={`${cell} ${moneyClass}`}>{formatMoney(Number(bl.amount ?? 0))}</td>
-                        <td className={cell}>{bl.description}</td>
-                        <td className={`${cell} font-mono`}>{bl.bankReference || '—'}</td>
-                        <td className={cell}>
-                          <SelectFloating
-                            label=""
-                            value={linkByBankLine[bl.id] ?? ''}
-                            onChange={(v) => {
-                              const next = typeof v === 'string' ? v : v.target.value
-                              setLinkByBankLine((m) => ({ ...m, [bl.id]: next }))
-                            }}
-                            options={[{ value: '', label: '— Select book line —' }, ...opts]}
-                            className="h-8 text-xs border-0 shadow-none bg-transparent p-0"
-                          />
-                          {!opts.length && (
-                            <p className="text-[10px] text-amber-800 mt-1">No book line with matching sign and amount</p>
-                          )}
-                        </td>
-                        <td className={`${cell} text-center`}>
-                          <div className="flex flex-col gap-1 items-stretch">
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px]"
-                              disabled={matching}
-                              onClick={() => linkToBook(bl.id)}
-                            >
-                              <Link2 className="h-3 w-3 mr-0.5" />
-                              Link
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-[11px] text-red-700"
-                              onClick={() => {
-                                if (confirm('Remove this bank statement line?')) {
-                                  setError('')
-                                  void removeLine({ variables: { id: bl.id } })
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3 mr-0.5" />
-                              Remove
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="rounded border border-gray-300 overflow-hidden bg-white shadow-sm">
-              <div className="px-3 py-2 bg-gray-50 border-b text-sm font-semibold">Pending register lines (book)</div>
-              <div className="overflow-x-auto max-h-[360px] overflow-y-auto">
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr>
-                      <th className={`${headerCell} text-left`}>#</th>
-                      <th className={`${headerCell} text-left`}>Date</th>
-                      <th className={`${headerCell} text-left`}>Type</th>
-                      <th className={`${headerCell} ${moneyClass}`}>Amount (sign)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {!bookPending.length && !bookLoading && (
-                      <tr>
-                        <td colSpan={4} className={`${cell} text-center text-gray-500 py-6`}>
-                          No pending book lines
-                        </td>
-                      </tr>
-                    )}
-                    {bookPending.map((b) => (
-                      <tr key={b.id} className="hover:bg-gray-50">
-                        <td className={`${cell} font-mono`}>{b.transactionNumber}</td>
-                        <td className={`${cell} font-mono`}>
-                          {b.transactionDate ? formatDate(b.transactionDate) : '—'}
-                        </td>
-                        <td className={cell}>{b.transactionType}</td>
-                        <td className={`${cell} font-mono ${moneyClass}`}>{signedBook(b).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="rounded border border-gray-300 overflow-hidden bg-white shadow-sm">
-              <div className="px-3 py-2 bg-gray-50 border-b text-sm font-semibold">Recently matched (statement)</div>
-              <div className="overflow-x-auto max-h-[360px] overflow-y-auto">
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr>
-                      <th className={`${headerCell} text-left`}>Date</th>
-                      <th className={`${headerCell} text-left`}>Kind</th>
-                      <th className={`${headerCell} ${moneyClass}`}>Amt</th>
-                      <th className={`${headerCell} text-left`}>Ref</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {!matchedBank.length && (
-                      <tr>
-                        <td colSpan={4} className={`${cell} text-center text-gray-500 py-6`}>
-                          No matches yet
-                        </td>
-                      </tr>
-                    )}
-                    {matchedBank.map((m) => (
-                      <tr key={m.id} className="hover:bg-gray-50">
-                        <td className={`${cell} font-mono`}>
-                          {m.lineDate ? formatDate(m.lineDate) : '—'}
-                        </td>
-                        <td className={cell}>{m.lineKind}</td>
-                        <td className={`${cell} ${moneyClass}`}>{formatMoney(Number(m.amount))}</td>
-                        <td className={`${cell} font-mono`}>{m.bankReference || '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </>
+          <DataTable
+            data={matchedBank}
+            columns={matchedColumns}
+            loading={stmtLoading}
+            title="All Matched Statement Lines"
+            searchable
+            searchPlaceholder="Search matched…"
+            emptyMessage="No matches yet."
+            pageSize={25}
+          />
+        </div>
       )}
     </div>
   )

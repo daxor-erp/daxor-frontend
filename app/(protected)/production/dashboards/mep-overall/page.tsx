@@ -36,15 +36,15 @@ export default function MEPOverallDashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">MEP Overall Dashboard</h1>
-        <p className="text-gray-500">Mechanical, Electrical & Plumbing production overview</p>
+        <h1 className="erp-page-title">MEP Overall Dashboard</h1>
+        <p className="erp-page-desc">Mechanical, Electrical & Plumbing production overview</p>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Total Plans', value: stats.totalPlans, icon: Factory, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Total Plans', value: stats.totalPlans, icon: Factory, cls: 'text-primary bg-primary/10' },
           { label: 'Active Plans', value: stats.activePlans, icon: Clock, cls: 'text-green-600 bg-green-50' },
           { label: 'Work Orders', value: stats.totalWorkOrders, icon: CheckCircle, cls: 'text-purple-600 bg-purple-50' },
           { label: 'Avg Progress', value: `${stats.avgProgress}%`, icon: TrendingUp, cls: 'text-orange-600 bg-orange-50' },
@@ -69,7 +69,7 @@ export default function MEPOverallDashboard() {
                   <span className="font-semibold">{formatMoney(stats.totalBudget)}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className="bg-blue-500 h-3 rounded-full" style={{ width: '100%' }} />
+                  <div className="bg-primary/100 h-3 rounded-full" style={{ width: '100%' }} />
                 </div>
               </div>
               <div>
@@ -102,7 +102,7 @@ export default function MEPOverallDashboard() {
               {[
                 { label: 'Draft', value: plans.filter((p: any) => p.status === 'DRAFT').length, color: 'bg-gray-500' },
                 { label: 'Active', value: plans.filter((p: any) => p.status === 'ACTIVE').length, color: 'bg-green-500' },
-                { label: 'Completed', value: plans.filter((p: any) => p.status === 'COMPLETED').length, color: 'bg-blue-500' },
+                { label: 'Completed', value: plans.filter((p: any) => p.status === 'COMPLETED').length, color: 'bg-primary/100' },
                 { label: 'Cancelled', value: plans.filter((p: any) => p.status === 'CANCELLED').length, color: 'bg-red-500' },
               ].map(({ label, value, color }) => (
                 <div key={label}>
@@ -148,7 +148,7 @@ export default function MEPOverallDashboard() {
                       <td className="p-2">{plan.progress || 0}%</td>
                       <td className="p-2">{formatMoney(plan.budget || 0)}</td>
                       <td className="p-2">{formatMoney(plan.actualCost || 0)}</td>
-                      <td className="p-2"><span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">{plan.status}</span></td>
+                      <td className="p-2"><span className="px-2 py-0.5 bg-primary/10 text-primary rounded">{plan.status}</span></td>
                     </tr>
                   ))}
                 </tbody>

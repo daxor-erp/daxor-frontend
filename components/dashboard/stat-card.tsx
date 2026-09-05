@@ -14,26 +14,15 @@ export type StatCardTone =
   | 'accent'
   | 'slate'
 
-const TONE_BG: Record<StatCardTone, string> = {
-  brand: 'bg-grad-brand',
-  sky: 'bg-grad-sky',
-  emerald: 'bg-grad-emerald',
-  violet: 'bg-grad-violet',
-  rose: 'bg-grad-rose',
-  warn: 'bg-grad-warn',
-  accent: 'bg-grad-accent',
-  slate: 'bg-grad-slate',
-}
-
 const TONE_ICON_BG: Record<StatCardTone, string> = {
-  brand: 'bg-primary-soft text-primary',
-  sky: 'bg-sky-50 text-sky-600',
-  emerald: 'bg-emerald-50 text-emerald-600',
-  violet: 'bg-violet-50 text-violet-600',
-  rose: 'bg-rose-50 text-rose-600',
-  warn: 'bg-amber-50 text-amber-600',
-  accent: 'bg-teal-50 text-teal-600',
-  slate: 'bg-slate-100 text-slate-700',
+  brand: 'bg-primary/10 text-primary',
+  sky: 'bg-primary/10 text-primary',
+  emerald: 'bg-emerald-50 text-emerald-700',
+  violet: 'bg-primary/10 text-primary',
+  rose: 'bg-rose-50 text-rose-700',
+  warn: 'bg-amber-50 text-amber-700',
+  accent: 'bg-primary/10 text-primary',
+  slate: 'bg-muted text-muted-foreground',
 }
 
 interface StatCardProps {
@@ -62,47 +51,31 @@ export function StatCard({
   href,
 }: StatCardProps) {
   const filled = variant === 'filled'
-  const Wrapper: any = href ? 'a' : 'div'
-  return (
-    <Wrapper
-      href={href}
-      className={cn(
-        'relative overflow-hidden rounded-2xl border transition-all flex h-full',
-        filled
-          ? cn('border-transparent text-white elev-2', TONE_BG[tone])
-          : 'border-border bg-card elev-1 hover:elev-2',
-        href && 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0',
-      )}
-    >
-      <div className="p-4 sm:p-5 flex flex-col flex-1 w-full">
+  const className = cn(
+    'relative flex h-full overflow-hidden rounded-lg border transition-colors',
+    filled
+      ? 'border-transparent bg-primary text-primary-foreground shadow-sm'
+      : 'border-border bg-card shadow-sm hover:bg-muted/30',
+    href && 'cursor-pointer',
+  )
+  const body = (
+      <div className="flex w-full flex-1 flex-col p-3.5 sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p
-              className={cn(
-                'text-[11px] font-medium uppercase tracking-wider',
-                filled ? 'text-white/80' : 'text-muted-foreground',
-              )}
-            >
-              {label}
-            </p>
-            <div className="mt-1.5 flex items-baseline gap-2 min-w-0">
+            <p className={cn('erp-label', filled && 'text-primary-foreground/80')}>{label}</p>
+            <div className="mt-1 flex min-w-0 items-baseline gap-2">
               <p
                 className={cn(
-                  'text-lg sm:text-xl xl:text-[22px] font-bold leading-tight tabular-nums min-w-0',
-                  filled ? 'text-white' : 'text-foreground',
-                  loading && 'animate-pulse bg-muted text-transparent rounded',
+                  'min-w-0 text-xl font-semibold tabular-nums leading-tight',
+                  filled ? 'text-primary-foreground' : 'text-foreground',
+                  loading && 'animate-pulse rounded bg-muted text-transparent',
                 )}
               >
                 {loading ? '••••' : value}
               </p>
             </div>
             {hint && (
-              <p
-                className={cn(
-                  'mt-1 text-xs',
-                  filled ? 'text-white/70' : 'text-muted-foreground',
-                )}
-              >
+              <p className={cn('mt-1 text-xs', filled ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
                 {hint}
               </p>
             )}
@@ -110,8 +83,8 @@ export function StatCard({
           {icon && (
             <div
               className={cn(
-                'shrink-0 rounded-xl p-2.5',
-                filled ? 'bg-white/15 text-white' : TONE_ICON_BG[tone],
+                'shrink-0 rounded-md p-2',
+                filled ? 'bg-primary-foreground/15 text-primary-foreground' : TONE_ICON_BG[tone],
               )}
             >
               {icon}
@@ -119,13 +92,13 @@ export function StatCard({
           )}
         </div>
 
-        <div className="mt-auto pt-3 flex items-center justify-between gap-3 min-h-[28px]">
+        <div className="mt-auto flex min-h-[24px] items-center justify-between gap-3 pt-2">
           {typeof delta === 'number' ? (
             <span
               className={cn(
-                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium',
+                'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium',
                 filled
-                  ? 'bg-white/15 text-white'
+                  ? 'bg-primary-foreground/15 text-primary-foreground'
                   : delta > 0
                     ? 'stat-trend-up'
                     : delta < 0
@@ -148,13 +121,20 @@ export function StatCard({
           {spark && spark.length > 0 && <Sparkline values={spark} filled={filled} />}
         </div>
       </div>
-    </Wrapper>
   )
+  if (href) {
+    return (
+      <a href={href} className={className}>
+        {body}
+      </a>
+    )
+  }
+  return <div className={className}>{body}</div>
 }
 
 function Sparkline({ values, filled }: { values: number[]; filled?: boolean }) {
-  const w = 88
-  const h = 28
+  const w = 72
+  const h = 22
   const max = Math.max(...values, 1)
   const min = Math.min(...values, 0)
   const range = max - min || 1
@@ -166,12 +146,12 @@ function Sparkline({ values, filled }: { values: number[]; filled?: boolean }) {
       return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`
     })
     .join(' ')
-  const stroke = filled ? 'rgba(255,255,255,0.9)' : 'hsl(158 64% 36%)'
-  const fill = filled ? 'rgba(255,255,255,0.25)' : 'hsl(158 64% 36% / 0.18)'
+  const stroke = filled ? 'rgba(255,255,255,0.9)' : 'hsl(var(--primary))'
+  const fill = filled ? 'rgba(255,255,255,0.25)' : 'hsl(var(--primary) / 0.15)'
   return (
     <svg width={w} height={h} className="overflow-visible">
       <path d={`${path} L ${w} ${h} L 0 ${h} Z`} fill={fill} />
-      <path d={path} fill="none" stroke={stroke} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />
+      <path d={path} fill="none" stroke={stroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

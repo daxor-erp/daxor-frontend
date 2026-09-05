@@ -7,15 +7,9 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import { GET_BANK_ACCOUNTS, GET_CASH_BANKS, TRANSFER_BANK_FUNDS } from '@/gql/queries'
-import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
-import { formatMoney } from '@/lib/format-money'
-import { ArrowLeftRight, RefreshCw } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
-
-const labelCell = wsLabelCell
-const cell = wsCell
-const headerCell = wsHeaderCell
-const moneyClass = wsMoney
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { ArrowLeftRight, Plus, Building2, DollarSign, Landmark } from 'lucide-react'
 
 const REF_MODULE = 'bank_transfer'
 
@@ -32,6 +26,17 @@ type BookRow = {
   referenceModule?: string
 }
 
+type TransferRow = {
+  id: string
+  ref: string
+  date: string
+  fromAccount: string
+  toAccount: string
+  amount: number
+  currency?: string
+  description: string
+}
+
 export default function TransferFundsPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
@@ -42,8 +47,9 @@ export default function TransferFundsPage() {
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
+  const [formOpen, setFormOpen] = useState(false)
 
-  const { data: acctData, loading: acctLoading, refetch: refetchAccts } = useQuery(GET_BANK_ACCOUNTS, {
+  const { data: acctData, loading: acctLoading } = useQuery(GET_BANK_ACCOUNTS, {
     variables: { organizationId: orgId },
     skip: !orgId,
   })
@@ -58,6 +64,7 @@ export default function TransferFundsPage() {
       setAmount('')
       setDescription('')
       setError('')
+      setFormOpen(false)
       void refetchTx()
     },
     onError: (e) => setError(e.message),
@@ -117,7 +124,7 @@ export default function TransferFundsPage() {
     [bankAccounts, fromNumber],
   ) as { currency?: string } | undefined
 
-  const recentTransfers = useMemo(() => {
+  const recentTransfers: TransferRow[] = useMemo(() => {
     const rows = (txData?.cashBanks ?? []) as BookRow[]
     const pairs = new Map<string, BookRow[]>()
     for (const t of rows) {
@@ -128,18 +135,33 @@ export default function TransferFundsPage() {
       list.push(t)
       pairs.set(id, list)
     }
-    const list: { ref: string; date: string; fromLine: BookRow; toLine: BookRow }[] = []
+    const list: TransferRow[] = []
     for (const [ref, lines] of pairs) {
       if (lines.length < 2) continue
       const pay = lines.find((l) => l.transactionType === 'payment')
       const rec = lines.find((l) => l.transactionType === 'receipt')
       if (!pay || !rec) continue
       const d = pay.transactionDate || rec.transactionDate
-      list.push({ ref, date: d, fromLine: pay, toLine: rec })
+      list.push({
+        id: pay.id,
+        ref,
+        date: d,
+        fromAccount: pay.bankAccount,
+        toAccount: rec.bankAccount,
+        amount: Number(pay.amount ?? 0),
+        currency: pay.currency,
+        description: pay.description || '',
+      })
     }
     list.sort((a, b) => (b.date > a.date ? 1 : -1))
     return list.slice(0, 25)
   }, [txData])
+
+  const stats = {
+    total: recentTransfers.length,
+    amount: recentTransfers.reduce((s, t) => s + Number(t.amount ?? 0), 0),
+    accounts: bankAccounts.length,
+  }
 
   const submit = () => {
     setError('')
@@ -173,177 +195,137 @@ export default function TransferFundsPage() {
     })
   }
 
+  const columns: Column[] = [
+    { key: 'ref', label: 'Ref', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'date', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'fromAccount', label: 'From', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'toAccount', label: 'To', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'amount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'description', label: 'Description', render: (v) => <span className="text-sm">{v || '—'}</span> },
+  ]
+
   return (
-    <div className="p-6 space-y-6 max-w-[1000px]">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <ArrowLeftRight className="h-8 w-8 text-slate-700" />
-          Transfer funds
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Move money from one company bank account to another. This creates a matching payment and receipt in the
-          register (same reference for both).
-        </p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Transfer Funds"
+        subtitle="Move money between company bank accounts"
+        icon={<ArrowLeftRight className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Banks' }, { label: 'Transfer Funds' }]}
+        actions={
+          <Button
+            onClick={() => {
+              setFormOpen(true)
+              setError('')
+            }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> New Transfer
+          </Button>
+        }
+      />
 
-      {acctLoading && <p className="text-sm text-gray-500">Loading bank accounts…</p>}
-      {!acctLoading && orgId && bankAccounts.length < 2 && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-          You need at least two active bank accounts to transfer between them. Add accounts under Cash &amp; Bank.
-        </p>
-      )}
+      <StatsRow cols={3}>
+        <StatCard label="Recent Transfers" value={stats.total} icon={<ArrowLeftRight className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Bank Accounts" value={stats.accounts} icon={<Landmark className="h-5 w-5" />} variant="blue" />
+        <StatCard
+          label="Transferred"
+          value={`₹${(stats.amount / 1000).toFixed(1)}k`}
+          icon={<DollarSign className="h-5 w-5" />}
+          variant="green"
+        />
+      </StatsRow>
 
-      <div className="rounded border-2 border-gray-400 overflow-hidden bg-white shadow-sm">
-        <div className="bg-slate-800 text-white px-3 py-1.5 text-xs font-semibold">Transfer</div>
-        <div className="p-3 space-y-3">
-          <table className="w-full border-collapse text-xs min-w-[640px]">
-            <tbody>
-              <tr>
-                <td className={labelCell}>From account</td>
-                <td className={`${cell} min-w-[300px]`} colSpan={3}>
-                  <SelectFloating
-                    label=""
-                    value={fromNumber}
-                    onChange={(v) => {
-                      const next = typeof v === 'string' ? v : v.target.value
-                      setFromNumber(next)
-                      setError('')
-                    }}
-                    options={fromOptions}
-                    className="h-8 text-xs border-0 shadow-none bg-transparent p-0"
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>To account</td>
-                <td className={`${cell} min-w-[300px]`} colSpan={3}>
-                  <SelectFloating
-                    label=""
-                    value={toNumber}
-                    onChange={(v) => {
-                      const next = typeof v === 'string' ? v : v.target.value
-                      setToNumber(next)
-                      setError('')
-                    }}
-                    options={toOptions}
-                    className="h-8 text-xs border-0 shadow-none bg-transparent p-0"
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Transfer date</td>
-                <td className={cell}>
-                  <input
-                    type="date"
-                    className="w-full bg-transparent outline-none font-mono"
-                    value={transferDate}
-                    onChange={(e) => setTransferDate(e.target.value)}
-                  />
-                </td>
-                <td className={labelCell}>Amount</td>
-                <td className={`${cell} ${moneyClass} w-40`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="w-full bg-transparent outline-none font-mono text-right"
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Description</td>
-                <td className={cell} colSpan={3}>
-                  <input
-                    className="w-full bg-transparent outline-none"
-                    placeholder="e.g. Petty cash top-up, sweep to payroll"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      {formOpen && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-4 mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              New transfer
+            </h2>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setFormOpen(false)}>
+              Close
+            </Button>
+          </div>
+
+          {acctLoading && <p className="text-sm text-muted-foreground">Loading bank accounts…</p>}
+          {!acctLoading && orgId && bankAccounts.length < 2 && (
+            <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <p className="font-medium">You need at least two active bank accounts to transfer between them.</p>
+              <p className="mt-1">Add accounts under Cash &amp; Bank.</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <SelectFloating
+              label="From account *"
+              value={fromNumber}
+              onChange={(v) => {
+                const next = typeof v === 'string' ? v : v.target.value
+                setFromNumber(next)
+                setError('')
+              }}
+              options={[{ value: '', label: 'Select account…' }, ...fromOptions]}
+            />
+            <SelectFloating
+              label="To account *"
+              value={toNumber}
+              onChange={(v) => {
+                const next = typeof v === 'string' ? v : v.target.value
+                setToNumber(next)
+                setError('')
+              }}
+              options={[{ value: '', label: 'Select account…' }, ...toOptions]}
+            />
+            <InputFloating
+              label="Transfer date *"
+              type="date"
+              value={transferDate}
+              onChange={(e) => setTransferDate(e.target.value)}
+            />
+            <InputFloating
+              label="Amount *"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+            <div className="sm:col-span-2">
+              <InputFloating
+                label="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Petty cash top-up, sweep to payroll"
+              />
+            </div>
+          </div>
 
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              size="sm"
-              className="h-9 text-xs bg-slate-800 hover:bg-slate-900 text-white"
               onClick={submit}
               disabled={saving || !orgId || bankAccounts.length < 2}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {saving ? 'Recording…' : 'Record transfer'}
             </Button>
-            <Button type="button" variant="outline" size="sm" className="h-9 text-xs" onClick={() => refetchAccts()}>
-              Refresh accounts
-            </Button>
-            <Button type="button" variant="outline" size="sm" className="h-9 text-xs" onClick={() => refetchTx()}>
-              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${txLoading ? 'animate-spin' : ''}`} />
-              Refresh history
-            </Button>
           </div>
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5">{error}</p>
+            <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-2 py-1.5">
+              {error}
+            </p>
           )}
         </div>
-      </div>
+      )}
 
-      <div className="rounded border border-gray-300 overflow-hidden bg-white shadow-sm">
-        <div className="px-3 py-2 bg-gray-50 border-b text-sm font-semibold text-gray-800">
-          Recent inter-account transfers
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-xs min-w-[720px]">
-            <thead>
-              <tr>
-                <th className={`${headerCell} text-left`}>Ref / date</th>
-                <th className={`${headerCell} text-left`}>From</th>
-                <th className={`${headerCell} text-left`}>To (see paired receipt)</th>
-                <th className={`${headerCell} ${moneyClass}`}>Amount</th>
-                <th className={`${headerCell} text-left`}>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!recentTransfers.length && !txLoading && (
-                <tr>
-                  <td colSpan={5} className={`${cell} text-center text-gray-500 py-8`}>
-                    No transfers yet, or still loading.
-                  </td>
-                </tr>
-              )}
-              {txLoading && !recentTransfers.length && (
-                <tr>
-                  <td colSpan={5} className={`${cell} text-center text-gray-500 py-8`}>
-                    Loading…
-                  </td>
-                </tr>
-              )}
-              {recentTransfers.map((p) => (
-                <tr key={p.fromLine.id} className="hover:bg-gray-50">
-                  <td className={`${cell} font-mono`}>
-                    <div>{p.fromLine.referenceId}</div>
-                    <div className="text-gray-500">
-                      {p.fromLine.transactionDate
-                        ? formatDate(p.fromLine.transactionDate)
-                        : '—'}
-                    </div>
-                  </td>
-                  <td className={cell}>{p.fromLine.bankAccount}</td>
-                  <td className={cell}>{p.toLine.bankAccount}</td>
-                  <td className={`${cell} ${moneyClass}`}>
-                    {p.fromLine.currency ? `${p.fromLine.currency} ` : ''}
-                    {formatMoney(Number(p.fromLine.amount ?? 0))}
-                  </td>
-                  <td className={cell}>{p.fromLine.description}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        data={recentTransfers}
+        columns={columns}
+        loading={txLoading}
+        title="All Transfers"
+        searchable
+        searchPlaceholder="Search transfers…"
+        emptyMessage="No transfers recorded yet."
+        pageSize={25}
+      />
     </div>
   )
 }

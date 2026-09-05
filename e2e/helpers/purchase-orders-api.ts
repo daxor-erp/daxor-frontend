@@ -126,7 +126,7 @@ export async function createPurchaseOrderWithGapFieldsViaApi(
       input: {
         vendorId,
         buyerId,
-        currency: 'USD',
+        currency: 'INR',
         gstTreatment: 'registered_business_regular',
         agreement: 'AGR-E2E-001',
         sourceDocument: 'SO-E2E-9001',

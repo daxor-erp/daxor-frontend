@@ -40,7 +40,7 @@ export default function AgedReceivablePage() {
   })
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Aged Receivable"
         subtitle="Outstanding customer invoices bucketed by days overdue — as of today"

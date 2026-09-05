@@ -7,7 +7,8 @@ import { DataTable, Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Button } from '@/components/ui/button'
 import { GET_CONTRACTORS, CREATE_CONTRACTOR, UPDATE_CONTRACTOR, DELETE_CONTRACTOR } from '@/gql/queries'
-import { Users, Save, X, Edit, Trash2 } from 'lucide-react'
+import { PageHeader, MonoCell } from '@/components/ui/erp-shared'
+import { Users, Save, X, Edit, Trash2, Plus } from 'lucide-react'
 
 const EMPTY_FORM = { name: '', contactPerson: '', email: '', phone: '', specialty: '', address: '' }
 
@@ -77,26 +78,33 @@ export default function ContractorsPage() {
   const contractors = data?.contractors || []
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
-    { key: 'name', label: 'Contractor Name', sortable: true },
+    { key: 'seqNo', label: 'Code', width: '100px', render: v => <MonoCell value={v} /> },
+    { key: 'name', label: 'Contractor Name', sortable: true, render: v => <span className="text-sm font-medium">{v}</span> },
     { key: 'contactPerson', label: 'Contact Person', width: '150px' },
-    { key: 'email', label: 'Email', render: v => <span className="text-xs">{v || '—'}</span> },
+    { key: 'email', label: 'Email', render: v => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
     { key: 'phone', label: 'Phone', width: '130px' },
-    { key: 'specialty', label: 'Specialty', width: '120px', render: v => v ? <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs">{v}</span> : '—' },
+    { key: 'specialty', label: 'Specialty', width: '120px', render: v => v ? <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">{v}</span> : '—' },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Contractors</h1>
-        <p className="text-gray-500">Manage production contractors and subcontractors</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Contractors"
+        subtitle="Manage production contractors and subcontractors"
+        icon={<Users className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Production' }, { label: 'Masters' }, { label: 'Contractors' }]}
+        actions={
+          <Button onClick={() => setAdding(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Contractor
+          </Button>
+        }
+      />
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editing ? 'Edit Contractor' : 'New Contractor'}</span>
-            <button onClick={reset} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={reset} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -112,8 +120,8 @@ export default function ContractorsPage() {
               <InputFloating label="Address" value={form.address} onChange={e => setF('address', e.target.value)} className="h-7 text-xs" />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={reset} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs"><Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving...' : 'Save'}</Button>
+              <Button variant="outline" size="sm" onClick={reset}>Cancel</Button>
+              <Button size="sm" onClick={handleSubmit} disabled={saving || updating}><Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving...' : 'Save'}</Button>
             </div>
           </div>
         </div>
@@ -124,15 +132,14 @@ export default function ContractorsPage() {
         columns={columns}
         loading={loading}
         title="All Contractors"
-        onAdd={() => setAdding(true)}
-        addLabel="New Contractor"
         searchable
-        searchPlaceholder="Search contractors..."
+        searchPlaceholder="Search contractors…"
         emptyMessage="No contractors yet."
+        pageSize={25}
         onRowClick={handleEdit}
         actions={[
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete?')) deleteContractor({ variables: { id: row.id } }) }, variant: 'ghost' },
+          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row) },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete?')) deleteContractor({ variables: { id: row.id } }) } },
         ]}
       />
     </div>

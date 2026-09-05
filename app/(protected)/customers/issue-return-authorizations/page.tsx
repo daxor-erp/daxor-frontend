@@ -169,9 +169,9 @@ export default function IssueReturnAuthorizationsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-[1100px]">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
+        <h1 className="erp-page-title flex items-center gap-2">
           <ClipboardList className="h-8 w-8 text-amber-700" />
           Issue Return Authorizations
         </h1>
@@ -260,7 +260,7 @@ export default function IssueReturnAuthorizationsPage() {
           </table>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={addRow}>
+            <Button type="button" variant="outline" size="sm" onClick={addRow}>
               <Plus className="h-3.5 w-3.5 mr-1" />
               Add line
             </Button>

@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/dashboard/section-card'
 import { cn } from '@/lib/utils'
 import { ReactNode } from 'react'
 
-/** Standard ERP list/detail page outer shell (matches delivery orders, dashboard modules). */
+/** Standard ERP list/detail page outer shell — use on every protected module page. */
 export function ErpListPage({
   children,
   className,
@@ -16,7 +16,7 @@ export function ErpListPage({
 }) {
   return (
     <div
-      className={cn('mx-auto w-full space-y-6 min-w-0 p-4 sm:p-6 lg:p-8', className)}
+      className={cn('erp-shell', className)}
       style={{ maxWidth }}
     >
       {children}
@@ -24,11 +24,15 @@ export function ErpListPage({
   )
 }
 
-export function ErpPageHeader(props: React.ComponentProps<typeof PageHeader>) {
-  return <PageHeader {...props} />
+/** Page title + optional description/actions — required on every module list. */
+export function ErpPageHeader(
+  props: React.ComponentProps<typeof PageHeader> & { action?: React.ReactNode },
+) {
+  const { action, actions, ...rest } = props
+  return <PageHeader {...rest} actions={actions ?? action} />
 }
 
-/** Responsive row of summary metrics. */
+/** Responsive row of summary metrics (keep ≤4). */
 export function ErpStatsGrid({ children, cols = 3 }: { children: ReactNode; cols?: 2 | 3 | 4 }) {
   const grid =
     cols === 2
@@ -36,5 +40,5 @@ export function ErpStatsGrid({ children, cols = 3 }: { children: ReactNode; cols
       : cols === 4
         ? 'grid-cols-2 sm:grid-cols-4'
         : 'grid-cols-1 sm:grid-cols-3'
-  return <div className={cn('grid gap-3 sm:gap-4', grid)}>{children}</div>
+  return <div className={cn('grid gap-3', grid)}>{children}</div>
 }

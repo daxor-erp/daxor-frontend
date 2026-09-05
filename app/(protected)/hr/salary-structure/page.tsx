@@ -214,10 +214,10 @@ export default function SalaryStructurePage() {
   }))
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Employee Salary Structure</h1>
+          <h1 className="erp-page-title">Employee Salary Structure</h1>
           <p className="text-gray-500 text-sm">
             Links employees to pay components with amounts and per-employee statutory settings.
             Drives the payroll calculation engine.

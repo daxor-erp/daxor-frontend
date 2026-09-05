@@ -32,7 +32,7 @@ const KIND_TONE: Record<string, string> = {
   PurchaseOrder: 'bg-rose-50 text-rose-700 border-rose-200',
   SalesOrder: 'bg-primary-soft text-primary border-primary/20',
   Quotation: 'bg-teal-50 text-teal-700 border-teal-200',
-  Employee: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  Employee: 'bg-primary/10 text-primary border-primary/20',
 }
 
 export function GlobalSearch() {

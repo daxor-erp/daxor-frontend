@@ -121,19 +121,19 @@ export function ReportShell({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-8 space-y-5">
+    <div className="erp-shell" style={{ maxWidth: '1500px' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between no-print">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{title}</h1>
-          {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+          <h1 className="erp-page-title">{title}</h1>
+          {description && <p className="erp-page-desc">{description}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {toolbar}
           {period && onPeriodChange && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-1.5">
-                  <Calendar className="h-4 w-4" />
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
                   {PERIOD_LABELS[period]}
                 </Button>
               </DropdownMenuTrigger>
@@ -147,28 +147,28 @@ export function ReportShell({
             </DropdownMenu>
           )}
           {onRefresh && (
-            <Button variant="outline" onClick={onRefresh} disabled={loading} className="gap-1.5">
-              <RefreshCcw className={loading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+            <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading} className="gap-1.5">
+              <RefreshCcw className={loading ? 'h-3.5 w-3.5 animate-spin' : 'h-3.5 w-3.5'} />
               Refresh
             </Button>
           )}
-          <Button variant="outline" onClick={handlePrint} className="gap-1.5">
-            <Printer className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
+            <Printer className="h-3.5 w-3.5" />
             Print
           </Button>
-          <Button onClick={handleDownload} disabled={downloading} className="bg-grad-brand text-white border-none gap-1.5">
-            <Download className="h-4 w-4" />
+          <Button size="sm" onClick={handleDownload} disabled={downloading} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" />
             {downloading ? 'Generating…' : 'Download PDF'}
           </Button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card elev-1 print-page">
-        <div className="p-4 sm:p-6">
+      <div className="rounded-lg border border-border bg-card shadow-sm print-page">
+        <div className="p-4 sm:p-5">
           {/* Print header shows in printed output */}
-          <div className="hidden print:flex items-center justify-between border-b pb-3 mb-4">
+          <div className="mb-4 hidden items-center justify-between border-b pb-3 print:flex">
             <div>
-              <p className="text-lg font-bold">{orgName ?? 'Daxor'}</p>
+              <p className="text-base font-semibold">{orgName ?? 'Daxor'}</p>
               <p className="text-xs text-muted-foreground">{title}</p>
             </div>
             <p className="text-xs text-muted-foreground">

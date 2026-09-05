@@ -175,7 +175,7 @@ export function FormBuilder({
                   checked={value === opt.value}
                   onChange={(e) => handleChange(field.name, e.target.value)}
                   disabled={field.disabled}
-                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  className="h-4 w-4 text-primary border-gray-300 focus:ring-blue-500"
                 />
                 <Label
                   htmlFor={`${field.name}-${opt.value}`}
@@ -228,12 +228,12 @@ export function FormBuilder({
     <div className={`bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden ${className}`}>
       {/* Header */}
       {(title || onCancel) && (
-        <div className="flex items-center justify-between px-4 py-3 bg-blue-600 border-b border-blue-700">
+        <div className="flex items-center justify-between px-4 py-3 bg-primary border-b border-primary/80">
           {title && <h3 className="text-sm font-semibold text-white">{title}</h3>}
           {onCancel && (
             <button
               onClick={onCancel}
-              className="text-blue-200 hover:text-white transition-colors"
+              className="text-primary-foreground/80 hover:text-white transition-colors"
               type="button"
             >
               <X className="h-4 w-4" />
@@ -280,7 +280,7 @@ export function FormBuilder({
           <Button
             type="submit"
             disabled={loading}
-            className="min-w-[100px] bg-blue-600 hover:bg-blue-700"
+            className="min-w-[100px] bg-primary hover:bg-primary/90"
           >
             {loading ? (
               <>

@@ -3,7 +3,8 @@
 import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column, Action } from '@/components/DataTable'
+import { DataTable, type Column, type Action } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
@@ -30,13 +31,6 @@ import {
   ArrowRightLeft,
   Pencil,
 } from 'lucide-react'
-import { StatusBadge } from '@/components/ui/status-badge'
-
-const STATUS_MAP: Record<string, string> = {
-  draft: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-  confirmed: 'bg-green-50 text-green-700 border-green-200',
-  cancelled: 'bg-red-50 text-red-700 border-red-200',
-}
 
 const EMPTY_FORM = {
   transferDate: new Date().toISOString().split('T')[0],
@@ -56,12 +50,6 @@ const EMPTY_LINE = {
 /** Inventory receipts without a warehouse land in this bin (matches backend default). */
 const MAIN_BIN_OPTION = { value: '__MAIN__', label: 'MAIN (default receipt bin)' }
 
-function formatUiDate(value: string | null | undefined): string {
-  if (value == null || value === '') return '—'
-  const d = new Date(value)
-  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString()
-}
-
 type TransferRow = {
   id: string
   transferNumber?: string | null
@@ -75,12 +63,12 @@ type TransferRow = {
 
 const ACCENTS = {
   indigo: {
-    panelBorder: 'border-indigo-300',
-    headerBg: 'bg-indigo-600',
-    headerSub: 'text-indigo-200 hover:text-white',
-    link: 'text-indigo-600 hover:text-indigo-800',
-    inputBorder: 'focus:border-indigo-400',
-    saveBtn: 'bg-indigo-600 hover:bg-indigo-700',
+    panelBorder: 'border-primary/30',
+    headerBg: 'bg-primary',
+    headerSub: 'text-primary-foreground/80 hover:text-white',
+    link: 'text-primary hover:text-primary',
+    inputBorder: 'focus:border-primary/40',
+    saveBtn: 'bg-primary hover:bg-primary/90',
   },
   teal: {
     panelBorder: 'border-teal-300',
@@ -339,48 +327,44 @@ export function StockTransfersView({
       key: 'transferNumber',
       label: 'Transfer #',
       width: '140px',
-      render: (v) => <span className="font-mono text-xs text-gray-600">{v ?? '—'}</span>,
+      render: (v) => <MonoCell value={v} />,
     },
     {
       key: 'transferDate',
       label: 'Date',
       width: '110px',
-      render: (v) => (
-        <span className="text-xs text-gray-600">{formatUiDate(v as string)}</span>
-      ),
+      render: (v) => <DateCell value={v as string} />,
     },
     {
       key: 'fromWarehouseName',
       label: 'From',
-      render: (v) => <span className="text-xs text-gray-700">{v || '—'}</span>,
+      render: (v) => <span className="text-sm">{v || '—'}</span>,
     },
     {
       key: 'toWarehouseName',
       label: 'To',
-      render: (v) => <span className="text-xs text-gray-700">{v || '—'}</span>,
+      render: (v) => <span className="text-sm">{v || '—'}</span>,
     },
     {
       key: 'lineItems',
       label: 'Lines',
       width: '64px',
+      align: 'right',
       render: (v) => (
-        <span className="text-xs text-gray-600">{Array.isArray(v) ? v.length : 0}</span>
+        <span className="text-sm tabular-nums">{Array.isArray(v) ? v.length : 0}</span>
       ),
     },
     {
       key: 'status',
       label: 'Status',
       width: '110px',
-      render: (v) => <StatusBadge status={v != null && v !== '' ? String(v) : undefined} />,
+      render: (v) => <ErpBadge status={v != null && v !== '' ? String(v) : 'draft'} />,
     },
     {
       key: 'createdAt',
       label: 'Created',
       width: '110px',
-      render: (v) => (
-        <span className="text-xs text-gray-500">{formatUiDate(v as string)}</span>
-
-      ),
+      render: (v) => <DateCell value={v as string} />,
     },
   ]
 
@@ -398,7 +382,7 @@ export function StockTransfersView({
   const actions: Action<TransferRow>[] = [
     {
       label: 'Edit',
-      icon: <Pencil className="h-3.5 w-3.5 text-blue-600" />,
+      icon: <Pencil className="h-3.5 w-3.5 text-primary" />,
       onClick: (row) => { if (row.status === 'draft') openEdit(row) },
       variant: 'ghost',
       show: (row) => row.status === 'draft',
@@ -426,11 +410,21 @@ export function StockTransfersView({
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{title}</h1>
-        <p className="text-gray-500">{description}</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title={title}
+        subtitle={description}
+        icon={<ArrowRightLeft className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Inventory' }, { label: title }]}
+        actions={
+          <Button
+            onClick={() => { reset(); setEditingRow(null); setAdding(true) }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> {addLabel}
+          </Button>
+        }
+      />
 
       {!orgId && (
         <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
@@ -450,30 +444,15 @@ export function StockTransfersView({
         </p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'Total', value: stats.total, icon: ClipboardList, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Draft', value: stats.draft, icon: FileEdit, cls: 'text-yellow-600 bg-yellow-50' },
-          { label: 'Confirmed', value: stats.confirmed, icon: BadgeCheck, cls: 'text-green-600 bg-green-50' },
-          { label: 'This month', value: stats.thisMonth, icon: CalendarDays, cls: 'text-purple-600 bg-purple-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div
-            key={label}
-            className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm"
-          >
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}>
-              <Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">{label}</p>
-              <p className="text-lg font-bold text-gray-800">{value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total" value={stats.total} icon={<ClipboardList className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Draft" value={stats.draft} icon={<FileEdit className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Confirmed" value={stats.confirmed} icon={<BadgeCheck className="h-5 w-5" />} variant="green" />
+        <StatCard label="This month" value={stats.thisMonth} icon={<CalendarDays className="h-5 w-5" />} variant="violet" />
+      </StatsRow>
 
       {(adding || editingRow) && (
-        <div className={`bg-white border ${theme.panelBorder} rounded-lg shadow-sm overflow-hidden`}>
+        <div className={`bg-card border ${theme.panelBorder} rounded-lg shadow-sm overflow-hidden`}>
           <div className={`flex items-center justify-between px-4 py-2 ${theme.headerBg}`}>
             <span className="text-xs font-semibold text-white flex items-center gap-2">
               <ArrowRightLeft className="h-4 w-4" />
@@ -612,7 +591,7 @@ export function StockTransfersView({
             </p>
 
             <div className="flex justify-end gap-2 pt-1 border-t">
-              <Button variant="outline" size="sm" type="button" onClick={closeForm} className="h-8 text-xs">
+              <Button variant="outline" size="sm" type="button" onClick={closeForm}>
                 Cancel
               </Button>
               <Button
@@ -634,12 +613,11 @@ export function StockTransfersView({
         data={records}
         columns={columns}
         loading={loading}
-        title={tableTitle}
-        onAdd={() => { reset(); setEditingRow(null); setAdding(true) }}
-        addLabel={addLabel}
+        title={tableTitle.startsWith('All ') ? tableTitle : `All ${tableTitle}`}
         searchable
         searchPlaceholder={searchPlaceholder}
         emptyMessage={emptyMessage}
+        pageSize={25}
         actions={actions}
         rowKey="id"
       />

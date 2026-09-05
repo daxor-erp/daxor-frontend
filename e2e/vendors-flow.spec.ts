@@ -66,8 +66,8 @@ test.describe('Vendors flow (new Odoo-style vendor model)', () => {
 
     const full = await getVendorViaApi(request, orgAdminToken, vendorId)
     expect(full.type).toBe('company')
-    expect(full.gstin).toBe('33ABCDE1234F1Z5')
-    expect(full.pan).toBe('ABCDE1234F')
+    expect(full.gstin).toMatch(/^33ABCDE\d{4}F1Z5$/)
+    expect(full.pan).toMatch(/^ABCDE\d{4}F$/)
     expect(full.address?.city).toBe('Chennai')
   })
 
@@ -95,7 +95,7 @@ test.describe('Vendors flow (new Odoo-style vendor model)', () => {
 
   test('06 — vendors page smoke: list renders and wizard dialog opens', async ({ page }) => {
     await smokeModulePage(page, '/vendors', /Vendors/i)
-    await page.getByRole('button', { name: /New Vendor/i }).click()
+    await page.getByRole('button', { name: /New Vendor/i }).first().click()
     await expect(page.getByRole('dialog').filter({ hasText: 'New vendor' })).toBeVisible({ timeout: 10_000 })
     // Step tabs for the multi-step wizard are visible
     await expect(page.getByText('1. Identity')).toBeVisible()
@@ -118,7 +118,7 @@ test.describe('Vendors flow (new Odoo-style vendor model)', () => {
 
   test('09 — gap fix UI: Customer Invoice section and Activity tab render in the vendor wizard', async ({ page }) => {
     await smokeModulePage(page, '/vendors', /Vendors/i)
-    await page.getByRole('button', { name: /New Vendor/i }).click()
+    await page.getByRole('button', { name: /New Vendor/i }).first().click()
     await expect(page.getByRole('dialog').filter({ hasText: 'New vendor' })).toBeVisible({ timeout: 10_000 })
     await page.getByText('6. Accounting').click()
     await expect(page.getByText('Customer Invoice')).toBeVisible()

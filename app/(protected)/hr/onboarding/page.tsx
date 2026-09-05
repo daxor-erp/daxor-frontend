@@ -47,9 +47,9 @@ export default function OnboardingPage() {
   const rows: any[] = data?.onboardings ?? []
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Onboarding</h1>
+        <h1 className="erp-page-title">Onboarding</h1>
         <Button onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Start onboarding
         </Button>
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
       </Dialog>
 
       {loading ? (
-        <p className="text-gray-500">Loading…</p>
+        <p className="erp-page-desc">Loading…</p>
       ) : rows.length === 0 ? (
         <Card><CardContent className="p-6 text-gray-500">No onboardings started.</CardContent></Card>
       ) : (

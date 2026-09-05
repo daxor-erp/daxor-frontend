@@ -28,14 +28,14 @@ import {
   UPDATE_HR_MASTER,
   DELETE_HR_MASTER,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell } from '@/components/ui/erp-shared'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Search } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Plus, Pencil, Trash2, List } from 'lucide-react'
 
 export interface MetadataFieldDef {
   key: string
@@ -86,7 +86,6 @@ export function HrMasterRegistry({
   const orgId = user?.organizationId ?? ''
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<MasterForm>(EMPTY)
-  const [search, setSearch] = useState('')
   const [showInactive, setShowInactive] = useState(false)
 
   const { data, loading, refetch } = useQuery(GET_HR_MASTERS, {
@@ -109,11 +108,7 @@ export function HrMasterRegistry({
   })
 
   const rows: any[] = data?.hrMasters ?? []
-  const filtered = useMemo(() => {
-    if (!search.trim()) return rows
-    const q = search.toLowerCase()
-    return rows.filter((r) => r.code?.toLowerCase().includes(q) || r.name?.toLowerCase().includes(q))
-  }, [rows, search])
+  const activeCount = useMemo(() => rows.filter((r) => r.active).length, [rows])
 
   const openNew = () => { setForm(EMPTY); setOpen(true) }
   const openEdit = (row: any) => {
@@ -153,116 +148,84 @@ export function HrMasterRegistry({
     try { return JSON.parse(json ?? '{}') } catch { return {} }
   }
 
+  const columns: Column[] = useMemo(() => {
+    const cols: Column[] = [
+      { key: 'code', label: 'Code', width: '120px', render: (v) => <MonoCell value={v} className="font-semibold text-foreground" /> },
+      { key: 'name', label: 'Name', sortable: true, render: (v) => <span className="text-sm font-medium">{v}</span> },
+      { key: 'description', label: 'Description', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    ]
+    if (metadataFields.length > 0) {
+      cols.push({
+        key: 'metadataJson',
+        label: 'Details',
+        render: (v) => {
+          const metadata = parseMeta(v)
+          if (renderMetadataSummary) return <span className="text-xs text-muted-foreground">{renderMetadataSummary(metadata)}</span>
+          const summary = metadataFields
+            .map((f) => (metadata[f.key] != null && metadata[f.key] !== '' ? `${f.label}: ${metadata[f.key]}` : null))
+            .filter(Boolean)
+            .join(' · ')
+          return <span className="text-xs text-muted-foreground">{summary || '—'}</span>
+        },
+      })
+    }
+    cols.push({
+      key: 'active',
+      label: 'Status',
+      width: '100px',
+      render: (v) => <ErpBadge status={v ? 'active' : 'inactive'} />,
+    })
+    return cols
+  }, [metadataFields, renderMetadataSummary])
+
   return (
-    <div className="mx-auto w-full max-w-[1300px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title={title}
-        description={description}
+        subtitle={description}
+        icon={icon}
+        breadcrumbs={[{ label: 'HR' }, { label: title }]}
         actions={
-          <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" />
-            New entry
-          </Button>
-        }
-      />
-
-      <SectionCard
-        title={`${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}`}
-        description={`Click a row to edit. Codes are uppercase and must be unique per ${kind.toLowerCase().replace('_', ' ')}.`}
-        action={
-          <div className="flex items-center gap-2">
-            <label className="inline-flex items-center gap-1.5 text-xs">
+          <div className="flex items-center gap-3">
+            <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="h-3.5 w-3.5 rounded border-border text-primary" />
               Show inactive
             </label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search code / name"
-                className="rounded-lg border border-border bg-secondary/40 py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-2 focus:ring-primary/40 w-48"
-              />
-            </div>
-          </div>
-        }
-        bodyClassName="p-0"
-      >
-        {loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center">
-            <div className="mx-auto h-10 w-10 mb-2 grid place-items-center rounded-full bg-primary-soft text-primary">
-              {icon}
-            </div>
-            <p className="text-sm font-medium">No entries yet</p>
-            <p className="text-xs text-muted-foreground mb-3">Create your first {title.toLowerCase()} entry.</p>
-            <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-              <Plus className="h-4 w-4" /> New entry
+            <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-4 w-4 mr-1.5" /> New Entry
             </Button>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Code</th>
-                  <th className="px-3 py-3 font-medium">Name</th>
-                  <th className="px-3 py-3 font-medium">Description</th>
-                  {metadataFields.length > 0 && <th className="px-3 py-3 font-medium">Details</th>}
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r: any) => {
-                  const metadata = parseMeta(r.metadataJson)
-                  return (
-                    <tr key={r.id} className="border-t hover:bg-secondary/30 cursor-pointer" onClick={() => openEdit(r)}>
-                      <td className="px-5 py-3 font-mono text-xs font-semibold">{r.code}</td>
-                      <td className="px-3 py-3 font-medium">{r.name}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{r.description || '—'}</td>
-                      {metadataFields.length > 0 && (
-                        <td className="px-3 py-3 text-xs text-muted-foreground">
-                          {renderMetadataSummary
-                            ? renderMetadataSummary(metadata)
-                            : metadataFields
-                              .map((f) => metadata[f.key] != null && metadata[f.key] !== '' ? `${f.label}: ${metadata[f.key]}` : null)
-                              .filter(Boolean)
-                              .join(' · ') || <span className="text-muted-foreground">—</span>}
-                        </td>
-                      )}
-                      <td className="px-3 py-3">
-                        <span className={cn(
-                          'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase',
-                          r.active
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-slate-100 text-slate-700 border-slate-200',
-                        )}>
-                          {r.active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="inline-flex items-center gap-1">
-                          <button onClick={() => openEdit(r)} className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-secondary">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => { if (confirm(`Delete ${r.code}?`)) deleteMutation({ variables: { id: r.id } }) }}
-                            className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+        }
+      />
+
+      <StatsRow cols={2}>
+        <StatCard label="Total Entries" value={rows.length} icon={icon ?? <List className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Active" value={activeCount} icon={<List className="h-5 w-5" />} variant="green" />
+      </StatsRow>
+
+      <DataTable
+        data={rows}
+        columns={columns}
+        loading={loading}
+        title={`All ${title}`}
+        searchable
+        searchPlaceholder="Search code / name…"
+        emptyMessage="No entries found."
+        pageSize={25}
+        onRowClick={(r: any) => openEdit(r)}
+        actions={[
+          {
+            label: 'Edit',
+            icon: <Pencil className="h-3.5 w-3.5" />,
+            onClick: (r: any) => openEdit(r),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => { if (confirm(`Delete ${r.code}?`)) deleteMutation({ variables: { id: r.id } }) },
+          },
+        ]}
+      />
 
       <FormModal
         open={open}

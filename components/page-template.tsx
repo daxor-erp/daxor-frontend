@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { ErpListPage, ErpPageHeader } from '@/components/erp/erp-list-page'
 
 interface PageTemplateProps {
   title: string
@@ -10,17 +11,10 @@ interface PageTemplateProps {
 
 export function PageTemplate({ title, description, children }: PageTemplateProps) {
   return (
-    <div className="p-6 space-y-6 min-w-0">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">{title}</h1>
-          <p className="text-gray-500">{description}</p>
-        </div>
-      </div>
-      <div className="min-w-0 [&_table]:min-w-max [&_.table-wrap]:overflow-x-auto">
-        {children}
-      </div>
-    </div>
+    <ErpListPage>
+      <ErpPageHeader title={title} description={description} />
+      <div className="min-w-0 [&_table]:min-w-max [&_.table-wrap]:overflow-x-auto">{children}</div>
+    </ErpListPage>
   )
 }
 

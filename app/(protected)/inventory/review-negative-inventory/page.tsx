@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { GET_INVENTORY_CONTROLS, GET_WAREHOUSES, ADJUST_STOCK } from '@/gql/queries'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell } from '@/components/ui/erp-shared'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, Package, Warehouse, RefreshCw } from 'lucide-react'
 
@@ -124,14 +125,6 @@ export default function ReviewNegativeInventoryPage() {
     })
   }
 
-  const statusStyle = (s: string | null | undefined) => {
-    const v = String(s ?? '').toUpperCase()
-    if (v === 'NEGATIVE') return 'bg-red-50 text-red-800 border-red-200'
-    if (v === 'OUT_OF_STOCK') return 'bg-amber-50 text-amber-800 border-amber-200'
-    if (v === 'LOW_STOCK') return 'bg-yellow-50 text-yellow-800 border-yellow-200'
-    return 'bg-gray-50 text-gray-700 border-gray-200'
-  }
-
   const columns: Column<InvRow>[] = [
     {
       key: 'itemName',
@@ -139,7 +132,7 @@ export default function ReviewNegativeInventoryPage() {
       sortable: true,
       width: '200px',
       render: (v, row) => (
-        <span className="font-medium text-gray-800">
+        <span className="text-sm font-medium">
           {(v != null && String(v) !== '' ? String(v) : row.itemId) ?? '—'}
         </span>
       ),
@@ -149,7 +142,7 @@ export default function ReviewNegativeInventoryPage() {
       label: 'Bin / location',
       sortable: true,
       width: '120px',
-      render: (v) => <span className="font-mono text-xs text-gray-700">{v != null ? String(v) : '—'}</span>,
+      render: (v) => <MonoCell value={v != null ? String(v) : '—'} />,
     },
     {
       key: 'warehouseId',
@@ -159,15 +152,8 @@ export default function ReviewNegativeInventoryPage() {
         const id = v != null ? String(v) : ''
         const name = id ? warehouseNameById.get(id) : undefined
         return (
-          <span className="text-xs text-gray-700">
-            {name ? (
-              <>
-                {name}
-                <span className="text-gray-400"> ({id})</span>
-              </>
-            ) : (
-              id || '—'
-            )}
+          <span className="text-sm text-muted-foreground">
+            {name ? `${name}` : id || '—'}
           </span>
         )
       },
@@ -176,12 +162,12 @@ export default function ReviewNegativeInventoryPage() {
       key: 'quantity',
       label: 'Qty on hand',
       sortable: true,
-      width: '100px',
+      width: '110px',
       align: 'right',
       render: (v) => {
         const n = parseQty(v)
         return (
-          <span className={`font-semibold ${n < 0 ? 'text-red-700' : 'text-gray-800'}`}>
+          <span className={`text-sm font-semibold tabular-nums ${n < 0 ? 'text-rose-700' : ''}`}>
             {formatQty(n)}
           </span>
         )
@@ -191,34 +177,50 @@ export default function ReviewNegativeInventoryPage() {
       key: 'unit',
       label: 'Unit',
       width: '64px',
-      render: (v) => <span className="text-gray-600">{v != null && String(v) !== '' ? String(v) : '—'}</span>,
+      render: (v) => <span className="text-sm text-muted-foreground">{v != null && String(v) !== '' ? String(v) : '—'}</span>,
     },
     {
       key: 'stockStatus',
       label: 'Status',
       width: '120px',
-      render: (v) => {
-        const label = v != null && String(v) !== '' ? String(v) : '—'
-        return (
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${statusStyle(label)}`}
-          >
-            {label}
-          </span>
-        )
-      },
+      render: (v) => <ErpBadge status={v != null && String(v) !== '' ? String(v) : '—'} />,
     },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Review negative inventory</h1>
-        <p className="text-gray-500">
-          Locations with quantity below zero. Use an adjustment to bring a line to zero after you have verified
-          counts (creates an inventory movement record).
-        </p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Review Negative Inventory"
+        subtitle="Locations with quantity below zero — adjust to zero after verifying counts"
+        icon={<AlertTriangle className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Inventory' }, { label: 'Review Negative' }]}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!orgId || loading}
+              onClick={() => void refetch()}
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              Refresh
+            </Button>
+            <a
+              href="/inventory-control"
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            >
+              <Warehouse className="h-3.5 w-3.5" />
+              Inventory control
+            </a>
+          </div>
+        }
+      />
+
+      <StatsRow cols={2}>
+        <StatCard label="Negative lines" value={stats.negativeLines} icon={<AlertTriangle className="h-5 w-5" />} variant="rose" />
+        <StatCard label="Tracked bin lines" value={stats.trackedLocations} icon={<Package className="h-5 w-5" />} variant="slate" />
+      </StatsRow>
 
       {!orgId && (
         <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
@@ -238,53 +240,11 @@ export default function ReviewNegativeInventoryPage() {
         </p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-          <div className="p-2 rounded-md bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-400">Negative quantity lines</p>
-            <p className="text-lg font-bold text-gray-800">{stats.negativeLines}</p>
-          </div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-          <div className="p-2 rounded-md bg-blue-50">
-            <Package className="h-4 w-4 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-400">All tracked bin lines</p>
-            <p className="text-lg font-bold text-gray-800">{stats.trackedLocations}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs"
-          disabled={!orgId || loading}
-          onClick={() => void refetch()}
-        >
-          <RefreshCw className="h-3.5 w-3.5 mr-1" />
-          Refresh
-        </Button>
-        <a
-          href="/inventory-control"
-          className="text-xs text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
-        >
-          <Warehouse className="h-3.5 w-3.5" />
-          Open inventory control worksheet
-        </a>
-      </div>
-
       <DataTable<InvRow>
         data={tableRows}
         columns={columns}
         loading={loading}
-        title="Negative on-hand quantities"
+        title="All Negative Quantities"
         searchable
         searchPlaceholder="Search item, bin, warehouse…"
         emptyMessage={
@@ -292,12 +252,12 @@ export default function ReviewNegativeInventoryPage() {
             ? 'No inventory control rows for this organization. Add stock in Inventory control first.'
             : 'No negative quantities. All tracked lines are at or above zero.'
         }
+        pageSize={25}
         actions={[
           {
             label: adjustLoading ? 'Working…' : 'Bring to zero',
             icon: <RefreshCw className="h-3.5 w-3.5" />,
             onClick: (row) => bringToZero(row),
-            variant: 'ghost',
             show: (row) => parseQty(row.quantity) < 0,
           },
         ]}

@@ -30,7 +30,7 @@ const VARIANTS = {
     buttonClass: 'bg-indigo-700 hover:bg-indigo-800',
     accentBold: 'text-indigo-900',
     icon: FileText,
-    iconClass: 'text-indigo-700',
+    iconClass: 'text-primary',
     paramLabel: 'Statement parameters',
     paramRight: 'AR summary',
   },
@@ -97,7 +97,7 @@ export function CustomerStatementWorksheet({ variant }: Props) {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-[1100px] print:max-w-none">
+    <div className="erp-shell print:max-w-none">
       <div className="print:hidden">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Icon className={`h-8 w-8 ${cfg.iconClass}`} />
@@ -199,11 +199,11 @@ export function CustomerStatementWorksheet({ variant }: Props) {
 
             <div className="grid grid-cols-3 gap-2 mb-4 print:mb-2">
               {[
-                { label: 'Invoices (period)', value: `$${formatMoney(stmt.periodInvoicesTotal ?? 0)}` },
-                { label: 'Payments (period)', value: `$${formatMoney(stmt.periodPaymentsTotal ?? 0)}` },
+                { label: 'Invoices (period)', value: formatMoney(stmt.periodInvoicesTotal ?? 0) },
+                { label: 'Payments (period)', value: formatMoney(stmt.periodPaymentsTotal ?? 0) },
                 {
                   label: 'Current A/R balance',
-                  value: `$${formatMoney(stmt.currentBalance ?? 0)}`,
+                  value: formatMoney(stmt.currentBalance ?? 0),
                   bold: true,
                 },
               ].map((row) => (

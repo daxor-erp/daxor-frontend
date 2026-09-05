@@ -10,7 +10,7 @@ const LINKS = [
 
 export default function PayrollSetupLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="p-6 space-y-4 max-w-6xl">
+    <div className="erp-shell">
       <nav className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
         <Link href="/payroll-management" className="hover:text-gray-800 hover:underline">
           Payroll

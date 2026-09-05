@@ -149,9 +149,9 @@ export default function IndividualPriceListPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-[1200px] print:max-w-none">
+    <div className="erp-shell">
       <div className="print:hidden">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
+        <h1 className="erp-page-title flex items-center gap-2">
           <UserCircle className="h-8 w-8 text-sky-700" />
           Individual Price List
         </h1>

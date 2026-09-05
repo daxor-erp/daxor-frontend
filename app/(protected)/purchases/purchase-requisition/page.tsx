@@ -3,21 +3,20 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { GET_PURCHASE_ORDERS, CREATE_PURCHASE_REQUISITION, GET_VENDORS, GET_PROJECTS, GET_ITEMS } from '@/gql/queries'
-import { PageTemplate } from '@/components/page-template'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { Button } from '@/components/ui/button'
 import { CellInput } from '@/components/ui/cell-input'
 import { CellSelect } from '@/components/ui/cell-select'
 import { Plus, X, Save, Trash2, ClipboardList, Clock, CheckCircle2, AlertCircle, XCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { formatMoney } from '@/lib/format-money'
-import { formatDate } from '@/lib/format-date'
 
-const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  rfq:       { label: 'Draft',              cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  submitted: { label: 'Pending Approval',   cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  approved:  { label: 'Approved',           cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  rejected:  { label: 'Declined',           cls: 'bg-red-50 text-red-700 border-red-200' },
-  cancelled: { label: 'Cancelled',          cls: 'bg-red-50 text-red-600 border-red-200' },
+const PR_STATUS_LABEL: Record<string, string> = {
+  rfq: 'Draft',
+  submitted: 'Pending approval',
+  approved: 'Approved',
+  rejected: 'Declined',
+  cancelled: 'Cancelled',
 }
 
 const PR_STATUSES = new Set(['rfq', 'submitted', 'approved', 'rejected'])
@@ -105,12 +104,6 @@ export default function PurchaseRequisitionPage() {
     })
   }
 
-  const getProject = (id: string) => {
-    if (!id) return '—'
-    const found = projects.find((p: { id: string; _id?: string; name?: string }) => p.id === id || String(p._id) === id)
-    return found?.name ?? `(ID: ${id.slice(-6)})`
-  }
-
   const stats = {
     total: requisitions.length,
     pending: requisitions.filter((r: { status?: string }) => r.status === 'submitted').length,
@@ -118,41 +111,91 @@ export default function PurchaseRequisitionPage() {
     declined: requisitions.filter((r: { status?: string }) => r.status === 'rejected').length,
   }
 
+  const columns: Column[] = [
+    { key: 'seqNo', label: 'PR #', width: '140px', render: v => <MonoCell value={v} /> },
+    {
+      key: 'vendorName',
+      label: 'Vendor',
+      render: v => <span className="text-sm font-medium">{v || '—'}</span>,
+    },
+    {
+      key: 'deliveryDate',
+      label: 'Required By',
+      width: '110px',
+      render: (v, r) => <DateCell value={v ?? r.orderDate} />,
+    },
+    {
+      key: 'items',
+      label: 'Items',
+      width: '80px',
+      render: v => <span className="text-sm text-muted-foreground">{Array.isArray(v) && v.length > 0 ? v.length : '—'}</span>,
+    },
+    {
+      key: 'totalAmount',
+      label: 'Amount',
+      width: '120px',
+      align: 'right',
+      render: (v, r) => {
+        const total =
+          v ||
+          r.items?.reduce((sum: number, i: { quantity?: number; unitPrice?: number }) => sum + ((i.quantity || 0) * (i.unitPrice || 0)), 0) ||
+          0
+        return total > 0 ? <AmountCell value={total} /> : <span className="text-muted-foreground">—</span>
+      },
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: '140px',
+      render: v => {
+        const statusKey = String(v ?? 'rfq').toLowerCase()
+        return <ErpBadge status={statusKey} label={PR_STATUS_LABEL[statusKey]} />
+      },
+    },
+  ]
+
   return (
-    <PageTemplate title="Purchase Requisition" description="Raise internal purchase requests for approval">
+    <div className="erp-shell">
+      <PageHeader
+        title="Purchase Requisition"
+        subtitle="Raise internal purchase requests for approval"
+        icon={<ClipboardList className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Purchases' }, { label: 'Purchase Requisition' }]}
+        actions={
+          !adding ? (
+            <Button onClick={() => setAdding(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-4 w-4 mr-1.5" /> New Requisition
+            </Button>
+          ) : undefined
+        }
+      />
+
       {successMsg && (
-        <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           {successMsg}
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        {[
-          { label: 'Total PRs',   value: stats.total,    icon: ClipboardList, cls: 'text-blue-600 bg-blue-50' },
-          { label: 'Pending',     value: stats.pending,  icon: Clock,         cls: 'text-amber-600 bg-amber-50' },
-          { label: 'Approved',    value: stats.approved, icon: CheckCircle2,  cls: 'text-emerald-600 bg-emerald-50' },
-          { label: 'Declined',    value: stats.declined, icon: XCircle,       cls: 'text-red-600 bg-red-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total PRs" value={stats.total} icon={<ClipboardList className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Pending" value={stats.pending} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Approved" value={stats.approved} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Declined" value={stats.declined} icon={<XCircle className="h-5 w-5" />} variant="rose" />
+      </StatsRow>
 
-      {/* Inline form */}
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm mb-4 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white flex items-center gap-2"><ClipboardList className="h-3.5 w-3.5" /> New Purchase Requisition</span>
-            <button onClick={() => { setAdding(false); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={() => { setAdding(false); reset() }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
 
           <div className="grid grid-cols-5 border-b border-gray-200">
             {[
               { label: 'Vendor', key: 'vendorId', type: 'select', opts: vendors },
-              { label: 'Project', key: 'projectId', type: 'select', opts: projects },
+              ...(projects.length > 0
+                ? [{ label: 'Project', key: 'projectId', type: 'select', opts: projects }]
+                : []),
               { label: 'Required By *', key: 'requiredDate', type: 'date' },
               { label: 'Priority', key: 'priority', type: 'priority' },
               { label: 'Notes', key: 'notes', type: 'text' },
@@ -181,16 +224,15 @@ export default function PurchaseRequisitionPage() {
             ))}
           </div>
 
-          {/* Line items */}
           <div className="p-3">
             <div className="border border-gray-300 rounded overflow-hidden">
-              <div className="grid bg-[#f0f0f0] border-b border-gray-300" style={{ gridTemplateColumns: '2rem 3rem 1fr 5rem 5rem 6rem 1fr 2rem' }}>
+              <div className="grid bg-muted/70 border-b border-gray-300" style={{ gridTemplateColumns: '2rem 3rem 1fr 5rem 5rem 6rem 1fr 2rem' }}>
                 {['#', 'Item', 'Description', 'Qty', 'Unit', 'Unit Price', 'Reason / Justification', ''].map((h, i) => (
                   <div key={i} className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</div>
                 ))}
               </div>
               {lines.map((l, i) => (
-                <div key={i} className="grid border-b border-gray-200 last:border-b-0 hover:bg-blue-50/20" style={{ gridTemplateColumns: '2rem 3rem 1fr 5rem 5rem 6rem 1fr 2rem' }}>
+                <div key={i} className="grid border-b border-gray-200 last:border-b-0 hover:bg-primary/5" style={{ gridTemplateColumns: '2rem 3rem 1fr 5rem 5rem 6rem 1fr 2rem' }}>
                   <div className="border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-1">{i + 1}</div>
                   <div className="border-r border-gray-200 px-1 py-1">
                     <CellSelect
@@ -225,7 +267,7 @@ export default function PurchaseRequisitionPage() {
                 </div>
               ))}
               <div className="border-t border-dashed border-gray-300 px-2 py-1">
-                <button onClick={() => setLines(p => [...p, emptyLine()])} className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1">
+                <button onClick={() => setLines(p => [...p, emptyLine()])} className="text-xs text-primary hover:text-primary flex items-center gap-1">
                   <Plus className="h-3 w-3" /> Add line
                 </button>
               </div>
@@ -238,7 +280,7 @@ export default function PurchaseRequisitionPage() {
               <div className="flex gap-2">
                 {saveError && <p className="text-xs text-red-500">{saveError.message}</p>}
                 <Button variant="outline" size="sm" onClick={() => { setAdding(false); reset() }} className="h-8 text-xs">Cancel</Button>
-                <Button size="sm" onClick={handleSave} disabled={saving} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[130px]">
+                <Button size="sm" onClick={handleSave} disabled={saving} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[130px]">
                   <Save className="h-3.5 w-3.5 mr-1" />{saving ? 'Submitting…' : 'Submit Request'}
                 </Button>
               </div>
@@ -247,65 +289,16 @@ export default function PurchaseRequisitionPage() {
         </div>
       )}
 
-      {/* Grid */}
-      <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
-          <span className="text-sm font-semibold text-gray-700">Purchase Requisitions</span>
-          {!adding && (
-            <Button size="sm" onClick={() => setAdding(true)} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-3.5 w-3.5 mr-1" /> New Requisition
-            </Button>
-          )}
-        </div>
-        <div className="flex bg-[#f0f0f0] border-b border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-          {[['w-8','#'],['w-24','PR #'],['flex-1','Project'],['w-32','Vendor'],['w-28','Required By'],['w-32','Items'],['w-24','Amount'],['w-32','Approval Status']].map(([w,h]) => (
-            <div key={h} className={`${w} border-r border-gray-300 last:border-r-0 px-2 py-2`}>{h}</div>
-          ))}
-        </div>
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-gray-400 text-sm">Loading…</div>
-        ) : requisitions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-            <ClipboardList className="h-8 w-8 mb-2 opacity-30" />
-            <p className="text-xs">{poError ? `Error: ${poError.message}` : 'No requisitions yet. Click "New Requisition" to raise one.'}</p>
-          </div>
-        ) : requisitions.map((r: {
-          id: string
-          seqNo?: string
-          projectId?: string
-          vendorName?: string
-          orderDate?: string
-          deliveryDate?: string
-          items?: { quantity?: number; unitPrice?: number }[]
-          totalAmount?: number
-          status?: string
-        }, idx: number) => {
-          const statusKey = String(r.status ?? 'rfq').toLowerCase()
-          const s = STATUS_CFG[statusKey] ?? STATUS_CFG.rfq
-          const projectName = r.projectId ? getProject(r.projectId) : '—'
-          const itemCount = r.items?.length ?? 0
-          const requiredBy = r.deliveryDate ?? r.orderDate
-          return (
-            <div key={r.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors text-xs ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-              <div className="w-8 border-r border-gray-200 flex items-center justify-center text-gray-300 py-2">{idx + 1}</div>
-              <div className="w-24 border-r border-gray-200 px-2 py-2 font-mono text-gray-400">{r.seqNo || '—'}</div>
-              <div className="flex-1 border-r border-gray-200 px-2 py-2 font-medium text-gray-800">{projectName}</div>
-              <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-600">{r.vendorName || '—'}</div>
-              <div className="w-28 border-r border-gray-200 px-2 py-2 text-gray-600">{requiredBy ? formatDate(requiredBy) : '—'}</div>
-              <div className="w-32 border-r border-gray-200 px-2 py-2 text-gray-600">{itemCount > 0 ? `${itemCount} item${itemCount > 1 ? 's' : ''}` : '—'}</div>
-              <div className="w-24 border-r border-gray-200 px-2 py-2 font-semibold text-gray-800">
-                {(() => {
-                  const total = r.totalAmount || r.items?.reduce((sum, i) => sum + ((i.quantity || 0) * (i.unitPrice || 0)), 0) || 0
-                  return total > 0 ? `${formatMoney(total)}` : '—'
-                })()}
-              </div>
-              <div className="w-32 px-2 py-2">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </PageTemplate>
+      <DataTable
+        data={requisitions}
+        columns={columns}
+        loading={loading}
+        title="All Purchase Requisitions"
+        searchable
+        searchPlaceholder="Search requisitions…"
+        emptyMessage={poError ? `Error: ${poError.message}` : 'No requisitions yet. Click “New Requisition” to raise one.'}
+        pageSize={25}
+      />
+    </div>
   )
 }

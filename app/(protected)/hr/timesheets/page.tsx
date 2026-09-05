@@ -12,21 +12,16 @@ import {
   RESOLVE_TIMESHEET_ENTRY,
   GET_PROJECTS,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
-import { StatCard } from '@/components/dashboard/stat-card'
-import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
+import { PageHeader, StatsRow, StatCard, ErpBadge, DateCell } from '@/components/ui/erp-shared'
+import { DataTable, type Column } from '@/components/DataTable'
+import { FormModal, FormSection } from '@/components/forms/form-modal'
 import { LineItemsEditor, type LineColumn } from '@/components/forms/line-items-editor'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import {
   Plus, Clock, Send, CheckCircle2, XCircle, Trash2,
-  Search, ChevronLeft, ChevronRight, Calendar,
+  ChevronLeft, ChevronRight, Calendar,
 } from 'lucide-react'
-import { formatMoneyCompact, formatNumber } from '@/lib/format-money'
-import { cn } from '@/lib/utils'
-import { formatDate } from '@/lib/format-date'
 
 interface TimesheetRow {
   id?: string
@@ -142,6 +137,19 @@ export default function TimesheetsPage() {
     },
   ]
 
+  const tableColumns: Column[] = [
+    { key: 'entryDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'taskName', label: 'Task', render: (v) => <span className="text-sm">{v || '—'}</span> },
+    { key: 'hours', label: 'Hours', width: '90px', align: 'right', render: (v) => <span className="tabular-nums font-medium">{Number(v).toFixed(2)}</span> },
+    {
+      key: 'billable',
+      label: 'Billable',
+      width: '90px',
+      render: (v) => (v ? <ErpBadge status="yes" /> : <span className="text-muted-foreground text-sm">No</span>),
+    },
+    { key: 'status', label: 'Status', width: '110px', render: (v) => <ErpBadge status={String(v)} /> },
+  ]
+
   const bulkSubmit = () => {
     const valid = rows.filter((r) => r.entryDate && Number(r.hours) > 0)
     if (valid.length === 0) return toast.error('Add at least one valid entry')
@@ -189,12 +197,14 @@ export default function TimesheetsPage() {
   }, [entries, ws])
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="My Timesheets"
-        description="Log time against projects, submit for approval, get paid."
+        subtitle="Log time against projects, submit for approval, get paid."
+        icon={<Clock className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'HR' }, { label: 'Timesheets' }]}
         actions={
-          <Button onClick={() => { setRows([emptyRow()]); setOpen(true) }} className="bg-grad-brand text-white border-none gap-1.5">
+          <Button onClick={() => { setRows([emptyRow()]); setOpen(true) }} className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
             <Plus className="h-4 w-4" />
             Log time
           </Button>
@@ -202,8 +212,9 @@ export default function TimesheetsPage() {
       />
 
       {/* Week navigator */}
-      <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-2">
+      <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-2 mb-4">
         <button
+          type="button"
           onClick={() => { const d = new Date(weekAnchor); d.setDate(d.getDate() - 7); setWeekAnchor(d) }}
           className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
         >
@@ -215,12 +226,14 @@ export default function TimesheetsPage() {
         </div>
         <div className="flex items-center gap-1.5">
           <button
+            type="button"
             onClick={() => setWeekAnchor(new Date())}
             className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
           >
             This week
           </button>
           <button
+            type="button"
             onClick={() => { const d = new Date(weekAnchor); d.setDate(d.getDate() + 7); setWeekAnchor(d) }}
             className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
           >
@@ -229,19 +242,18 @@ export default function TimesheetsPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Total hours" value={(summary?.totalHours ?? 0).toFixed(1)} icon={<Clock className="h-5 w-5" />} tone="brand" />
-        <StatCard label="Billable hours" value={(summary?.billableHours ?? 0).toFixed(1)} icon={<CheckCircle2 className="h-5 w-5" />} tone="emerald" />
-        <StatCard label="Approved" value={(summary?.approvedHours ?? 0).toFixed(1)} icon={<CheckCircle2 className="h-5 w-5" />} tone="sky" />
-        <StatCard label="Pending" value={(summary?.pending ?? 0).toFixed(1)} icon={<Send className="h-5 w-5" />} tone="warn" />
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total hours" value={(summary?.totalHours ?? 0).toFixed(1)} icon={<Clock className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Billable hours" value={(summary?.billableHours ?? 0).toFixed(1)} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Approved" value={(summary?.approvedHours ?? 0).toFixed(1)} icon={<CheckCircle2 className="h-5 w-5" />} variant="teal" />
+        <StatCard label="Pending" value={(summary?.pending ?? 0).toFixed(1)} icon={<Send className="h-5 w-5" />} variant="amber" />
+      </StatsRow>
 
-      {/* Day-strip preview */}
-      <SectionCard title="Hours by day" description={`Week of ${fmtDay(ws)}`}>
+      <div className="rounded-xl border border-border bg-card p-4 mb-4">
+        <p className="text-sm font-semibold mb-3">Hours by day · Week of {fmtDay(ws)}</p>
         <div className="grid grid-cols-2 sm:grid-cols-7 gap-2">
           {dailyTotals.map((d) => (
-            <div key={d.key} className="rounded-xl border border-border p-3">
+            <div key={d.key} className="rounded-lg border border-border p-3">
               <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
                 {d.date.toLocaleDateString(undefined, { weekday: 'short' })}
               </p>
@@ -250,93 +262,46 @@ export default function TimesheetsPage() {
             </div>
           ))}
         </div>
-      </SectionCard>
+      </div>
 
-      {/* Entries */}
-      <SectionCard title="Entries this week" description={`${entries.length} record${entries.length === 1 ? '' : 's'}`} bodyClassName="p-0">
-        {listQ.loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : entries.length === 0 ? (
-          <div className="p-10 text-center">
-            <Clock className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No time logged this week</p>
-            <Button onClick={() => { setRows([emptyRow()]); setOpen(true) }} className="mt-3 bg-grad-brand text-white border-none gap-1.5">
-              <Plus className="h-4 w-4" /> Log time
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Date</th>
-                  <th className="px-3 py-3 font-medium">Task</th>
-                  <th className="px-3 py-3 font-medium text-right">Hours</th>
-                  <th className="px-3 py-3 font-medium">Billable</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((e: any) => (
-                  <tr key={e.id} className="border-t hover:bg-secondary/30">
-                    <td className="px-5 py-3 text-muted-foreground whitespace-nowrap">{formatDate(e.entryDate)}</td>
-                    <td className="px-3 py-3">{e.taskName || <span className="text-muted-foreground">—</span>}</td>
-                    <td className="px-3 py-3 text-right tabular-nums font-medium">{Number(e.hours).toFixed(2)}</td>
-                    <td className="px-3 py-3">
-                      {e.billable ? (
-                        <span className="inline-flex items-center rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 px-2 py-0.5 text-[10px] font-medium uppercase">Yes</span>
-                      ) : <span className="text-muted-foreground">No</span>}
-                    </td>
-                    <td className="px-3 py-3"><TimesheetStatusBadge status={e.status} /></td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        {e.status === 'DRAFT' && (
-                          <button
-                            onClick={() => submitMutation({ variables: { id: e.id } })}
-                            title="Submit for approval"
-                            className="h-7 w-7 grid place-items-center rounded-md text-amber-600 hover:bg-amber-50"
-                          >
-                            <Send className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                        {e.status === 'SUBMITTED' && (
-                          <>
-                            <button
-                              onClick={() => resolveMutation({ variables: { id: e.id, decision: 'APPROVED' } })}
-                              title="Approve"
-                              className="h-7 w-7 grid place-items-center rounded-md text-emerald-600 hover:bg-emerald-50"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const reason = prompt('Reason for rejection (optional)') ?? undefined
-                                resolveMutation({ variables: { id: e.id, decision: 'REJECTED', reason } })
-                              }}
-                              title="Reject"
-                              className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                            >
-                              <XCircle className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => { if (confirm('Delete entry?')) deleteMutation({ variables: { id: e.id } }) }}
-                          title="Delete"
-                          className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <DataTable
+        data={entries}
+        columns={tableColumns}
+        loading={listQ.loading}
+        title="All Timesheet Entries"
+        searchable
+        searchPlaceholder="Search entries…"
+        emptyMessage="No time logged this week."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Submit',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (e) => submitMutation({ variables: { id: e.id } }),
+            show: (e) => e.status === 'DRAFT',
+          },
+          {
+            label: 'Approve',
+            icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+            onClick: (e) => resolveMutation({ variables: { id: e.id, decision: 'APPROVED' } }),
+            show: (e) => e.status === 'SUBMITTED',
+          },
+          {
+            label: 'Reject',
+            icon: <XCircle className="h-3.5 w-3.5" />,
+            onClick: (e) => {
+              const reason = prompt('Reason for rejection (optional)') ?? undefined
+              resolveMutation({ variables: { id: e.id, decision: 'REJECTED', reason } })
+            },
+            show: (e) => e.status === 'SUBMITTED',
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (e) => { if (confirm('Delete entry?')) deleteMutation({ variables: { id: e.id } }) },
+          },
+        ]}
+      />
 
       {/* Bulk-entry modal */}
       <FormModal
@@ -380,14 +345,4 @@ function emptyRow(): TimesheetRow {
     billRate: 0,
     costRate: 0,
   }
-}
-
-function TimesheetStatusBadge({ status }: { status: string }) {
-  const s = String(status || '').toUpperCase()
-  const tone =
-    s === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : s === 'SUBMITTED' ? 'bg-amber-50 text-amber-700 border-amber-200'
-        : s === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200'
-          : 'bg-slate-100 text-slate-700 border-slate-200'
-  return <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase', tone)}>{s}</span>
 }

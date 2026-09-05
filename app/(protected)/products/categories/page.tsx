@@ -82,12 +82,12 @@ export default function ProductCategoriesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1000px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Product Categories"
         description="Hierarchical tree used to organize the product catalog, e.g. All → Tools → Tools Consumables."
         actions={
-          <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
+          <Button size="sm" onClick={openNew} className="gap-1.5">
             <Plus className="h-4 w-4" /> New category
           </Button>
         }
@@ -100,7 +100,7 @@ export default function ProductCategoriesPage() {
           <div className="p-10 text-center">
             <FolderTree className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
             <p className="text-sm font-medium">No categories yet</p>
-            <Button onClick={openNew} className="mt-3 bg-grad-brand text-white border-none gap-1.5">
+            <Button size="sm" onClick={openNew} className="mt-3 gap-1.5">
               <Plus className="h-4 w-4" /> New category
             </Button>
           </div>

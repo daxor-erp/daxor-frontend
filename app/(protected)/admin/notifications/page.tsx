@@ -105,7 +105,7 @@ export default function AdminNotificationsPage() {
   const clearSelection = () => setSelectedUserIds({})
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Send notification"
         description="Broadcast announcements, maintenance windows, or alerts to org admins or specific users."
@@ -262,7 +262,7 @@ export default function AdminNotificationsPage() {
             <Button variant="outline" onClick={() => { setTitle(''); setMessage(''); setLink(''); setSelectedUserIds({}) }} disabled={sending}>
               Reset
             </Button>
-            <Button onClick={handleSend} disabled={sending} className="bg-grad-brand text-white border-none gap-1.5">
+            <Button onClick={handleSend} disabled={sending} className="gap-1.5">
               <Send className="h-4 w-4" />
               {sending ? 'Sending…' : 'Send notification'}
             </Button>

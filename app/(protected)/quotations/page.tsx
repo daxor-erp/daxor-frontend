@@ -140,7 +140,7 @@ const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   submitted:           { label: 'Pending approval',    cls: 'bg-amber-50 text-amber-800 border-amber-200' },
   approval_declined:   { label: 'Declined (internal)', cls: 'bg-red-50 text-red-800 border-red-200' },
   approved:            { label: 'Approved (internal)', cls: 'bg-teal-50 text-teal-800 border-teal-200' },
-  sent:                { label: 'Sent',                cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  sent:                { label: 'Sent',                cls: 'bg-primary/10 text-primary border-primary/20' },
   accepted:            { label: 'Accepted',            cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   rejected:            { label: 'Rejected',            cls: 'bg-red-50 text-red-700 border-red-200' },
   expired:             { label: 'Expired',             cls: 'bg-orange-50 text-orange-700 border-orange-200' },
@@ -447,7 +447,7 @@ export default function CreateQuotationsPage() {
     i === 0 ? 'w-32' : i === 1 ? 'flex-1 min-w-0' : i === 2 ? 'w-40' : i === 3 || i === 4 ? 'w-28' : i === 5 ? 'w-28' : i === 6 ? 'w-36' : i === 7 ? 'w-20 shrink-0' : 'w-36'
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Quotations"
         subtitle="Create, edit, and manage quotations"
@@ -484,15 +484,15 @@ export default function CreateQuotationsPage() {
       {showForm && (
         <div
           ref={formPanelRef}
-          className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden"
+          className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden"
         >
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">
               {editingId
                 ? `Edit quotation${detail?.quotationNumber ? ` — ${detail.quotationNumber}` : ''}`
                 : 'New quotation'}
             </span>
-            <button type="button" onClick={closeForm} className="text-blue-200 hover:text-white">
+            <button type="button" onClick={closeForm} className="text-primary-foreground/80 hover:text-white">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -544,14 +544,14 @@ export default function CreateQuotationsPage() {
 
               <div className="p-2">
                 <div className="border border-gray-300 rounded overflow-hidden">
-                  <div className="grid bg-[#f0f0f0] border-b border-gray-300" style={{ gridTemplateColumns: '2rem 12rem 1fr 6rem 8rem 6rem 6rem 8rem 2rem' }}>
+                  <div className="grid bg-muted/70 border-b border-gray-300" style={{ gridTemplateColumns: '2rem 12rem 1fr 6rem 8rem 6rem 6rem 8rem 2rem' }}>
                     {['#', 'Item', 'Description', 'Qty', 'Unit Price', 'Disc %', 'Tax %', 'Line Total', ''].map((h, i) => (
                       <div key={i} className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-r border-gray-300 last:border-r-0">{h}</div>
                     ))}
                   </div>
 
                   {lines.map((l, i) => (
-                    <div key={i} className="grid border-b border-gray-200 last:border-b-0 hover:bg-blue-50/20" style={{ gridTemplateColumns: '2rem 12rem 1fr 6rem 8rem 6rem 6rem 8rem 2rem' }}>
+                    <div key={i} className="grid border-b border-gray-200 last:border-b-0 hover:bg-primary/5" style={{ gridTemplateColumns: '2rem 12rem 1fr 6rem 8rem 6rem 6rem 8rem 2rem' }}>
                       <div className="border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-1">{i + 1}</div>
                       <div className="border-r border-gray-200 px-1 py-1">
                         <CellSelect
@@ -590,7 +590,7 @@ export default function CreateQuotationsPage() {
                   ))}
 
                   <div className="border-t border-dashed border-gray-300 px-2 py-1">
-                    <button type="button" onClick={() => setLines(p => [...p, emptyLine()])} className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1">
+                    <button type="button" onClick={() => setLines(p => [...p, emptyLine()])} className="text-xs text-primary hover:text-primary flex items-center gap-1">
                       <Plus className="h-3 w-3" /> Add line
                     </button>
                   </div>
@@ -617,8 +617,8 @@ export default function CreateQuotationsPage() {
                       <div className="flex gap-8 text-sm font-bold text-gray-800 border-t border-gray-300 pt-1"><span>Total</span><span>{formatMoney(totals.totalAmount)}</span></div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={closeForm} className="h-8 text-xs">Cancel</Button>
-                      <Button size="sm" onClick={handleSave} disabled={saving || updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[130px]">
+                      <Button variant="outline" size="sm" onClick={closeForm}>Cancel</Button>
+                      <Button size="sm" onClick={handleSave} disabled={saving || updating} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[130px]">
                         <Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving…' : editingId ? 'Update quotation' : 'Save quotation'}
                       </Button>
                     </div>
@@ -637,13 +637,13 @@ export default function CreateQuotationsPage() {
             <p className="text-[11px] text-muted-foreground mt-0.5">Click a row to edit in the panel above</p>
           </div>
           {!showForm && (
-            <Button size="sm" onClick={startCreate} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white shrink-0">
+            <Button size="sm" onClick={startCreate} className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground shrink-0">
               <Plus className="h-3.5 w-3.5 mr-1" /> New quotation
             </Button>
           )}
         </div>
 
-        <div className="flex bg-[#f0f0f0] border-b border-gray-300">
+        <div className="flex bg-muted/70 border-b border-gray-300">
           <div className="w-8 border-r border-gray-300 py-2 flex items-center justify-center text-xs text-gray-400">#</div>
           {headerCols.map((h, i) => (
             <div key={h} className={`border-r border-gray-300 last:border-r-0 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide ${colClass(i)}`}>{h}</div>
@@ -665,7 +665,7 @@ export default function CreateQuotationsPage() {
                 key={q.id}
                 role="button"
                 tabIndex={0}
-                className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors cursor-pointer ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                className={`flex border-b border-gray-200 last:border-b-0 hover:bg-primary/5 transition-colors cursor-pointer ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
                 onClick={(e) => {
                   if (shouldIgnoreRowClick(e, e.currentTarget)) return
                   startEdit(q.id)
@@ -712,7 +712,7 @@ export default function CreateQuotationsPage() {
                       e.stopPropagation()
                       downloadDocumentPdf('quotation', q.id, q.quotationNumber).catch((err) => toast.error(String(err?.message || err)))
                     }}
-                    className="p-1.5 rounded-md text-gray-500 hover:text-blue-700 hover:bg-blue-50"
+                    className="p-1.5 rounded-md text-gray-500 hover:text-primary hover:bg-primary/5"
                   >
                     <Download className="h-3.5 w-3.5" />
                   </button>
@@ -758,7 +758,7 @@ export default function CreateQuotationsPage() {
                           reportMutationFailure(err)
                         }
                       }}
-                      className="p-1.5 rounded-md text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                      className="p-1.5 rounded-md text-primary hover:bg-primary/5 disabled:opacity-50"
                     >
                       <Mail className="h-3.5 w-3.5" />
                     </button>
@@ -781,7 +781,7 @@ export default function CreateQuotationsPage() {
                     type="button"
                     title="Edit quotation"
                     onClick={(e) => { e.stopPropagation(); startEdit(q.id) }}
-                    className="p-1.5 rounded-md text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                    className="p-1.5 rounded-md text-gray-500 hover:text-primary hover:bg-primary/5"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -818,11 +818,11 @@ export default function CreateQuotationsPage() {
                 {JSON.stringify(listViewData.quotation, null, 2)}
               </pre>
             ) : (
-              <p className="text-gray-500">No detail loaded.</p>
+              <p className="erp-page-desc">No detail loaded.</p>
             )}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setViewListId(null)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setViewListId(null)}>
               Close
             </Button>
           </DialogFooter>

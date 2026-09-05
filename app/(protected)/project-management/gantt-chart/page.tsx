@@ -60,10 +60,10 @@ export default function GanttChartPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Gantt Chart</h1>
-        <p className="text-gray-500">Visual timeline of project tasks and milestones</p>
+        <h1 className="erp-page-title">Gantt Chart</h1>
+        <p className="erp-page-desc">Visual timeline of project tasks and milestones</p>
       </div>
 
       <Card>
@@ -79,7 +79,7 @@ export default function GanttChartPage() {
           ) : allTasks.length === 0 ? (
             <div className="text-center py-12">
               <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No tasks with dates available</p>
+              <p className="erp-page-desc">No tasks with dates available</p>
               <p className="text-xs text-gray-400 mt-1">Add tasks with start and due dates to see the Gantt chart</p>
             </div>
           ) : (

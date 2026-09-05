@@ -195,7 +195,7 @@ export default function DebitNotePage() {
         {[
           { label: 'Eligible POs', value: eligible.length, icon: Clock, cls: 'text-amber-600 bg-amber-50' },
           { label: 'Bills w/ balance', value: billsEligible.length, icon: FileText, cls: 'text-violet-600 bg-violet-50' },
-          { label: 'Debit notes', value: issued.length, icon: CheckCircle2, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Debit notes', value: issued.length, icon: CheckCircle2, cls: 'text-primary bg-primary/10' },
           { label: 'Total POs', value: orders.length, icon: CheckCircle2, cls: 'text-gray-500 bg-gray-100' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div
@@ -216,7 +216,7 @@ export default function DebitNotePage() {
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md border border-gray-200">
-            <div className="flex items-center justify-between px-4 py-3 bg-blue-600 rounded-t-lg">
+            <div className="flex items-center justify-between px-4 py-3 bg-primary rounded-t-lg">
               <span className="text-sm font-semibold text-white flex items-center gap-2">
                 <FileText className="h-4 w-4" /> Issue Debit Note
               </span>
@@ -226,7 +226,7 @@ export default function DebitNotePage() {
                   setSelected(null)
                   resetForm()
                 }}
-                className="text-blue-200 hover:text-white"
+                className="text-primary-foreground/80 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -362,7 +362,7 @@ export default function DebitNotePage() {
                 size="sm"
                 onClick={handleIssue}
                 disabled={issuing}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[130px]"
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[130px]"
               >
                 <FileText className="h-3.5 w-3.5 mr-1" />
                 {issuing ? 'Issuing…' : 'Issue Debit Note'}
@@ -433,7 +433,7 @@ export default function DebitNotePage() {
               type="button"
               onClick={() => setTab(t)}
               className={`px-4 py-2 text-xs font-semibold transition-colors ${
-                tab === t ? 'bg-white border-b-2 border-blue-600 text-blue-600' : 'bg-gray-50 text-gray-500 hover:text-gray-700'
+                tab === t ? 'bg-white border-b-2 border-primary text-primary' : 'bg-gray-50 text-gray-500 hover:text-gray-700'
               }`}
             >
               {label}
@@ -441,7 +441,7 @@ export default function DebitNotePage() {
           ))}
         </div>
 
-        <div className="flex bg-[#f0f0f0] border-b border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+        <div className="flex bg-muted/70 border-b border-gray-300 text-xs font-semibold text-gray-600 uppercase tracking-wide">
           {tab === 'issued' ? (
             <>
               <div className="w-8 border-r border-gray-300 px-2 py-2">#</div>
@@ -494,7 +494,7 @@ export default function DebitNotePage() {
           rows.map((o, idx) => (
             <div
               key={o.id}
-              className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 text-xs ${
+              className={`flex border-b border-gray-200 last:border-b-0 hover:bg-primary/5 text-xs ${
                 idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
               }`}
             >
@@ -564,7 +564,7 @@ export default function DebitNotePage() {
                     <Button
                       size="sm"
                       onClick={() => openIssue(o, 'bill')}
-                      className="h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2"
+                      className="h-6 text-xs bg-primary hover:bg-primary/90 text-primary-foreground px-2"
                     >
                       <FileText className="h-3 w-3 mr-1" /> Issue
                     </Button>
@@ -593,7 +593,7 @@ export default function DebitNotePage() {
                     <Button
                       size="sm"
                       onClick={() => openIssue(o, 'po')}
-                      className="h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2"
+                      className="h-6 text-xs bg-primary hover:bg-primary/90 text-primary-foreground px-2"
                     >
                       <FileText className="h-3 w-3 mr-1" /> Issue
                     </Button>

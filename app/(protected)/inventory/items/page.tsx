@@ -259,7 +259,7 @@ export default function ItemsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Inventory Items"
         subtitle="Manage inventory items and materials"
@@ -277,11 +277,11 @@ export default function ItemsPage() {
 
       {/* Inline form panel */}
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm mb-4 overflow-hidden">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm mb-4 overflow-hidden">
           {/* Form toolbar */}
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editing ? 'Edit Item' : 'New Item'}</span>
-            <button onClick={handleCancel} className="text-blue-200 hover:text-white">
+            <button onClick={handleCancel} className="text-primary-foreground/80 hover:text-white">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -363,10 +363,10 @@ export default function ItemsPage() {
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={handleCancel} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]">
+              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[100px]">
                 <Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving…' : editing ? 'Update Item' : 'Save Item'}
               </Button>
             </div>

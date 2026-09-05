@@ -8,8 +8,8 @@ import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_PROJECTS, CREATE_PROJECT, UPDATE_PROJECT, DELETE_PROJECT } from '@/gql/queries'
-import { Trash2, Edit, X, Save, FolderKanban } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { Trash2, Edit, X, Save, FolderKanban, Plus, CheckCircle2, Clock } from 'lucide-react'
 
 const EMPTY_FORM = {
   name: '',
@@ -87,28 +87,46 @@ export default function ProjectMastersPage() {
   }
 
   const projects = data?.projects ?? []
+  const stats = {
+    total: projects.length,
+    active: projects.filter((p: any) => p.status === 'active').length,
+    completed: projects.filter((p: any) => p.status === 'completed').length,
+  }
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '120px', render: v => <span className="font-mono text-xs text-gray-500">{v || '—'}</span> },
-    { key: 'name', label: 'Project Name', sortable: true, render: v => <span className="font-medium text-gray-800">{v}</span> },
-    { key: 'description', label: 'Description', render: v => <span className="text-gray-500 text-xs">{v || '—'}</span> },
-    { key: 'startDate', label: 'Start Date', width: '110px', render: v => v ? formatDate(v) : '—' },
-    { key: 'endDate', label: 'End Date', width: '110px', render: v => v ? formatDate(v) : '—' },
-    { key: 'status', label: 'Status', width: '110px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${v === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{v}</span> },
+    { key: 'seqNo', label: 'Code', width: '120px', render: v => <MonoCell value={v || '—'} /> },
+    { key: 'name', label: 'Project Name', sortable: true, render: v => <span className="text-sm font-medium">{v}</span> },
+    { key: 'description', label: 'Description', render: v => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'startDate', label: 'Start Date', width: '110px', render: v => <DateCell value={v} /> },
+    { key: 'endDate', label: 'End Date', width: '110px', render: v => <DateCell value={v} /> },
+    { key: 'status', label: 'Status', width: '110px', render: v => <ErpBadge status={String(v)} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Project Masters</h1>
-        <p className="text-gray-500">Manage project master data</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Project Masters"
+        subtitle="Manage project master data"
+        icon={<FolderKanban className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Project Management' }, { label: 'Project Masters' }]}
+        actions={
+          <Button onClick={() => { reset(); setAdding(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Project
+          </Button>
+        }
+      />
+
+      <StatsRow cols={3}>
+        <StatCard label="Total" value={stats.total} icon={<FolderKanban className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Active" value={stats.active} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Completed" value={stats.completed} icon={<Clock className="h-5 w-5" />} variant="amber" />
+      </StatsRow>
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editing ? 'Edit Project' : 'New Project'}</span>
-            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -122,7 +140,7 @@ export default function ProjectMastersPage() {
             <InputFloating label="Description" multiline rows={2} value={form.description} onChange={e => setF('description', e.target.value)} className="text-xs min-h-[50px]" />
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" size="sm" onClick={() => { setAdding(false); setEditing(null); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[110px]">
+              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[110px]">
                 <Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving…' : editing ? 'Update' : 'Save Project'}
               </Button>
             </div>
@@ -135,15 +153,14 @@ export default function ProjectMastersPage() {
         columns={columns}
         loading={loading}
         title="All Projects"
-        onAdd={() => { reset(); setAdding(true) }}
-        addLabel="New Project"
         searchable
-        searchPlaceholder="Search projects..."
+        searchPlaceholder="Search projects…"
         emptyMessage="No projects yet. Click 'New Project' to create one."
+        pageSize={25}
         onRowClick={handleEdit}
         actions={[
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this project?')) deleteProject({ variables: { id: row.id } }) }, variant: 'ghost' },
+          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row) },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this project?')) deleteProject({ variables: { id: row.id } }) } },
         ]}
       />
     </div>

@@ -88,7 +88,7 @@ function statusBadgeClass(status: PoolStatus): string {
     case 'APPROVED_POOL':
       return 'bg-sky-50 text-sky-900 border-sky-200'
     case 'LOCKED_PAY':
-      return 'bg-indigo-50 text-indigo-900 border-indigo-200'
+      return 'bg-primary/10 text-indigo-900 border-primary/20'
     case 'RELEASED_RUN':
       return 'bg-emerald-50 text-emerald-900 border-emerald-200'
     case 'REJECTED':
@@ -377,22 +377,22 @@ export default function TimesheetPoolPage() {
   )
 
   if (!orgId) {
-    return <p className="text-sm text-gray-500">Select an organization to view the timesheet pool.</p>
+    return <p className="erp-page-desc">Select an organization to view the timesheet pool.</p>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="erp-shell">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-slate-600 mb-1">
             <ClipboardList className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Workflow</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Timesheet pool</h1>
+          <h1 className="erp-page-title">Timesheet pool</h1>
           <p className="text-gray-500 mt-1">
             Collect approved attendance rows before payroll calculation. Entries are stored per organization on the server
             and complement{' '}
-            <Link href="/payroll/workflow/payroll-runs" className="text-blue-600 hover:underline">
+            <Link href="/payroll/workflow/payroll-runs" className="text-primary hover:underline">
               payroll runs
             </Link>
             .
@@ -413,10 +413,10 @@ export default function TimesheetPoolPage() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
           <p className="text-xs font-semibold uppercase text-slate-500">Open / review</p>
-          <p className="text-2xl font-bold tabular-nums text-slate-900">{summary.pending}</p>
+          <p className="text-2xl font-bold tabular-nums text-foreground">{summary.pending}</p>
         </div>
-        <div className="rounded-lg border border-indigo-200 bg-indigo-50/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase text-indigo-800">Locked / released</p>
+        <div className="rounded-lg border border-primary/20 bg-primary/10/70 px-4 py-3">
+          <p className="text-xs font-semibold uppercase text-primary">Locked / released</p>
           <p className="text-2xl font-bold tabular-nums text-indigo-950">{summary.locked}</p>
         </div>
         <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3">
@@ -441,12 +441,12 @@ export default function TimesheetPoolPage() {
       ) : null}
 
       {open ? (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">
               {editingId ? 'Edit pool entry' : 'New pool entry'}
             </span>
-            <button type="button" onClick={closeDialog} className="text-blue-200 hover:text-white" aria-label="Close">
+            <button type="button" onClick={closeDialog} className="text-primary-foreground/80 hover:text-white" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -553,14 +553,14 @@ export default function TimesheetPoolPage() {
               className="text-xs min-h-[56px]"
             />
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={closeDialog} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={closeDialog}>
                 Cancel
               </Button>
               <Button
                 size="sm"
                 onClick={submit}
                 disabled={busy}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]"
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[100px]"
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {busy ? 'Saving…' : 'Save'}
@@ -601,7 +601,7 @@ export default function TimesheetPoolPage() {
                     <TableCell className="font-mono text-xs text-gray-600">{r.lineRef}</TableCell>
                     <TableCell>
                       <div className="font-mono text-xs text-gray-600">{r.employeeNo}</div>
-                      <div className="text-sm text-gray-900">{r.employeeName || '—'}</div>
+                      <div className="text-sm text-foreground">{r.employeeName || '—'}</div>
                     </TableCell>
                     <TableCell className="text-sm text-gray-600 whitespace-nowrap">
                       {r.periodStartYmd && r.periodEndYmd ? `${r.periodStartYmd} – ${r.periodEndYmd}` : '—'}

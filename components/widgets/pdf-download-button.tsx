@@ -77,7 +77,7 @@ export function PdfDownloadButton({
 
   const cls = cn(
     'gap-1.5',
-    variant === 'primary' && 'bg-grad-brand text-white border-none hover:opacity-95',
+    variant === 'primary' && ' hover:opacity-95',
     className,
   )
 

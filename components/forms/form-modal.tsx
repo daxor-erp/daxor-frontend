@@ -124,11 +124,11 @@ export function FormModal({
               </div>
             )}
             <div className="min-w-0">
-              <DialogTitle className="text-lg sm:text-xl font-semibold leading-tight tracking-tight">
+              <DialogTitle className="text-lg font-semibold leading-tight tracking-tight">
                 {title}
               </DialogTitle>
               {description && (
-                <DialogDescription className="text-white/85 text-xs sm:text-sm mt-0.5">
+                <DialogDescription className="mt-0.5 text-xs text-white/85">
                   {description}
                 </DialogDescription>
               )}
@@ -164,7 +164,7 @@ export function FormModal({
                   <Button
                     type="submit"
                     disabled={submitting || submitDisabled}
-                    className="bg-grad-brand text-white border-none gap-1.5 min-w-[8rem]"
+                    className="gap-1.5 min-w-[8rem]"
                   >
                     {submitting ? (
                       <>

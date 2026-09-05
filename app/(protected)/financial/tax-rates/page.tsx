@@ -9,14 +9,14 @@ import {
   UPDATE_TAX_RATE,
   DELETE_TAX_RATE,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell } from '@/components/ui/erp-shared'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Percent, Search, Receipt } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Plus, Pencil, Trash2, Percent, Receipt } from 'lucide-react'
 
 interface TaxRateForm {
   id?: string
@@ -50,7 +50,6 @@ export default function TaxRatesPage() {
   const orgId = user?.organizationId ?? ''
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<TaxRateForm>(EMPTY)
-  const [search, setSearch] = useState('')
 
   const { data, loading, refetch } = useQuery(GET_TAX_RATES, {
     variables: { organizationId: orgId, search: null },
@@ -87,19 +86,6 @@ export default function TaxRatesPage() {
   })
 
   const rates: any[] = data?.taxRates ?? []
-  const filtered = useMemo(
-    () =>
-      rates.filter((r) => {
-        if (!search.trim()) return true
-        const q = search.toLowerCase()
-        return (
-          r.name?.toLowerCase().includes(q) ||
-          r.code?.toLowerCase().includes(q) ||
-          r.hsnSacCode?.toLowerCase().includes(q)
-        )
-      }),
-    [rates, search],
-  )
 
   const stats = useMemo(() => {
     const active = rates.filter((r) => String(r.status).toUpperCase() === 'ACTIVE').length
@@ -151,109 +137,72 @@ export default function TaxRatesPage() {
     }
   }
 
+  const columns: Column[] = [
+    { key: 'code', label: 'Code', width: '110px', render: (v) => <MonoCell value={v} className="font-semibold text-foreground" /> },
+    { key: 'name', label: 'Name', sortable: true, render: (v) => <span className="text-sm font-medium">{v}</span> },
+    { key: 'taxType', label: 'Type', width: '100px', render: (v) => <span className="text-sm text-muted-foreground">{v}</span> },
+    { key: 'appliesTo', label: 'Applies to', width: '120px', render: (v) => <span className="text-sm text-muted-foreground">{v}</span> },
+    { key: 'hsnSacCode', label: 'HSN/SAC', width: '110px', render: (v) => <MonoCell value={v} /> },
+    {
+      key: 'ratePercent',
+      label: 'Rate',
+      width: '90px',
+      align: 'right',
+      render: (v) => <span className="tabular-nums text-sm font-semibold">{Number(v).toFixed(2)}%</span>,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: '100px',
+      render: (v) => <ErpBadge status={String(v).toLowerCase()} />,
+    },
+  ]
+
   return (
-    <div className="mx-auto w-full max-w-[1300px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Tax Rates"
-        description="GST, IGST, CGST, SGST, VAT and custom tax codes used across sales and purchases."
+        subtitle="GST, IGST, CGST, SGST, VAT and custom tax codes used across sales and purchases."
+        icon={<Percent className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Financial' }, { label: 'Tax Rates' }]}
         actions={
-          <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" />
-            New tax rate
+          <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Tax Rate
           </Button>
         }
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Stat label="Total" value={rates.length} icon={<Receipt className="h-4 w-4" />} />
-        <Stat label="Active" value={stats.active} tone="emerald" />
-        <Stat label="GST codes" value={stats.gst} />
-        <Stat label="Avg. rate" value={`${stats.avg.toFixed(1)}%`} icon={<Percent className="h-4 w-4" />} />
-      </div>
+      <StatsRow cols={4}>
+        <StatCard label="Total" value={rates.length} icon={<Receipt className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Active" value={stats.active} icon={<Receipt className="h-5 w-5" />} variant="green" />
+        <StatCard label="GST Codes" value={stats.gst} icon={<Percent className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Avg. Rate" value={`${stats.avg.toFixed(1)}%`} icon={<Percent className="h-5 w-5" />} variant="amber" />
+      </StatsRow>
 
-      <SectionCard
-        title="Configured tax rates"
-        description="Click a row to edit. Codes are uppercase and must be unique per organization."
-        action={
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name / code / HSN"
-              className="rounded-lg border border-border bg-secondary/40 py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary w-56"
-            />
-          </div>
-        }
-        bodyClassName="p-0"
-      >
-        {loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center">
-            <Receipt className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No tax rates yet</p>
-            <p className="text-xs text-muted-foreground mb-3">
-              Create your first GST (5/12/18/28%) rate to apply on invoices and bills.
-            </p>
-            <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
-              <Plus className="h-4 w-4" /> New tax rate
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Code</th>
-                  <th className="px-3 py-3 font-medium">Name</th>
-                  <th className="px-3 py-3 font-medium">Type</th>
-                  <th className="px-3 py-3 font-medium">Applies to</th>
-                  <th className="px-3 py-3 font-medium">HSN/SAC</th>
-                  <th className="px-3 py-3 font-medium text-right">Rate</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r: any) => (
-                  <tr key={r.id} className="border-t hover:bg-secondary/30 cursor-pointer" onClick={() => openEdit(r)}>
-                    <td className="px-5 py-3 font-mono text-xs font-semibold">{r.code}</td>
-                    <td className="px-3 py-3 font-medium">{r.name}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{r.taxType}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{r.appliesTo}</td>
-                    <td className="px-3 py-3 font-mono text-xs">{r.hsnSacCode || '—'}</td>
-                    <td className="px-3 py-3 text-right tabular-nums font-semibold">{Number(r.ratePercent).toFixed(2)}%</td>
-                    <td className="px-3 py-3">
-                      <span className={cn(
-                        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase',
-                        String(r.status).toUpperCase() === 'ACTIVE'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-slate-100 text-slate-700 border-slate-200',
-                      )}>{r.status}</span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => openEdit(r)} className="h-7 w-7 grid place-items-center rounded-md text-muted-foreground hover:bg-secondary">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => { if (confirm(`Delete ${r.code}?`)) deleteMutation({ variables: { id: r.id } }) }}
-                          className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <DataTable
+        data={rates}
+        columns={columns}
+        loading={loading}
+        title="All Tax Rates"
+        searchable
+        searchPlaceholder="Search name / code / HSN…"
+        emptyMessage="No tax rates found."
+        pageSize={25}
+        onRowClick={(r: any) => openEdit(r)}
+        actions={[
+          {
+            label: 'Edit',
+            icon: <Pencil className="h-3.5 w-3.5" />,
+            onClick: (r: any) => openEdit(r),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => { if (confirm(`Delete ${r.code}?`)) deleteMutation({ variables: { id: r.id } }) },
+          },
+        ]}
+      />
 
-      {/* Form modal */}
       <FormModal
         open={open}
         onOpenChange={setOpen}
@@ -359,18 +308,6 @@ export default function TaxRatesPage() {
           </div>
         </FormSection>
       </FormModal>
-    </div>
-  )
-}
-
-function Stat({ label, value, icon, tone }: { label: string; value: string | number; icon?: React.ReactNode; tone?: 'emerald' }) {
-  return (
-    <div className={cn('rounded-xl border p-3 flex items-center gap-3', tone === 'emerald' ? 'bg-emerald-50 border-emerald-200' : 'bg-card border-border')}>
-      {icon && <div className={cn('h-9 w-9 rounded-lg grid place-items-center', tone === 'emerald' ? 'bg-emerald-100 text-emerald-700' : 'bg-primary-soft text-primary')}>{icon}</div>}
-      <div>
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</p>
-        <p className="text-lg font-bold tabular-nums">{value}</p>
-      </div>
     </div>
   )
 }

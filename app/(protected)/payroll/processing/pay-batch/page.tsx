@@ -265,7 +265,7 @@ export default function PayBatchPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="erp-shell">
       <nav className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
         <Link href="/payroll-management" className="hover:text-gray-800 hover:underline">
           Payroll
@@ -284,7 +284,7 @@ export default function PayBatchPage() {
             <Layers className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Processing</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Pay batch</h1>
+          <h1 className="erp-page-title">Pay batch</h1>
           <p className="text-gray-500 mt-1">
             Group employees and amounts into a runnable pay batch before posting. Rows are saved to the backend for your
             organization.
@@ -314,10 +314,10 @@ export default function PayBatchPage() {
       ) : null}
 
       {open ? (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editingId ? 'Edit pay batch' : 'New pay batch'}</span>
-            <button type="button" onClick={closeDialog} className="text-blue-200 hover:text-white" aria-label="Close">
+            <button type="button" onClick={closeDialog} className="text-primary-foreground/80 hover:text-white" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -404,14 +404,14 @@ export default function PayBatchPage() {
               className="text-xs min-h-[72px]"
             />
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={closeDialog} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={closeDialog}>
                 Cancel
               </Button>
               <Button
                 size="sm"
                 onClick={submit}
                 disabled={busy}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[140px]"
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {busy ? 'Saving…' : editingId ? 'Update batch' : 'Save batch'}

@@ -89,12 +89,12 @@ export default function AttributesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1000px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Product Attributes"
         description="Reusable attributes (Make, Model, Size, ...) — combinations of selected values generate product variants."
         actions={
-          <Button onClick={openNew} className="bg-grad-brand text-white border-none gap-1.5">
+          <Button size="sm" onClick={openNew} className="gap-1.5">
             <Plus className="h-4 w-4" /> New attribute
           </Button>
         }
@@ -107,7 +107,7 @@ export default function AttributesPage() {
           <div className="p-10 text-center">
             <Layers className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
             <p className="text-sm font-medium">No attributes yet</p>
-            <Button onClick={openNew} className="mt-3 bg-grad-brand text-white border-none gap-1.5">
+            <Button size="sm" onClick={openNew} className="mt-3 gap-1.5">
               <Plus className="h-4 w-4" /> New attribute
             </Button>
           </div>

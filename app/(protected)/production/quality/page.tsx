@@ -10,8 +10,8 @@ import {
   SET_QC_OUTCOME,
   DELETE_QC_INSPECTION,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
-import { StatCard } from '@/components/dashboard/stat-card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
 import { LineItemsEditor, type LineColumn } from '@/components/forms/line-items-editor'
 import { Button } from '@/components/ui/button'
@@ -19,12 +19,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import {
-  Plus, ShieldCheck, AlertTriangle, CheckCircle2, XCircle,
-  Trash2, Search, ClipboardCheck,
+  Plus, ShieldCheck, CheckCircle2, XCircle,
+  Trash2, ClipboardCheck,
 } from 'lucide-react'
-import { formatNumber } from '@/lib/format-money'
-import { cn } from '@/lib/utils'
-import { formatDate } from '@/lib/format-date'
 
 const SOURCE_MODULES = ['GRN', 'WORK_ORDER', 'MATERIAL_RECEIPT', 'SALES_RETURN', 'OTHER']
 const OUTCOMES = ['PENDING', 'ACCEPTED', 'REJECTED', 'CONDITIONAL', 'REWORK']
@@ -45,7 +42,6 @@ export default function QualityControlPage() {
   const orgId = user?.organizationId ?? ''
   const [open, setOpen] = useState(false)
   const [outcomeFilter, setOutcomeFilter] = useState('')
-  const [search, setSearch] = useState('')
   const [form, setForm] = useState({
     docNumber: '',
     inspectionDate: new Date().toISOString().slice(0, 10),
@@ -88,12 +84,6 @@ export default function QualityControlPage() {
 
   const inspections: any[] = listQ.data?.qcInspections ?? []
   const summary: any[] = summaryQ.data?.qcOutcomeSummary ?? []
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return inspections
-    const q = search.toLowerCase()
-    return inspections.filter((i) => i.docNumber?.toLowerCase().includes(q) || i.itemName?.toLowerCase().includes(q) || i.batchNumber?.toLowerCase().includes(q))
-  }, [inspections, search])
 
   const stats = useMemo(() => {
     const get = (o: string) => summary.find((s: any) => s.outcome === o)?.count ?? 0
@@ -171,109 +161,78 @@ export default function QualityControlPage() {
     })
   }
 
+  const columns: Column[] = [
+    { key: 'docNumber', label: 'Doc', width: '130px', render: (v) => <MonoCell value={v} /> },
+    { key: 'inspectionDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'itemName', label: 'Item', render: (v) => <span className="text-sm font-medium">{v || '—'}</span> },
+    { key: 'sourceModule', label: 'Source', width: '130px', render: (v) => <span className="text-sm text-muted-foreground">{String(v || '').replace('_', ' ')}</span> },
+    { key: 'quantityInspected', label: 'Inspected', width: '100px', align: 'right', render: (v) => <span className="text-sm tabular-nums">{Number(v ?? 0)}</span> },
+    { key: 'quantityPassed', label: 'Passed', width: '90px', align: 'right', render: (v) => <span className="text-sm tabular-nums text-emerald-700">{Number(v ?? 0)}</span> },
+    { key: 'quantityFailed', label: 'Failed', width: '90px', align: 'right', render: (v) => <span className="text-sm tabular-nums text-rose-700">{Number(v ?? 0)}</span> },
+    { key: 'outcome', label: 'Outcome', width: '120px', render: (v) => <ErpBadge status={String(v)} /> },
+  ]
+
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Quality Control"
-        description="Inspection records, defect classification, accept/reject gates for incoming and produced goods."
+        subtitle="Inspection records, defect classification, accept/reject gates for incoming and produced goods"
+        icon={<ClipboardCheck className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Production' }, { label: 'Quality' }]}
         actions={
-          <Button onClick={() => { resetForm(); setOpen(true) }} className="bg-grad-brand text-white border-none gap-1.5">
-            <Plus className="h-4 w-4" /> New inspection
+          <Button onClick={() => { resetForm(); setOpen(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New inspection
           </Button>
         }
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard label="Total" value={formatNumber(inspections.length)} icon={<ClipboardCheck className="h-5 w-5" />} tone="brand" />
-        <StatCard label="Accepted" value={formatNumber(stats.accepted)} icon={<CheckCircle2 className="h-5 w-5" />} tone="emerald" />
-        <StatCard label="Rejected" value={formatNumber(stats.rejected)} icon={<XCircle className="h-5 w-5" />} tone="rose" />
-        <StatCard label="Accept rate" value={`${stats.acceptRate}%`} icon={<ShieldCheck className="h-5 w-5" />} tone="sky" />
+      <StatsRow cols={4}>
+        <StatCard label="Total" value={inspections.length} icon={<ClipboardCheck className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Accepted" value={stats.accepted} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard label="Rejected" value={stats.rejected} icon={<XCircle className="h-5 w-5" />} variant="rose" />
+        <StatCard label="Accept rate" value={`${stats.acceptRate}%`} icon={<ShieldCheck className="h-5 w-5" />} variant="blue" />
+      </StatsRow>
+
+      <div className="flex justify-end">
+        <select
+          value={outcomeFilter}
+          onChange={(e) => setOutcomeFilter(e.target.value)}
+          className="rounded-lg border border-border bg-secondary/40 py-1.5 px-2 text-xs"
+        >
+          <option value="">All outcomes</option>
+          {OUTCOMES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
       </div>
 
-      <SectionCard
-        title="Inspections"
-        description={`${filtered.length} of ${inspections.length}`}
-        action={
-          <div className="flex items-center gap-2">
-            <select value={outcomeFilter} onChange={(e) => setOutcomeFilter(e.target.value)} className="rounded-lg border border-border bg-secondary/40 py-1.5 px-2 text-xs">
-              <option value="">All outcomes</option>
-              {OUTCOMES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Doc / item / batch"
-                className="rounded-lg border border-border bg-secondary/40 py-1.5 pl-8 pr-3 text-xs w-56 focus:ring-2 focus:ring-primary/40 outline-none"
-              />
-            </div>
-          </div>
-        }
-        bodyClassName="p-0"
-      >
-        {listQ.loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center">
-            <ClipboardCheck className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No QC inspections yet</p>
-            <p className="text-xs text-muted-foreground mb-3">Log inspections to gate GRN receipts, work order outputs, and customer returns.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Doc</th>
-                  <th className="px-3 py-3 font-medium">Date</th>
-                  <th className="px-3 py-3 font-medium">Item</th>
-                  <th className="px-3 py-3 font-medium">Source</th>
-                  <th className="px-3 py-3 font-medium text-right">Inspected</th>
-                  <th className="px-3 py-3 font-medium text-right">Passed</th>
-                  <th className="px-3 py-3 font-medium text-right">Failed</th>
-                  <th className="px-3 py-3 font-medium">Outcome</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((i: any) => (
-                  <tr key={i.id} className="border-t hover:bg-secondary/30">
-                    <td className="px-5 py-3 font-mono text-xs font-semibold">{i.docNumber}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{i.inspectionDate ? formatDate(i.inspectionDate) : '—'}</td>
-                    <td className="px-3 py-3 font-medium">{i.itemName}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{String(i.sourceModule).replace('_', ' ')}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{Number(i.quantityInspected ?? 0)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums text-emerald-700">{Number(i.quantityPassed ?? 0)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums text-rose-700">{Number(i.quantityFailed ?? 0)}</td>
-                    <td className="px-3 py-3"><QCOutcome status={i.outcome} /></td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        {i.outcome === 'PENDING' && (
-                          <>
-                            <button onClick={() => outcomeMutation({ variables: { id: i.id, outcome: 'ACCEPTED' } })} className="h-7 w-7 grid place-items-center rounded-md text-emerald-600 hover:bg-emerald-50">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={() => outcomeMutation({ variables: { id: i.id, outcome: 'REJECTED' } })} className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50">
-                              <XCircle className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => { if (confirm(`Delete ${i.docNumber}?`)) deleteMutation({ variables: { id: i.id } }) }}
-                          className="h-7 w-7 grid place-items-center rounded-md text-rose-600 hover:bg-rose-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <DataTable
+        data={inspections}
+        columns={columns}
+        loading={listQ.loading}
+        title="All Inspections"
+        searchable
+        searchPlaceholder="Search doc / item / batch…"
+        emptyMessage="No QC inspections found."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Accept',
+            icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => outcomeMutation({ variables: { id: r.id, outcome: 'ACCEPTED' } }),
+            show: (r: any) => r.outcome === 'PENDING',
+          },
+          {
+            label: 'Reject',
+            icon: <XCircle className="h-3.5 w-3.5" />,
+            onClick: (r: any) => outcomeMutation({ variables: { id: r.id, outcome: 'REJECTED' } }),
+            show: (r: any) => r.outcome === 'PENDING',
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (r: any) => { if (confirm(`Delete ${r.docNumber}?`)) deleteMutation({ variables: { id: r.id } }) },
+          },
+        ]}
+      />
 
       <FormModal
         open={open}
@@ -357,15 +316,4 @@ export default function QualityControlPage() {
       </FormModal>
     </div>
   )
-}
-
-function QCOutcome({ status }: { status: string }) {
-  const s = String(status || '').toUpperCase()
-  const tone =
-    s === 'ACCEPTED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : s === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200'
-        : s === 'CONDITIONAL' ? 'bg-sky-50 text-sky-700 border-sky-200'
-          : s === 'REWORK' ? 'bg-amber-50 text-amber-700 border-amber-200'
-            : 'bg-slate-100 text-slate-700 border-slate-200'
-  return <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase', tone)}>{s}</span>
 }

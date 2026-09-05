@@ -13,7 +13,7 @@ import { formatDate } from '@/lib/format-date'
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   active:    { label: 'Active',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  completed: { label: 'Completed', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+  completed: { label: 'Completed', cls: 'bg-primary/10 text-primary border-primary/20' },
   inactive:  { label: 'Inactive',  cls: 'bg-gray-100 text-gray-600 border-gray-200' },
   deleted:   { label: 'Deleted',   cls: 'bg-red-50 text-red-600 border-red-200' },
 }
@@ -66,20 +66,20 @@ export default function SalesProjectPage() {
 
   return (
     
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div className="flex justify-between items-center mb-5">
         <div>
-          <h1 className="text-3xl font-bold">Projects</h1>
-          <p className="text-gray-500">Manage and track all sales projects</p>
+          <h1 className="erp-page-title">Projects</h1>
+          <p className="erp-page-desc">Manage and track all sales projects</p>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total', value: stats.total, icon: FolderKanban, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Total', value: stats.total, icon: FolderKanban, cls: 'text-primary bg-primary/10' },
           { label: 'Active', value: stats.active, icon: Clock, cls: 'text-emerald-600 bg-emerald-50' },
-          { label: 'Completed', value: stats.completed, icon: CheckCircle2, cls: 'text-indigo-600 bg-indigo-50' },
+          { label: 'Completed', value: stats.completed, icon: CheckCircle2, cls: 'text-primary bg-primary/10' },
           { label: 'Inactive', value: stats.inactive, icon: Archive, cls: 'text-gray-500 bg-gray-100' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
@@ -96,14 +96,14 @@ export default function SalesProjectPage() {
         <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
           <span className="text-sm font-semibold text-gray-700">Projects</span>
           {!adding && (
-            <Button size="sm" onClick={() => setAdding(true)} className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white">
+            <Button size="sm" onClick={() => setAdding(true)} className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
               <Plus className="h-3.5 w-3.5 mr-1" /> Add Row
             </Button>
           )}
         </div>
 
         {/* Header row */}
-        <div className="flex border-b border-gray-300 bg-[#f0f0f0]">
+        <div className="flex border-b border-gray-300 bg-muted/70">
           <div className="w-8 border-r border-gray-300 flex items-center justify-center text-xs text-gray-400 font-medium py-2">#</div>
           {COLS.map(c => (
             <div key={c.key} className={`${c.w} border-r border-gray-300 last:border-r-0 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide`}>
@@ -114,8 +114,8 @@ export default function SalesProjectPage() {
 
         {/* New row input */}
         {adding && (
-          <div className="flex border-b border-blue-300 bg-blue-50/40">
-            <div className="w-8 border-r border-gray-300 flex items-center justify-center text-xs text-blue-400 py-1">*</div>
+          <div className="flex border-b border-primary/30 bg-primary/10/40">
+            <div className="w-8 border-r border-gray-300 flex items-center justify-center text-xs text-primary py-1">*</div>
 
             {/* Code — auto */}
             <div className="w-24 border-r border-gray-300 px-1 py-1">
@@ -161,7 +161,7 @@ export default function SalesProjectPage() {
               <span className="text-xs text-gray-400 italic">inactive</span>
               <div className="ml-auto flex gap-1">
                 <button onClick={handleSave} disabled={saving}
-                  className="h-6 w-6 flex items-center justify-center rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors">
+                  className="h-6 w-6 flex items-center justify-center rounded bg-primary hover:bg-primary/90 text-primary-foreground transition-colors">
                   <Save className="h-3 w-3" />
                 </button>
                 <button onClick={() => { setAdding(false); setErrors({}) }}
@@ -194,7 +194,7 @@ export default function SalesProjectPage() {
           projects.map((p: any, idx: number) => {
             const s = STATUS_CFG[p.status] ?? STATUS_CFG.inactive
             return (
-              <div key={p.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-blue-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+              <div key={p.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-primary/5 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                 <div className="w-8 border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-2">{idx + 1}</div>
                 <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-400">{p.seqNo || '—'}</div>
                 <div className="w-48 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{p.name}</div>

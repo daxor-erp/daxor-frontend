@@ -172,7 +172,7 @@ export default function SalesOrdersPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Sales Orders"
         subtitle="Track and manage all customer orders through their full lifecycle"

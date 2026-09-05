@@ -46,21 +46,75 @@ export function usersFromEnv(): TestUser[] {
     expectedPath?: string
   }> = [
     {
-      label: 'standard user',
-      emailKey: 'E2E_USER_NEW_EMAIL',
-      passwordKey: 'E2E_USER_NEW_PASSWORD',
-      expectedPath: '/dashboard',
-    },
-    {
       label: 'tenant org admin',
       emailKey: 'E2E_USER_ORG_ADMIN_EMAIL',
       passwordKey: 'E2E_USER_ORG_ADMIN_PASSWORD',
       expectedPath: '/org-admin/dashboard',
     },
     {
-      label: 'vinay user',
+      label: 'standard user',
       emailKey: 'E2E_USER_STANDARD_EMAIL',
       passwordKey: 'E2E_USER_STANDARD_PASSWORD',
+      expectedPath: '/dashboard',
+    },
+    {
+      label: 'new user',
+      emailKey: 'E2E_USER_NEW_EMAIL',
+      passwordKey: 'E2E_USER_NEW_PASSWORD',
+      expectedPath: '/dashboard',
+    },
+    {
+      label: 'super admin',
+      emailKey: 'E2E_USER_SUPER_ADMIN_EMAIL',
+      passwordKey: 'E2E_USER_SUPER_ADMIN_PASSWORD',
+      expectedPath: '/admin/dashboard',
+    },
+    {
+      label: 'erp admin',
+      emailKey: 'E2E_USER_ERP_ADMIN_EMAIL',
+      passwordKey: 'E2E_USER_ERP_ADMIN_PASSWORD',
+      expectedPath: '/dashboard',
+    },
+    {
+      label: 'sales manager',
+      emailKey: 'E2E_USER_SALES_EMAIL',
+      passwordKey: 'E2E_USER_SALES_PASSWORD',
+      expectedPath: '/dashboard',
+    },
+    {
+      label: 'finance manager',
+      emailKey: 'E2E_USER_FINANCE_EMAIL',
+      passwordKey: 'E2E_USER_FINANCE_PASSWORD',
+      expectedPath: '/dashboard',
+    },
+    {
+      label: 'hr manager',
+      emailKey: 'E2E_USER_HR_EMAIL',
+      passwordKey: 'E2E_USER_HR_PASSWORD',
+      expectedPath: '/dashboard',
+    },
+    {
+      label: 'inventory manager',
+      emailKey: 'E2E_USER_INVENTORY_EMAIL',
+      passwordKey: 'E2E_USER_INVENTORY_PASSWORD',
+      expectedPath: '/dashboard',
+    },
+    {
+      label: 'purchase manager',
+      emailKey: 'E2E_USER_PURCHASE_EMAIL',
+      passwordKey: 'E2E_USER_PURCHASE_PASSWORD',
+      expectedPath: '/dashboard',
+    },
+    {
+      label: 'production manager',
+      emailKey: 'E2E_USER_PRODUCTION_EMAIL',
+      passwordKey: 'E2E_USER_PRODUCTION_PASSWORD',
+      expectedPath: '/dashboard',
+    },
+    {
+      label: 'warehouse supervisor',
+      emailKey: 'E2E_USER_WAREHOUSE_EMAIL',
+      passwordKey: 'E2E_USER_WAREHOUSE_PASSWORD',
       expectedPath: '/dashboard',
     },
   ]

@@ -8,7 +8,8 @@ import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_ALLOCATION_SCHEDULES, CREATE_ALLOCATION_SCHEDULE, UPDATE_ALLOCATION_SCHEDULE, DELETE_ALLOCATION_SCHEDULE, GET_CHART_OF_ACCOUNTS } from '@/gql/queries'
-import { Trash2, Edit, X, Save, Plus, Minus } from 'lucide-react'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell } from '@/components/ui/erp-shared'
+import { Trash2, Edit, X, Save, Plus, Minus, CalendarRange, CheckCircle2 } from 'lucide-react'
 
 const EMPTY_LINE = { destinationAccount: '', percentage: '' }
 
@@ -130,27 +131,40 @@ export default function CreateAllocationSchedulesPage() {
   const schedules = data?.allocationSchedules || []
   const accounts = accountsData?.chartOfAccounts || []
   const totalPercentage = form.lines.reduce((sum, l) => sum + (parseFloat(l.percentage) || 0), 0)
+  const activeCount = schedules.filter((s: any) => s.isActive).length
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Code', width: '100px', render: v => <span className="font-mono text-xs">{v}</span> },
-    { key: 'scheduleName', label: 'Schedule Name', sortable: true, render: v => <span className="font-medium">{v}</span> },
-    { key: 'sourceAccount', label: 'Source Account', render: v => <span className="text-xs">{v}</span> },
-    { key: 'allocationMethod', label: 'Method', width: '110px', render: v => <span className="text-xs capitalize">{v}</span> },
-    { key: 'isActive', label: 'Status', width: '90px', render: v => <span className={`px-2 py-0.5 rounded text-xs ${v ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{v ? 'Active' : 'Inactive'}</span> },
+    { key: 'seqNo', label: 'Code', width: '100px', render: v => <MonoCell value={v} /> },
+    { key: 'scheduleName', label: 'Schedule Name', sortable: true, render: v => <span className="text-sm font-medium">{v}</span> },
+    { key: 'sourceAccount', label: 'Source Account', render: v => <span className="text-sm text-muted-foreground">{v}</span> },
+    { key: 'allocationMethod', label: 'Method', width: '110px', render: v => <span className="text-sm capitalize">{v}</span> },
+    { key: 'isActive', label: 'Status', width: '90px', render: v => <ErpBadge status={v ? 'active' : 'inactive'} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Create Allocation Schedules</h1>
-        <p className="text-gray-500">Define cost allocation rules</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Create Allocation Schedules"
+        subtitle="Define cost allocation rules"
+        icon={<CalendarRange className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Financial' }, { label: 'Allocation Schedules' }]}
+        actions={
+          <Button onClick={() => { reset(); setAdding(true) }} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Schedule
+          </Button>
+        }
+      />
+
+      <StatsRow cols={2}>
+        <StatCard label="Total Schedules" value={schedules.length} icon={<CalendarRange className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Active" value={activeCount} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
       {adding && (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editing ? 'Edit Schedule' : 'New Schedule'}</span>
-            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-blue-200 hover:text-white"><X className="h-4 w-4" /></button>
+            <button onClick={() => { setAdding(false); setEditing(null); reset() }} className="text-primary-foreground/80 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-3 gap-3">
@@ -200,7 +214,7 @@ export default function CreateAllocationSchedulesPage() {
 
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" size="sm" onClick={() => { setAdding(false); setEditing(null); reset() }} className="h-8 text-xs">Cancel</Button>
-              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[110px]">
+              <Button size="sm" onClick={handleSubmit} disabled={saving || updating} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[110px]">
                 <Save className="h-3.5 w-3.5 mr-1" />{saving || updating ? 'Saving…' : editing ? 'Update' : 'Save'}
               </Button>
             </div>
@@ -213,15 +227,14 @@ export default function CreateAllocationSchedulesPage() {
         columns={columns}
         loading={loading}
         title="All Allocation Schedules"
-        onAdd={() => { reset(); setAdding(true) }}
-        addLabel="New Schedule"
         searchable
-        searchPlaceholder="Search schedules..."
+        searchPlaceholder="Search schedules…"
         emptyMessage="No allocation schedules yet. Click 'New Schedule' to create one."
+        pageSize={25}
         onRowClick={handleEdit}
         actions={[
-          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row), variant: 'ghost' },
-          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this schedule?')) deleteSchedule({ variables: { id: row.id } }) }, variant: 'ghost' },
+          { label: 'Edit', icon: <Edit className="h-3.5 w-3.5" />, onClick: row => handleEdit(row) },
+          { label: 'Delete', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: row => { if (confirm('Delete this schedule?')) deleteSchedule({ variables: { id: row.id } }) } },
         ]}
       />
     </div>

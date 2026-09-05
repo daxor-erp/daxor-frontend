@@ -2,10 +2,10 @@
 
 export default function AdvancedIntercompanyJournalPage() {
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Make Advanced Intercompany Journal Entries</h1>
-        <p className="text-gray-500">Create journal entries that affect multiple companies</p>
+        <h1 className="erp-page-title">Make Advanced Intercompany Journal Entries</h1>
+        <p className="erp-page-desc">Create journal entries that affect multiple companies</p>
       </div>
 
       <div className="bg-white border rounded-lg p-8 text-center">
@@ -15,11 +15,11 @@ export default function AdvancedIntercompanyJournalPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900">Intercompany Journal Entries</h3>
-          <p className="text-gray-600">
+          <h3 className="text-xl font-semibold text-foreground">Intercompany Journal Entries</h3>
+          <p className="erp-page-desc">
             Create journal entries that automatically generate corresponding entries in related companies to maintain balanced intercompany accounts.
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="erp-page-desc">
             Similar to standard journal entries but with automatic intercompany balancing.
           </p>
         </div>

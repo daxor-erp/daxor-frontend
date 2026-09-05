@@ -362,10 +362,10 @@ export default function WarehousesPage() {
   const whNew = whRows.filter((r) => r.isNew).length
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="erp-shell">
       <div className="flex flex-wrap justify-between gap-4 items-start">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Warehouses</h1>
+          <h1 className="erp-page-title">Warehouses</h1>
           <p className="text-gray-500 mt-1">
             Sites and storage locations; bins define pick faces and bulk zones inside each warehouse.
           </p>
@@ -420,7 +420,7 @@ export default function WarehousesPage() {
             ].map((h) => (
               <div
                 key={h}
-                className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-b border-r border-gray-300 bg-[#f0f0f0] last:border-r-0"
+                className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-b border-r border-gray-300 bg-muted/70 last:border-r-0"
               >
                 {h}
               </div>
@@ -546,7 +546,7 @@ export default function WarehousesPage() {
           </div>
         </div>
         {!whLoading && orgId && whRows.length === 0 && (
-          <p className="text-sm text-gray-500 px-3 py-6 text-center border-t border-gray-200">
+          <p className="erp-page-desc">
             No warehouses yet. Use Add warehouse row — warehouse codes are assigned automatically when you save (WH0001, WH0002, …).
           </p>
         )}
@@ -594,7 +594,7 @@ export default function WarehousesPage() {
         </div>
 
         {!binWarehouseId ? (
-          <p className="text-sm text-gray-500 px-3 py-8 text-center">
+          <p className="erp-page-desc">
             Select a warehouse to view and edit bins.
           </p>
         ) : (
@@ -605,7 +605,7 @@ export default function WarehousesPage() {
                   (h) => (
                     <div
                       key={h}
-                      className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-b border-r border-gray-300 bg-[#f0f0f0] last:border-r-0"
+                      className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-b border-r border-gray-300 bg-muted/70 last:border-r-0"
                     >
                       {h}
                     </div>
@@ -692,7 +692,7 @@ export default function WarehousesPage() {
               </div>
             </div>
             {!binsLoading && binRows.length === 0 && (
-              <p className="text-sm text-gray-500 px-3 py-6 text-center border-t border-gray-200">
+              <p className="erp-page-desc">
                 No bins for this warehouse. Add bin rows (bin code must be unique).
               </p>
             )}

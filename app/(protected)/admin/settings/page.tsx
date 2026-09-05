@@ -19,7 +19,7 @@ export default function AdminSettingsPage() {
   }, [])
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Platform settings"
         description="Read-only platform metadata. Use the Organizations and Users pages to manage tenants."
@@ -95,7 +95,7 @@ export default function AdminSettingsPage() {
 
         <SectionCard title="Signed-in administrator" description="Your platform account">
           <div className="flex items-start gap-3">
-            <div className="h-12 w-12 rounded-xl bg-grad-brand text-white grid place-items-center font-bold uppercase">
+            <div className="h-12 w-12 rounded-xl grid place-items-center font-bold uppercase">
               {((me?.firstName?.[0] ?? '') + (me?.lastName?.[0] ?? '')).toUpperCase() || 'A'}
             </div>
             <div className="min-w-0 space-y-1">

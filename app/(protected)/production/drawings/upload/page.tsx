@@ -25,10 +25,10 @@ export default function UploadDrawingsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Upload Drawings</h1>
-        <p className="text-gray-500">Upload technical drawings and documents</p>
+        <h1 className="erp-page-title">Upload Drawings</h1>
+        <p className="erp-page-desc">Upload technical drawings and documents</p>
       </div>
 
       <Card>
@@ -41,7 +41,7 @@ export default function UploadDrawingsPage() {
           
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
             <Upload className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-sm text-gray-600 mb-2">Drag and drop files here or click to browse</p>
+            <p className="erp-page-desc">Drag and drop files here or click to browse</p>
             <input type="file" multiple onChange={handleFileChange} className="hidden" id="file-upload" />
             <label htmlFor="file-upload">
               <Button size="sm" className="cursor-pointer" onClick={() => document.getElementById('file-upload')?.click()}>

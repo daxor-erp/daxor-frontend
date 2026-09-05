@@ -250,18 +250,18 @@ export default function FwlQualificationSetupPage() {
   const sortedRows = useMemo(() => [...rows].sort((a, b) => a.levyCode.localeCompare(b.levyCode)), [rows])
 
   if (!orgId) {
-    return <p className="text-sm text-gray-500">Select an organization to maintain FWL qualifications.</p>
+    return <p className="erp-page-desc">Select an organization to maintain FWL qualifications.</p>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="erp-shell">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-slate-600 mb-1">
             <Landmark className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Setup</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">FWL qualification</h1>
+          <h1 className="erp-page-title">FWL qualification</h1>
           <p className="text-gray-500 mt-1">
             Foreign-worker levy tiers and tariff amounts commonly feed payroll costing and budgeting. Rows are persisted per
             organization on the server.
@@ -293,12 +293,12 @@ export default function FwlQualificationSetupPage() {
       ) : null}
 
       {open ? (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">
               {editingId ? 'Edit FWL qualification' : 'New FWL qualification'}
             </span>
-            <button type="button" onClick={closeDialog} className="text-blue-200 hover:text-white" aria-label="Close">
+            <button type="button" onClick={closeDialog} className="text-primary-foreground/80 hover:text-white" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -390,14 +390,14 @@ export default function FwlQualificationSetupPage() {
               className="text-xs min-h-[56px]"
             />
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={closeDialog} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={closeDialog}>
                 Cancel
               </Button>
               <Button
                 size="sm"
                 onClick={submit}
                 disabled={busy}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]"
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[100px]"
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {busy ? 'Saving…' : 'Save'}

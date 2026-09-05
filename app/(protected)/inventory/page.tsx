@@ -34,7 +34,7 @@ export default function InventoryPage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Inventory"
         subtitle="Manage stock levels, transfers, adjustments and automated replenishment"

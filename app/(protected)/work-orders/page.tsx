@@ -1,16 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { CREATE_WORK_ORDER, GET_WORK_ORDERS } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
-import { Plus } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
+import { Plus, Wrench, Clock, CheckCircle2, Activity } from 'lucide-react'
 
 export default function WorkOrdersPage() {
   const { user } = useAuth()
@@ -30,7 +30,14 @@ export default function WorkOrdersPage() {
     },
   })
 
-  const items = data?.workorders || []
+  const items: any[] = data?.workorders || []
+
+  const stats = useMemo(() => {
+    const active = items.filter((w) => !['CLOSED', 'COMPLETED', 'CANCELLED', 'Completed', 'Cancelled'].includes(String(w.status || ''))).length
+    const completed = items.filter((w) => ['COMPLETED', 'CLOSED', 'Completed'].includes(String(w.status || ''))).length
+    const inProgress = items.filter((w) => ['IN_PROGRESS', 'In Progress'].includes(String(w.status || ''))).length
+    return { active, completed, inProgress }
+  }, [items])
 
   const handleSubmit = () => {
     if (!user?.organizationId) return
@@ -41,18 +48,38 @@ export default function WorkOrdersPage() {
     })
   }
 
+  const columns: Column[] = [
+    {
+      key: 'docNumber',
+      label: 'Document #',
+      width: '150px',
+      render: (v, r: any) => <MonoCell value={v || r.transactionNumber || r.warehouseCode || '—'} />,
+    },
+    { key: 'docDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'status', label: 'Status', width: '120px', render: (v) => <ErpBadge status={String(v || 'Active')} /> },
+    { key: 'createdAt', label: 'Created', width: '110px', render: (v) => <DateCell value={v} /> },
+  ]
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Work Orders</h1>
-          <p className="text-gray-500">Manage work orders</p>
-        </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Record
-        </Button>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Work Orders"
+        subtitle="Schedule and track shop-floor work orders"
+        icon={<Wrench className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Production' }, { label: 'Work Orders' }]}
+        actions={
+          <Button onClick={() => setOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Work Order
+          </Button>
+        }
+      />
+
+      <StatsRow cols={4}>
+        <StatCard label="Total" value={items.length} icon={<Wrench className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Active" value={stats.active} icon={<Activity className="h-5 w-5" />} variant="blue" />
+        <StatCard label="In Progress" value={stats.inProgress} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Completed" value={stats.completed} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+      </StatsRow>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="[&>button]:hidden">
@@ -89,45 +116,16 @@ export default function WorkOrdersPage() {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Records: {items.length}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p>Loading...</p>
-          ) : items.length === 0 ? (
-            <p className="text-gray-500">No records found</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Document #</th>
-                    <th className="text-left p-2">Date</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item: any) => (
-                    <tr key={item.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{item.docNumber || item.transactionNumber || item.warehouseCode || 'N/A'}</td>
-                      <td className="p-2">{item.docDate ? formatDate(item.docDate) : 'N/A'}</td>
-                      <td className="p-2">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                          {item.status || 'Active'}
-                        </span>
-                      </td>
-                      <td className="p-2">{formatDate(item.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <DataTable
+        data={items}
+        columns={columns}
+        loading={loading}
+        title="All Work Orders"
+        searchable
+        searchPlaceholder="Search work orders…"
+        emptyMessage="No work orders found."
+        pageSize={25}
+      />
     </div>
   )
 }

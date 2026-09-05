@@ -141,7 +141,7 @@ export default function BlanketOrdersPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Blanket Orders"
         subtitle="Long-term purchase agreements — confirm once, call off against it as needed"

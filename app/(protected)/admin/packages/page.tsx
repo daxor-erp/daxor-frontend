@@ -12,7 +12,8 @@ import {
   SET_PACKAGE_MODULE_ASSIGNMENT,
   UPDATE_PACKAGE,
 } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
+import { PageHeader } from '@/components/ui/erp-shared'
+import { SectionCard } from '@/components/dashboard/section-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -165,7 +166,7 @@ function formatDuration(days: number): string {
 }
 
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(price)
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'INR' }).format(price)
 }
 
 function validatePackageForm(form: PackageFormState) {
@@ -432,15 +433,18 @@ export default function AdminPackagesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader
           title="Packages"
-          description="Create packages and control which ERP modules each tenant can access."
+          subtitle="Create packages and control which ERP modules each tenant can access."
+          icon={<Users className="h-5 w-5" />}
+          breadcrumbs={[{ label: 'Admin' }, { label: 'Packages' }]}
+          className="mb-0"
         />
         <Button
           onClick={() => setCreateOpen(true)}
-          className="bg-grad-brand text-white border-none gap-1.5 shrink-0 self-start"
+          className="gap-1.5 shrink-0 self-start bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
           Create Package
@@ -635,7 +639,7 @@ export default function AdminPackagesPage() {
                       </p>
                     ) : null}
                     <div className="rounded-xl border border-border overflow-hidden max-h-[52vh] overflow-y-auto">
-                      <table className="w-full text-sm">
+                      <table className="erp-table">
                         <thead className="sticky top-0 bg-secondary/80 backdrop-blur-sm border-b border-border">
                           <tr>
                             <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -731,7 +735,7 @@ export default function AdminPackagesPage() {
                         <Button
                           onClick={saveModuleAssignment}
                           disabled={savingAssignment || checkedModules.size === 0}
-                          className="bg-grad-brand text-white border-none gap-1.5"
+                          className="gap-1.5"
                         >
                           <Save className="h-4 w-4" />
                           {savingAssignment
@@ -1022,7 +1026,6 @@ function PackageFormDialog({
           <Button
             onClick={onSubmit}
             disabled={saving || !canSubmit}
-            className="bg-grad-brand text-white border-none"
           >
             {saving ? savingLabel : submitLabel}
           </Button>

@@ -126,7 +126,7 @@ export default function OrgAdminApprovalsPage() {
 
   if (!orgId) {
     return (
-      <div className="p-8">
+      <div className="erp-shell">
         <p className="text-sm text-slate-600">No organization on this account.</p>
       </div>
     )
@@ -135,7 +135,7 @@ export default function OrgAdminApprovalsPage() {
   return (
     <div className="max-w-5xl mx-auto p-8 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Approvals</h1>
+        <h1 className="erp-page-title">Approvals</h1>
         <p className="text-sm text-slate-600 mt-1">
           Assign users who receive approval tasks in their ERP inbox (clipboard icon next to notifications). Purchasing
           is wired today; other modules can follow the same pattern. The Status column summarizes the queue posture for each area.
@@ -180,7 +180,7 @@ export default function OrgAdminApprovalsPage() {
 
                 return (
                   <TableRow key={mod.key}>
-                    <TableCell className="font-medium text-slate-900">{mod.label}</TableCell>
+                    <TableCell className="font-medium text-foreground">{mod.label}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="font-normal text-amber-900 bg-amber-50 border-amber-200">
                         Awaiting approval (queue)

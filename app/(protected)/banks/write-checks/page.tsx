@@ -8,15 +8,9 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { Button } from '@/components/ui/button'
 import { GET_CASH_BANKS, GET_BANK_ACCOUNTS, CREATE_CASH_BANK, CREATE_BANK_ACCOUNT } from '@/gql/queries'
 import { InputFloating } from '@/components/ui/input-floating'
-import { wsCell, wsHeaderCell, wsLabelCell, wsMoney } from '@/lib/worksheet-styles'
-import { formatMoney } from '@/lib/format-money'
-import { FilePen, RefreshCw, Building2, ChevronDown, ChevronRight, Plus } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
-
-const labelCell = wsLabelCell
-const cell = wsCell
-const headerCell = wsHeaderCell
-const moneyClass = wsMoney
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { FilePen, Building2, ChevronDown, ChevronRight, Plus, CheckCircle2, Clock, DollarSign } from 'lucide-react'
 
 const REF_MODULE = 'bank_check'
 
@@ -34,7 +28,7 @@ const emptyNewBank = {
   bankName: '',
   branchName: '',
   accountType: 'current',
-  currency: 'USD',
+  currency: 'INR',
 }
 
 type CashBankRow = {
@@ -51,6 +45,7 @@ type CashBankRow = {
   currency?: string
   chequeNumber?: string | null
   reconciliationStatus: string
+  accountHolder?: string
 }
 
 export default function WriteChecksPage() {
@@ -66,6 +61,7 @@ export default function WriteChecksPage() {
   const [error, setError] = useState('')
   const [showAddBank, setShowAddBank] = useState(false)
   const [newBank, setNewBank] = useState({ ...emptyNewBank })
+  const [formOpen, setFormOpen] = useState(false)
 
   const { data: acctData, loading: acctLoading, refetch: refetchAccounts } = useQuery(GET_BANK_ACCOUNTS, {
     variables: { organizationId: orgId },
@@ -96,6 +92,7 @@ export default function WriteChecksPage() {
       setAmount('')
       setMemo('')
       setError('')
+      setFormOpen(false)
       void refetchTx()
     },
     onError: (e) => setError(e.message),
@@ -138,11 +135,6 @@ export default function WriteChecksPage() {
       }
     | undefined
 
-  const checks: CashBankRow[] = useMemo(() => {
-    const rows = (txData?.cashBanks ?? []) as CashBankRow[]
-    return rows.filter((t) => t.referenceModule === REF_MODULE)
-  }, [txData])
-
   const holderByAccountNumber = useMemo(() => {
     const m = new Map<string, string>()
     for (const a of bankAccounts as { accountNumber: string; accountHolder?: string; accountName: string }[]) {
@@ -150,6 +142,20 @@ export default function WriteChecksPage() {
     }
     return m
   }, [bankAccounts])
+
+  const checks: CashBankRow[] = useMemo(() => {
+    const rows = (txData?.cashBanks ?? []) as CashBankRow[]
+    return rows
+      .filter((t) => t.referenceModule === REF_MODULE)
+      .map((d) => ({ ...d, accountHolder: holderByAccountNumber.get(d.bankAccount) ?? '—' }))
+  }, [txData, holderByAccountNumber])
+
+  const stats = {
+    total: checks.length,
+    pending: checks.filter((d) => d.reconciliationStatus !== 'RECONCILED').length,
+    reconciled: checks.filter((d) => d.reconciliationStatus === 'RECONCILED').length,
+    amount: checks.reduce((s, d) => s + Number(d.amount ?? 0), 0),
+  }
 
   const buildDescription = () => {
     const p = payee.trim()
@@ -176,9 +182,6 @@ export default function WriteChecksPage() {
       setError('Enter a valid amount.')
       return
     }
-    const desc = buildDescription()
-    const refId = `chk-${chk}`
-
     createLine({
       variables: {
         input: {
@@ -187,12 +190,12 @@ export default function WriteChecksPage() {
           transactionType: 'payment',
           bankAccount: accountNumber,
           referenceModule: REF_MODULE,
-          referenceId: refId,
+          referenceId: `chk-${chk}`,
           amount: n,
-          currency: selectedAcct?.currency || 'USD',
+          currency: selectedAcct?.currency || 'INR',
           paymentMethod: 'cheque',
           chequeNumber: chk,
-          description: desc,
+          description: buildDescription(),
         },
       },
     })
@@ -214,313 +217,217 @@ export default function WriteChecksPage() {
           bankName: newBank.bankName.trim(),
           branchName: newBank.branchName.trim() || 'Main',
           accountType: newBank.accountType || 'current',
-          currency: newBank.currency?.trim() || 'USD',
+          currency: newBank.currency?.trim() || 'INR',
         },
       },
     })
   }
 
-  return (
-    <div className="p-6 space-y-6 max-w-[1100px]">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <FilePen className="h-8 w-8 text-slate-700" />
-          Write Checks
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Record a check drawn on a company bank account. Creates a cash-bank <span className="font-mono">payment</span>{' '}
-          with <span className="font-mono">referenceModule: {REF_MODULE}</span> for reconciliation and reporting.
-        </p>
-      </div>
+  const columns: Column[] = [
+    { key: 'transactionNumber', label: 'Transaction #', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'accountHolder', label: 'Account holder', render: (v) => <span className="text-sm font-medium">{v || '—'}</span> },
+    { key: 'bankAccount', label: 'Account #', width: '140px', render: (v) => <MonoCell value={v} /> },
+    { key: 'transactionDate', label: 'Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'chequeNumber', label: 'Check #', width: '110px', render: (v) => <MonoCell value={v || '—'} /> },
+    { key: 'referenceId', label: 'Ref', width: '120px', render: (v) => <MonoCell value={v || '—'} /> },
+    { key: 'description', label: 'Description', render: (v) => <span className="text-sm">{v || '—'}</span> },
+    { key: 'amount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
+    { key: 'reconciliationStatus', label: 'Status', width: '130px', render: (v) => <ErpBadge status={v} /> },
+  ]
 
-      <div className="rounded border border-slate-200 bg-slate-50/80 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => {
-            setShowAddBank((s) => !s)
-            setError('')
-          }}
-          className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm font-medium text-slate-800 hover:bg-slate-100/80"
-        >
-          {showAddBank ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          <Plus className="h-4 w-4" />
-          Add bank account
-        </button>
-        {showAddBank && (
-          <div className="px-3 pb-3 pt-0 space-y-3 border-t border-slate-200 bg-white">
-            <p className="text-xs text-gray-500 pt-2">Same fields as on Make Deposits — creates an account you can select below.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <InputFloating
-                label="Account holder *"
-                value={newBank.accountHolder}
-                onChange={(e) => setNewBank((b) => ({ ...b, accountHolder: e.target.value }))}
-                className="h-9 text-xs"
-              />
-              <InputFloating
-                label="Account name (alias) *"
-                value={newBank.accountName}
-                onChange={(e) => setNewBank((b) => ({ ...b, accountName: e.target.value }))}
-                className="h-9 text-xs"
-              />
-              <InputFloating
-                label="Account number *"
-                value={newBank.accountNumber}
-                onChange={(e) => setNewBank((b) => ({ ...b, accountNumber: e.target.value }))}
-                className="h-9 text-xs"
-              />
-              <InputFloating
-                label="Bank name *"
-                value={newBank.bankName}
-                onChange={(e) => setNewBank((b) => ({ ...b, bankName: e.target.value }))}
-                className="h-9 text-xs"
-              />
-              <InputFloating
-                label="Branch"
-                value={newBank.branchName}
-                onChange={(e) => setNewBank((b) => ({ ...b, branchName: e.target.value }))}
-                className="h-9 text-xs"
-                placeholder="Main"
-              />
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <label className="text-[10px] text-gray-500 block mb-0.5">Type</label>
-                  <select
-                    className="w-full h-9 text-xs border rounded-md px-2"
-                    value={newBank.accountType}
-                    onChange={(e) => setNewBank((b) => ({ ...b, accountType: e.target.value }))}
-                  >
-                    {ACCOUNT_TYPE_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
+  return (
+    <div className="erp-shell">
+      <PageHeader
+        title="Write Checks"
+        subtitle="Record a check drawn on a company bank account"
+        icon={<FilePen className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Banks' }, { label: 'Write Checks' }]}
+        actions={
+          <Button
+            onClick={() => {
+              setFormOpen(true)
+              setError('')
+            }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> New Check
+          </Button>
+        }
+      />
+
+      <StatsRow cols={4}>
+        <StatCard label="Total Checks" value={stats.total} icon={<FilePen className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Pending" value={stats.pending} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Reconciled" value={stats.reconciled} icon={<CheckCircle2 className="h-5 w-5" />} variant="green" />
+        <StatCard
+          label="Total Amount"
+          value={`₹${(stats.amount / 1000).toFixed(1)}k`}
+          icon={<DollarSign className="h-5 w-5" />}
+          variant="rose"
+        />
+      </StatsRow>
+
+      {formOpen && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-4 mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              New check
+              {selectedAcct ? (
+                <span className="text-muted-foreground font-normal">
+                  — {(selectedAcct.accountHolder || selectedAcct.accountName) ?? '—'} · {selectedAcct.bankName}
+                </span>
+              ) : null}
+            </h2>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setFormOpen(false)}>
+              Close
+            </Button>
+          </div>
+
+          <div className="rounded border border-border bg-muted/40 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddBank((s) => !s)
+                setError('')
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm font-medium hover:bg-muted/80"
+            >
+              {showAddBank ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <Plus className="h-4 w-4" />
+              Add bank account
+            </button>
+            {showAddBank && (
+              <div className="px-3 pb-3 pt-0 space-y-3 border-t border-border bg-card">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                   <InputFloating
-                    label="Currency"
-                    value={newBank.currency}
-                    onChange={(e) => setNewBank((b) => ({ ...b, currency: e.target.value }))}
-                    className="h-9 text-xs"
+                    label="Account holder *"
+                    value={newBank.accountHolder}
+                    onChange={(e) => setNewBank((b) => ({ ...b, accountHolder: e.target.value }))}
                   />
+                  <InputFloating
+                    label="Account name (alias) *"
+                    value={newBank.accountName}
+                    onChange={(e) => setNewBank((b) => ({ ...b, accountName: e.target.value }))}
+                  />
+                  <InputFloating
+                    label="Account number *"
+                    value={newBank.accountNumber}
+                    onChange={(e) => setNewBank((b) => ({ ...b, accountNumber: e.target.value }))}
+                  />
+                  <InputFloating
+                    label="Bank name *"
+                    value={newBank.bankName}
+                    onChange={(e) => setNewBank((b) => ({ ...b, bankName: e.target.value }))}
+                  />
+                  <InputFloating
+                    label="Branch"
+                    value={newBank.branchName}
+                    onChange={(e) => setNewBank((b) => ({ ...b, branchName: e.target.value }))}
+                    placeholder="Main"
+                  />
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="text-[10px] text-muted-foreground block mb-0.5">Type</label>
+                      <select
+                        className="w-full h-9 text-xs border rounded-md px-2 bg-background"
+                        value={newBank.accountType}
+                        onChange={(e) => setNewBank((b) => ({ ...b, accountType: e.target.value }))}
+                      >
+                        {ACCOUNT_TYPE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex-1">
+                      <InputFloating
+                        label="Currency"
+                        value={newBank.currency}
+                        onChange={(e) => setNewBank((b) => ({ ...b, currency: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" disabled={!orgId || savingBank} onClick={submitNewBank}>
+                    {savingBank ? 'Saving…' : 'Save bank account'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setNewBank({ ...emptyNewBank })
+                      setShowAddBank(false)
+                    }}
+                  >
+                    Cancel
+                  </Button>
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                className="h-8 text-xs bg-slate-800 hover:bg-slate-900"
-                disabled={!orgId || savingBank}
-                onClick={submitNewBank}
-              >
-                {savingBank ? 'Saving…' : 'Save bank account'}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => {
-                  setNewBank({ ...emptyNewBank })
-                  setShowAddBank(false)
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {acctLoading && <p className="text-sm text-gray-500">Loading bank accounts…</p>}
+          {acctLoading && <p className="text-sm text-muted-foreground">Loading bank accounts…</p>}
+          {!acctLoading && orgId && bankAccounts.length === 0 && (
+            <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <p className="font-medium">No active bank account found.</p>
+              <p className="mt-1">
+                Add a bank account above or in{' '}
+                <Link href="/cash-bank" className="underline font-medium">
+                  Cash &amp; Bank
+                </Link>
+                .
+              </p>
+            </div>
+          )}
 
-      {!acctLoading && orgId && bankAccounts.length === 0 && (
-        <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p className="font-medium">No active bank account found.</p>
-          <p className="mt-1 text-amber-800">
-            Add a bank account above or in{' '}
-            <Link href="/cash-bank" className="underline font-medium text-amber-950 hover:text-amber-700">
-              Cash &amp; Bank
-            </Link>
-            .
-          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <SelectFloating
+              label="Pay from (account) *"
+              value={accountNumber}
+              onChange={(v) => {
+                const next = typeof v === 'string' ? v : v.target.value
+                setAccountNumber(next)
+                setError('')
+              }}
+              options={[{ value: '', label: 'Select account…' }, ...bankOptions]}
+            />
+            <InputFloating label="Check date *" type="date" value={checkDate} onChange={(e) => setCheckDate(e.target.value)} />
+            <InputFloating label="Check # *" value={checkNumber} onChange={(e) => setCheckNumber(e.target.value)} />
+            <InputFloating label="Pay to" value={payee} onChange={(e) => setPayee(e.target.value)} placeholder="Vendor or person" />
+            <InputFloating label="Amount *" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <InputFloating label="Memo" value={memo} onChange={(e) => setMemo(e.target.value)} />
+          </div>
+
+          <Button
+            type="button"
+            onClick={submit}
+            disabled={saving || !orgId || bankAccounts.length === 0}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {saving ? 'Saving…' : 'Record check'}
+          </Button>
+          {error && (
+            <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-2 py-1.5">
+              {error}
+            </p>
+          )}
         </div>
       )}
 
-      <div className="rounded border-2 border-gray-400 overflow-hidden bg-white shadow-sm">
-        <div className="bg-slate-800 text-white px-3 py-1.5 text-xs font-semibold flex items-center justify-between">
-          <span>Check</span>
-          <span className="opacity-90 flex items-center gap-1 truncate max-w-[60%]">
-            <Building2 className="h-3.5 w-3.5 shrink-0" />
-            {selectedAcct
-              ? `${(selectedAcct.accountHolder || selectedAcct.accountName) ?? '—'} · ${selectedAcct.bankName}`
-              : '—'}
-          </span>
-        </div>
-
-        <div className="p-3 overflow-x-auto">
-          <table className="w-full border-collapse text-xs min-w-[720px]">
-            <tbody>
-              <tr>
-                <td className={labelCell}>Pay from (account)</td>
-                <td className={`${cell} min-w-[300px]`} colSpan={3}>
-                  <SelectFloating
-                    label=""
-                    value={accountNumber}
-                    onChange={(v) => {
-                      const next = typeof v === 'string' ? v : v.target.value
-                      setAccountNumber(next)
-                      setError('')
-                    }}
-                    options={bankOptions}
-                    className="h-8 text-xs border-0 shadow-none bg-transparent p-0"
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Check date</td>
-                <td className={cell}>
-                  <input
-                    type="date"
-                    className="w-full bg-transparent outline-none font-mono"
-                    value={checkDate}
-                    onChange={(e) => setCheckDate(e.target.value)}
-                  />
-                </td>
-                <td className={labelCell}>Check #</td>
-                <td className={cell}>
-                  <input
-                    className="w-full bg-transparent outline-none font-mono"
-                    placeholder="Required"
-                    value={checkNumber}
-                    onChange={(e) => setCheckNumber(e.target.value)}
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Pay to</td>
-                <td className={cell} colSpan={3}>
-                  <input
-                    className="w-full bg-transparent outline-none"
-                    placeholder="Vendor or person"
-                    value={payee}
-                    onChange={(e) => setPayee(e.target.value)}
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td className={labelCell}>Amount</td>
-                <td className={`${cell} ${moneyClass}`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="w-full bg-transparent outline-none font-mono text-right"
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                </td>
-                <td className={labelCell}>Memo</td>
-                <td className={cell}>
-                  <input
-                    className="w-full bg-transparent outline-none"
-                    placeholder="Optional"
-                    value={memo}
-                    onChange={(e) => setMemo(e.target.value)}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              className="h-9 text-xs bg-slate-800 hover:bg-slate-900 text-white"
-              onClick={submit}
-              disabled={saving || !orgId || bankAccounts.length === 0}
-            >
-              {saving ? 'Saving…' : 'Record check'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 text-xs"
-              onClick={() => refetchTx()}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${txLoading ? 'animate-spin' : ''}`} />
-              Refresh list
-            </Button>
-          </div>
-          {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5 mt-2">{error}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="rounded border border-gray-300 overflow-hidden bg-white shadow-sm">
-        <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-800">
-          Recent checks
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-xs min-w-[880px]">
-            <thead>
-              <tr>
-                <th className={`${headerCell} text-left`}>Transaction #</th>
-                <th className={`${headerCell} text-left`}>Account holder</th>
-                <th className={`${headerCell} text-left`}>Account #</th>
-                <th className={`${headerCell} text-left`}>Date</th>
-                <th className={`${headerCell} text-left`}>Check #</th>
-                <th className={`${headerCell} text-left`}>Ref</th>
-                <th className={`${headerCell} text-left`}>Description</th>
-                <th className={`${headerCell} ${moneyClass}`}>Amount</th>
-                <th className={`${headerCell} text-left w-24`}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!checks.length && (
-                <tr>
-                  <td colSpan={9} className={`${cell} text-center text-gray-500 py-8`}>
-                    {txLoading ? 'Loading…' : 'No checks recorded yet.'}
-                  </td>
-                </tr>
-              )}
-              {checks.map((d) => (
-                <tr key={d.id} className="hover:bg-gray-50">
-                  <td className={`${cell} font-mono`}>{d.transactionNumber}</td>
-                  <td className={cell}>{holderByAccountNumber.get(d.bankAccount) ?? '—'}</td>
-                  <td className={`${cell} font-mono`}>{d.bankAccount}</td>
-                  <td className={`${cell} font-mono`}>
-                    {d.transactionDate ? formatDate(d.transactionDate) : '—'}
-                  </td>
-                  <td className={`${cell} font-mono`}>{d.chequeNumber || '—'}</td>
-                  <td className={`${cell} font-mono`}>{d.referenceId || '—'}</td>
-                  <td className={cell}>{d.description}</td>
-                  <td className={`${cell} ${moneyClass} text-rose-800`}>
-                    −{d.currency ? `${d.currency} ` : ''}
-                    {formatMoney(Number(d.amount ?? 0))}
-                  </td>
-                  <td className={cell}>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium ${
-                        d.reconciliationStatus === 'RECONCILED'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {d.reconciliationStatus}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable
+        data={checks}
+        columns={columns}
+        loading={txLoading}
+        title="All Checks"
+        searchable
+        searchPlaceholder="Search checks…"
+        emptyMessage="No checks recorded yet."
+        pageSize={25}
+      />
     </div>
   )
 }

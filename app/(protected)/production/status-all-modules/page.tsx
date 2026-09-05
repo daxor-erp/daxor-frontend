@@ -23,7 +23,7 @@ export default function StatusAllModulesPage() {
     switch (status) {
       case 'DRAFT': return 'bg-gray-100 text-gray-700'
       case 'ACTIVE': return 'bg-green-100 text-green-700'
-      case 'COMPLETED': return 'bg-blue-100 text-blue-700'
+      case 'COMPLETED': return 'bg-primary/10 text-primary'
       case 'CANCELLED': return 'bg-red-100 text-red-700'
       default: return 'bg-gray-100 text-gray-700'
     }
@@ -31,7 +31,7 @@ export default function StatusAllModulesPage() {
 
   const getProgressColor = (progress: number) => {
     if (progress >= 75) return 'bg-green-500'
-    if (progress >= 50) return 'bg-blue-500'
+    if (progress >= 50) return 'bg-primary/100'
     if (progress >= 25) return 'bg-yellow-500'
     return 'bg-red-500'
   }
@@ -44,18 +44,18 @@ export default function StatusAllModulesPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="erp-shell">
       <div>
-        <h1 className="text-3xl font-bold">Status All Modules</h1>
-        <p className="text-gray-500">Overview of all production module statuses</p>
+        <h1 className="erp-page-title">Status All Modules</h1>
+        <p className="erp-page-desc">Overview of all production module statuses</p>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Total Modules', value: stats.total, icon: Activity, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Total Modules', value: stats.total, icon: Activity, cls: 'text-primary bg-primary/10' },
           { label: 'Draft', value: stats.draft, icon: Clock, cls: 'text-gray-600 bg-gray-50' },
           { label: 'Active', value: stats.active, icon: AlertCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'Completed', value: stats.completed, icon: CheckCircle, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Completed', value: stats.completed, icon: CheckCircle, cls: 'text-primary bg-primary/10' },
         ].map(({ label, value, icon: Icon, cls }) => (
           <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
             <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>

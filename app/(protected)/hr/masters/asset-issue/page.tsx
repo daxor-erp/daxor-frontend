@@ -4,11 +4,10 @@ import Link from 'next/link'
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { GET_ASSETS } from '@/gql/queries'
-import { PageHeader, SectionCard } from '@/components/dashboard/section-card'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, DateCell } from '@/components/ui/erp-shared'
 import { Button } from '@/components/ui/button'
-import { Boxes, ArrowRight, Plus } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { formatDate } from '@/lib/format-date'
+import { Boxes, Plus } from 'lucide-react'
 
 export default function AssetIssuePage() {
   const { user } = useAuth()
@@ -22,80 +21,61 @@ export default function AssetIssuePage() {
   })
 
   const assets: any[] = data?.assets ?? []
+  const active = assets.filter((a) => String(a.status).toUpperCase() === 'ACTIVE').length
+
+  const columns: Column[] = [
+    {
+      key: 'name',
+      label: 'Asset',
+      sortable: true,
+      render: (v, r) => <span className="text-sm font-medium">{v ?? r.assetName ?? '—'}</span>,
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span>,
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      width: '120px',
+      render: (v, r) => <span className="text-sm text-muted-foreground">{v || r.category || '—'}</span>,
+    },
+    { key: 'status', label: 'Status', width: '100px', render: (v) => <ErpBadge status={String(v ?? 'ACTIVE')} /> },
+    { key: 'createdAt', label: 'Created', width: '110px', render: (v) => <DateCell value={v} /> },
+  ]
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="erp-shell">
       <PageHeader
         title="Asset Issue to Employee"
-        description="Track company assets handed to employees — laptops, phones, ID cards, tools."
+        subtitle="Track company assets handed to employees — laptops, phones, ID cards, tools."
+        icon={<Boxes className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'HR' }, { label: 'Masters' }, { label: 'Asset Issue' }]}
         actions={
-          <Link
-            href="/hr/masters/asset-name-list"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-grad-brand text-white px-3 py-2 text-sm font-semibold hover:opacity-95"
-          >
-            <Plus className="h-4 w-4" />
-            Manage asset catalog
-          </Link>
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href="/hr/masters/asset-name-list">
+              <Plus className="h-4 w-4 mr-1.5" /> Manage asset catalog
+            </Link>
+          </Button>
         }
       />
 
-      <SectionCard
-        title="Issued assets"
-        description={`${assets.length} record${assets.length === 1 ? '' : 's'}`}
-        bodyClassName="p-0"
-      >
-        {loading ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
-        ) : assets.length === 0 ? (
-          <div className="p-10 text-center">
-            <Boxes className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">No assets issued yet</p>
-            <p className="text-xs text-muted-foreground mb-3">
-              First, set up your asset catalog, then track issuance from each employee&apos;s record.
-            </p>
-            <div className="flex justify-center gap-2">
-              <Link href="/hr/masters/asset-name-list" className="inline-flex items-center gap-1 rounded-lg border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary">
-                Asset catalog <ArrowRight className="h-3 w-3" />
-              </Link>
-              <Link href="/hr/masters/employee-master" className="inline-flex items-center gap-1 rounded-lg border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary">
-                Employee master <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">Asset</th>
-                  <th className="px-3 py-3 font-medium">Description</th>
-                  <th className="px-3 py-3 font-medium">Type</th>
-                  <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assets.slice(0, 100).map((a: any) => (
-                  <tr key={a.id ?? a._id} className="border-t hover:bg-secondary/30">
-                    <td className="px-5 py-3 font-medium">{a.name ?? a.assetName ?? '—'}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{a.description || '—'}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{a.type || a.category || '—'}</td>
-                    <td className="px-3 py-3">
-                      <span className={cn(
-                        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase',
-                        String(a.status).toUpperCase() === 'ACTIVE'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-slate-100 text-slate-700 border-slate-200',
-                      )}>{a.status ?? 'ACTIVE'}</span>
-                    </td>
-                    <td className="px-5 py-3 text-xs text-muted-foreground">{a.createdAt ? formatDate(a.createdAt) : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      <StatsRow cols={2}>
+        <StatCard label="Issued assets" value={assets.length} icon={<Boxes className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Active" value={active} icon={<Boxes className="h-5 w-5" />} variant="green" />
+      </StatsRow>
+
+      <DataTable
+        data={assets}
+        columns={columns}
+        loading={loading}
+        title="All Issued Assets"
+        searchable
+        searchPlaceholder="Search assets…"
+        emptyMessage="No assets issued yet. Set up the asset catalog first."
+        pageSize={25}
+      />
     </div>
   )
 }

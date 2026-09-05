@@ -32,6 +32,7 @@ test.describe('Purchase Orders flow (RFQ -> Purchase Order lifecycle)', () => {
   const tag = flowTag()
 
   let orgAdminToken = ''
+  let purchaseToken = ''
   let orgId = ''
   let orgAdminUserId = ''
   let vendorId = ''
@@ -48,6 +49,13 @@ test.describe('Purchase Orders flow (RFQ -> Purchase Order lifecycle)', () => {
     orgId = session.organizationId
     orgAdminUserId = session.userId
 
+    const purchaseEmail = process.env.E2E_USER_PURCHASE_EMAIL
+    const purchasePassword = process.env.E2E_USER_PURCHASE_PASSWORD
+    if (!purchaseEmail || !purchasePassword) {
+      test.skip(true, 'Set E2E_USER_PURCHASE_* in .env.e2e.local')
+    }
+    purchaseToken = (await apiLogin(request, purchaseEmail, purchasePassword)).token
+
     const vendor = await createVendorViaApi(request, orgAdminToken, orgId, tag)
     vendorId = vendor.id
     const product = await createProductViaApi(request, orgAdminToken, orgId, tag)
@@ -59,25 +67,26 @@ test.describe('Purchase Orders flow (RFQ -> Purchase Order lifecycle)', () => {
   })
 
   test('01 — create PO starts as rfq with computed totals', async ({ request }) => {
-    const po = await createPurchaseOrderViaApi(request, orgAdminToken, orgId, vendorId, productId)
+    const po = await createPurchaseOrderViaApi(request, purchaseToken, orgId, vendorId, productId)
     poId = po.id
     expect(po.seqNo).toMatch(/^PO-/)
     expect(po.status).toBe('rfq')
     expect(po.totalAmount).toBe(500) // 5 * 100, no tax configured
 
-    const full = await getPurchaseOrderViaApi(request, orgAdminToken, poId)
+    const full = await getPurchaseOrderViaApi(request, purchaseToken, poId)
     expect(full.untaxedAmount).toBe(500)
     expect(full.items.length).toBe(1)
   })
 
   test('02 — markRfqSent then submit for approval', async ({ request }) => {
-    const sent = await markRfqSentViaApi(request, orgAdminToken, poId)
+    const sent = await markRfqSentViaApi(request, purchaseToken, poId)
     expect(sent.status).toBe('rfq_sent')
-    const submitted = await submitPurchaseOrderViaApi(request, orgAdminToken, poId)
+    const submitted = await submitPurchaseOrderViaApi(request, purchaseToken, poId)
     expect(submitted.status).toBe('submitted')
   })
 
   test('03 — approve then confirm into a formal Purchase Order', async ({ request }) => {
+    // Org admin approves — must differ from purchase-manager submitter
     const approved = await approvePurchaseOrderViaApi(request, orgAdminToken, poId)
     expect(approved.status).toBe('approved')
     const confirmed = await confirmPurchaseOrderViaApi(request, orgAdminToken, poId)
@@ -93,9 +102,9 @@ test.describe('Purchase Orders flow (RFQ -> Purchase Order lifecycle)', () => {
 
   test('05 — purchase orders page smoke: list renders and RFQ dialog opens', async ({ page }) => {
     await smokeModulePage(page, '/purchases/enter-purchase-orders', /Purchase Orders/i)
-    await page.getByRole('button', { name: /New RFQ/i }).click()
+    await page.getByRole('button', { name: /New RFQ/i }).first().click()
     await expect(page.getByRole('dialog').filter({ hasText: 'New RFQ' })).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText('Products', { exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible()
   })
 
   test('06 — gap fix: Agreement / Source Document / Incoterms / Buyer / GST Treatment / Currency header fields persist', async ({ request }) => {
@@ -142,7 +151,7 @@ test.describe('Purchase Orders flow (RFQ -> Purchase Order lifecycle)', () => {
 
   test('11 — gap fix UI: Other Information header fields and Print RFQ render in the RFQ form/list', async ({ page }) => {
     await smokeModulePage(page, '/purchases/enter-purchase-orders', /Purchase Orders/i)
-    await page.getByRole('button', { name: /New RFQ/i }).click()
+    await page.getByRole('button', { name: /New RFQ/i }).first().click()
     await expect(page.getByRole('dialog').filter({ hasText: 'New RFQ' })).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('Other Information')).toBeVisible()
     await expect(page.getByLabel('Agreement')).toBeVisible()

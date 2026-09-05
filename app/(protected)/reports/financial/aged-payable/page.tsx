@@ -40,7 +40,7 @@ export default function AgedPayablePage() {
   })
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Aged Payable"
         subtitle="Outstanding vendor bills bucketed by days overdue — as of today"

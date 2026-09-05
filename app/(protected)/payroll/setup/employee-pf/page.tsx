@@ -257,18 +257,18 @@ export default function EmployeePfSetupPage() {
   )
 
   if (!orgId) {
-    return <p className="text-sm text-gray-500">Select an organization to maintain employee PF (CPF) settings.</p>
+    return <p className="erp-page-desc">Select an organization to maintain employee PF (CPF) settings.</p>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="erp-shell">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-slate-600 mb-1">
             <PiggyBank className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Setup</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Employee PF</h1>
+          <h1 className="erp-page-title">Employee PF</h1>
           <p className="text-gray-500 mt-1">
             CPF-oriented employee / employer percentages per employee. Persisted per organization on the server.
           </p>
@@ -299,10 +299,10 @@ export default function EmployeePfSetupPage() {
       ) : null}
 
       {open ? (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">{editingId ? 'Edit employee PF' : 'New employee PF'}</span>
-            <button type="button" onClick={closeDialog} className="text-blue-200 hover:text-white" aria-label="Close">
+            <button type="button" onClick={closeDialog} className="text-primary-foreground/80 hover:text-white" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -389,10 +389,10 @@ export default function EmployeePfSetupPage() {
               className="text-xs min-h-[56px]"
             />
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={closeDialog} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={closeDialog}>
                 Cancel
               </Button>
-              <Button size="sm" onClick={submit} disabled={busy} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white">
+              <Button size="sm" onClick={submit} disabled={busy} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {busy ? 'Saving…' : 'Save'}
               </Button>
@@ -433,7 +433,7 @@ export default function EmployeePfSetupPage() {
                   <TableCell className="font-mono text-xs text-gray-600">{r.recordRef}</TableCell>
                   <TableCell>
                     <div className="font-mono text-xs text-gray-600">{r.employeeNo}</div>
-                    <div className="text-sm text-gray-900">{r.employeeName || '—'}</div>
+                    <div className="text-sm text-foreground">{r.employeeName || '—'}</div>
                   </TableCell>
                   <TableCell className="text-sm">{r.cpfContributorNo || '—'}</TableCell>
                   <TableCell className="text-sm tabular-nums">{r.employeeSharePct}</TableCell>

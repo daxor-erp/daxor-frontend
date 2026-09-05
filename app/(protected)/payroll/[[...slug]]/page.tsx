@@ -16,14 +16,14 @@ export default function PayrollModulePlaceholderPage() {
   const label = segments.length ? segments.join(' · ') : 'Payroll module'
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
+    <div className="erp-shell">
       <div className="flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50/80 p-6">
         <div className="rounded-full bg-amber-100 p-3 text-amber-800">
           <Construction className="h-7 w-7" />
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">Coming next</p>
-          <h1 className="mt-1 text-2xl font-bold text-gray-900">{label}</h1>
+          <h1 className="erp-page-title">{label}</h1>
           <p className="mt-2 text-sm text-gray-600 leading-relaxed">
             This screen is a fallback for routes that do not have a dedicated page yet. For{' '}
             <strong className="text-gray-800">Data preparation</strong> (yard, biometric, manual entry), use the

@@ -2,11 +2,11 @@
 
 import { useQuery, useMutation } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { GET_VENDOR_BILLS, APPROVE_VENDOR_BILL, DELETE_VENDOR_BILL } from '@/gql/queries'
-import { CheckCircle, XCircle, Clock, FileText } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, FileText, CheckCheck } from 'lucide-react'
 import { formatMoney } from '@/lib/format-money'
-import { formatDate } from '@/lib/format-date'
 
 export default function ApproveVendorPaymentsPage() {
   const { user } = useAuth()
@@ -22,7 +22,7 @@ export default function ApproveVendorPaymentsPage() {
     skip: !orgId,
   })
 
-  const [approveBill, { loading: approving }] = useMutation(APPROVE_VENDOR_BILL, {
+  const [approveBill] = useMutation(APPROVE_VENDOR_BILL, {
     onCompleted: () => refetch(),
   })
 
@@ -41,95 +41,68 @@ export default function ApproveVendorPaymentsPage() {
       .reduce((s: number, b: any) => s + (b.totalAmount || 0), 0),
   }
 
-  const statusColor: Record<string, string> = {
-    draft: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    approved: 'bg-green-50 text-green-700 border-green-200',
-  }
-
   const columns: Column[] = [
+    { key: 'billNumber', label: 'Bill #', width: '140px', render: v => <MonoCell value={v} /> },
     {
-      key: 'billNumber', label: 'Bill #', width: '140px',
-      render: v => <span className="font-mono text-xs text-gray-600">{v}</span>
+      key: 'vendor',
+      label: 'Vendor',
+      render: (_v, row) => <span className="text-sm font-medium">{row.vendor?.name || '—'}</span>,
     },
+    { key: 'billDate', label: 'Bill Date', width: '110px', render: v => <DateCell value={v} /> },
+    { key: 'dueDate', label: 'Due Date', width: '110px', render: v => <DateCell value={v} /> },
+    { key: 'totalAmount', label: 'Amount', width: '120px', align: 'right', render: v => <AmountCell value={v} /> },
     {
-      key: 'vendor', label: 'Vendor',
-      render: (_v, row) => <span className="font-medium">{row.vendor?.name || '—'}</span>
+      key: 'notes',
+      label: 'Notes',
+      render: v => <span className="text-xs text-muted-foreground">{v || '—'}</span>,
     },
-    {
-      key: 'billDate', label: 'Bill Date', width: '110px',
-      render: v => v ? formatDate(v) : '—'
-    },
-    {
-      key: 'dueDate', label: 'Due Date', width: '110px',
-      render: v => v ? formatDate(v) : '—'
-    },
-    {
-      key: 'totalAmount', label: 'Amount', width: '120px', align: 'right',
-      render: v => <span className="font-bold text-gray-800">{formatMoney(v || 0)}</span>
-    },
-    {
-      key: 'notes', label: 'Notes',
-      render: v => <span className="text-gray-500 text-xs">{v || '—'}</span>
-    },
-    {
-      key: 'status', label: 'Status', width: '110px',
-      render: v => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[v] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-          {v}
-        </span>
-      )
-    },
+    { key: 'status', label: 'Status', width: '110px', render: v => <ErpBadge status={v} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Approve Vendor Bills</h1>
-        <p className="text-gray-500">Review and approve draft bills before payment</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Approve Vendor Bills"
+        subtitle="Review and approve draft bills before payment"
+        icon={<FileText className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Payables' }, { label: 'Approve Vendor Payments' }]}
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Pending Approval', value: stats.pending, icon: Clock, cls: 'text-yellow-600 bg-yellow-50' },
-          { label: 'Approved', value: stats.approved, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'Pending Value', value: `${formatMoney(stats.totalPendingValue)}`, icon: FileText, cls: 'text-blue-600 bg-blue-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={3}>
+        <StatCard label="Pending Approval" value={stats.pending} icon={<Clock className="h-5 w-5" />} variant="amber" />
+        <StatCard label="Approved" value={stats.approved} icon={<CheckCircle className="h-5 w-5" />} variant="green" />
+        <StatCard label="Pending Value" value={`₹${(stats.totalPendingValue / 1000).toFixed(1)}k`} icon={<FileText className="h-5 w-5" />} variant="blue" />
+      </StatsRow>
 
       <DataTable
         data={draftBills}
         columns={columns}
         loading={loading}
-        title="Bills Pending Approval"
+        title="All Bills Pending Approval"
         searchable
-        searchPlaceholder="Search bills..."
+        searchPlaceholder="Search bills…"
         emptyMessage="No bills pending approval. All bills are approved or there are no bills yet."
+        pageSize={25}
         actions={[
           {
             label: 'Approve',
-            icon: <CheckCircle className="h-3.5 w-3.5" />,
-            onClick: row => {
+            icon: <CheckCheck className="h-3.5 w-3.5" />,
+            onClick: (row: any) => {
               if (confirm(`Approve bill ${row.billNumber} for ${formatMoney(row.totalAmount)}?`)) {
                 approveBill({ variables: { id: row.id } })
               }
             },
-            variant: 'ghost',
+            show: (row: any) => row.status === 'draft',
           },
           {
             label: 'Reject',
             icon: <XCircle className="h-3.5 w-3.5" />,
-            onClick: row => {
+            onClick: (row: any) => {
               if (confirm(`Reject and delete bill ${row.billNumber}?`)) {
                 deleteBill({ variables: { id: row.id } })
               }
             },
-            variant: 'ghost',
+            show: (row: any) => row.status === 'draft',
           },
         ]}
       />

@@ -54,7 +54,7 @@ function TableWidget({ data }: { data: WidgetData }) {
           </thead>
           <tbody>
             {pageRows.map((row, i) => (
-              <tr key={i} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'} hover:bg-blue-50/30 transition-colors`}>
+              <tr key={i} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'} hover:bg-primary/5 transition-colors`}>
                 {columns.map((col) => (
                   <td key={col.key} className="px-2.5 py-1.5 text-gray-700 whitespace-nowrap">
                     {fmt(row[col.key])}

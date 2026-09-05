@@ -110,7 +110,7 @@ function StatusPill({ value }: { value: string }) {
       : v === 'IN_STOCK' || v === 'PAID' || v === 'APPROVED' || v === 'COMPLETED' || v === 'ACTIVE'
       ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
       : v === 'PROCESSED' || v === 'SENT' || v === 'SUBMITTED' || v === 'ACCEPTED'
-      ? 'bg-blue-50 text-blue-700 ring-blue-200'
+      ? 'bg-primary/10 text-primary ring-blue-200'
       : 'bg-gray-50 text-gray-700 ring-gray-200'
   const label = v.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
   return (

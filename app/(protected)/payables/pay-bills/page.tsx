@@ -9,9 +9,9 @@ import { SelectFloating } from '@/components/ui/select-floating'
 import { FormDrawer, FormSection } from '@/components/ui/form-drawer'
 import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import {
-  GET_OUTSTANDING_VENDOR_BILLS, CREATE_VENDOR_PAYMENT, GET_VENDORS,
+  GET_OUTSTANDING_VENDOR_BILLS, CREATE_VENDOR_PAYMENT,
 } from '@/gql/queries'
-import { DollarSign, Clock, AlertCircle, CheckCircle2, CreditCard, Plus } from 'lucide-react'
+import { DollarSign, Clock, AlertCircle, CheckCircle2, CreditCard } from 'lucide-react'
 
 const PAYMENT_METHODS = [
   { value: 'bank_transfer', label: 'Bank Transfer' },
@@ -85,7 +85,7 @@ export default function PayBillsPage() {
   ]
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="erp-shell">
       <PageHeader
         title="Pay Bills"
         subtitle="Record vendor payments against approved bills"

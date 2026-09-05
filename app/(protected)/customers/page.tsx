@@ -3,17 +3,14 @@
 import { useQuery, useMutation } from '@apollo/client'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
 import { InputFloating } from '@/components/ui/input-floating'
 import { SelectFloating } from '@/components/ui/select-floating'
 import { GET_CUSTOMERS, CREATE_CUSTOMER, UPDATE_CUSTOMER, DELETE_CUSTOMER } from '@/gql/queries'
-import { Trash2, Edit, Users, CheckCircle, XCircle } from 'lucide-react'
-import { StatusBadge } from '@/components/ui/status-badge'
-import { ErpListPage, ErpStatsGrid } from '@/components/erp/erp-list-page'
-import { SectionCard } from '@/components/dashboard/section-card'
-import { StatCard } from '@/components/dashboard/stat-card'
+import { Trash2, Edit, Users, CheckCircle, XCircle, Plus } from 'lucide-react'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell } from '@/components/ui/erp-shared'
+import { Button } from '@/components/ui/button'
 import { FormModal, FormSection, FieldGrid } from '@/components/forms/form-modal'
-import { formatNumber } from '@/lib/format-money'
 
 const EMPTY_FORM = {
   name: '',
@@ -140,99 +137,58 @@ export default function CustomersPage() {
   }
 
   const columns: Column[] = [
-    {
-      key: 'docNumber',
-      label: 'Code',
-      width: '130px',
-      render: (v) => <span className="font-mono text-xs text-muted-foreground">{v || '—'}</span>,
-    },
-    {
-      key: 'name',
-      label: 'Customer name',
-      sortable: true,
-      render: (v) => <span className="font-medium text-foreground">{v}</span>,
-    },
-    {
-      key: 'contactPerson',
-      label: 'Contact',
-      render: (v) => <span className="text-muted-foreground">{v || '—'}</span>,
-    },
-    {
-      key: 'email',
-      label: 'Email',
-      render: (v) => <span className="text-muted-foreground">{v || '—'}</span>,
-    },
-    {
-      key: 'phone',
-      label: 'Phone',
-      width: '130px',
-      render: (v) => <span className="text-muted-foreground">{v || '—'}</span>,
-    },
-    {
-      key: 'paymentTerms',
-      label: 'Payment terms',
-      width: '130px',
-      render: (v) => <span className="text-muted-foreground">{v || '—'}</span>,
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      width: '100px',
-      render: (v) => <StatusBadge status={String(v)} />,
-    },
+    { key: 'docNumber', label: 'Code', width: '130px', render: (v) => <MonoCell value={v} /> },
+    { key: 'name', label: 'Customer Name', sortable: true, render: (v) => <span className="text-sm font-medium">{v}</span> },
+    { key: 'contactPerson', label: 'Contact', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'email', label: 'Email', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'phone', label: 'Phone', width: '130px', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'paymentTerms', label: 'Payment Terms', width: '130px', render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span> },
+    { key: 'status', label: 'Status', width: '100px', render: (v) => <ErpBadge status={String(v)} /> },
   ]
 
   return (
-    <ErpListPage>
-      <ErpStatsGrid cols={3}>
-        <StatCard
-          label="Total customers"
-          value={formatNumber(stats.total)}
-          icon={<Users className="h-5 w-5" />}
-          tone="brand"
-        />
-        <StatCard
-          label="Active"
-          value={formatNumber(stats.active)}
-          icon={<CheckCircle className="h-5 w-5" />}
-          tone="emerald"
-        />
-        <StatCard
-          label="Inactive"
-          value={formatNumber(stats.inactive)}
-          icon={<XCircle className="h-5 w-5" />}
-          tone="slate"
-        />
-      </ErpStatsGrid>
+    <div className="erp-shell">
+      <PageHeader
+        title="Customers"
+        subtitle="Maintain customer masters, contacts, and payment terms."
+        icon={<Users className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Customers' }]}
+        actions={
+          <Button onClick={openCreate} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-1.5" /> New Customer
+          </Button>
+        }
+      />
 
-      <SectionCard bodyClassName="p-0">
-        <DataTable
-          data={customers}
-          columns={columns}
-          loading={loading}
-          searchable
-          searchPlaceholder="Search customers…"
-          emptyMessage="No customers yet. Create your first customer to start selling."
-          onAdd={openCreate}
-          addLabel="New customer"
-          onRowClick={openEdit}
-          embedded
-          actions={[
-            {
-              label: 'Edit',
-              icon: <Edit className="h-3.5 w-3.5" />,
-              onClick: (row) => openEdit(row),
-              variant: 'ghost',
-            },
-            {
-              label: 'Delete',
-              icon: <Trash2 className="h-3.5 w-3.5" />,
-              onClick: (row) => handleDelete(String(row.id)),
-              variant: 'ghost',
-            },
-          ]}
-        />
-      </SectionCard>
+      <StatsRow cols={3}>
+        <StatCard label="Total Customers" value={stats.total} icon={<Users className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Active" value={stats.active} icon={<CheckCircle className="h-5 w-5" />} variant="green" />
+        <StatCard label="Inactive" value={stats.inactive} icon={<XCircle className="h-5 w-5" />} variant="slate" />
+      </StatsRow>
+
+      <DataTable
+        data={customers}
+        columns={columns}
+        loading={loading}
+        title="All Customers"
+        searchable
+        searchPlaceholder="Search customers…"
+        emptyMessage="No customers found."
+        pageSize={25}
+        onRowClick={openEdit}
+        actions={[
+          {
+            label: 'Edit',
+            icon: <Edit className="h-3.5 w-3.5" />,
+            onClick: (row) => openEdit(row),
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (row) => handleDelete(String(row.id)),
+          },
+        ]}
+      />
 
       <FormModal
         open={formOpen}
@@ -331,6 +287,6 @@ export default function CustomersPage() {
           />
         </FormSection>
       </FormModal>
-    </ErpListPage>
+    </div>
   )
 }

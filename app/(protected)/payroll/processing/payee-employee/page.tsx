@@ -236,7 +236,7 @@ export default function PayeeEmployeePage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="erp-shell">
       <nav className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
         <Link href="/payroll-management" className="hover:text-gray-800 hover:underline">
           Payroll
@@ -255,7 +255,7 @@ export default function PayeeEmployeePage() {
             <UserCircle className="h-6 w-6" />
             <span className="text-xs font-semibold uppercase tracking-wide">Payroll · Processing</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Payee employee</h1>
+          <h1 className="erp-page-title">Payee employee</h1>
           <p className="text-gray-500 mt-1">
             Decide who is paid inside a batch and by which method. Rows are saved to your organization database.
           </p>
@@ -273,7 +273,7 @@ export default function PayeeEmployeePage() {
       <div className="grid gap-3 sm:grid-cols-2 max-w-xl">
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
           <p className="text-xs font-semibold uppercase text-slate-500">Included payees</p>
-          <p className="text-2xl font-bold tabular-nums text-slate-900">{totals.count}</p>
+          <p className="text-2xl font-bold tabular-nums text-foreground">{totals.count}</p>
         </div>
         <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3">
           <p className="text-xs font-semibold uppercase text-emerald-800">Included net total</p>
@@ -295,12 +295,12 @@ export default function PayeeEmployeePage() {
       ) : null}
 
       {open ? (
-        <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 bg-blue-600">
+        <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
             <span className="text-xs font-semibold text-white">
               {editingId ? 'Edit payee line' : 'New payee line'}
             </span>
-            <button type="button" onClick={closeDialog} className="text-blue-200 hover:text-white" aria-label="Close">
+            <button type="button" onClick={closeDialog} className="text-primary-foreground/80 hover:text-white" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -377,14 +377,14 @@ export default function PayeeEmployeePage() {
               className="text-xs min-h-[56px]"
             />
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" size="sm" onClick={closeDialog} className="h-8 text-xs">
+              <Button variant="outline" size="sm" onClick={closeDialog}>
                 Cancel
               </Button>
               <Button
                 size="sm"
                 onClick={submit}
                 disabled={busy}
-                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[120px]"
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 {busy ? 'Saving…' : editingId ? 'Update' : 'Save payee'}
@@ -422,7 +422,7 @@ export default function PayeeEmployeePage() {
                 <TableRow key={r.id} className="hover:bg-slate-50/60">
                   <TableCell>
                     <div className="font-mono text-xs text-gray-600">{r.employeeNo}</div>
-                    <div className="text-sm text-gray-900">{r.employeeName || '—'}</div>
+                    <div className="text-sm text-foreground">{r.employeeName || '—'}</div>
                   </TableCell>
                   <TableCell className="font-mono text-sm">{r.payBatchRef || '—'}</TableCell>
                   <TableCell className="text-sm">

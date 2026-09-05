@@ -13,7 +13,8 @@ import {
   GET_BANK_ACCOUNTS,
   CREATE_BANK_ACCOUNT,
 } from '@/gql/queries'
-import { formatMoney, formatMoneyCompact } from '@/lib/format-money'
+import { formatMoneyCompact } from '@/lib/format-money'
+import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import {
   Wallet,
   TrendingUp,
@@ -22,8 +23,6 @@ import {
   Plus,
   X,
   Save,
-  Trash2,
-  CreditCard,
   Edit,
 } from 'lucide-react'
 
@@ -200,86 +199,59 @@ export default function CashBankPage() {
 
   // Transaction columns
   const txColumns: Column[] = [
-    { key: 'transactionNumber', label: 'Transaction #', sortable: true, width: '120px' },
+    { key: 'transactionNumber', label: 'Transaction #', sortable: true, width: '120px', render: (v) => <MonoCell value={v} /> },
     {
       key: 'transactionDate',
       label: 'Date',
       width: '100px',
-      render: (v: any) => v ? new Date(v).toLocaleDateString('en-IN') : '—',
+      render: (v: any) => <DateCell value={v} />,
     },
     {
       key: 'transactionType',
       label: 'Type',
       width: '90px',
-      render: (v: string) => (
-        <span className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase ${
-          v === 'receipt' ? 'bg-green-100 text-green-700' :
-          v === 'payment' ? 'bg-red-100 text-red-700' :
-          v === 'transfer' ? 'bg-blue-100 text-blue-700' :
-          'bg-gray-100 text-gray-600'
-        }`}>{v}</span>
-      ),
+      render: (v: string) => <ErpBadge status={String(v)} />,
     },
-    { key: 'description', label: 'Description' },
+    { key: 'description', label: 'Description', render: (v) => <span className="text-sm">{v}</span> },
     {
       key: 'paymentMethod',
       label: 'Method',
       width: '100px',
-      render: (v: string) => v ? v.replace('_', ' ') : '—',
+      render: (v: string) => v ? <span className="text-sm capitalize">{v.replace('_', ' ')}</span> : '—',
     },
     {
       key: 'amount',
       label: 'Amount',
       width: '110px',
       align: 'right',
-      render: (v: any, row: any) => (
-        <span className={`font-medium ${
-          row.transactionType === 'receipt' ? 'text-green-600' :
-          row.transactionType === 'payment' ? 'text-red-600' :
-          'text-gray-700'
-        }`}>
-          {formatMoney(Number(v))}
-        </span>
-      ),
+      render: (v: any) => <AmountCell value={v} />,
     },
-    { key: 'bankAccount', label: 'Account', width: '120px' },
+    { key: 'bankAccount', label: 'Account', width: '120px', render: (v) => <MonoCell value={v} /> },
     {
       key: 'reconciliationStatus',
       label: 'Status',
       width: '90px',
-      render: (v: string) => (
-        <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
-          v === 'RECONCILED' ? 'bg-green-100 text-green-700' :
-          v === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-gray-100 text-gray-600'
-        }`}>{v}</span>
-      ),
+      render: (v: string) => <ErpBadge status={String(v)} />,
     },
   ]
 
   // Bank account columns
   const acctColumns: Column[] = [
-    { key: 'accountName', label: 'Account Name', sortable: true },
-    { key: 'bankName', label: 'Bank', width: '130px' },
-    { key: 'accountNumber', label: 'Account Number', width: '140px' },
+    { key: 'accountName', label: 'Account Name', sortable: true, render: (v) => <span className="text-sm font-medium">{v}</span> },
+    { key: 'bankName', label: 'Bank', width: '130px', render: (v) => <span className="text-sm">{v}</span> },
+    { key: 'accountNumber', label: 'Account Number', width: '140px', render: (v) => <MonoCell value={v} /> },
     {
       key: 'accountType',
       label: 'Type',
       width: '90px',
-      render: (v: string) => v ? (
-        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-medium capitalize">{v}</span>
-      ) : '—',
+      render: (v: string) => v ? <ErpBadge status={String(v)} /> : '—',
     },
     {
       key: 'currentBalance',
       label: 'Balance',
       width: '110px',
       align: 'right',
-      render: (v: any, row: any) => (
-        <span className="font-medium text-gray-800">
-          {row.currency ?? 'INR'} {Number(v ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-        </span>
-      ),
+      render: (v: any) => <AmountCell value={v ?? 0} />,
     },
     { key: 'currency', label: 'Currency', width: '80px' },
     {
@@ -287,11 +259,7 @@ export default function CashBankPage() {
       label: 'Active',
       width: '70px',
       align: 'center',
-      render: (v: boolean) => (
-        <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${v ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-          {v ? 'Yes' : 'No'}
-        </span>
-      ),
+      render: (v: boolean) => <ErpBadge status={v ? 'active' : 'inactive'} label={v ? 'Yes' : 'No'} />,
     },
   ]
 
@@ -300,7 +268,6 @@ export default function CashBankPage() {
       label: 'Edit',
       icon: <Edit className="h-3.5 w-3.5" />,
       onClick: (row: any) => handleEditAcct(row),
-      variant: 'ghost' as const,
     },
   ]
 
@@ -310,17 +277,16 @@ export default function CashBankPage() {
   }))
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">Cash &amp; Bank</h1>
-          <p className="text-xs text-gray-500">Manage cash transactions and bank accounts</p>
-        </div>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Cash & Bank"
+        subtitle="Manage cash transactions and bank accounts"
+        icon={<Wallet className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Financial' }, { label: 'Cash & Bank' }]}
+      />
 
       {/* Tab switcher */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-border">
         {[
           { key: 'transactions', label: 'Transactions' },
           { key: 'accounts', label: 'Bank Accounts' },
@@ -330,8 +296,8 @@ export default function CashBankPage() {
             onClick={() => setActiveTab(tab.key as Tab)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.key
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab.label}
@@ -342,32 +308,19 @@ export default function CashBankPage() {
       {/* TRANSACTIONS TAB */}
       {activeTab === 'transactions' && (
         <div className="space-y-4">
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-3">
-            {[
-              { label: 'Total Transactions', value: transactions.length, icon: Wallet, cls: 'text-blue-600 bg-blue-50' },
-              { label: 'Total Receipts', value: formatMoneyCompact(totalReceipts), icon: TrendingUp, cls: 'text-green-600 bg-green-50' },
-              { label: 'Total Payments', value: formatMoneyCompact(totalPayments), icon: TrendingDown, cls: 'text-red-600 bg-red-50' },
-              { label: 'Bank Accounts', value: bankAccounts.length, icon: Building2, cls: 'text-purple-600 bg-purple-50' },
-            ].map(({ label, value, icon: Icon, cls }) => (
-              <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-                <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}>
-                  <Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">{label}</p>
-                  <p className="text-lg font-bold text-gray-800">{value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <StatsRow cols={4}>
+            <StatCard label="Total Transactions" value={transactions.length} icon={<Wallet className="h-5 w-5" />} variant="blue" />
+            <StatCard label="Total Receipts" value={formatMoneyCompact(totalReceipts)} icon={<TrendingUp className="h-5 w-5" />} variant="green" />
+            <StatCard label="Total Payments" value={formatMoneyCompact(totalPayments)} icon={<TrendingDown className="h-5 w-5" />} variant="rose" />
+            <StatCard label="Bank Accounts" value={bankAccounts.length} icon={<Building2 className="h-5 w-5" />} variant="violet" />
+          </StatsRow>
 
           {/* Inline form */}
           {addingTx && (
-            <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2 bg-blue-600">
+            <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2 bg-primary">
                 <span className="text-xs font-semibold text-white">New Transaction</span>
-                <button onClick={closeTxForm} className="text-blue-200 hover:text-white">
+                <button onClick={closeTxForm} className="text-primary-foreground/80 hover:text-white">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -445,10 +398,10 @@ export default function CashBankPage() {
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-1 border-t">
-                  <Button variant="outline" size="sm" onClick={closeTxForm} className="h-8 text-xs">
+                  <Button variant="outline" size="sm" onClick={closeTxForm}>
                     Cancel
                   </Button>
-                  <Button size="sm" onClick={handleTxSubmit} disabled={savingTx} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button size="sm" onClick={handleTxSubmit} disabled={savingTx} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Save className="h-3.5 w-3.5 mr-1" />
                     {savingTx ? 'Saving…' : 'Save'}
                   </Button>
@@ -462,12 +415,13 @@ export default function CashBankPage() {
             data={transactions}
             columns={txColumns}
             loading={txLoading}
-            title="Transactions"
+            title="All Transactions"
             onAdd={() => setAddingTx(true)}
             addLabel="New Transaction"
             searchable
             searchPlaceholder="Search transactions…"
             emptyMessage="No transactions recorded"
+            pageSize={25}
           />
         </div>
       )}
@@ -477,12 +431,12 @@ export default function CashBankPage() {
         <div className="space-y-4">
           {/* Inline form */}
           {addingAcct && (
-            <div className="bg-white border border-blue-300 rounded-lg shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2 bg-blue-600">
+            <div className="bg-white border border-primary/30 rounded-lg shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2 bg-primary">
                 <span className="text-xs font-semibold text-white">
                   {editingAcct ? 'Edit Bank Account' : 'New Bank Account'}
                 </span>
-                <button onClick={closeAcctForm} className="text-blue-200 hover:text-white">
+                <button onClick={closeAcctForm} className="text-primary-foreground/80 hover:text-white">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -549,10 +503,10 @@ export default function CashBankPage() {
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-1 border-t">
-                  <Button variant="outline" size="sm" onClick={closeAcctForm} className="h-8 text-xs">
+                  <Button variant="outline" size="sm" onClick={closeAcctForm}>
                     Cancel
                   </Button>
-                  <Button size="sm" onClick={handleAcctSubmit} disabled={savingAcct} className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button size="sm" onClick={handleAcctSubmit} disabled={savingAcct} className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Save className="h-3.5 w-3.5 mr-1" />
                     {savingAcct ? 'Saving…' : 'Save'}
                   </Button>
@@ -567,12 +521,13 @@ export default function CashBankPage() {
             columns={acctColumns}
             loading={acctLoading}
             actions={acctActions}
-            title="Bank Accounts"
+            title="All Bank Accounts"
             onAdd={() => { setEditingAcct(null); setAcctForm({ ...emptyAcctForm }); setAddingAcct(true) }}
             addLabel="Add Account"
             searchable
             searchPlaceholder="Search accounts…"
             emptyMessage="No bank accounts configured"
+            pageSize={25}
             onRowClick={handleEditAcct}
           />
         </div>

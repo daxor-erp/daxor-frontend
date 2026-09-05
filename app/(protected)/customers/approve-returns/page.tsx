@@ -2,15 +2,15 @@
 
 import { useQuery, useMutation } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
-import { DataTable, Column } from '@/components/DataTable'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import {
   GET_RETURN_AUTHORIZATIONS,
   APPROVE_RETURN_AUTHORIZATION,
   REJECT_RETURN_AUTHORIZATION,
   CANCEL_RETURN_AUTHORIZATION,
 } from '@/gql/queries'
-import { CheckCircle, XCircle, Clock, Ban } from 'lucide-react'
-import { formatDate } from '@/lib/format-date'
+import { CheckCircle, XCircle, Clock, Ban, RotateCcw } from 'lucide-react'
 
 function linesSummary(lines: { description: string; quantity: number }[] | undefined) {
   if (!lines?.length) return '—'
@@ -59,97 +59,77 @@ export default function ApproveReturnAuthorizationsPage() {
     rejected: all.filter((r: { status: string }) => r.status === 'rejected').length,
   }
 
-  const statusColor: Record<string, string> = {
-    pending: 'bg-amber-50 text-amber-800 border-amber-200',
-    approved: 'bg-green-50 text-green-700 border-green-200',
-    rejected: 'bg-red-50 text-red-700 border-red-200',
-    cancelled: 'bg-gray-100 text-gray-600 border-gray-200',
-  }
-
   const columns: Column[] = [
-    {
-      key: 'raNumber',
-      label: 'RA #',
-      width: '130px',
-      render: (v) => <span className="font-mono text-xs text-gray-700">{v}</span>,
-    },
+    { key: 'raNumber', label: 'RA #', width: '130px', render: (v) => <MonoCell value={v} /> },
     {
       key: 'customer',
       label: 'Bill-to',
       render: (_v, row) => (
-        <span className="font-medium text-gray-800">{row.customer?.name || '—'}</span>
+        <span className="text-sm font-medium">{row.customer?.name || '—'}</span>
       ),
     },
     {
       key: 'requestedDate',
       label: 'Requested',
       width: '110px',
-      render: (v) => (v ? formatDate(v) : '—'),
+      render: (v) => <DateCell value={v} />,
     },
     {
       key: 'reason',
       label: 'Reason',
-      render: (v) => <span className="text-gray-600 text-xs">{v || '—'}</span>,
+      render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span>,
     },
     {
       key: 'lines',
       label: 'Lines',
       render: (_v, row) => (
-        <span className="text-gray-500 text-xs line-clamp-2" title={linesSummary(row.lines)}>
+        <span className="text-muted-foreground text-xs line-clamp-2" title={linesSummary(row.lines)}>
           {linesSummary(row.lines)}
         </span>
       ),
     },
-    {
-      key: 'status',
-      label: 'Status',
-      width: '100px',
-      render: (v) => (
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusColor[v] || 'bg-gray-100 text-gray-600 border-gray-200'}`}
-        >
-          {v}
-        </span>
-      ),
-    },
+    { key: 'status', label: 'Status', width: '120px', render: (v) => <ErpBadge status={v} /> },
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Approve Return Authorizations</h1>
-        <p className="text-gray-500">Review pending RMA requests and approve or reject them</p>
-      </div>
+    <div className="erp-shell">
+      <PageHeader
+        title="Approve Return Authorizations"
+        subtitle="Review pending RMA requests and approve or reject them"
+        icon={<RotateCcw className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Customers' }, { label: 'Approve Returns' }]}
+      />
 
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Pending approval', value: stats.pending, icon: Clock, cls: 'text-amber-600 bg-amber-50' },
-          { label: 'Approved', value: stats.approved, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'Rejected', value: stats.rejected, icon: XCircle, cls: 'text-red-600 bg-red-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div
-            key={label}
-            className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm"
-          >
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}>
-              <Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">{label}</p>
-              <p className="text-lg font-bold text-gray-800">{value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatsRow cols={3}>
+        <StatCard
+          label="Pending Approval"
+          value={stats.pending}
+          icon={<Clock className="h-5 w-5" />}
+          variant="amber"
+        />
+        <StatCard
+          label="Approved"
+          value={stats.approved}
+          icon={<CheckCircle className="h-5 w-5" />}
+          variant="green"
+        />
+        <StatCard
+          label="Rejected"
+          value={stats.rejected}
+          icon={<XCircle className="h-5 w-5" />}
+          variant="rose"
+        />
+      </StatsRow>
 
       <DataTable
         data={pending}
         columns={columns}
         loading={loading || approving}
-        title="Return authorizations — pending"
+        title="All Pending Return Authorizations"
         searchable
         searchPlaceholder="Search RA #, customer, reason…"
         emptyMessage="No pending return authorizations. Create new requests under Customers → Issue Return Authorizations."
+        pageSize={25}
         actions={[
           {
             label: 'Approve',
@@ -163,7 +143,6 @@ export default function ApproveReturnAuthorizationsPage() {
                 approveRa({ variables: { id: row.id } })
               }
             },
-            variant: 'ghost',
           },
           {
             label: 'Reject',
@@ -173,7 +152,6 @@ export default function ApproveReturnAuthorizationsPage() {
               if (reason === null) return
               rejectRa({ variables: { id: row.id, reason: reason || undefined } })
             },
-            variant: 'ghost',
           },
           {
             label: 'Cancel',
@@ -183,7 +161,6 @@ export default function ApproveReturnAuthorizationsPage() {
                 cancelRa({ variables: { id: row.id } })
               }
             },
-            variant: 'ghost',
           },
         ]}
       />
