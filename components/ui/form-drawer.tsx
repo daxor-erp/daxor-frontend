@@ -84,6 +84,19 @@ export function FormDrawer({
           'w-full',
           className,
         )}
+        onPointerDownOutside={(e) => {
+          // SelectFloating portals options to document.body; don't treat those as outside clicks
+          const t = e.target as HTMLElement | null
+          if (t?.closest?.('[data-select-floating-dropdown]')) e.preventDefault()
+        }}
+        onInteractOutside={(e) => {
+          const t = e.target as HTMLElement | null
+          if (t?.closest?.('[data-select-floating-dropdown]')) e.preventDefault()
+        }}
+        onFocusOutside={(e) => {
+          const t = e.target as HTMLElement | null
+          if (t?.closest?.('[data-select-floating-dropdown]')) e.preventDefault()
+        }}
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-border bg-muted/30 px-6 py-4 shrink-0">
