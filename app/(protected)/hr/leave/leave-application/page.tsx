@@ -124,16 +124,43 @@ export default function LeaveApplicationPage() {
   const leaveTypes = ltData?.leaveTypes ?? []
   const rows = data?.leaveApplications ?? []
 
-  // Map userId → "First Last (EMP-XXXX)" for display in the table
+  // Map userId → display name (employee master + current login fallback)
   const userMap = useMemo(() => {
     const m = new Map<string, string>()
     employees.forEach((e) => {
-      if (e.userId) m.set(String(e.userId), `${e.firstName} ${e.lastName} (${e.employeeCode})`.trim())
+      if (e.userId) {
+        m.set(String(e.userId), `${e.firstName} ${e.lastName} (${e.employeeCode})`.trim())
+      }
     })
+    if (user?.id) {
+      const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
+      const label = name || user.email || 'Current user'
+      if (!m.has(String(user.id))) m.set(String(user.id), label)
+    }
     return m
-  }, [employees])
+  }, [employees, user])
   // Employees eligible to apply leave (must have a linked user account)
   const eligibleEmployees = useMemo(() => employees.filter((e) => e.userId), [employees])
+  const employeeOptions = useMemo(() => {
+    const opts = eligibleEmployees.map((e) => ({
+      value: String(e.userId),
+      label: `${e.firstName} ${e.lastName} (${e.employeeCode})`.trim(),
+    }))
+    const seen = new Set(opts.map((o) => o.value))
+    if (user?.id && !seen.has(String(user.id))) {
+      const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
+      opts.unshift({
+        value: String(user.id),
+        label: name ? `${name} (current user)` : `${user.email || user.id} (current user)`,
+      })
+    }
+    return opts
+  }, [eligibleEmployees, user])
+  const resolveEmployeeName = (userId: string | null | undefined) => {
+    if (!userId) return '—'
+    const key = String(userId)
+    return userMap.get(key) ?? employeeOptions.find((o) => o.value === key)?.label ?? key
+  }
   const ltMap = useMemo(() => {
     const m = new Map<string, string>()
     leaveTypes.forEach((t: { id: string; code: string; name: string }) => m.set(t.id, `${t.code} — ${t.name}`))
@@ -234,7 +261,7 @@ export default function LeaveApplicationPage() {
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                        {userMap.get(r.userId) ?? r.userId}
+                        {resolveEmployeeName(r.userId)}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{ltMap.get(r.leaveTypeId) ?? r.leaveTypeId}</TableCell>
@@ -303,15 +330,15 @@ export default function LeaveApplicationPage() {
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
-                <SelectContent>
-                  {eligibleEmployees.length === 0 ? (
+                <SelectContent position="popper" className="z-[200]">
+                  {employeeOptions.length === 0 ? (
                     <SelectItem value="__none__" disabled>
-                      No employees with linked user account
+                      No employees available
                     </SelectItem>
                   ) : (
-                    eligibleEmployees.map((e) => (
-                      <SelectItem key={e.id} value={String(e.userId)}>
-                        {e.firstName} {e.lastName} ({e.employeeCode})
+                    employeeOptions.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
                       </SelectItem>
                     ))
                   )}

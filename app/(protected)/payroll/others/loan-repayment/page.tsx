@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { format, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,7 @@ import {
   CREATE_LOAN_REPAYMENT,
   UPDATE_LOAN_REPAYMENT,
   DELETE_LOAN_REPAYMENT,
+  GET_EMPLOYEE_MASTERS,
 } from '@/gql/queries'
 
 const STATUS_OPTIONS = [
@@ -102,6 +103,67 @@ export default function LoanRepaymentPage() {
     fetchPolicy: 'network-only',
   })
 
+  const { data: empData, loading: empLoading } = useQuery(GET_EMPLOYEE_MASTERS, {
+    variables: { organizationId: orgId, status: null },
+    skip: !orgId,
+    fetchPolicy: 'cache-and-network',
+  })
+
+  const employees = useMemo(() => (empData?.employeeMasters ?? []) as Array<{
+    id: string
+    employeeCode?: string | null
+    firstName?: string | null
+    lastName?: string | null
+    status?: string | null
+  }>, [empData])
+
+  const employeeByCode = useMemo(() => {
+    const map = new Map<string, { code: string; name: string }>()
+    for (const e of employees) {
+      const code = (e.employeeCode || '').trim()
+      if (!code) continue
+      const name = `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim() || code
+      map.set(code, { code, name })
+    }
+    return map
+  }, [employees])
+
+  const employeeOptions = useMemo(() => {
+    const opts = employees
+      .filter((e) => (e.employeeCode || '').trim())
+      .map((e) => {
+        const code = (e.employeeCode || '').trim()
+        const name = `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim()
+        return {
+          value: code,
+          label: name ? `${code} — ${name}` : code,
+        }
+      })
+    // Keep current value selectable when editing a legacy/manual code
+    if (form.employeeNo && !opts.some((o) => o.value === form.employeeNo)) {
+      opts.unshift({
+        value: form.employeeNo,
+        label: form.employeeName
+          ? `${form.employeeNo} — ${form.employeeName}`
+          : form.employeeNo,
+      })
+    }
+    return [{ value: '', label: empLoading ? 'Loading employees…' : 'Select employee…' }, ...opts]
+  }, [employees, form.employeeNo, form.employeeName, empLoading])
+
+  const onEmployeeSelect = (value: string) => {
+    const match = employeeByCode.get(value)
+    setForm((f) => ({
+      ...f,
+      employeeNo: value,
+      employeeName: match?.name ?? (value ? f.employeeName : ''),
+      title:
+        f.title.trim() || !match
+          ? f.title
+          : `${match.name} — loan EMI`,
+    }))
+  }
+
   const [createLr, { loading: creating }] = useMutation(CREATE_LOAN_REPAYMENT, {
     onCompleted: () => {
       refetch()
@@ -176,6 +238,14 @@ export default function LoanRepaymentPage() {
 
   const submit = () => {
     setBanner(null)
+    if (!form.employeeNo.trim()) {
+      setBanner({ ok: false, text: 'Select an employee.' })
+      return
+    }
+    if (!form.employeeName.trim()) {
+      setBanner({ ok: false, text: 'Employee name is missing for the selected code.' })
+      return
+    }
     const input = buildInput()
     if (!input) return
     if (editingId) {
@@ -319,19 +389,21 @@ export default function LoanRepaymentPage() {
               />
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <InputFloating
-                id="lr-empno"
-                label="Employee no."
+              <SelectFloating
+                label="Employee no. *"
+                name="lr-empno"
                 value={form.employeeNo}
-                onChange={(e) => setForm((f) => ({ ...f, employeeNo: e.target.value }))}
+                onChange={(v) => onEmployeeSelect(typeof v === 'string' ? v : v.target.value)}
+                options={employeeOptions}
                 className="h-7 text-xs"
+                placeholder="Select employee…"
               />
               <InputFloating
                 id="lr-empname"
                 label="Employee name"
                 value={form.employeeName}
-                onChange={(e) => setForm((f) => ({ ...f, employeeName: e.target.value }))}
-                className="h-7 text-xs"
+                readOnly
+                className="h-7 text-xs bg-muted/40"
               />
               <InputFloating
                 id="lr-loanref"

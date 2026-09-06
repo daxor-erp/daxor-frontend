@@ -8,6 +8,15 @@ import { ReportShell, type ReportPeriod, periodRange, inRange } from '@/componen
 import { formatNumber } from '@/lib/format-money'
 import { escapeHtml } from '@/lib/pdf-download'
 import { formatDate } from '@/lib/format-date'
+import { isMongoObjectId } from '@/lib/format-status'
+
+function itemLabel(m: { itemName?: string | null; itemId?: string | null }) {
+  const name = String(m.itemName ?? '').trim()
+  if (name) return name
+  const id = String(m.itemId ?? '').trim()
+  if (id && !isMongoObjectId(id)) return id
+  return '—'
+}
 
 export default function StockMovementReportPage() {
   const { user } = useAuth()
@@ -18,7 +27,7 @@ export default function StockMovementReportPage() {
     variables: { organizationId: orgId },
     skip: !orgId,
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
+    errorPolicy: 'all',
   })
 
   const movements: any[] = data?.stockMovements ?? []
@@ -36,8 +45,19 @@ export default function StockMovementReportPage() {
     for (const m of filtered) {
       const q = Number(m.quantity ?? 0)
       const t = String(m.movementType ?? '').toUpperCase()
-      if (['IN', 'INWARD', 'RECEIPT', 'GRN'].includes(t)) inflow += q
-      else if (['OUT', 'OUTWARD', 'ISSUE', 'CONSUMPTION'].includes(t)) outflow += q
+      if (['IN', 'INWARD', 'RECEIPT', 'GRN'].includes(t)) {
+        inflow += Math.abs(q)
+      } else if (['OUT', 'OUTWARD', 'ISSUE', 'CONSUMPTION'].includes(t)) {
+        outflow += Math.abs(q)
+      } else if (t === 'ADJUSTMENT' || t === 'TRANSFER') {
+        // Signed quantity: + increases stock, − decreases stock
+        if (q >= 0) inflow += q
+        else outflow += Math.abs(q)
+      } else if (q >= 0) {
+        inflow += q
+      } else {
+        outflow += Math.abs(q)
+      }
     }
     return { inflow, outflow, net: inflow - outflow }
   }, [filtered])
@@ -50,13 +70,13 @@ export default function StockMovementReportPage() {
       <div><strong>Net:</strong> ${formatNumber(stats.net)}</div>
     </div>
     <table>
-      <thead><tr><th>Date</th><th>Type</th><th>Item</th><th>From</th><th>To</th><th>Reference</th><th class="num">Qty</th></tr></thead>
+      <thead><tr><th>Date</th><th>Type</th><th>Item / Product</th><th>From</th><th>To</th><th>Reference</th><th class="num">Qty</th></tr></thead>
       <tbody>
         ${filtered.slice(0, 300).map((m: any) => `
           <tr>
             <td>${escapeHtml(m.movementDate ? formatDate(m.movementDate) : '')}</td>
             <td>${escapeHtml(m.movementType)}</td>
-            <td>${escapeHtml(m.itemId)}</td>
+            <td>${escapeHtml(itemLabel(m))}</td>
             <td>${escapeHtml(m.fromLocation ?? '')}</td>
             <td>${escapeHtml(m.toLocation ?? '')}</td>
             <td>${escapeHtml(m.referenceModule ? `${m.referenceModule}:${m.referenceId}` : '')}</td>
@@ -90,7 +110,7 @@ export default function StockMovementReportPage() {
             <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
               <th className="px-4 py-2.5 font-medium">Date</th>
               <th className="px-3 py-2.5 font-medium">Type</th>
-              <th className="px-3 py-2.5 font-medium">Item</th>
+              <th className="px-3 py-2.5 font-medium">Item / Product</th>
               <th className="px-3 py-2.5 font-medium">From</th>
               <th className="px-3 py-2.5 font-medium">To</th>
               <th className="px-4 py-2.5 font-medium text-right">Qty</th>
@@ -107,7 +127,9 @@ export default function StockMovementReportPage() {
                     {m.movementType}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 font-mono text-xs">{m.itemId}</td>
+                <td className="px-3 py-2.5">
+                  <span className="text-sm font-medium">{itemLabel(m)}</span>
+                </td>
                 <td className="px-3 py-2.5 text-muted-foreground">{m.fromLocation || '—'}</td>
                 <td className="px-3 py-2.5 text-muted-foreground">{m.toLocation || '—'}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums font-medium">{formatNumber(m.quantity ?? 0)}</td>

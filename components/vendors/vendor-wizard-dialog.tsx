@@ -24,6 +24,8 @@ import {
   GET_PRICE_LISTS,
   CHECK_GSTIN_STATUS,
   LOOKUP_PAN,
+  ADD_VENDOR_BANK_ACCOUNT,
+  REMOVE_VENDOR_BANK_ACCOUNT,
 } from '@/gql/queries'
 import { TagPickerDialog, type VendorTagValue } from './tag-picker-dialog'
 import { BankAccountDialog, type VendorBankAccountValue } from './bank-account-dialog'
@@ -208,12 +210,13 @@ function vendorToForm(v: any): VendorFormState {
     company: v?.misc?.company ?? '',
     slaPolicies: v?.misc?.slaPolicies ?? '',
     bankAccounts: (v?.bankAccounts ?? []).map((b: any) => ({
+      id: b.id,
       accountNumber: b.accountNumber,
       bankId: b.bankId,
       bankName: b.bankName,
       currency: b.currency,
       accountHolder: b.accountHolder,
-      sendMoney: b.sendMoney,
+      sendMoney: !!b.sendMoney,
     })),
     accountReceivable: v?.accounting?.accountReceivable ?? '',
     accountPayable: v?.accounting?.accountPayable ?? '',
@@ -304,9 +307,92 @@ export function VendorWizardDialog({ open, onOpenChange, organizationId, editing
     onError: (e) => toast.error(e.message ?? 'Failed to update vendor'),
   })
 
+  const [addBankAccount, { loading: addingBank }] = useMutation(ADD_VENDOR_BANK_ACCOUNT, {
+    onError: (e) => toast.error(e.message ?? 'Failed to add bank account'),
+  })
+  const [removeBankAccount, { loading: removingBank }] = useMutation(REMOVE_VENDOR_BANK_ACCOUNT, {
+    onError: (e) => toast.error(e.message ?? 'Failed to remove bank account'),
+  })
+
   const setF = <K extends keyof VendorFormState>(key: K, value: VendorFormState[K]) => {
     setForm((p) => ({ ...p, [key]: value }))
     setErrors((p) => ({ ...p, [key]: '' }))
+  }
+
+  /** Persist bank account immediately when editing — "Save account" previously only updated local form state. */
+  const handleBankAccountSave = async (account: VendorBankAccountValue) => {
+    const vendorId = editingVendor?.id
+    if (!vendorId) {
+      setF('bankAccounts', [...form.bankAccounts, account])
+      toast.message('Bank account added — click Save vendor on the last step to persist it.')
+      return
+    }
+    try {
+      const res = await addBankAccount({
+        variables: {
+          vendorId,
+          input: {
+            accountNumber: account.accountNumber,
+            bankId: account.bankId || undefined,
+            currency: account.currency,
+            accountHolder: account.accountHolder,
+            sendMoney: account.sendMoney,
+          },
+        },
+      })
+      const saved = res.data?.addVendorBankAccount?.bankAccounts ?? []
+      setF(
+        'bankAccounts',
+        saved.map((b: any) => ({
+          id: b.id,
+          accountNumber: b.accountNumber,
+          bankId: b.bankId,
+          bankName: b.bankName,
+          currency: b.currency,
+          accountHolder: b.accountHolder,
+          sendMoney: !!b.sendMoney,
+        })),
+      )
+      toast.success(
+        account.sendMoney
+          ? 'Bank account saved on vendor (Send money enabled).'
+          : 'Bank account saved. Enable Send money if you will pay this vendor by bank transfer.',
+      )
+      onSaved()
+    } catch {
+      // onError toast already shown
+    }
+  }
+
+  const handleBankAccountRemove = async (index: number) => {
+    const account = form.bankAccounts[index]
+    const vendorId = editingVendor?.id
+    if (vendorId && account?.id) {
+      try {
+        const res = await removeBankAccount({
+          variables: { vendorId, bankAccountId: account.id },
+        })
+        const saved = res.data?.removeVendorBankAccount?.bankAccounts ?? []
+        setF(
+          'bankAccounts',
+          saved.map((b: any) => ({
+            id: b.id,
+            accountNumber: b.accountNumber,
+            bankId: b.bankId,
+            bankName: b.bankName,
+            currency: b.currency,
+            accountHolder: b.accountHolder,
+            sendMoney: !!b.sendMoney,
+          })),
+        )
+        toast.success('Bank account removed.')
+        onSaved()
+      } catch {
+        // onError toast already shown
+      }
+      return
+    }
+    setF('bankAccounts', form.bankAccounts.filter((_, idx) => idx !== index))
   }
 
   const validateStep = (idx: number): boolean => {
@@ -594,23 +680,29 @@ export function VendorWizardDialog({ open, onOpenChange, organizationId, editing
               <section>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bank Accounts</p>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setBankDialogOpen(true)}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Add bank account
+                  <Button type="button" variant="outline" size="sm" onClick={() => setBankDialogOpen(true)} disabled={addingBank}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> {addingBank ? 'Saving…' : 'Add bank account'}
                   </Button>
                 </div>
                 {form.bankAccounts.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">No bank accounts added.</p>
+                  <p className="text-xs text-muted-foreground italic">
+                    No bank accounts added.
+                    {isEdit
+                      ? ' Add one with “Send money” enabled so Pay Bills can record bank transfers.'
+                      : ' Accounts are kept until you click Save vendor on the last step.'}
+                  </p>
                 ) : (
                   <div className="rounded-md border border-border divide-y divide-border">
                     {form.bankAccounts.map((b, i) => (
-                      <div key={i} className="flex items-center justify-between px-3 py-2 text-xs">
+                      <div key={b.id ?? i} className="flex items-center justify-between px-3 py-2 text-xs">
                         <div>
                           <p className="font-medium">{b.accountNumber} — {b.bankName ?? '—'}</p>
                           <p className="text-muted-foreground">{b.currency} · {b.accountHolder} {b.sendMoney ? '· Send money enabled' : ''}</p>
                         </div>
                         <button
                           type="button"
-                          onClick={() => setF('bankAccounts', form.bankAccounts.filter((_, idx) => idx !== i))}
+                          disabled={removingBank}
+                          onClick={() => void handleBankAccountRemove(i)}
                         >
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </button>
@@ -725,7 +817,7 @@ export function VendorWizardDialog({ open, onOpenChange, organizationId, editing
         onOpenChange={setBankDialogOpen}
         organizationId={organizationId}
         vendorName={form.name || 'Vendor'}
-        onSave={(account) => setF('bankAccounts', [...form.bankAccounts, account])}
+        onSave={(account) => void handleBankAccountSave(account)}
       />
     </Dialog>
   )

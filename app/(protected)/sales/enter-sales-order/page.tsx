@@ -1,13 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, gql } from '@apollo/client'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2, Send, ShoppingCart, FileText, Clock } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { CREATE_SALES_ORDER, GET_SALES_ORDERS, SUBMIT_SALES_ORDER } from '@/gql/queries'
+import { CREATE_SALES_ORDER, GET_SALES_ORDERS, SUBMIT_SALES_ORDER, GET_PROJECTS } from '@/gql/queries'
 import { formatMoney } from '@/lib/format-money'
-import { quotationPartyId } from '@/lib/sales-customer-options'
+import { entityRefLabel } from '@/lib/format-status'
+import {
+  GET_CUSTOMERS_FOR_SALES,
+  mapSalesCustomers,
+  customerDisplayName,
+  quotationPartyId,
+  quotationPartyName,
+} from '@/lib/sales-customer-options'
 import { DataTable, type Column } from '@/components/DataTable'
 import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 
@@ -38,7 +45,7 @@ export default function EnterSalesOrderPage() {
   const orgId = user?.organizationId || ''
 
   const [formData, setFormData] = useState({
-    quotationStatus: 'pending',
+    quotationStatus: 'accepted',
     quotationId: '',
     customerId: '',
     projectId: '',
@@ -59,13 +66,21 @@ export default function EnterSalesOrderPage() {
     skip: !orgId,
     fetchPolicy: 'network-only',
   })
+  const { data: customersData } = useQuery(GET_CUSTOMERS_FOR_SALES, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+  })
+  const { data: projectsData } = useQuery(GET_PROJECTS, {
+    variables: { organizationId: orgId, page: 1, limit: 200 },
+    skip: !orgId,
+  })
 
   const [createSalesOrder, { loading: saving }] = useMutation(CREATE_SALES_ORDER, {
     onCompleted: (res) => {
       setSuccessMsg(`Sales Order "${res.createSalesOrder.seqNo || res.createSalesOrder.id}" created successfully.`)
       setErrorMsg('')
       setFormData({
-        quotationStatus: 'pending',
+        quotationStatus: 'accepted',
         quotationId: '',
         customerId: '',
         projectId: '',
@@ -92,8 +107,54 @@ export default function EnterSalesOrderPage() {
 
   const allQuotations = data?.quotations ?? []
   const orders = orderData?.salesorders ?? []
+  const customers = mapSalesCustomers(customersData?.customers)
+  const projects: any[] = projectsData?.projects ?? []
   const filteredQuotations = allQuotations.filter((q: any) => mapStatus(q.status) === formData.quotationStatus)
   const selectedQuotation = filteredQuotations.find((q: any) => q.id === formData.quotationId)
+
+  const quotationById = useMemo(() => {
+    const map = new Map<string, any>()
+    for (const q of allQuotations) map.set(String(q.id), q)
+    return map
+  }, [allQuotations])
+
+  const projectName = (id: string | null | undefined) => {
+    if (!id) return '—'
+    const p = projects.find((x: any) => String(x.id) === String(id))
+    return p?.name || p?.docNumber || String(id)
+  }
+
+  const resolveQuotationLabel = (quotationId: string | null | undefined) => {
+    if (!quotationId) return '—'
+    const q = quotationById.get(String(quotationId))
+    return entityRefLabel(q?.quotationNumber, q?.subject)
+  }
+
+  const resolveQuotationStatus = (order: any) => {
+    const fromOrder = order?.quotationStatus
+    if (fromOrder) return String(fromOrder)
+    const q = order?.quotationId ? quotationById.get(String(order.quotationId)) : null
+    return q?.status ? String(q.status) : '—'
+  }
+
+  const resolveCustomerLabel = (customerId: string | null | undefined, quotationId?: string | null) => {
+    const fromCustomers = customerDisplayName(customers, customerId)
+    if (fromCustomers && fromCustomers !== '—' && !fromCustomers.startsWith('Unknown')) {
+      return fromCustomers
+    }
+    const q = quotationId ? quotationById.get(String(quotationId)) : null
+    if (q) {
+      const name = quotationPartyName(q)
+      if (name && name !== '—') return name
+    }
+    return fromCustomers
+  }
+
+  const selectedCustomerLabel = selectedQuotation
+    ? quotationPartyName(selectedQuotation)
+    : formData.customerId
+      ? customerDisplayName(customers, formData.customerId)
+      : ''
 
   const stats = {
     total: orders.length,
@@ -160,11 +221,34 @@ export default function EnterSalesOrderPage() {
   }
 
   const columns: Column[] = [
-    { key: 'seqNo', label: 'Seq No', width: '100px', render: (v) => <MonoCell value={v} /> },
-    { key: 'quotationId', label: 'Quotation', width: '140px', render: (v) => <MonoCell value={v} /> },
-    { key: 'quotationStatus', label: 'Quotation Status', width: '120px', render: (v) => <span className="text-sm capitalize">{v || '—'}</span> },
-    { key: 'customerId', label: 'Customer', render: (v) => <MonoCell value={v} /> },
-    { key: 'projectId', label: 'Project', width: '120px', render: (v) => <MonoCell value={v} /> },
+    { key: 'seqNo', label: 'Seq No', width: '130px', render: (v) => <MonoCell value={v} /> },
+    {
+      key: 'quotationId',
+      label: 'Quotation',
+      width: '150px',
+      render: (v) => <MonoCell value={resolveQuotationLabel(v)} />,
+    },
+    {
+      key: 'quotationStatus',
+      label: 'Quotation Status',
+      width: '130px',
+      render: (_v, r) => (
+        <span className="text-sm capitalize">{resolveQuotationStatus(r)}</span>
+      ),
+    },
+    {
+      key: 'customerId',
+      label: 'Customer',
+      render: (v, r) => (
+        <span className="text-sm font-medium">{resolveCustomerLabel(v || r.clientId, r.quotationId)}</span>
+      ),
+    },
+    {
+      key: 'projectId',
+      label: 'Project',
+      width: '140px',
+      render: (v) => <span className="text-sm text-muted-foreground">{projectName(v)}</span>,
+    },
     { key: 'totalAmount', label: 'Amount', width: '120px', align: 'right', render: (v) => <AmountCell value={v} /> },
     { key: 'orderDate', label: 'Order Date', width: '110px', render: (v) => <DateCell value={v} /> },
     { key: 'status', label: 'Status', width: '130px', render: (v) => <ErpBadge status={String(v)} /> },
@@ -198,20 +282,42 @@ export default function EnterSalesOrderPage() {
         </div>
       )}
 
+      <DataTable
+        data={orders}
+        columns={columns}
+        loading={ordersLoading}
+        title="All Sales Orders"
+        description="New orders start as Draft. Use Send for approval to route to the Sales approver."
+        searchable
+        searchPlaceholder="Search sales orders…"
+        emptyMessage="No sales orders created yet."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Send for approval',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (order: any) => submitSalesOrder({ variables: { id: order.id } }),
+            show: (order: any) =>
+              !order.cashSale && ['draft', 'rejected'].includes(String(order.status).toLowerCase()),
+            disabled: submittingOrder,
+          },
+        ]}
+      />
+
       <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
         <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border">
-          <span className="text-sm font-semibold">Sales Order Entry</span>
+          <span className="text-sm font-semibold">Create Sales Order</span>
         </div>
 
         <form onSubmit={handleSubmit} className="p-2 space-y-3">
           <div className="border border-border rounded overflow-x-auto">
-            <div className="grid bg-muted/70 border-b border-border" style={{ gridTemplateColumns: '11rem 18rem 14rem 10rem 11rem 11rem 12rem' }}>
-              {['Quotation Status', 'Quotation', 'Customer ID', 'Project ID', 'Total Amount', 'Order Date', 'Organization ID'].map((h, i) => (
+            <div className="grid bg-muted/70 border-b border-border" style={{ gridTemplateColumns: '11rem 18rem 16rem 10rem 11rem 11rem' }}>
+              {['Quotation Status', 'Quotation', 'Customer', 'Project', 'Total Amount', 'Order Date'].map((h, i) => (
                 <div key={i} className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-r border-border last:border-r-0">{h}</div>
               ))}
             </div>
 
-            <div className="grid min-w-[87rem]" style={{ gridTemplateColumns: '11rem 18rem 14rem 10rem 11rem 11rem 12rem' }}>
+            <div className="grid min-w-[77rem]" style={{ gridTemplateColumns: '11rem 18rem 16rem 10rem 11rem 11rem' }}>
               <div className="border-r border-border px-1 py-1">
                 <select
                   id="quotationStatus"
@@ -240,7 +346,7 @@ export default function EnterSalesOrderPage() {
                   </option>
                   {filteredQuotations.map((q: any) => (
                     <option key={q.id} value={q.id}>
-                      {q.quotationNumber} - {formatMoney(q.totalAmount || 0)}
+                      {q.quotationNumber} — {quotationPartyName(q)} — {formatMoney(q.totalAmount || 0)}
                     </option>
                   ))}
                 </select>
@@ -248,11 +354,11 @@ export default function EnterSalesOrderPage() {
 
               <div className="border-r border-border px-1 py-1">
                 <input
-                  id="customerId"
-                  name="customerId"
+                  id="customerDisplay"
                   type="text"
-                  value={formData.customerId}
+                  value={selectedCustomerLabel}
                   readOnly
+                  placeholder="Auto from quotation"
                   className="w-full h-8 px-2 border border-border rounded text-xs bg-muted text-muted-foreground"
                 />
               </div>
@@ -281,7 +387,7 @@ export default function EnterSalesOrderPage() {
                 />
               </div>
 
-              <div className="border-r border-border px-1 py-1">
+              <div className="px-1 py-1">
                 <input
                   id="orderDate"
                   name="orderDate"
@@ -290,17 +396,6 @@ export default function EnterSalesOrderPage() {
                   onChange={handleChange}
                   required
                   className="w-full h-8 px-2 border border-border rounded text-xs bg-background outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-
-              <div className="px-1 py-1">
-                <input
-                  id="organizationId"
-                  name="organizationId"
-                  type="text"
-                  value={formData.organizationId}
-                  readOnly
-                  className="w-full h-8 px-2 border border-border rounded text-xs bg-muted text-muted-foreground"
                 />
               </div>
             </div>
@@ -319,7 +414,7 @@ export default function EnterSalesOrderPage() {
               variant="outline"
               size="sm"
               onClick={() => setFormData({
-                quotationStatus: 'pending',
+                quotationStatus: 'accepted',
                 quotationId: '',
                 customerId: '',
                 projectId: '',
@@ -333,28 +428,6 @@ export default function EnterSalesOrderPage() {
           </div>
         </form>
       </div>
-
-      <DataTable
-        data={orders}
-        columns={columns}
-        loading={ordersLoading}
-        title="All Sales Orders"
-        description="New orders start as Draft. Use Send for approval to route to the Sales approver."
-        searchable
-        searchPlaceholder="Search sales orders…"
-        emptyMessage="No sales orders created yet."
-        pageSize={25}
-        actions={[
-          {
-            label: 'Send for approval',
-            icon: <Send className="h-3.5 w-3.5" />,
-            onClick: (order: any) => submitSalesOrder({ variables: { id: order.id } }),
-            show: (order: any) =>
-              !order.cashSale && ['draft', 'rejected'].includes(String(order.status).toLowerCase()),
-            disabled: submittingOrder,
-          },
-        ]}
-      />
     </div>
   )
 }

@@ -314,6 +314,7 @@ function entityLabel(entityType: string) {
     VENDOR: 'Vendor',
     PROJECT: 'Project',
     SALES_RETURN: 'Sales return',
+    RETURN_AUTHORIZATION: 'Return authorization',
     DELIVERY_CHALLAN: 'Delivery challan',
     GRN: 'GRN',
     MATERIAL_RECEIPT: 'Material receipt',
@@ -367,17 +368,35 @@ export function ErpAppHeader({ onMenuClick, hideMobileMenu }: ErpAppHeaderProps)
     loading: pendingAssigneeLoading,
     refetch: refetchPendingAssignee,
   } = useQuery(MY_PENDING_APPROVAL_REQUESTS, {
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 45_000,
+    fetchPolicy: 'network-only',
+    pollInterval: 15_000,
     skip: !user?.id,
   })
 
   const { data, loading, refetch } = useQuery(MY_APPROVAL_REQUESTS, {
     variables: { role: 'ANY', limit: 200 },
     fetchPolicy: 'cache-and-network',
-    pollInterval: 45_000,
+    pollInterval: 15_000,
     skip: !user?.id,
   })
+
+  useEffect(() => {
+    const refreshApprovals = () => {
+      void refetchPendingAssignee()
+      void refetch()
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshApprovals()
+    }
+    window.addEventListener('daxor:approvals-changed', refreshApprovals)
+    window.addEventListener('focus', refreshApprovals)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('daxor:approvals-changed', refreshApprovals)
+      window.removeEventListener('focus', refreshApprovals)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [refetch, refetchPendingAssignee])
 
   type ApprovalRow = {
     id: string

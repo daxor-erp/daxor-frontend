@@ -89,7 +89,11 @@ export default function TimesheetsPage() {
   const summary = summaryQ.data?.timesheetWeeklySummary
   const projects: any[] = projectsQ.data?.projects ?? []
   const projectOptions = useMemo(
-    () => [{ value: '', label: '— No project —' }, ...projects.map((p: any) => ({ value: p.id, label: p.name ?? p.projectName ?? p.id }))],
+    () =>
+      projects.map((p: any) => ({
+        value: String(p.id),
+        label: String(p.name ?? p.projectName ?? p.code ?? p.id),
+      })),
     [projects],
   )
 
@@ -112,7 +116,7 @@ export default function TimesheetsPage() {
 
   const columns: LineColumn<TimesheetRow>[] = [
     { key: 'entryDate', header: 'Date', type: 'date', minWidth: 130 },
-    { key: 'projectId', header: 'Project', type: 'select', options: projectOptions, minWidth: 160 },
+    { key: 'projectId', header: 'Project', type: 'select', options: projectOptions, placeholder: 'No project', minWidth: 160 },
     { key: 'taskName', header: 'Task', minWidth: 180, placeholder: 'What did you work on?' },
     { key: 'hours', header: 'Hours', type: 'number', align: 'right', minWidth: 80 },
     {
@@ -340,9 +344,11 @@ export default function TimesheetsPage() {
 function emptyRow(): TimesheetRow {
   return {
     entryDate: new Date().toISOString().slice(0, 10),
+    projectId: '',
+    taskName: '',
     hours: 8,
-    billable: false,
-    billRate: 0,
-    costRate: 0,
+    billable: true,
+    billRate: 500,
+    costRate: 300,
   }
 }

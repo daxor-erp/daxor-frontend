@@ -191,7 +191,7 @@ export const SelectFloating = React.forwardRef<HTMLDivElement, SelectFloatingPro
               'absolute left-3 transition-all duration-200 pointer-events-none z-10',
               isOpen || selectedValue || placeholder
                 ? '-top-2 text-[10px] px-1 py-px'
-                : 'top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground',
+                : 'top-1/2 -translate-y-1/2 text-[10px] text-foreground/65',
               error ? 'text-destructive' : 'text-primary',
             )}
             style={
@@ -208,7 +208,8 @@ export const SelectFloating = React.forwardRef<HTMLDivElement, SelectFloatingPro
           <div
             style={style}
             className={cn(
-              'flex items-center h-10 w-full rounded-lg border border-border bg-card pl-3 pr-8 text-xs',
+              // min-h-10 keeps floating-label selects readable when callers pass h-7
+              'flex items-center h-10 min-h-10 w-full rounded-lg border border-border bg-card pl-3 pr-8 text-xs leading-normal',
               disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
               error ? 'border-destructive' : '',
               className,
