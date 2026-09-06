@@ -219,16 +219,22 @@ export default function DeliveryOrdersPage() {
         pageSize={25}
         actions={[
           {
+            label: 'Mark Ready',
+            icon: <Package className="h-3.5 w-3.5" />,
+            onClick: (r: any) => transitionMutation({ variables: { id: r.id, status: 'READY' } }),
+            show: (r: any) => String(r.status).toUpperCase() === 'DRAFT',
+          },
+          {
             label: 'Dispatch',
             icon: <Send className="h-3.5 w-3.5" />,
             onClick: (r: any) => transitionMutation({ variables: { id: r.id, status: 'DISPATCHED' } }),
-            show: (r: any) => r.status === 'READY',
+            show: (r: any) => String(r.status).toUpperCase() === 'READY',
           },
           {
             label: 'Mark Delivered',
             icon: <CheckCircle2 className="h-3.5 w-3.5" />,
             onClick: (r: any) => transitionMutation({ variables: { id: r.id, status: 'DELIVERED' } }),
-            show: (r: any) => ['DISPATCHED', 'IN_TRANSIT'].includes(r.status),
+            show: (r: any) => ['DISPATCHED', 'IN_TRANSIT'].includes(String(r.status).toUpperCase()),
           },
           {
             label: 'Cancel',
@@ -238,7 +244,7 @@ export default function DeliveryOrdersPage() {
                 cancelMutation({ variables: { id: r.id } })
               }
             },
-            show: (r: any) => !['DELIVERED', 'CANCELLED'].includes(r.status),
+            show: (r: any) => !['DELIVERED', 'CANCELLED'].includes(String(r.status).toUpperCase()),
           },
           {
             label: 'Delete',

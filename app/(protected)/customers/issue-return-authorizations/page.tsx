@@ -74,12 +74,17 @@ export default function IssueReturnAuthorizationsPage() {
   const [createRa, { loading: saving }] = useMutation(CREATE_RETURN_AUTHORIZATION, {
     onCompleted: (res) => {
       const ra = res.createReturnAuthorization
-      setSuccess(`Created ${ra?.raNumber ?? 'RMA'} — pending approval.`)
+      setSuccess(
+        `Created ${ra?.raNumber ?? 'RMA'} — sent to the Sales approver inbox. They do not need to log out to see it.`,
+      )
       setReason('')
       setNotes('')
       setSalesOrderId('')
       setLines([newLine(), newLine()])
       setError('')
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('daxor:approvals-changed'))
+      }
     },
     onError: (e) => setError(e.message),
   })
@@ -176,7 +181,8 @@ export default function IssueReturnAuthorizationsPage() {
           Issue Return Authorizations
         </h1>
         <p className="text-gray-500 mt-1">
-          Create an RMA request (pending). Use <strong>Approve Return Authorizations</strong> to approve or reject.
+          Create an RMA request. It is routed to the <strong>Sales</strong> module approver (Approvals inbox).
+          Use <strong>Approve Return Authorizations</strong> or the header Approvals inbox to approve or reject.
         </p>
       </div>
 

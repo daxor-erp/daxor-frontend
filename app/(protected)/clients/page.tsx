@@ -262,22 +262,22 @@ export default function ClientsPage() {
 
           <div className="p-3 space-y-3">
             <div className="grid grid-cols-4 gap-3">
-              <InputFloating label="Name *" value={formData.name} onChange={(e) => setF('name', e.target.value)} error={errors.name} className="h-7 text-xs" />
-              <InputFloating label="Email *" type="email" value={formData.email} onChange={(e) => setF('email', e.target.value)} error={errors.email} className="h-7 text-xs" />
-              <InputFloating label="Phone" value={formData.phone} onChange={(e) => setF('phone', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="Company" value={formData.company} onChange={(e) => setF('company', e.target.value)} className="h-7 text-xs" />
+              <InputFloating label="Name *" value={formData.name} onChange={(e) => setF('name', e.target.value)} error={errors.name} />
+              <InputFloating label="Email *" type="email" value={formData.email} onChange={(e) => setF('email', e.target.value)} error={errors.email} />
+              <InputFloating label="Phone" value={formData.phone} onChange={(e) => setF('phone', e.target.value)} />
+              <InputFloating label="Company" value={formData.company} onChange={(e) => setF('company', e.target.value)} />
             </div>
 
             <div className="grid grid-cols-4 gap-3">
-              <InputFloating label="City" value={formData.city} onChange={(e) => setF('city', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="State" value={formData.state} onChange={(e) => setF('state', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="Country" value={formData.country} onChange={(e) => setF('country', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="Zip Code" value={formData.zipCode} onChange={(e) => setF('zipCode', e.target.value)} className="h-7 text-xs" />
+              <InputFloating label="City" value={formData.city} onChange={(e) => setF('city', e.target.value)} />
+              <InputFloating label="State" value={formData.state} onChange={(e) => setF('state', e.target.value)} />
+              <InputFloating label="Country" value={formData.country} onChange={(e) => setF('country', e.target.value)} />
+              <InputFloating label="Zip Code" value={formData.zipCode} onChange={(e) => setF('zipCode', e.target.value)} />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <InputFloating label="Website" value={formData.website} onChange={(e) => setF('website', e.target.value)} className="h-7 text-xs" />
-              <InputFloating label="Industry" value={formData.industry} onChange={(e) => setF('industry', e.target.value)} className="h-7 text-xs" />
+              <InputFloating label="Website" value={formData.website} onChange={(e) => setF('website', e.target.value)} />
+              <InputFloating label="Industry" value={formData.industry} onChange={(e) => setF('industry', e.target.value)} />
               <SelectFloating
                 label="Status"
                 value={formData.status}
@@ -288,7 +288,6 @@ export default function ClientsPage() {
                   { value: 'active', label: 'Active' },
                   { value: 'inactive', label: 'Inactive' },
                 ]}
-                className="h-7 text-xs"
               />
             </div>
 

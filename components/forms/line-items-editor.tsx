@@ -364,14 +364,15 @@ export function LineItemsEditor<TRow extends Record<string, any> = Record<string
                             )}
                           >
                             <option value="">{col.placeholder ?? '—'}</option>
-                            {(col.options ?? []).map((opt) => {
-                              const o = typeof opt === 'string' ? { value: opt, label: opt } : opt
-                              return (
+                            {(col.options ?? [])
+                              .map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt))
+                              // Avoid duplicate empty values (breaks native <select> selection)
+                              .filter((o) => o.value !== '')
+                              .map((o) => (
                                 <option key={o.value} value={o.value}>
                                   {o.label}
                                 </option>
-                              )
-                            })}
+                              ))}
                           </select>
                         ) : (
                           <input

@@ -2789,6 +2789,7 @@ export const GET_STOCK_MOVEMENTS = gql`
     stockMovements(organizationId: $organizationId, itemId: $itemId) {
       id
       itemId
+      itemName
       movementType
       fromLocation
       toLocation

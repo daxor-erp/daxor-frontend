@@ -56,6 +56,7 @@ function entityLabel(entityType: string) {
     VENDOR: 'Vendor',
     PROJECT: 'Project',
     SALES_RETURN: 'Sales return',
+    RETURN_AUTHORIZATION: 'Return authorization',
     DELIVERY_CHALLAN: 'Delivery challan',
     GRN: 'GRN',
     MATERIAL_RECEIPT: 'Material receipt',

@@ -42,8 +42,8 @@ export const InputFloating = React.forwardRef<HTMLInputElement & HTMLTextAreaEle
             className={cn(
               "absolute left-3 transition-all duration-200 pointer-events-none z-10",
               showFloatingLabel
-                ? "-top-2 text-[10px] px-1 py-px text-primary"
-                : "top-2.5 text-xs text-muted-foreground"
+                ? "-top-2 text-[10px] px-1 py-px text-primary font-medium"
+                : "top-2.5 text-xs text-foreground/65"
             )}
             style={showFloatingLabel ? { backgroundColor: 'hsl(var(--card))' } : undefined}
             htmlFor={props.id}
@@ -54,7 +54,7 @@ export const InputFloating = React.forwardRef<HTMLInputElement & HTMLTextAreaEle
 
         {/* Icon */}
         {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/55 pointer-events-none">
             {icon}
           </div>
         )}
@@ -62,7 +62,7 @@ export const InputFloating = React.forwardRef<HTMLInputElement & HTMLTextAreaEle
         {/* Static placeholder-style label next to icon */}
         {iconWithLabel && !isFocused && !hasValue && (
           <span
-            className="absolute left-10 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none select-none"
+            className="absolute left-10 top-1/2 -translate-y-1/2 text-[10px] text-foreground/55 pointer-events-none select-none"
           >
             {label}
           </span>
@@ -71,7 +71,7 @@ export const InputFloating = React.forwardRef<HTMLInputElement & HTMLTextAreaEle
         {multiline ? (
           <textarea
             className={cn(
-              "h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-xs leading-6 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-y-auto",
+              "h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-xs leading-6 text-foreground placeholder:text-foreground/45 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-y-auto",
               icon ? "pl-10" : "",
               error ? "border-destructive" : "",
               className
@@ -91,7 +91,8 @@ export const InputFloating = React.forwardRef<HTMLInputElement & HTMLTextAreaEle
         ) : (
           <input
             className={cn(
-              "h-10 w-full rounded-lg border border-border bg-card px-3 text-xs leading-10 ring-offset-white file:border-0 file:bg-transparent file:text-xs file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50",
+              // min-h-10 prevents callers' h-7 overrides from clipping text under the floating label
+              "h-10 min-h-10 w-full rounded-lg border border-border bg-card px-3 text-xs leading-normal text-foreground placeholder:text-foreground/45 ring-offset-white file:border-0 file:bg-transparent file:text-xs file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light]",
               icon ? "pl-10" : "",
               error ? "border-destructive" : "",
               className

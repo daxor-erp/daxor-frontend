@@ -18,6 +18,8 @@ import { toast } from 'sonner'
 import { Landmark } from 'lucide-react'
 
 export type VendorBankAccountValue = {
+  /** Present after the account has been persisted on the vendor. */
+  id?: string
   accountNumber: string
   bankId?: string | null
   bankName?: string | null
@@ -42,7 +44,8 @@ export function BankAccountDialog({ open, onOpenChange, organizationId, vendorNa
   const [bankId, setBankId] = useState('')
   const [currency, setCurrency] = useState('INR')
   const [accountHolder, setAccountHolder] = useState(vendorName)
-  const [sendMoney, setSendMoney] = useState(false)
+  // Default on — Pay Bills requires at least one account with Send Money enabled.
+  const [sendMoney, setSendMoney] = useState(true)
   const [creatingBank, setCreatingBank] = useState(false)
 
   // Nested "Create Bank" master-record fields
@@ -74,7 +77,7 @@ export function BankAccountDialog({ open, onOpenChange, organizationId, vendorNa
     setBankId('')
     setCurrency('INR')
     setAccountHolder(vendorName)
-    setSendMoney(false)
+    setSendMoney(true)
     setCreatingBank(false)
     setBankName('')
     setBic('')

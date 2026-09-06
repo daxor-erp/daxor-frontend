@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { RotateCcw, Plus, CheckCircle2, CheckCircle, XCircle, User } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { GET_USERS } from '@/gql/queries'
+import { GET_EMPLOYEE_MASTERS } from '@/gql/queries'
 import {
   GET_LEAVE_TYPES,
   GET_LEAVE_APPLICATIONS,
@@ -59,9 +59,10 @@ export default function LeaveReinstatementPage() {
     leaveApplicationId: '',
   })
 
-  const { data: usersData } = useQuery(GET_USERS, {
-    variables: { organizationId: orgId, page: 1, limit: 500 },
+  const { data: empData } = useQuery(GET_EMPLOYEE_MASTERS, {
+    variables: { organizationId: orgId, status: null },
     skip: !orgId,
+    fetchPolicy: 'cache-and-network',
   })
   const { data: ltData } = useQuery(GET_LEAVE_TYPES, {
     variables: { organizationId: orgId, activeOnly: true },
@@ -126,18 +127,43 @@ export default function LeaveReinstatementPage() {
     onError: (e) => setBanner({ ok: false, text: e.message }),
   })
 
-  const users = usersData?.usersByOrganization?.users ?? []
+  const employees = (empData?.employeeMasters ?? []) as Array<{
+    id: string
+    userId?: string | null
+    employeeCode?: string | null
+    firstName?: string | null
+    lastName?: string | null
+  }>
   const leaveTypes = ltData?.leaveTypes ?? []
   const approvedApps = appsData?.leaveApplications ?? []
   const rows = data?.leaveReinstatements ?? []
 
+  const employeeOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = []
+    const seen = new Set<string>()
+    for (const e of employees) {
+      const uid = e.userId ? String(e.userId) : ''
+      if (!uid || seen.has(uid)) continue
+      seen.add(uid)
+      const code = (e.employeeCode || '').trim()
+      const name = `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim()
+      opts.push({ value: uid, label: code ? `${code} — ${name || uid}` : name || uid })
+    }
+    if (user?.id && !seen.has(user.id)) {
+      const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
+      opts.unshift({
+        value: user.id,
+        label: name ? `${name} (current user)` : `${user.email || user.id} (current user)`,
+      })
+    }
+    return opts
+  }, [employees, user])
+
   const userMap = useMemo(() => {
     const m = new Map<string, string>()
-    users.forEach((u: { id: string; firstName: string; lastName: string }) => {
-      m.set(u.id, `${u.firstName} ${u.lastName}`.trim())
-    })
+    for (const o of employeeOptions) m.set(o.value, o.label)
     return m
-  }, [users])
+  }, [employeeOptions])
   const ltMap = useMemo(() => {
     const m = new Map<string, string>()
     leaveTypes.forEach((t: { id: string; code: string; name: string }) => m.set(t.id, `${t.code} — ${t.name}`))
@@ -246,7 +272,7 @@ export default function LeaveReinstatementPage() {
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                        {userMap.get(r.userId) ?? r.userId}
+                        {userMap.get(String(r.userId)) ?? r.userId}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">
@@ -312,18 +338,24 @@ export default function LeaveReinstatementPage() {
             <div>
               <Label className="text-xs">Employee</Label>
               <Select
-                value={form.userId}
+                value={form.userId || undefined}
                 onValueChange={(v) => setForm((f) => ({ ...f, userId: v, leaveApplicationId: '' }))}
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select" />
+                  <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
-                <SelectContent>
-                  {users.map((u: { id: string; firstName: string; lastName: string }) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.firstName} {u.lastName}
+                <SelectContent position="popper" className="z-[200]">
+                  {employeeOptions.length === 0 ? (
+                    <SelectItem value="__none__" disabled>
+                      No employees available
                     </SelectItem>
-                  ))}
+                  ) : (
+                    employeeOptions.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

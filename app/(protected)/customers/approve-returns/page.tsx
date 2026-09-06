@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { DataTable, type Column } from '@/components/DataTable'
@@ -26,17 +27,37 @@ export default function ApproveReturnAuthorizationsPage() {
   const { data, loading, refetch: refetchPending } = useQuery(GET_RETURN_AUTHORIZATIONS, {
     variables: { organizationId: orgId, status: 'pending', page: 1, limit: 200 },
     skip: !orgId,
+    fetchPolicy: 'network-only',
+    pollInterval: 15_000,
   })
 
   const { data: allData, refetch: refetchAll } = useQuery(GET_RETURN_AUTHORIZATIONS, {
     variables: { organizationId: orgId, page: 1, limit: 500 },
     skip: !orgId,
+    fetchPolicy: 'network-only',
+    pollInterval: 15_000,
   })
 
   const refresh = () => {
     void refetchPending()
     void refetchAll()
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('daxor:approvals-changed'))
+    }
   }
+
+  useEffect(() => {
+    const onFocus = () => {
+      void refetchPending()
+      void refetchAll()
+    }
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('daxor:approvals-changed', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('daxor:approvals-changed', onFocus)
+    }
+  }, [refetchPending, refetchAll])
 
   const [approveRa, { loading: approving }] = useMutation(APPROVE_RETURN_AUTHORIZATION, {
     onCompleted: refresh,
