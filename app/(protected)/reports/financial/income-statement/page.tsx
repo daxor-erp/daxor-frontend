@@ -1,11 +1,11 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { GET_INCOME_STATEMENT } from '@/gql/queries'
-import { ReportShell, type ReportPeriod } from '@/components/reports/report-shell'
+import { ReportShell, type ReportPeriod, periodQueryDates, PERIOD_LABELS } from '@/components/reports/report-shell'
 import { formatMoney } from '@/lib/format-money'
 import { pdfMoney } from '@/lib/pdf-download'
 import { StatementLinesTable, type StatementLine } from '@/lib/financial-statement-lines'
@@ -13,12 +13,13 @@ import { StatementLinesTable, type StatementLine } from '@/lib/financial-stateme
 export default function IncomeStatementPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId ?? ''
-  const [period, setPeriod] = useState<ReportPeriod>('this_year')
+  const [period, setPeriod] = useState<ReportPeriod>('this_month')
+  const dates = useMemo(() => periodQueryDates(period), [period])
 
   const { data, loading, error, refetch } = useQuery(GET_INCOME_STATEMENT, {
-    variables: { organizationId: orgId },
+    variables: { organizationId: orgId, ...dates },
     skip: !orgId,
-    fetchPolicy: 'cache-and-network',
+    fetchPolicy: 'network-only',
   })
 
   const report = data?.incomeStatement
@@ -52,10 +53,11 @@ export default function IncomeStatementPage() {
       loading={loading}
       pdfBody={buildPdf}
       pdfFilename="income-statement"
+      pdfSubtitle={PERIOD_LABELS[period]}
     >
       <p className="text-xs text-muted-foreground mb-4">
-        Derived from the trial balance (all posted journals) — revenue, COGS, and expense accounts only.
-        Period filter applies to display only until date-scoped TB is added.
+        Derived from posted journals with entry date in the selected period ({PERIOD_LABELS[period]}) —
+        revenue, COGS, and expense accounts only.
       </p>
       {error && (
         <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">

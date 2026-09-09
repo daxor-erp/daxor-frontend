@@ -2,7 +2,12 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_SALES_ORDERS, CREATE_CASH_SALE, GET_ORGANIZATIONS, GET_ITEMS, GET_PROJECTS } from '@/gql/queries'
+import { GET_SALES_ORDERS, CREATE_CASH_SALE, GET_ITEMS, GET_PROJECTS } from '@/gql/queries'
+import {
+  GET_CUSTOMERS_FOR_SALES,
+  mapSalesCustomers,
+  customerDisplayName,
+} from '@/lib/sales-customer-options'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,27 +15,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Trash2, ShoppingBag, DollarSign, Receipt, TrendingUp } from 'lucide-react'
+import { Plus, Trash2, ShoppingBag, DollarSign, TrendingUp } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney } from '@/lib/format-money'
-import { lookupDisplayName } from '@/lib/format-status'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatDate } from '@/lib/format-date'
+import { toast } from 'sonner'
 
 const today = () => new Date().toISOString().split('T')[0]
 
 interface LineItem { description: string; qty: string; unitPrice: string }
 const emptyLine = (): LineItem => ({ description: '', qty: '', unitPrice: '' })
-
-const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  draft:     { label: 'Draft',     cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  active:    { label: 'Active',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  completed: { label: 'Completed', cls: 'bg-primary/10 text-primary border-primary/20' },
-  cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 border-red-200' },
-}
 
 export default function EnterCashSalesPage() {
   const { user } = useAuth()
@@ -40,7 +37,10 @@ export default function EnterCashSalesPage() {
     variables: { organizationId: orgId, page: 1, limit: 100, cashSale: true, status: 'active' },
     skip: !orgId,
   })
-  const { data: orgsData } = useQuery(GET_ORGANIZATIONS, { variables: { page: 1, limit: 200 } })
+  const { data: customersData } = useQuery(GET_CUSTOMERS_FOR_SALES, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+  })
   const { data: itemsData } = useQuery(GET_ITEMS, {
     variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
@@ -50,8 +50,14 @@ export default function EnterCashSalesPage() {
     skip: !orgId,
   })
 
-  const [createCashSale, { loading: saving, error: saveError }] = useMutation(CREATE_CASH_SALE, {
-    onCompleted: () => { setOpen(false); reset(); refetch() },
+  const [createCashSale, { loading: saving }] = useMutation(CREATE_CASH_SALE, {
+    onCompleted: () => {
+      setOpen(false)
+      reset()
+      refetch()
+      toast.success('Cash sale recorded')
+    },
+    onError: (e) => toast.error(e.message),
   })
 
   const [open, setOpen] = useState(false)
@@ -59,10 +65,13 @@ export default function EnterCashSalesPage() {
   const [lines, setLines] = useState<LineItem[]>([emptyLine()])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const orgs = orgsData?.organizations ?? []
+  const customers = mapSalesCustomers(customersData?.customers)
   const items = itemsData?.items ?? []
-  const projects = projectsData?.projects ?? []
-  // Cash sales = sales orders with status active (immediate)
+  const allProjects = projectsData?.projects ?? []
+  const projects = allProjects.filter((p: any) => {
+    const ap = String(p.orgApprovalStatus ?? 'approved')
+    return ap === 'approved'
+  })
   const cashSales = (soData?.salesorders ?? []).filter((s: any) => s.status === 'active')
 
   const subtotal = lines.reduce((s, l) => s + (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0), 0)
@@ -74,13 +83,19 @@ export default function EnterCashSalesPage() {
   }
 
   const updateLine = (i: number, f: keyof LineItem, v: string) =>
-    setLines(p => p.map((l, idx) => idx === i ? { ...l, [f]: v } : l))
+    setLines((p) => p.map((l, idx) => (idx === i ? { ...l, [f]: v } : l)))
 
   const pickItem = (i: number, itemId: string) => {
     const item = items.find((it: any) => it.id === itemId)
-    if (item) setLines(p => p.map((l, idx) => idx === i
-      ? { ...l, description: item.name, unitPrice: String(item.rate ?? '') }
-      : l))
+    if (item) {
+      setLines((p) =>
+        p.map((l, idx) =>
+          idx === i
+            ? { ...l, description: item.name, unitPrice: String(item.rate ?? item.salesPrice ?? '') }
+            : l,
+        ),
+      )
+    }
   }
 
   const validate = () => {
@@ -99,6 +114,10 @@ export default function EnterCashSalesPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
+    if (!(subtotal > 0)) {
+      toast.error('Total must be greater than zero')
+      return
+    }
     createCashSale({
       variables: {
         input: {
@@ -119,25 +138,29 @@ export default function EnterCashSalesPage() {
     today: cashSales.filter((o: any) => o.orderDate?.startsWith(today())).length,
   }
 
+  const customerNameOnly = (id: string) =>
+    customerDisplayName(customers, id).replace(/\s*\([^)]*\)\s*$/, '')
+
   return (
-    
     <div className="erp-shell">
       <div className="flex justify-between items-center mb-5">
         <div>
           <h1 className="erp-page-title">Enter Cash Sales</h1>
-          <p className="erp-page-desc">Record immediate cash sale transactions</p>
+          <p className="erp-page-desc">Record immediate cash sale transactions (no approval workflow)</p>
         </div>
       </div>
-      {/* Stats */}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Total Sales',   value: stats.total,   icon: ShoppingBag, color: 'text-primary',    bg: 'bg-primary/10',    fmt: (v: number) => String(v) },
-          { label: "Today's Sales", value: stats.today,   icon: TrendingUp,  color: 'text-emerald-600', bg: 'bg-emerald-50', fmt: (v: number) => String(v) },
-          { label: 'Total Revenue', value: stats.revenue, icon: DollarSign,  color: 'text-primary',  bg: 'bg-primary/10',  fmt: (v: number) => formatMoney(v) },
+          { label: 'Total Sales', value: stats.total, icon: ShoppingBag, color: 'text-primary', bg: 'bg-primary/10', fmt: (v: number) => String(v) },
+          { label: "Today's Sales", value: stats.today, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', fmt: (v: number) => String(v) },
+          { label: 'Total Revenue', value: stats.revenue, icon: DollarSign, color: 'text-primary', bg: 'bg-primary/10', fmt: (v: number) => formatMoney(v) },
         ].map(({ label, value, icon: Icon, color, bg, fmt }) => (
           <Card key={label} className="border shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className={`${bg} p-2 rounded-lg`}><Icon className={`h-5 w-5 ${color}`} /></div>
+              <div className={`${bg} p-2 rounded-lg`}>
+                <Icon className={`h-5 w-5 ${color}`} />
+              </div>
               <div>
                 <p className="text-xs text-gray-500">{label}</p>
                 <p className="erp-page-title">{fmt(value)}</p>
@@ -147,11 +170,14 @@ export default function EnterCashSalesPage() {
         ))}
       </div>
 
-      {/* Table */}
       <Card className="shadow-sm border">
         <CardHeader className="flex flex-row items-center justify-between py-4 px-6 border-b">
           <CardTitle className="text-base font-semibold text-gray-800">Cash Sales</CardTitle>
-          <Button size="sm" onClick={() => setOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button
+            size="sm"
+            onClick={() => setOpen(true)}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
             <Plus className="mr-1.5 h-4 w-4" /> New Cash Sale
           </Button>
         </CardHeader>
@@ -167,24 +193,29 @@ export default function EnterCashSalesPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50 hover:bg-gray-50">
-                  {['Ref #', 'Customer', 'Project', 'Sale Date', 'Amount', 'Status'].map(h => (
-                    <TableHead key={h} className="text-xs font-semibold text-gray-500 uppercase tracking-wide first:pl-6">{h}</TableHead>
+                  {['Ref #', 'Customer', 'Project', 'Sale Date', 'Amount', 'Status'].map((h) => (
+                    <TableHead key={h} className="text-xs font-semibold text-gray-500 uppercase tracking-wide first:pl-6">
+                      {h}
+                    </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {cashSales.map((s: any) => {
-                  const org = orgs.find((o: any) => o.id === s.customerId)
-                  const proj = projects.find((p: any) => p.id === s.projectId)
+                  const proj = allProjects.find((p: any) => p.id === s.projectId)
                   return (
                     <TableRow key={s.id} className="hover:bg-gray-50 transition-colors">
                       <TableCell className="pl-6 font-mono text-xs text-gray-400">{s.seqNo || '—'}</TableCell>
                       <TableCell className="text-sm font-medium text-gray-800">
-                        {lookupDisplayName(org?.name, s.customerId, 'Unknown customer')}
+                        {customerNameOnly(s.customerId)}
                       </TableCell>
                       <TableCell className="text-sm text-gray-500">{proj?.name ?? '—'}</TableCell>
-                      <TableCell className="text-sm text-gray-600">{s.orderDate ? formatDate(s.orderDate) : '—'}</TableCell>
-                      <TableCell className="text-sm font-semibold text-gray-800">{formatMoney(s.totalAmount)}</TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {s.orderDate ? formatDate(s.orderDate) : '—'}
+                      </TableCell>
+                      <TableCell className="text-sm font-semibold text-gray-800">
+                        {formatMoney(s.totalAmount)}
+                      </TableCell>
                       <TableCell>
                         <StatusBadge status={s.status} />
                       </TableCell>
@@ -197,47 +228,79 @@ export default function EnterCashSalesPage() {
         </CardContent>
       </Card>
 
-      {/* Dialog */}
-      <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) reset() }}>
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          setOpen(v)
+          if (!v) reset()
+        }}
+      >
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
-              <div className="bg-primary/10 p-1.5 rounded-md"><ShoppingBag className="h-4 w-4 text-primary" /></div>
+              <div className="bg-primary/10 p-1.5 rounded-md">
+                <ShoppingBag className="h-4 w-4 text-primary" />
+              </div>
               New Cash Sale
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-5 pt-1">
             <div className="grid grid-cols-2 gap-4">
-              {/* Customer */}
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Customer <span className="text-red-500">*</span></Label>
-                <Select value={form.customerId} onValueChange={v => { setForm(p => ({ ...p, customerId: v })); setErrors(p => ({ ...p, customerId: '' })) }}>
+                <Label className="text-sm font-medium">
+                  Customer <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={form.customerId}
+                  onValueChange={(v) => {
+                    setForm((p) => ({ ...p, customerId: v }))
+                    setErrors((p) => ({ ...p, customerId: '' }))
+                  }}
+                >
                   <SelectTrigger className={errors.customerId ? 'border-red-400' : ''}>
                     <SelectValue placeholder="Select customer…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {orgs.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    {customers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {errors.customerId && <p className="text-xs text-red-500">{errors.customerId}</p>}
               </div>
 
-              {/* Sale Date */}
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Sale Date <span className="text-red-500">*</span></Label>
-                <Input type="date" value={form.saleDate}
-                  onChange={e => { setForm(p => ({ ...p, saleDate: e.target.value })); setErrors(p => ({ ...p, saleDate: '' })) }}
-                  className={errors.saleDate ? 'border-red-400' : ''} />
+                <Label className="text-sm font-medium">
+                  Sale Date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="date"
+                  value={form.saleDate}
+                  onChange={(e) => {
+                    setForm((p) => ({ ...p, saleDate: e.target.value }))
+                    setErrors((p) => ({ ...p, saleDate: '' }))
+                  }}
+                  className={errors.saleDate ? 'border-red-400' : ''}
+                />
                 {errors.saleDate && <p className="text-xs text-red-500">{errors.saleDate}</p>}
               </div>
 
-              {/* Project */}
               <div className="space-y-1.5 col-span-2">
-                <Label className="text-sm font-medium">Project <span className="text-gray-400 font-normal">(optional)</span></Label>
-                <Select value={form.projectId} onValueChange={v => setForm(p => ({ ...p, projectId: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Link to project…" /></SelectTrigger>
+                <Label className="text-sm font-medium">
+                  Project <span className="text-gray-400 font-normal">(optional)</span>
+                </Label>
+                <Select value={form.projectId} onValueChange={(v) => setForm((p) => ({ ...p, projectId: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Link to project…" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {projects.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    {projects.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -245,11 +308,16 @@ export default function EnterCashSalesPage() {
 
             <Separator />
 
-            {/* Line items */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-semibold text-gray-700">Items</p>
-                <Button type="button" variant="outline" size="sm" onClick={() => setLines(p => [...p, emptyLine()])} className="text-xs h-7">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLines((p) => [...p, emptyLine()])}
+                  className="text-xs h-7"
+                >
                   <Plus className="h-3 w-3 mr-1" /> Add Item
                 </Button>
               </div>
@@ -263,37 +331,59 @@ export default function EnterCashSalesPage() {
               <div className="space-y-2">
                 {lines.map((l, i) => (
                   <div key={i} className="grid grid-cols-12 gap-2 items-start">
-                    {/* Item picker */}
                     <div className="col-span-1">
-                      <Select onValueChange={v => pickItem(i, v)}>
-                        <SelectTrigger className="h-9 px-2"><SelectValue placeholder="…" /></SelectTrigger>
+                      <Select onValueChange={(v) => pickItem(i, v)}>
+                        <SelectTrigger className="h-9 px-2">
+                          <SelectValue placeholder="…" />
+                        </SelectTrigger>
                         <SelectContent>
-                          {items.map((it: any) => <SelectItem key={it.id} value={it.id}>{it.name}</SelectItem>)}
+                          {items.map((it: any) => (
+                            <SelectItem key={it.id} value={it.id}>
+                              {it.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="col-span-5">
-                      <Input placeholder="Description" value={l.description}
-                        onChange={e => updateLine(i, 'description', e.target.value)}
-                        className={`text-sm ${errors[`d${i}`] ? 'border-red-400' : ''}`} />
+                      <Input
+                        placeholder="Description"
+                        value={l.description}
+                        onChange={(e) => updateLine(i, 'description', e.target.value)}
+                        className={`text-sm ${errors[`d${i}`] ? 'border-red-400' : ''}`}
+                      />
                     </div>
                     <div className="col-span-2">
-                      <Input type="number" min="0" placeholder="0" value={l.qty}
-                        onChange={e => updateLine(i, 'qty', e.target.value)}
-                        className={`text-sm ${errors[`q${i}`] ? 'border-red-400' : ''}`} />
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={l.qty}
+                        onChange={(e) => updateLine(i, 'qty', e.target.value)}
+                        className={`text-sm ${errors[`q${i}`] ? 'border-red-400' : ''}`}
+                      />
                     </div>
                     <div className="col-span-3">
-                      <Input type="number" min="0" step="0.01" placeholder="0.00" value={l.unitPrice}
-                        onChange={e => updateLine(i, 'unitPrice', e.target.value)}
-                        className={`text-sm ${errors[`p${i}`] ? 'border-red-400' : ''}`} />
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={l.unitPrice}
+                        onChange={(e) => updateLine(i, 'unitPrice', e.target.value)}
+                        className={`text-sm ${errors[`p${i}`] ? 'border-red-400' : ''}`}
+                      />
                     </div>
                     <div className="col-span-1 flex items-center justify-end gap-1 pt-2">
                       <span className="text-xs text-gray-600 font-medium">
                         {formatMoney((parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0))}
                       </span>
                       {lines.length > 1 && (
-                        <button type="button" onClick={() => setLines(p => p.filter((_, idx) => idx !== i))}
-                          className="text-gray-300 hover:text-red-400 transition-colors ml-1">
+                        <button
+                          type="button"
+                          onClick={() => setLines((p) => p.filter((_, idx) => idx !== i))}
+                          className="text-gray-300 hover:text-red-400 transition-colors ml-1"
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       )}
@@ -305,24 +395,29 @@ export default function EnterCashSalesPage() {
 
             <Separator />
 
-            {/* Totals */}
             <div className="flex justify-end">
               <div className="w-52 space-y-2">
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Subtotal</span><span>{formatMoney(subtotal)}</span>
+                  <span>Subtotal</span>
+                  <span>{formatMoney(subtotal)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-base font-bold text-gray-800">
-                  <span>Total</span><span>{formatMoney(subtotal)}</span>
+                  <span>Total</span>
+                  <span>{formatMoney(subtotal)}</span>
                 </div>
               </div>
             </div>
 
-            {saveError && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">{saveError.message}</p>}
-
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[140px]">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[140px]"
+              >
                 {saving ? 'Saving…' : 'Record Sale'}
               </Button>
             </DialogFooter>

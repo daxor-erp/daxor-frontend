@@ -5,8 +5,12 @@ import { useQuery, useMutation } from '@apollo/client'
 import {
   GET_CUSTOMER_INVOICES,
   APPLY_CUSTOMER_CREDIT_MEMO,
-  GET_ORGANIZATIONS,
 } from '@/gql/queries'
+import {
+  GET_CUSTOMERS_FOR_SALES,
+  mapSalesCustomers,
+  customerDisplayName,
+} from '@/lib/sales-customer-options'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,13 +23,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import {
   FileMinus, FileText, AlertCircle, CheckCircle2,
-  Building2, CalendarDays, DollarSign, Hash, Info,
+  Building2, CalendarDays, DollarSign, Hash,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney, getCurrencySymbol } from '@/lib/format-money'
-import { lookupDisplayName } from '@/lib/format-status'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatDate } from '@/lib/format-date'
+import { toast } from 'sonner'
 
 const CREDIT_REASONS = [
   'Returned goods',
@@ -60,14 +64,19 @@ export default function IssueCreditMemosPage() {
     variables: { organizationId: orgId, page: 1, limit: 200 },
     skip: !orgId,
   })
-  const { data: orgsData } = useQuery(GET_ORGANIZATIONS, { variables: { page: 1, limit: 200 } })
+  const { data: customersData } = useQuery(GET_CUSTOMERS_FOR_SALES, {
+    variables: { organizationId: orgId },
+    skip: !orgId,
+  })
 
   const [issueMemo, { loading: issuing, error: issueError }] = useMutation(APPLY_CUSTOMER_CREDIT_MEMO, {
     onCompleted: () => {
       setSelected(null)
       resetForm()
       refetch()
+      toast.success('Credit memo issued')
     },
+    onError: (e) => toast.error(e.message),
   })
 
   const [selected, setSelected] = useState<any>(null)
@@ -75,12 +84,16 @@ export default function IssueCreditMemosPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [activeTab, setActiveTab] = useState<'eligible' | 'issued'>('eligible')
 
-  const orgs: any[] = orgsData?.organizations ?? []
+  const customers = mapSalesCustomers(customersData?.customers)
   const allInvoices: any[] = invData?.customerinvoices ?? []
   const eligible = allInvoices.filter(inv => ELIGIBLE.includes(inv.status))
   const issued = allInvoices.filter(inv => inv.status === 'cancelled')
 
-  const getOrgName = (id: string) => lookupDisplayName(orgs.find(o => o.id === id)?.name, id, 'Unknown customer')
+  const getCustomerName = (id: string) => {
+    const label = customerDisplayName(customers, id)
+    if (!label || label === '—' || label.startsWith('Unknown')) return '—'
+    return label.replace(/\s*\([^)]*\)\s*$/, '')
+  }
 
   const resetForm = () => {
     setForm({ creditAmount: '', reason: '', notes: '', memoDate: today() })
@@ -141,7 +154,7 @@ export default function IssueCreditMemosPage() {
           return (
             <TableRow key={inv.id} className="hover:bg-gray-50 transition-colors">
               <TableCell className="pl-6 font-mono text-xs text-gray-400">{inv.seqNo || '—'}</TableCell>
-              <TableCell className="text-sm font-medium text-gray-800">{getOrgName(inv.customerId)}</TableCell>
+              <TableCell className="text-sm font-medium text-gray-800">{getCustomerName(inv.customerId)}</TableCell>
               <TableCell className="text-sm text-gray-600">{inv.invoiceDate ? formatDate(inv.invoiceDate) : '—'}</TableCell>
               <TableCell className="text-sm text-gray-600">{inv.dueDate ? formatDate(inv.dueDate) : '—'}</TableCell>
               <TableCell className="text-sm font-semibold text-gray-800">
@@ -265,7 +278,7 @@ export default function IssueCreditMemosPage() {
                     <Building2 className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-xs text-gray-400">Customer</p>
-                      <p className="text-sm font-medium text-gray-800">{getOrgName(selected.customerId)}</p>
+                      <p className="text-sm font-medium text-gray-800">{getCustomerName(selected.customerId)}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">

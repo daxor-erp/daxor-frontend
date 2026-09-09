@@ -11,6 +11,7 @@ import {
   START_ASSET_MAINTENANCE,
   COMPLETE_ASSET_MAINTENANCE,
   GET_FIXED_ASSETS,
+  GET_EMPLOYEE_MASTERS,
 } from '@/gql/queries'
 import { DataTable, type Column } from '@/components/DataTable'
 import { PageHeader, StatsRow, StatCard, SectionPanel, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
@@ -54,6 +55,7 @@ export default function AssetMaintenancePage() {
     priority: 'MEDIUM',
     scheduledDate: new Date().toISOString().slice(0, 10),
     description: '',
+    assignedToUserId: '',
     assignedToName: '',
     laborHours: 0,
     laborRate: 0,
@@ -78,6 +80,11 @@ export default function AssetMaintenancePage() {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'ignore',
   })
+  const employeesQ = useQuery(GET_EMPLOYEE_MASTERS, {
+    variables: { organizationId: orgId, status: null },
+    skip: !orgId,
+    fetchPolicy: 'cache-and-network',
+  })
 
   const [createMutation, { loading: creating }] = useMutation(CREATE_ASSET_MAINTENANCE, {
     onCompleted: () => { listQ.refetch(); upcomingQ.refetch(); setOpen(false); resetForm(); toast.success('Work order scheduled') },
@@ -99,6 +106,40 @@ export default function AssetMaintenancePage() {
   const rows: any[] = listQ.data?.assetMaintenances ?? []
   const upcoming: any[] = upcomingQ.data?.upcomingMaintenance ?? []
   const assets: any[] = assetsQ.data?.fixedAssets ?? []
+  const employees: any[] = employeesQ.data?.employeeMasters ?? []
+
+  const assigneeOptions = useMemo(() => {
+    const opts: { value: string; label: string; userId?: string; name: string }[] = []
+    const seen = new Set<string>()
+
+    for (const e of employees) {
+      const name = `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim()
+      if (!name && !e.employeeCode) continue
+      const code = (e.employeeCode || '').trim()
+      const label = code ? `${code} — ${name || 'Employee'}` : name
+      const value = e.userId ? String(e.userId) : `emp:${e.id}`
+      if (seen.has(value)) continue
+      seen.add(value)
+      opts.push({
+        value,
+        label,
+        userId: e.userId ? String(e.userId) : undefined,
+        name: name || code || label,
+      })
+    }
+
+    if (user?.id && !seen.has(String(user.id))) {
+      const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email || 'Current user'
+      opts.unshift({
+        value: String(user.id),
+        label: `${name} (current user)`,
+        userId: String(user.id),
+        name,
+      })
+    }
+
+    return opts
+  }, [employees, user])
 
   const stats = useMemo(() => {
     const totalCost = rows.reduce((s, r) => s + Number(r.totalCost ?? 0), 0)
@@ -117,6 +158,7 @@ export default function AssetMaintenancePage() {
       priority: 'MEDIUM',
       scheduledDate: new Date().toISOString().slice(0, 10),
       description: '',
+      assignedToUserId: '',
       assignedToName: '',
       laborHours: 0,
       laborRate: 0,
@@ -157,6 +199,7 @@ export default function AssetMaintenancePage() {
           priority: form.priority,
           scheduledDate: form.scheduledDate,
           description: form.description.trim(),
+          assignedToUserId: form.assignedToUserId || undefined,
           assignedToName: form.assignedToName || undefined,
           laborHours: Number(form.laborHours ?? 0),
           laborRate: Number(form.laborRate ?? 0),
@@ -321,7 +364,34 @@ export default function AssetMaintenancePage() {
             </div>
             <div className="space-y-1.5">
               <Label>Assigned to</Label>
-              <Input value={form.assignedToName} onChange={(e) => setForm({ ...form, assignedToName: e.target.value })} />
+              <select
+                value={
+                  form.assignedToUserId
+                    ? form.assignedToUserId
+                    : form.assignedToName
+                      ? assigneeOptions.find((o) => o.name === form.assignedToName)?.value ?? ''
+                      : ''
+                }
+                onChange={(e) => {
+                  const opt = assigneeOptions.find((o) => o.value === e.target.value)
+                  setForm({
+                    ...form,
+                    assignedToUserId: opt?.userId ?? '',
+                    assignedToName: opt?.name ?? '',
+                  })
+                }}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">— Select assignee —</option>
+                {assigneeOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              {assigneeOptions.length === 0 ? (
+                <p className="text-xs text-amber-700">No employees found. Add Employee Master records or stay logged in.</p>
+              ) : null}
             </div>
             <div className="space-y-1.5">
               <Label>Labor hours</Label>
