@@ -359,7 +359,7 @@ export default function GoodsReceiptsPage() {
         </FormSection>
 
         <FormSection title="Line Items" columns={1}>
-          <LineItemsEditor columns={LINE_COLS} rows={lines} onChange={setLines} onAddRow={() => ({ ...BLANK_LINE })} />
+          <LineItemsEditor columns={LINE_COLS} rows={lines} onChange={(r) => setLines(r as typeof lines)} onAddRow={() => ({ ...BLANK_LINE })} />
         </FormSection>
 
         <FormSection columns={1}>
