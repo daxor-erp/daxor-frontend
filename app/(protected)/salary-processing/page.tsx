@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Pencil, Trash2, Banknote, CheckCircle2, X, Save } from 'lucide-react'
+import { Plus, Pencil, Trash2, Banknote, CheckCircle2, X, Save, Send, CheckCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   GET_SALARY_PROCESSINGS,
@@ -110,6 +110,14 @@ export default function SalaryProcessingPage() {
     },
     onError: (e) => setBanner({ ok: false, text: e.message }),
   })
+  const [advanceSp, { loading: advancing }] = useMutation(UPDATE_SALARY_PROCESSING, {
+    onCompleted: () => {
+      refetch()
+      setBanner({ ok: true, text: 'Salary batch status updated.' })
+      setTimeout(() => setBanner(null), 4000)
+    },
+    onError: (e) => setBanner({ ok: false, text: e.message }),
+  })
   const [deleteSp] = useMutation(DELETE_SALARY_PROCESSING, {
     onCompleted: () => {
       refetch()
@@ -121,6 +129,25 @@ export default function SalaryProcessingPage() {
 
   const rows: Row[] = (data?.salaryprocessings as Row[] | undefined) ?? []
   const busy = creating || updating
+
+  const advanceStatus = (r: Row, next: (typeof STATUS_OPTIONS)[number]['value']) => {
+    if (!orgId) return
+    setBanner(null)
+    advanceSp({
+      variables: {
+        id: r.id,
+        input: {
+          organizationId: orgId,
+          docDate: r.docDate || new Date().toISOString(),
+          status: next,
+          title: r.title || undefined,
+          remarks: r.remarks || undefined,
+          payPeriodStart: r.payPeriodStart || undefined,
+          payPeriodEnd: r.payPeriodEnd || undefined,
+        },
+      },
+    })
+  }
 
   const closeDialog = () => {
     setOpen(false)
@@ -202,6 +229,7 @@ export default function SalaryProcessingPage() {
           <h1 className="erp-page-title">Salary processing</h1>
           <p className="text-gray-500 mt-1">
             Track salary batches: document date, pay period, and status through approval and processing.
+            Use list actions to send for review, approve, or mark processed.
           </p>
         </div>
         <Button onClick={openCreate} className="bg-emerald-700 hover:bg-emerald-800 text-white shrink-0">
@@ -342,11 +370,15 @@ export default function SalaryProcessingPage() {
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Doc date</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Pay period</TableHead>
                 <TableHead className="text-xs font-semibold uppercase text-gray-600">Status</TableHead>
-                <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[100px]" />
+                <TableHead className="text-xs font-semibold uppercase text-gray-600 w-[280px]">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => (
+              {rows.map((r) => {
+                const status = (r.status || '').toUpperCase()
+                return (
                 <TableRow key={r.id} className="hover:bg-emerald-50/40">
                   <TableCell className="font-mono text-sm font-medium">{r.docNumber}</TableCell>
                   <TableCell className="text-sm text-gray-800">{r.title || '—'}</TableCell>
@@ -360,37 +392,74 @@ export default function SalaryProcessingPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={statusBadgeClass(r.status)}>
-                      {STATUS_OPTIONS.find((o) => o.value === (r.status || '').toUpperCase())?.label ||
+                      {STATUS_OPTIONS.find((o) => o.value === status)?.label ||
                         r.status ||
                         '—'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="space-x-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => openEdit(r)}
-                    >
-                      <Pencil className="h-3.5 w-3.5 text-gray-500" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-700"
-                      onClick={() => {
-                        if (confirm(`Remove salary batch “${r.docNumber}”?`)) {
-                          deleteSp({ variables: { id: r.id } })
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                  <TableCell>
+                    <div className="flex flex-wrap items-center gap-1">
+                      {status === 'DRAFT' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          disabled={advancing}
+                          onClick={() => advanceStatus(r, 'PENDING_REVIEW')}
+                        >
+                          <Send className="h-3 w-3 mr-1" /> Send for review
+                        </Button>
+                      )}
+                      {status === 'PENDING_REVIEW' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                          disabled={advancing}
+                          onClick={() => advanceStatus(r, 'APPROVED')}
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                        </Button>
+                      )}
+                      {status === 'APPROVED' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 text-xs bg-emerald-800 hover:bg-emerald-900 text-white"
+                          disabled={advancing}
+                          onClick={() => advanceStatus(r, 'PROCESSED')}
+                        >
+                          <CheckCircle2 className="h-3 w-3 mr-1" /> Mark processed
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEdit(r)}
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-700"
+                        onClick={() => {
+                          if (confirm(`Remove salary batch “${r.docNumber}”?`)) {
+                            deleteSp({ variables: { id: r.id } })
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                )
+              })}
             </TableBody>
           </Table>
         )}

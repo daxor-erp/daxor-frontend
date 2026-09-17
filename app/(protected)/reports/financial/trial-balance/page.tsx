@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { GET_TRIAL_BALANCE } from '@/gql/queries'
-import { ReportShell, type ReportPeriod } from '@/components/reports/report-shell'
+import { ReportShell, type ReportPeriod, periodQueryDates, PERIOD_LABELS } from '@/components/reports/report-shell'
 import { formatMoney } from '@/lib/format-money'
 import { escapeHtml, pdfMoney } from '@/lib/pdf-download'
 
@@ -12,11 +12,12 @@ export default function TrialBalancePage() {
   const { user } = useAuth()
   const orgId = user?.organizationId ?? ''
   const [period, setPeriod] = useState<ReportPeriod>('this_year')
+  const dates = useMemo(() => periodQueryDates(period), [period])
 
   const { data, loading, refetch } = useQuery(GET_TRIAL_BALANCE, {
-    variables: { organizationId: orgId },
+    variables: { organizationId: orgId, ...dates },
     skip: !orgId,
-    fetchPolicy: 'cache-and-network',
+    fetchPolicy: 'network-only',
     errorPolicy: 'ignore',
   })
 
@@ -72,14 +73,18 @@ export default function TrialBalancePage() {
   return (
     <ReportShell
       title="Trial Balance"
-      description="Debit and credit totals per account."
+      description="Debit and credit totals per account for the selected period."
       period={period}
       onPeriodChange={setPeriod}
       onRefresh={() => refetch?.()}
       loading={loading}
       pdfBody={buildPdf}
       pdfFilename="trial-balance"
+      pdfSubtitle={PERIOD_LABELS[period]}
     >
+      <p className="text-xs text-muted-foreground mb-4">
+        Posted journal activity in {PERIOD_LABELS[period]}.
+      </p>
       <div className="flex items-center gap-3 mb-5">
         <span className={
           'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase ' +
@@ -104,7 +109,7 @@ export default function TrialBalancePage() {
           </thead>
           <tbody>
             {accounts.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground text-sm">No posted journal activity yet.</td></tr>
+              <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground text-sm">No posted journal activity in this period.</td></tr>
             ) : accounts.map((a) => (
               <tr key={a.account} className="border-t hover:bg-secondary/30">
                 <td className="px-4 py-2.5 font-medium">{a.account}</td>

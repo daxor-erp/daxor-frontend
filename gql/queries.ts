@@ -2558,8 +2558,8 @@ export const SYNC_VENDOR_BILL_ACCOUNTING = gql`
 `
 
 export const GET_TRIAL_BALANCE = gql`
-  query GetTrialBalance($organizationId: String!) {
-    trialBalance(organizationId: $organizationId) {
+  query GetTrialBalance($organizationId: String!, $dateFrom: String, $dateTo: String) {
+    trialBalance(organizationId: $organizationId, dateFrom: $dateFrom, dateTo: $dateTo) {
       accountCode
       accountName
       accountType
@@ -2571,8 +2571,8 @@ export const GET_TRIAL_BALANCE = gql`
 `
 
 export const GET_INCOME_STATEMENT = gql`
-  query GetIncomeStatement($organizationId: String!) {
-    incomeStatement(organizationId: $organizationId) {
+  query GetIncomeStatement($organizationId: String!, $dateFrom: String, $dateTo: String) {
+    incomeStatement(organizationId: $organizationId, dateFrom: $dateFrom, dateTo: $dateTo) {
       totalRevenue
       totalCogs
       grossProfit
@@ -2586,8 +2586,8 @@ export const GET_INCOME_STATEMENT = gql`
 `
 
 export const GET_BALANCE_SHEET = gql`
-  query GetBalanceSheet($organizationId: String!) {
-    balanceSheet(organizationId: $organizationId) {
+  query GetBalanceSheet($organizationId: String!, $dateFrom: String, $dateTo: String) {
+    balanceSheet(organizationId: $organizationId, dateFrom: $dateFrom, dateTo: $dateTo) {
       totalAssets
       totalLiabilities
       totalEquity
@@ -3812,6 +3812,21 @@ export const GET_GOODS_RECEIPTS = gql`
       docNumber
       docDate
       status
+      purchaseOrderId
+      purchaseOrderNumber
+      vendorId
+      vendorName
+      warehouseId
+      warehouseName
+      lineItems {
+        itemId
+        itemDescription
+        orderedQty
+        receivedQty
+        unit
+        unitPrice
+      }
+      notes
       createdAt
     }
   }
@@ -3824,6 +3839,12 @@ export const CREATE_GOODS_RECEIPT = gql`
       docNumber
       docDate
       status
+      vendorName
+      warehouseName
+      lineItems {
+        itemDescription
+        receivedQty
+      }
       createdAt
     }
   }
@@ -3836,7 +3857,23 @@ export const UPDATE_GOODS_RECEIPT = gql`
       docNumber
       docDate
       status
+      vendorName
+      warehouseName
+      lineItems {
+        itemDescription
+        receivedQty
+      }
       createdAt
+    }
+  }
+`
+
+export const POST_GOODS_RECEIPT = gql`
+  mutation PostGoodsReceipt($id: ID!) {
+    postGoodsReceipt(id: $id) {
+      id
+      docNumber
+      status
     }
   }
 `
@@ -3929,6 +3966,19 @@ export const GET_DELIVERY_CHALLANS = gql`
       id
       docNumber
       docDate
+      customerId
+      customerName
+      salesOrderNumber
+      shippingAddress
+      vehicleNumber
+      driverName
+      notes
+      items {
+        itemName
+        quantity
+        unit
+        notes
+      }
       status
       createdAt
     }
@@ -3962,6 +4012,21 @@ export const GET_SALES_RETURNS = gql`
       id
       docNumber
       docDate
+      customerId
+      customerName
+      salesOrderNumber
+      customerInvoiceNumber
+      reason
+      totalAmount
+      notes
+      items {
+        itemName
+        quantity
+        unit
+        unitPrice
+        amount
+        notes
+      }
       status
       createdAt
     }
@@ -3974,6 +4039,7 @@ export const CREATE_SALES_RETURN = gql`
       id
       docNumber
       status
+      customerName
     }
   }
 `

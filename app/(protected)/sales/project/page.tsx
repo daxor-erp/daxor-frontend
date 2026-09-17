@@ -2,52 +2,141 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
-import { GET_PROJECTS, CREATE_PROJECT, SUBMIT_PROJECT_FOR_APPROVAL } from '@/gql/queries'
-
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Plus, X, Save, FolderKanban, CheckCircle2, Clock, Archive } from 'lucide-react'
+import { GET_PROJECTS, CREATE_PROJECT, UPDATE_PROJECT, DELETE_PROJECT, SUBMIT_PROJECT_FOR_APPROVAL } from '@/gql/queries'
 import { useAuth } from '@/contexts/AuthContext'
-import { formatDate } from '@/lib/format-date'
+import { DataTable, type Column } from '@/components/DataTable'
+import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { InputFloating } from '@/components/ui/input-floating'
+import { SelectFloating } from '@/components/ui/select-floating'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import { Trash2, Edit, X, Save, FolderKanban, CheckCircle, Clock, XCircle, Plus, Send } from 'lucide-react'
 
-const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  active:    { label: 'Active',    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  completed: { label: 'Completed', cls: 'bg-primary/10 text-primary border-primary/20' },
-  inactive:  { label: 'Inactive',  cls: 'bg-gray-100 text-gray-600 border-gray-200' },
-  deleted:   { label: 'Deleted',   cls: 'bg-red-50 text-red-600 border-red-200' },
+const EMPTY_FORM = {
+  name: '',
+  description: '',
+  startDate: '',
+  endDate: '',
+  status: 'inactive',
 }
 
-const COLS = [
-  { key: 'seqNo',       label: 'Code',        w: 'w-24' },
-  { key: 'name',        label: 'Project Name', w: 'w-48' },
-  { key: 'description', label: 'Description',  w: 'flex-1' },
-  { key: 'startDate',   label: 'Start Date',   w: 'w-32' },
-  { key: 'endDate',     label: 'End Date',     w: 'w-32' },
-  { key: 'status',      label: 'Status',       w: 'w-28' },
-  { key: 'orgApproval', label: 'Org approval',   w: 'w-44' },
-]
+function approvalLabel(ap: string) {
+  if (ap === 'draft') return 'Draft'
+  if (ap === 'submitted') return 'Pending approval'
+  if (ap === 'approval_declined') return 'Declined'
+  return 'Approved'
+}
 
 export default function SalesProjectPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId || ''
 
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [form, setForm] = useState({ ...EMPTY_FORM })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
   const { data, loading, refetch } = useQuery(GET_PROJECTS, {
     variables: { organizationId: orgId, page: 1, limit: 100 },
     skip: !orgId,
+    fetchPolicy: 'cache-and-network',
   })
 
-  const [create, { loading: saving, error: saveError }] = useMutation(CREATE_PROJECT, {
-    onCompleted: () => { setAdding(false); setForm({ name: '', description: '', startDate: '', endDate: '' }); setErrors({}); refetch() },
+  const [createProject, { loading: saving }] = useMutation(CREATE_PROJECT, {
+    onCompleted: () => {
+      refetch()
+      setAdding(false)
+      reset()
+      toast.success('Project saved as Draft — use Send for approval on the row')
+    },
+    onError: (e) => toast.error(e.message),
   })
 
-  const [submitProjectForApproval] = useMutation(SUBMIT_PROJECT_FOR_APPROVAL, {
-    onCompleted: () => refetch(),
+  const [updateProject, { loading: updating }] = useMutation(UPDATE_PROJECT, {
+    onCompleted: () => {
+      refetch()
+      setEditing(null)
+      setAdding(false)
+      reset()
+      toast.success('Project updated')
+    },
+    onError: (e) => toast.error(e.message),
   })
 
-  const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ name: '', description: '', startDate: '', endDate: '' })
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [deleteProject] = useMutation(DELETE_PROJECT, {
+    onCompleted: () => {
+      refetch()
+      toast.success('Project deleted')
+    },
+    onError: (e) => toast.error(e.message),
+  })
+
+  const [submitProjectForApproval, { loading: submitting }] = useMutation(SUBMIT_PROJECT_FOR_APPROVAL, {
+    onCompleted: () => {
+      refetch()
+      toast.success('Sent for approval')
+    },
+    onError: (e) => toast.error(e.message),
+  })
+
+  const reset = () => {
+    setForm({ ...EMPTY_FORM })
+    setErrors({})
+  }
+
+  const setF = (k: string, v: string) => {
+    setForm((p) => ({ ...p, [k]: v }))
+    setErrors((p) => ({ ...p, [k]: '' }))
+  }
+
+  const validate = () => {
+    const e: Record<string, string> = {}
+    if (!form.name.trim()) e.name = 'Required'
+    setErrors(e)
+    return !Object.keys(e).length
+  }
+
+  const handleSubmit = () => {
+    if (!validate()) return
+    if (editing) {
+      updateProject({
+        variables: {
+          id: editing,
+          input: {
+            name: form.name.trim(),
+            description: form.description || undefined,
+            startDate: form.startDate || undefined,
+            endDate: form.endDate || undefined,
+            status: form.status,
+          },
+        },
+      })
+      return
+    }
+    createProject({
+      variables: {
+        input: {
+          name: form.name.trim(),
+          description: form.description || undefined,
+          startDate: form.startDate || undefined,
+          endDate: form.endDate || undefined,
+          organizationId: orgId,
+        },
+      },
+    })
+  }
+
+  const handleEdit = (project: any) => {
+    setForm({
+      name: project.name || '',
+      description: project.description || '',
+      startDate: project.startDate ? String(project.startDate).split('T')[0] : '',
+      endDate: project.endDate ? String(project.endDate).split('T')[0] : '',
+      status: project.status || 'inactive',
+    })
+    setEditing(project.id)
+    setAdding(true)
+  }
 
   const projects = data?.projects ?? []
   const stats = {
@@ -57,194 +146,194 @@ export default function SalesProjectPage() {
     inactive: projects.filter((p: any) => p.status === 'inactive').length,
   }
 
-  const set = (f: string, v: string) => { setForm(p => ({ ...p, [f]: v })); setErrors(p => ({ ...p, [f]: '' })) }
-
-  const handleSave = () => {
-    if (!form.name.trim()) { setErrors({ name: 'Required' }); return }
-    create({ variables: { input: { name: form.name.trim(), description: form.description || undefined, startDate: form.startDate || undefined, endDate: form.endDate || undefined, organizationId: orgId } } })
-  }
+  const columns: Column[] = [
+    { key: 'seqNo', label: 'Code', width: '120px', render: (v) => <MonoCell value={v} /> },
+    { key: 'name', label: 'Project Name', sortable: true, render: (v) => <span className="text-sm font-medium">{v}</span> },
+    {
+      key: 'description',
+      label: 'Description',
+      render: (v) => <span className="text-sm text-muted-foreground">{v || '—'}</span>,
+    },
+    { key: 'startDate', label: 'Start Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'endDate', label: 'End Date', width: '110px', render: (v) => <DateCell value={v} /> },
+    { key: 'status', label: 'Status', width: '110px', render: (v) => <ErpBadge status={String(v)} /> },
+    {
+      key: 'orgApprovalStatus',
+      label: 'Org Approval',
+      width: '150px',
+      render: (v) => {
+        const ap = String(v ?? 'approved')
+        return <ErpBadge status={ap === 'submitted' ? 'submitted' : ap} label={approvalLabel(ap)} />
+      },
+    },
+  ]
 
   return (
-    
     <div className="erp-shell">
-      <div className="flex justify-between items-center mb-5">
-        <div>
-          <h1 className="erp-page-title">Projects</h1>
-          <p className="erp-page-desc">Manage and track all sales projects</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Projects"
+        subtitle="Create sales projects, then send them for org approval from the list"
+        icon={<FolderKanban className="h-5 w-5" />}
+        breadcrumbs={[{ label: 'Sales' }, { label: 'Project' }]}
+        actions={
+          <Button
+            onClick={() => {
+              reset()
+              setEditing(null)
+              setAdding(true)
+            }}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> New Project
+          </Button>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        {[
-          { label: 'Total', value: stats.total, icon: FolderKanban, cls: 'text-primary bg-primary/10' },
-          { label: 'Active', value: stats.active, icon: Clock, cls: 'text-emerald-600 bg-emerald-50' },
-          { label: 'Completed', value: stats.completed, icon: CheckCircle2, cls: 'text-primary bg-primary/10' },
-          { label: 'Inactive', value: stats.inactive, icon: Archive, cls: 'text-gray-500 bg-gray-100' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
+      <StatsRow cols={4}>
+        <StatCard label="Total" value={stats.total} icon={<FolderKanban className="h-5 w-5" />} variant="blue" />
+        <StatCard label="Active" value={stats.active} icon={<CheckCircle className="h-5 w-5" />} variant="green" />
+        <StatCard label="Completed" value={stats.completed} icon={<Clock className="h-5 w-5" />} variant="slate" />
+        <StatCard label="Inactive" value={stats.inactive} icon={<XCircle className="h-5 w-5" />} variant="amber" />
+      </StatsRow>
+
+      {adding && (
+        <div className="bg-card border border-primary/30 rounded-lg shadow-sm overflow-hidden mb-4">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary">
+            <span className="text-xs font-semibold text-white">{editing ? 'Edit Project' : 'New Project'}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setAdding(false)
+                setEditing(null)
+                reset()
+              }}
+              className="text-primary-foreground/80 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-        ))}
-      </div>
-
-      {/* Excel Grid */}
-      <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-300">
-          <span className="text-sm font-semibold text-gray-700">Projects</span>
-          {!adding && (
-            <Button size="sm" onClick={() => setAdding(true)} className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Plus className="h-3.5 w-3.5 mr-1" /> Add Row
-            </Button>
-          )}
-        </div>
-
-        {/* Header row */}
-        <div className="flex border-b border-gray-300 bg-muted/70">
-          <div className="w-8 border-r border-gray-300 flex items-center justify-center text-xs text-gray-400 font-medium py-2">#</div>
-          {COLS.map(c => (
-            <div key={c.key} className={`${c.w} border-r border-gray-300 last:border-r-0 px-2 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide`}>
-              {c.label}
-            </div>
-          ))}
-        </div>
-
-        {/* New row input */}
-        {adding && (
-          <div className="flex border-b border-primary/30 bg-primary/10/40">
-            <div className="w-8 border-r border-gray-300 flex items-center justify-center text-xs text-primary py-1">*</div>
-
-            {/* Code — auto */}
-            <div className="w-24 border-r border-gray-300 px-1 py-1">
-              <input disabled placeholder="Auto" className="w-full h-7 px-2 text-xs bg-transparent text-gray-400 outline-none" />
-            </div>
-
-            {/* Name */}
-            <div className="w-48 border-r border-gray-300 px-1 py-1">
-              <input
-                autoFocus
+          <div className="p-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <InputFloating
+                label="Project Name *"
                 value={form.name}
-                onChange={e => set('name', e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSave()}
-                placeholder="Project name *"
-                className={`w-full h-7 px-2 text-xs border rounded outline-none focus:ring-1 focus:ring-blue-400 ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
+                onChange={(e) => setF('name', e.target.value)}
+                error={errors.name}
+                className="h-7 text-xs"
+              />
+              <SelectFloating
+                label="Status"
+                value={form.status}
+                onChange={(e) => setF('status', typeof e === 'string' ? e : e.target.value)}
+                options={[
+                  { value: 'inactive', label: 'Inactive (until approved)' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'completed', label: 'Completed' },
+                ]}
+                className="h-7 text-xs"
+                disabled={!editing}
               />
             </div>
-
-            {/* Description */}
-            <div className="flex-1 border-r border-gray-300 px-1 py-1">
-              <input
-                value={form.description}
-                onChange={e => set('description', e.target.value)}
-                placeholder="Description"
-                className="w-full h-7 px-2 text-xs border border-gray-300 rounded bg-white outline-none focus:ring-1 focus:ring-blue-400"
+            <div className="grid grid-cols-2 gap-3">
+              <InputFloating
+                label="Start Date"
+                type="date"
+                value={form.startDate}
+                onChange={(e) => setF('startDate', e.target.value)}
+                className="h-7 text-xs"
+              />
+              <InputFloating
+                label="End Date"
+                type="date"
+                value={form.endDate}
+                onChange={(e) => setF('endDate', e.target.value)}
+                className="h-7 text-xs"
               />
             </div>
-
-            {/* Start Date */}
-            <div className="w-32 border-r border-gray-300 px-1 py-1">
-              <input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)}
-                className="w-full h-7 px-2 text-xs border border-gray-300 rounded bg-white outline-none focus:ring-1 focus:ring-blue-400" />
+            <InputFloating
+              label="Description"
+              multiline
+              rows={2}
+              value={form.description}
+              onChange={(e) => setF('description', e.target.value)}
+              className="text-xs min-h-[50px]"
+            />
+            <p className="text-xs text-muted-foreground">
+              Saves as <strong>Draft</strong>. After save, use <strong>Send for approval</strong> in the Actions column.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setAdding(false)
+                  setEditing(null)
+                  reset()
+                }}
+                className="h-8 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={saving || updating}
+                className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground min-w-[110px]"
+              >
+                <Save className="h-3.5 w-3.5 mr-1" />
+                {saving || updating ? 'Saving…' : editing ? 'Update' : 'Save Project'}
+              </Button>
             </div>
-
-            {/* End Date */}
-            <div className="w-32 border-r border-gray-300 px-1 py-1">
-              <input type="date" value={form.endDate} onChange={e => set('endDate', e.target.value)}
-                className="w-full h-7 px-2 text-xs border border-gray-300 rounded bg-white outline-none focus:ring-1 focus:ring-blue-400" />
-            </div>
-
-            {/* Status — inactive until approved */}
-            <div className="w-28 border-r border-gray-300 px-2 py-1 flex items-center">
-              <span className="text-xs text-gray-400 italic">inactive</span>
-              <div className="ml-auto flex gap-1">
-                <button onClick={handleSave} disabled={saving}
-                  className="h-6 w-6 flex items-center justify-center rounded bg-primary hover:bg-primary/90 text-primary-foreground transition-colors">
-                  <Save className="h-3 w-3" />
-                </button>
-                <button onClick={() => { setAdding(false); setErrors({}) }}
-                  className="h-6 w-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            </div>
-
-            <div className="w-44 px-2 py-1 flex items-center text-xs text-gray-400">—</div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Error row */}
-        {(errors.name || saveError) && adding && (
-          <div className="flex bg-red-50 border-b border-red-200 px-3 py-1">
-            <p className="text-xs text-red-600">{errors.name || saveError?.message}</p>
-          </div>
-        )}
-
-        {/* Data rows */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12 text-gray-400 text-sm">Loading…</div>
-        ) : projects.length === 0 && !adding ? (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-            <FolderKanban className="h-8 w-8 mb-2 opacity-30" />
-            <p className="text-xs">No projects yet. Click "Add Row" to create one.</p>
-          </div>
-        ) : (
-          projects.map((p: any, idx: number) => {
-            const s = STATUS_CFG[p.status] ?? STATUS_CFG.inactive
-            return (
-              <div key={p.id} className={`flex border-b border-gray-200 last:border-b-0 hover:bg-primary/5 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                <div className="w-8 border-r border-gray-200 flex items-center justify-center text-xs text-gray-300 py-2">{idx + 1}</div>
-                <div className="w-24 border-r border-gray-200 px-2 py-2 text-xs font-mono text-gray-400">{p.seqNo || '—'}</div>
-                <div className="w-48 border-r border-gray-200 px-2 py-2 text-xs font-medium text-gray-800 truncate">{p.name}</div>
-                <div className="flex-1 border-r border-gray-200 px-2 py-2 text-xs text-gray-500 truncate">{p.description || '—'}</div>
-                <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{p.startDate ? formatDate(p.startDate) : '—'}</div>
-                <div className="w-32 border-r border-gray-200 px-2 py-2 text-xs text-gray-600">{p.endDate ? formatDate(p.endDate) : '—'}</div>
-                <div className="w-28 border-r border-gray-200 px-2 py-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s.cls}`}>{s.label}</span>
-                </div>
-                <div className="w-44 px-2 py-2">
-                  {(() => {
-                    const ap = String(p.orgApprovalStatus ?? 'approved')
-                    const showSubmit = ap === 'draft' || ap === 'approval_declined'
-                    const label =
-                      ap === 'draft'
-                        ? 'Draft'
-                        : ap === 'submitted'
-                          ? 'Pending approval'
-                          : ap === 'approval_declined'
-                            ? 'Declined'
-                            : 'Approved'
-                    return (
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-600">{label}</span>
-                        {showSubmit ? (
-                          <select
-                            aria-label="Project approval action"
-                            className="h-7 text-xs rounded-md border border-gray-200 bg-white px-2 max-w-[160px]"
-                            defaultValue=""
-                            onChange={(e) => {
-                              const val = e.target.value
-                              e.target.value = ''
-                              if (val === 'submit') void submitProjectForApproval({ variables: { id: p.id } })
-                            }}
-                          >
-                            <option value="">Change status…</option>
-                            <option value="submit">Send for approval</option>
-                          </select>
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
-                      </div>
-                    )
-                  })()}
-                </div>
-              </div>
-            )
-          })
-        )}
-      </div>
+      <DataTable
+        data={projects}
+        columns={columns}
+        loading={loading}
+        title="All Projects"
+        searchable
+        searchPlaceholder="Search projects…"
+        emptyMessage="No projects yet. Click New Project to create one."
+        pageSize={25}
+        actions={[
+          {
+            label: 'Send for approval',
+            icon: <Send className="h-3.5 w-3.5" />,
+            onClick: (row: any) => {
+              if (submitting) return
+              submitProjectForApproval({ variables: { id: row.id } })
+            },
+            show: (row: any) => {
+              const ap = String(row.orgApprovalStatus ?? 'approved')
+              return ap === 'draft' || ap === 'approval_declined'
+            },
+          },
+          {
+            label: 'Edit',
+            icon: <Edit className="h-3.5 w-3.5" />,
+            onClick: (row: any) => handleEdit(row),
+            show: (row: any) => {
+              const ap = String(row.orgApprovalStatus ?? 'approved')
+              return ap === 'draft' || ap === 'approval_declined'
+            },
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="h-3.5 w-3.5" />,
+            onClick: (row: any) => {
+              if (confirm(`Delete project "${row.name}"?`)) {
+                deleteProject({ variables: { id: row.id } })
+              }
+            },
+            show: (row: any) => {
+              const ap = String(row.orgApprovalStatus ?? 'approved')
+              return ap === 'draft' || ap === 'approval_declined'
+            },
+          },
+        ]}
+      />
     </div>
   )
 }

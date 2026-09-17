@@ -49,6 +49,13 @@ export function periodRange(p: ReportPeriod): { start: Date; end: Date } {
   return { start, end }
 }
 
+/** GraphQL dateFrom/dateTo for financial reports. `all` omits bounds. */
+export function periodQueryDates(p: ReportPeriod): { dateFrom?: string; dateTo?: string } {
+  if (p === 'all') return {}
+  const { start, end } = periodRange(p)
+  return { dateFrom: start.toISOString(), dateTo: end.toISOString() }
+}
+
 export function inRange(iso?: string, range?: { start: Date; end: Date }): boolean {
   if (!range) return true
   if (!iso) return false

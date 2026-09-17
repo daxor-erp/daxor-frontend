@@ -65,6 +65,26 @@ function workflowStatusLabel(status: string) {
   return WORKFLOW_STATUS_LABELS[s] ?? status ?? '—'
 }
 
+/** Org-approval column: derived from document workflow status after submit. */
+function orgApprovalLabel(status: string): string {
+  const s = (status || '').toUpperCase()
+  if (s === 'DRAFT') return 'Not submitted'
+  if (s === 'SUBMITTED' || s === 'PENDING_REVIEW') return 'Pending'
+  if (s === 'APPROVED' || s === 'PROCESSED') return 'Approved'
+  if (s === 'APPROVAL_DECLINED') return 'Rejected'
+  if (s === 'CANCELLED') return 'Cancelled'
+  return '—'
+}
+
+function orgApprovalBadgeClass(status: string): string {
+  const s = (status || '').toUpperCase()
+  if (s === 'DRAFT') return 'bg-slate-50 text-slate-700 border-slate-200'
+  if (s === 'SUBMITTED' || s === 'PENDING_REVIEW') return 'bg-amber-50 text-amber-900 border-amber-200'
+  if (s === 'APPROVED' || s === 'PROCESSED') return 'bg-emerald-50 text-emerald-900 border-emerald-200'
+  if (s === 'APPROVAL_DECLINED' || s === 'CANCELLED') return 'bg-red-50 text-red-900 border-red-200'
+  return 'bg-gray-50 text-gray-700 border-gray-200'
+}
+
 function payrollMgmtCanSendApproval(status: string) {
   const s = (status || '').toUpperCase()
   return s === 'DRAFT' || s === 'APPROVAL_DECLINED' || s === 'PENDING_REVIEW'
@@ -371,24 +391,27 @@ export default function PayrollManagementPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {payrollMgmtCanSendApproval(r.status) ? (
-                      <select
-                        aria-label="Payroll management approval action"
-                        className="h-7 text-xs rounded-md border border-input bg-background px-2 max-w-[180px]"
-                        disabled={submittingApproval}
-                        defaultValue=""
-                        onChange={(e) => {
-                          const v = e.target.value
-                          e.target.value = ''
-                          if (v === 'submit') submitPmApproval({ variables: { id: r.id } })
-                        }}
-                      >
-                        <option value="">Change status…</option>
-                        <option value="submit">Send for approval</option>
-                      </select>
-                    ) : (
-                      <span className="text-xs text-gray-400">—</span>
-                    )}
+                    <div className="flex flex-col gap-1.5 items-start">
+                      <Badge variant="outline" className={orgApprovalBadgeClass(r.status)}>
+                        {orgApprovalLabel(r.status)}
+                      </Badge>
+                      {payrollMgmtCanSendApproval(r.status) ? (
+                        <select
+                          aria-label="Payroll management approval action"
+                          className="h-7 text-xs rounded-md border border-input bg-background px-2 max-w-[180px]"
+                          disabled={submittingApproval}
+                          defaultValue=""
+                          onChange={(e) => {
+                            const v = e.target.value
+                            e.target.value = ''
+                            if (v === 'submit') submitPmApproval({ variables: { id: r.id } })
+                          }}
+                        >
+                          <option value="">Change status…</option>
+                          <option value="submit">Send for approval</option>
+                        </select>
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell className="space-x-1">
                     <Button

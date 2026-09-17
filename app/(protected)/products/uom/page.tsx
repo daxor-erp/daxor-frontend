@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { GET_UOMS, CREATE_UOM, UPDATE_UOM, DELETE_UOM, ENSURE_DEFAULT_UOMS } from '@/gql/queries'
@@ -24,20 +24,29 @@ export default function UomPage() {
   const orgId = user?.organizationId ?? ''
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<UomForm>(EMPTY)
+  const ensureStarted = useRef(false)
 
-  const { data, loading, refetch } = useQuery(GET_UOMS, {
+  const { data, loading, error, refetch } = useQuery(GET_UOMS, {
     variables: { organizationId: orgId },
     skip: !orgId,
-    fetchPolicy: 'cache-and-network',
+    fetchPolicy: 'network-only',
+    errorPolicy: 'all',
   })
 
-  const [ensureDefaults] = useMutation(ENSURE_DEFAULT_UOMS)
+  const [ensureDefaults] = useMutation(ENSURE_DEFAULT_UOMS, {
+    onError: (e) => toast.error(e.message),
+  })
 
   useEffect(() => {
-    if (orgId && data && (data.uoms ?? []).length === 0) {
-      void ensureDefaults({ variables: { organizationId: orgId } }).then(() => refetch())
-    }
-  }, [orgId, data, ensureDefaults, refetch])
+    if (!orgId || loading || !data || ensureStarted.current) return
+    if ((data.uoms ?? []).length > 0) return
+    ensureStarted.current = true
+    void ensureDefaults({ variables: { organizationId: orgId } })
+      .then(() => refetch())
+      .catch(() => {
+        ensureStarted.current = false
+      })
+  }, [orgId, data, loading, ensureDefaults, refetch])
 
   const uoms: UomRow[] = useMemo(() => data?.uoms ?? [], [data])
   const categoryCount = useMemo(() => new Set(uoms.map((u) => u.category)).size, [uoms])
@@ -72,7 +81,15 @@ export default function UomPage() {
     setOpen(true)
   }
   const openEdit = (row: UomRow) => {
-    setForm({ id: row.id, name: row.name, category: row.category, ratio: row.ratio, type: row.type, gstUqc: row.gstUqc ?? '', isActive: row.isActive })
+    setForm({
+      id: row.id,
+      name: row.name,
+      category: row.category,
+      ratio: row.ratio,
+      type: row.type,
+      gstUqc: row.gstUqc ?? '',
+      isActive: row.isActive,
+    })
     setOpen(true)
   }
 
@@ -117,6 +134,12 @@ export default function UomPage() {
         }
       />
 
+      {error && (
+        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
+          {error.message}
+        </p>
+      )}
+
       <StatsRow cols={3}>
         <StatCard label="Total UoMs" value={uoms.length} icon={<Ruler className="h-5 w-5" />} variant="slate" />
         <StatCard label="Categories" value={categoryCount} icon={<Layers className="h-5 w-5" />} variant="blue" />
@@ -142,7 +165,9 @@ export default function UomPage() {
           {
             label: 'Delete',
             icon: <Trash2 className="h-3.5 w-3.5" />,
-            onClick: (r: any) => { if (confirm(`Delete ${r.name}?`)) deleteMutation({ variables: { id: r.id } }) },
+            onClick: (r: any) => {
+              if (confirm(`Delete ${r.name}?`)) deleteMutation({ variables: { id: r.id } })
+            },
           },
         ]}
       />
@@ -161,15 +186,31 @@ export default function UomPage() {
           <FieldGrid cols={2}>
             <div className="space-y-1.5">
               <Label htmlFor="u-name">Name *</Label>
-              <Input id="u-name" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Box" />
+              <Input
+                id="u-name"
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Box"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="u-category">Category *</Label>
-              <Input id="u-category" value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} placeholder="Unit" />
+              <Input
+                id="u-category"
+                value={form.category}
+                onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                placeholder="Unit"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="u-ratio">Ratio (vs reference unit)</Label>
-              <Input id="u-ratio" type="number" step="0.0001" value={form.ratio} onChange={(e) => setForm((p) => ({ ...p, ratio: Number(e.target.value) }))} />
+              <Input
+                id="u-ratio"
+                type="number"
+                step="0.0001"
+                value={form.ratio}
+                onChange={(e) => setForm((p) => ({ ...p, ratio: Number(e.target.value) }))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="u-type">Type</Label>
@@ -186,11 +227,21 @@ export default function UomPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="u-uqc">GST UQC</Label>
-              <Input id="u-uqc" value={form.gstUqc} onChange={(e) => setForm((p) => ({ ...p, gstUqc: e.target.value.toUpperCase() }))} placeholder="BOX" className="font-mono" />
+              <Input
+                id="u-uqc"
+                value={form.gstUqc}
+                onChange={(e) => setForm((p) => ({ ...p, gstUqc: e.target.value.toUpperCase() }))}
+                placeholder="BOX"
+                className="font-mono"
+              />
             </div>
           </FieldGrid>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))} />
+            <input
+              type="checkbox"
+              checked={form.isActive}
+              onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+            />
             Active
           </label>
         </FormSection>

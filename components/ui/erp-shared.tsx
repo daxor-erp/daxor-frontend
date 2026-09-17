@@ -19,6 +19,7 @@
 
 import { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { formatDate } from '@/lib/format-date'
 import { Clock, Construction, ArrowUp, ArrowDown, Minus } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -358,13 +359,8 @@ export function MonoCell({ value, className }: { value?: string | null; classNam
   )
 }
 
-const dateFmt = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-
-export function DateCell({ value, className }: { value?: string | null; className?: string }) {
-  if (!value) return <span className="text-xs text-muted-foreground">—</span>
-  try {
-    return <span className={cn('text-xs', className)}>{dateFmt.format(new Date(value))}</span>
-  } catch {
-    return <span className="text-xs text-muted-foreground">—</span>
-  }
+export function DateCell({ value, className }: { value?: string | number | Date | null; className?: string }) {
+  const formatted = formatDate(value, '')
+  if (!formatted) return <span className="text-xs text-muted-foreground">—</span>
+  return <span className={cn('text-xs', className)}>{formatted}</span>
 }

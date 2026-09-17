@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { GET_BALANCE_SHEET } from '@/gql/queries'
-import { ReportShell, type ReportPeriod } from '@/components/reports/report-shell'
+import { ReportShell, type ReportPeriod, periodQueryDates, PERIOD_LABELS } from '@/components/reports/report-shell'
 import { formatMoney } from '@/lib/format-money'
 import { pdfMoney } from '@/lib/pdf-download'
 import { StatementLinesTable, type StatementLine } from '@/lib/financial-statement-lines'
@@ -13,11 +13,12 @@ export default function BalanceSheetPage() {
   const { user } = useAuth()
   const orgId = user?.organizationId ?? ''
   const [period, setPeriod] = useState<ReportPeriod>('this_year')
+  const dates = useMemo(() => periodQueryDates(period), [period])
 
   const { data, loading, error, refetch } = useQuery(GET_BALANCE_SHEET, {
-    variables: { organizationId: orgId },
+    variables: { organizationId: orgId, ...dates },
     skip: !orgId,
-    fetchPolicy: 'cache-and-network',
+    fetchPolicy: 'network-only',
   })
 
   const report = data?.balanceSheet
@@ -46,14 +47,18 @@ export default function BalanceSheetPage() {
   return (
     <ReportShell
       title="Balance Sheet"
-      description="Assets, liabilities, and equity from posted journals (trial balance)."
+      description="Assets, liabilities, and equity from posted journals (as of period end)."
       period={period}
       onPeriodChange={setPeriod}
       onRefresh={() => refetch?.()}
       loading={loading}
       pdfBody={buildPdf}
       pdfFilename="balance-sheet"
+      pdfSubtitle={PERIOD_LABELS[period]}
     >
+      <p className="text-xs text-muted-foreground mb-4">
+        Cumulative balances as of the end of {PERIOD_LABELS[period]} (posted journals with entry date on or before period end).
+      </p>
       {error && (
         <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
           {error.message}
