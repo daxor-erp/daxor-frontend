@@ -5,8 +5,8 @@ export function getAdminConsoleBackLink(
   const r = roles ?? []
   if (r.includes('SUPER_ADMIN') || r.includes('ERP_ADMIN')) {
     return {
-      href: '/admin/dashboard',
-      label: 'Admin dashboard',
+      href: '/admin/welcome',
+      label: 'Admin console',
       shortLabel: 'Admin',
     }
   }

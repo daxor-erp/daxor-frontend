@@ -17,7 +17,6 @@ import {
   ChevronsRight,
   Sun,
   Moon,
-  Bell,
   Search,
   Sparkles,
   Megaphone,
@@ -36,6 +35,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NotificationsDropdown } from '@/components/notifications-dropdown'
+
+const ACCENT = '#378ADD'
 
 const nav = [
   { href: '/org-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -58,29 +59,48 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
   const SidebarBody = ({ mobile = false }: { mobile?: boolean }) => (
     <aside
       className={cn(
-        'flex h-full flex-col bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))] transition-[width] duration-300',
-        mobile ? 'w-72' : collapsed ? 'w-[68px]' : 'w-64',
+        'flex h-full flex-col border-r border-slate-200 bg-white transition-[width] duration-300',
+        mobile ? 'w-72' : collapsed ? 'w-[72px]' : 'w-64',
       )}
     >
-      <div className={cn('flex items-center gap-2.5 px-4 h-16 shrink-0 border-b border-[hsl(var(--sidebar-border))]', collapsed && !mobile && 'justify-center px-2')}>
-        <div className="bg-grad-accent h-9 w-9 rounded-xl grid place-items-center text-white elev-brand shrink-0">
+      <div
+        className={cn(
+          'flex h-16 shrink-0 items-center gap-2.5 border-b border-slate-100 px-4',
+          collapsed && !mobile && 'justify-center px-2',
+        )}
+      >
+        <div
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-sm"
+          style={{ backgroundColor: ACCENT }}
+        >
           <Building2 className="h-5 w-5" />
         </div>
         {(!collapsed || mobile) && (
           <div className="min-w-0 flex-1">
-            <p className="text-white font-bold tracking-tight leading-none">Daxor</p>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--sidebar-muted))] mt-1">Tenant Admin</p>
+            <p className="leading-none font-semibold tracking-tight text-slate-900">Daxor</p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
+              Tenant Admin
+            </p>
           </div>
         )}
         {mobile && (
-          <button onClick={() => setMobileOpen(false)} className="rounded-md p-1 hover:bg-[hsl(var(--sidebar-accent))]">
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+          >
             <X className="h-5 w-5" />
           </button>
         )}
       </div>
-      <nav className={cn('flex-1 overflow-y-auto py-3 space-y-0.5', collapsed && !mobile ? 'px-2' : 'px-2.5')}>
+
+      <nav
+        className={cn(
+          'flex-1 space-y-1 overflow-y-auto py-4',
+          collapsed && !mobile ? 'px-2' : 'px-3',
+        )}
+      >
         {(!collapsed || mobile) && (
-          <p className="px-2.5 pt-1 pb-2 text-[10px] uppercase tracking-wider text-[hsl(var(--sidebar-muted))]">
+          <p className="px-2.5 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             Organization
           </p>
         )}
@@ -93,7 +113,13 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
                 key={item.href}
                 href={item.href}
                 title={item.label}
-                className={cn('nav-item justify-center w-11 h-11 p-0 mx-auto', active && 'active')}
+                className={cn(
+                  'mx-auto flex h-11 w-11 items-center justify-center rounded-xl transition',
+                  active
+                    ? 'text-white shadow-md'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800',
+                )}
+                style={active ? { backgroundColor: ACCENT } : undefined}
               >
                 <Icon className="h-5 w-5" />
               </Link>
@@ -104,83 +130,100 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
               key={item.href}
               href={item.href}
               onClick={() => mobile && setMobileOpen(false)}
-              className={cn('nav-item', active && 'active')}
+              className={cn(
+                'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition',
+                active
+                  ? 'text-white shadow-md'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+              )}
+              style={active ? { backgroundColor: ACCENT } : undefined}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="text-[13px]">{item.label}</span>
+              <span>{item.label}</span>
             </Link>
           )
         })}
       </nav>
-      <div className="shrink-0 border-t border-[hsl(var(--sidebar-border))] p-2 space-y-1">
+
+      <div className="shrink-0 space-y-1 border-t border-slate-100 p-3">
         {!mobile && (
           <button
             onClick={() => setCollapsed((v) => !v)}
-            className={cn('nav-item w-full', collapsed && 'justify-center px-0 w-11 h-11 mx-auto')}
+            className={cn(
+              'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50',
+              collapsed && 'mx-auto h-11 w-11 justify-center px-0',
+            )}
           >
             {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-            {!collapsed && <span className="text-[13px]">Collapse</span>}
+            {!collapsed && <span>Collapse</span>}
           </button>
         )}
         <Link
           href="/dashboard"
-          className={cn('nav-item w-full', collapsed && !mobile && 'justify-center px-0 w-11 h-11 mx-auto')}
+          className={cn(
+            'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50',
+            collapsed && !mobile && 'mx-auto h-11 w-11 justify-center px-0',
+          )}
         >
           <Sparkles className="h-4 w-4 shrink-0" />
-          {(!collapsed || mobile) && <span className="text-[13px]">Open ERP</span>}
+          {(!collapsed || mobile) && <span>Open ERP</span>}
         </Link>
         <button
           onClick={() => logout()}
           className={cn(
-            'nav-item w-full text-rose-300 hover:!bg-rose-500/15 hover:!text-rose-200',
-            collapsed && !mobile && 'justify-center px-0 w-11 h-11 mx-auto',
+            'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium text-rose-600 transition hover:bg-rose-50',
+            collapsed && !mobile && 'mx-auto h-11 w-11 justify-center px-0',
           )}
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          {(!collapsed || mobile) && <span className="text-[13px]">Logout</span>}
+          {(!collapsed || mobile) && <span>Logout</span>}
         </button>
       </div>
     </aside>
   )
 
   return (
-    <div className="flex h-screen w-full bg-background">
-      <div className="hidden lg:block shrink-0">
+    <div className="flex h-screen w-full bg-white">
+      <div className="hidden shrink-0 lg:block">
         <SidebarBody />
       </div>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="p-0 w-72 border-none">
+        <SheetContent side="left" className="w-72 border-none p-0">
           <SidebarBody mobile />
         </SheetContent>
       </Sheet>
-      <main className="flex flex-1 min-w-0 flex-col overflow-hidden bg-secondary/30">
-        <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
+        <header className="sticky top-0 z-30 shrink-0 border-b border-slate-100 bg-white">
           <div className="flex h-16 items-center gap-2 px-3 sm:px-4 lg:px-6">
             <button
               onClick={() => setMobileOpen(true)}
-              className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border hover:bg-secondary"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="hidden md:flex items-center gap-2">
-              <span className="rounded-lg bg-teal-50 text-teal-700 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider">
+            <div className="hidden items-center gap-2 md:flex">
+              <span
+                className="rounded-lg px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white"
+                style={{ backgroundColor: ACCENT }}
+              >
                 Tenant
               </span>
-              <h2 className="text-sm font-semibold">Organization admin</h2>
+              <h2 className="text-sm font-semibold text-slate-900">Organization admin</h2>
             </div>
 
             <div className="ml-auto flex items-center gap-1">
               <div className="relative hidden md:block">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="search"
                   placeholder="Search users…"
-                  className="rounded-lg border border-border bg-secondary/40 py-2 pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary w-56"
+                  className="w-56 rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#378ADD]/50 focus:bg-white focus:ring-2 focus:ring-[#378ADD]/20"
                 />
               </div>
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-secondary text-muted-foreground"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50"
               >
                 <Sun className="h-5 w-5 dark:hidden" />
                 <Moon className="hidden h-5 w-5 dark:inline" />
@@ -188,9 +231,12 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
               <NotificationsDropdown />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="ml-1 inline-flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-secondary">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-grad-accent text-white text-xs font-semibold">
+                  <button className="ml-1 inline-flex items-center gap-2 rounded-xl p-1 pr-2 hover:bg-slate-50">
+                    <Avatar className="h-8 w-8 border border-[#378ADD]/20">
+                      <AvatarFallback
+                        className="text-xs font-semibold text-white"
+                        style={{ backgroundColor: ACCENT }}
+                      >
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -198,21 +244,21 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
-                    <p className="font-medium text-sm">
+                    <p className="text-sm font-medium">
                       {user?.firstName} {user?.lastName}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => logout()} className="text-rose-600">
-                    <LogOut className="h-4 w-4 mr-2" /> Log out
+                    <LogOut className="mr-2 h-4 w-4" /> Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto min-h-0">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white">{children}</div>
       </main>
     </div>
   )

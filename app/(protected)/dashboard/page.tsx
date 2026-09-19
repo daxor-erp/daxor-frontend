@@ -117,7 +117,7 @@ function buildMonthlyBuckets(rows: Array<{ date?: string; amount?: number }>) {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const { isOpen: aiOpen } = useAiPane()
   const orgId = user?.organizationId ?? ''
   const skip = !orgId
@@ -269,7 +269,10 @@ export default function DashboardPage() {
     return Math.round((converted / leads.length) * 100)
   }, [leads])
 
+  // While authenticated but orgId is still missing (MeSync restoring), show skeletons
+  // instead of a false empty state (₹0 / 0 invoices).
   const loading =
+    (!!token && !orgId) ||
     invoicesQ.loading ||
     purchasesQ.loading ||
     salesQ.loading ||
