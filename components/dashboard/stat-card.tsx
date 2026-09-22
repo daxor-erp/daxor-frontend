@@ -15,13 +15,13 @@ export type StatCardTone =
   | 'slate'
 
 const TONE_ICON_BG: Record<StatCardTone, string> = {
-  brand: 'bg-primary/10 text-primary',
-  sky: 'bg-primary/10 text-primary',
+  brand: 'bg-[#378ADD]/10 text-[#378ADD]',
+  sky: 'bg-[#378ADD]/10 text-[#378ADD]',
   emerald: 'bg-emerald-50 text-emerald-700',
-  violet: 'bg-primary/10 text-primary',
+  violet: 'bg-[#378ADD]/10 text-[#378ADD]',
   rose: 'bg-rose-50 text-rose-700',
   warn: 'bg-amber-50 text-amber-700',
-  accent: 'bg-primary/10 text-primary',
+  accent: 'bg-[#378ADD]/10 text-[#378ADD]',
   slate: 'bg-muted text-muted-foreground',
 }
 

@@ -81,10 +81,10 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     )
   }
 
-  // Welcome / apps launcher — white canvas, no sidebar, profile top-right
+  // Welcome / apps launcher — light grey canvas, no sidebar, profile top-right
   if (isWelcomePath(pathname)) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-[#F4F6F8]">
         <MeSync />
         {children}
       </div>

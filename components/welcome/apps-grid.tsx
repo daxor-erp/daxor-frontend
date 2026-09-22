@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRouteTransition } from '@/contexts/RouteTransitionContext'
 import { NAVIGATION, type NavItem } from '@/lib/navigation'
 import { filterNavigationByModuleView, type ErpNavItem } from '@/lib/erp-module-access'
 import { filterNavigationByPackageModules } from '@/lib/package-module-access'
@@ -14,6 +16,8 @@ import { cn } from '@/lib/utils'
 
 export function AppsGrid() {
   const { user } = useAuth()
+  const router = useRouter()
+  const { startNavigation } = useRouteTransition()
 
   const apps = useMemo(() => {
     const byRole = filterNavigationByModuleView(
@@ -28,6 +32,14 @@ export function AppsGrid() {
     ) as NavItem[]
     return navigationToWelcomeApps(filtered)
   }, [user?.modulePermissions, user?.packageEnabledModules, user?.roles])
+
+  // Prefetch every reachable app so icons open faster.
+  useEffect(() => {
+    for (const app of apps) {
+      const href = firstAppHref(app)
+      if (href) router.prefetch(href)
+    }
+  }, [apps, router])
 
   if (apps.length === 0) {
     return (
@@ -78,6 +90,9 @@ export function AppsGrid() {
           <Link
             key={app.id}
             href={href}
+            prefetch
+            onClick={() => startNavigation(href)}
+            onMouseEnter={() => router.prefetch(href)}
             className="outline-none focus-visible:rounded-2xl focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
           >
             {card}

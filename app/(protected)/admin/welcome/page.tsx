@@ -1,12 +1,24 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Shield } from 'lucide-react'
 import { ADMIN_ACCENT, ADMIN_APP_ACCENTS, ADMIN_NAV } from '@/lib/admin-nav'
 import { NotificationsDropdown } from '@/components/notifications-dropdown'
 import { UserProfileMenu } from '@/components/welcome/user-profile-menu'
+import { useRouteTransition } from '@/contexts/RouteTransitionContext'
 
 export default function AdminWelcomePage() {
+  const router = useRouter()
+  const { startNavigation } = useRouteTransition()
+
+  useEffect(() => {
+    for (const item of ADMIN_NAV) {
+      router.prefetch(item.href)
+    }
+  }, [router])
+
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
@@ -48,6 +60,9 @@ export default function AdminWelcomePage() {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
+                onClick={() => startNavigation(item.href)}
+                onMouseEnter={() => router.prefetch(item.href)}
                 className="group outline-none focus-visible:rounded-2xl focus-visible:ring-2 focus-visible:ring-[#378ADD]/40 focus-visible:ring-offset-2"
               >
                 <span className="flex flex-col items-center gap-3 text-center">

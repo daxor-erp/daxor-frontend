@@ -7,6 +7,7 @@ import { ApolloPermissionRejectionBridge } from '@/components/apollo-permission-
 import { apolloClient } from '@/utils/apollo-client'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { AiPaneProvider } from '@/contexts/AiPaneContext'
+import { RouteTransitionProvider } from '@/contexts/RouteTransitionContext'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -15,8 +16,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <AuthProvider>
           <AiPaneProvider>
-            {children}
-            <Toaster />
+            <RouteTransitionProvider>
+              {children}
+              <Toaster />
+            </RouteTransitionProvider>
           </AiPaneProvider>
         </AuthProvider>
       </ThemeProvider>

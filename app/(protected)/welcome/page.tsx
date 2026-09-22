@@ -5,7 +5,7 @@ import { WelcomeChromeHeader } from '@/components/welcome/welcome-chrome-header'
 
 export default function WelcomePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-[#F4F6F8]">
       <WelcomeChromeHeader />
       <main className="flex flex-1 flex-col px-4 py-10 sm:px-8 sm:py-14">
         <div className="mx-auto mb-10 w-full max-w-6xl text-center sm:mb-12 sm:text-left">

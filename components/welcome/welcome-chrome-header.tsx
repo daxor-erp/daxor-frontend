@@ -4,20 +4,35 @@ import Link from 'next/link'
 import { LayoutGrid, Sparkles } from 'lucide-react'
 import { UserProfileMenu } from '@/components/welcome/user-profile-menu'
 import { NotificationsDropdown } from '@/components/notifications-dropdown'
+import { useRouteTransition } from '@/contexts/RouteTransitionContext'
 import { cn } from '@/lib/utils'
 
 type WelcomeChromeHeaderProps = {
   /** When true, show a compact “Apps” home control (module workspace). */
   showAppsHome?: boolean
   title?: string
+  /**
+   * When set, the title acts as a breadcrumb link back to the module home
+   * (used when an overflow submodule is open).
+   */
+  titleHref?: string
+  /** Hide non-breadcrumb chrome title styling; emphasize clickable module name. */
+  breadcrumbOnly?: boolean
+  /** Current overflow leaf name shown after the module breadcrumb. */
+  breadcrumbCurrent?: string
   className?: string
 }
 
 export function WelcomeChromeHeader({
   showAppsHome = false,
   title,
+  titleHref,
+  breadcrumbOnly = false,
+  breadcrumbCurrent,
   className,
 }: WelcomeChromeHeaderProps) {
+  const { startNavigation } = useRouteTransition()
+
   return (
     <header
       className={cn(
@@ -29,6 +44,8 @@ export function WelcomeChromeHeader({
         {showAppsHome ? (
           <Link
             href="/welcome"
+            prefetch
+            onClick={() => startNavigation('/welcome')}
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             title="All apps"
             aria-label="All apps"
@@ -48,7 +65,28 @@ export function WelcomeChromeHeader({
             </span>
           </Link>
         )}
-        {title ? (
+
+        {title && titleHref ? (
+          <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
+            <Link
+              href={titleHref}
+              prefetch
+              onClick={() => startNavigation(titleHref)}
+              className="truncate text-sm font-semibold text-slate-900 transition-colors hover:text-[#378ADD]"
+              title={`Back to ${title}`}
+            >
+              {title}
+            </Link>
+            {breadcrumbCurrent ? (
+              <>
+                <span className="text-slate-300" aria-hidden>
+                  /
+                </span>
+                <span className="truncate text-sm font-medium text-slate-500">{breadcrumbCurrent}</span>
+              </>
+            ) : null}
+          </nav>
+        ) : title && !breadcrumbOnly ? (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-slate-900">{title}</p>
           </div>
