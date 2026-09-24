@@ -93,7 +93,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   // Module workspace — header tabs for sub-options, content below
   return (
-    <div className="relative h-screen bg-white">
+    <div className="relative h-screen w-full max-w-full overflow-x-hidden bg-white">
       <MeSync />
       <ModuleWorkspaceChrome>
         <div

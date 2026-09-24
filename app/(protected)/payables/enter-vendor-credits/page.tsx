@@ -11,6 +11,8 @@ import { ConfirmDialog } from '@/components/ui/form-drawer'
 import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { GET_VENDOR_CREDITS, CREATE_VENDOR_CREDIT, DELETE_VENDOR_CREDIT, GET_VENDORS } from '@/gql/queries'
 import { CreditCard, DollarSign, CheckCircle2, Trash2, Plus } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const CREDIT_REASONS = [
   { value: 'returned_goods',         label: 'Returned Goods' },
@@ -32,7 +34,7 @@ export default function VendorCreditsPage() {
   const { data: vData }            = useQuery(GET_VENDORS,         { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
 
   const done = () => { refetch(); setDrawerOpen(false); setDelConfirm(null) }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [createCredit, { loading: saving }] = useMutation(CREATE_VENDOR_CREDIT, { onCompleted: done, onError: err })
   const [deleteCredit]                       = useMutation(DELETE_VENDOR_CREDIT, { onCompleted: done, onError: err })
@@ -91,7 +93,7 @@ export default function VendorCreditsPage() {
         open={drawerOpen} onClose={() => setDrawerOpen(false)}
         title="New Vendor Credit" size="sm"
         submitLabel="Save Credit" onSubmit={() => {
-          if (!form.vendorId || !form.totalAmount) return alert('Fill required fields')
+          if (!form.vendorId || !form.totalAmount) return toast.error('Fill required fields')
           createCredit({ variables: { input: { ...form, totalAmount: Number(form.totalAmount), organizationId: orgId } } })
         }}
         submitting={saving}

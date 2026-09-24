@@ -196,7 +196,7 @@ export function DataTable<T extends Record<string, any>>({
       <div className="overflow-x-auto">
         <table className={cn('erp-table', bordered && 'border border-border')}>
           <thead>
-            <tr className="border-b border-border bg-muted/70">
+            <tr className="border-b border-border bg-[#E6EBF1]">
               <th className="w-8 border-r border-border py-2 text-center font-semibold text-muted-foreground">#</th>
               {columns.map(column => (
                 <th
@@ -251,8 +251,8 @@ export function DataTable<T extends Record<string, any>>({
                   key={row[rowKey] || rowIdx}
                   className={cn(
                     'border-b border-border',
-                    striped && rowIdx % 2 === 1 ? 'bg-muted/40' : 'bg-card',
-                    hoverable && 'transition-colors hover:bg-primary/5',
+                    striped && rowIdx % 2 === 1 ? 'bg-[#E8EDF3]' : 'bg-[#F3F6F9]',
+                    hoverable && 'transition-colors hover:bg-[#E7EEF6]',
                     onRowClick && (!isRowClickable || isRowClickable(row)) && 'cursor-pointer',
                   )}
                   onClick={onRowClick ? (e) => handleRowClick(row, e) : undefined}

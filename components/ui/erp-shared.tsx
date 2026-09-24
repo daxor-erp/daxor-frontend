@@ -36,26 +36,10 @@ interface PageHeaderProps {
   className?: string
 }
 
-export function PageHeader({ title, subtitle, icon, breadcrumbs, actions, className }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, icon, actions, className }: PageHeaderProps) {
   return (
     <div className={cn('flex items-start justify-between gap-4 mb-6', className)}>
       <div className="min-w-0 flex-1">
-        {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav className="flex items-center gap-1 mb-1 text-[11px] text-muted-foreground">
-            {breadcrumbs.map((b, i) => (
-              <span key={i} className="flex items-center gap-1">
-                {i > 0 && <span className="opacity-40">/</span>}
-                {b.href ? (
-                  <a href={b.href} className="hover:text-primary transition-colors">
-                    {b.label}
-                  </a>
-                ) : (
-                  <span>{b.label}</span>
-                )}
-              </span>
-            ))}
-          </nav>
-        )}
         <div className="flex items-center gap-3">
           {icon && (
             <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">

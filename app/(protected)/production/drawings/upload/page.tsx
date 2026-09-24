@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { InputFloating } from '@/components/ui/input-floating'
 import { Upload, FileText, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function UploadDrawingsPage() {
   const { user } = useAuth()
@@ -21,7 +22,7 @@ export default function UploadDrawingsPage() {
 
   const handleUpload = () => {
     console.log('Uploading:', { title, description, files })
-    alert('Upload functionality to be implemented')
+    toast.error('Upload functionality to be implemented')
   }
 
   return (

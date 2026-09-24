@@ -26,6 +26,7 @@ import {
 import { Trash2, Edit, X, Save, TrendingUp, Eye, Plus, Users, UserPlus, CheckCircle2, Clock } from 'lucide-react'
 import { formatMoney } from '@/lib/format-money'
 import { useRouter } from 'next/navigation'
+import { toastApolloError } from '@/lib/toast-apollo'
 
 const EMPTY_FORM = {
   firstName: '',
@@ -85,7 +86,7 @@ export default function LeadManagementPage() {
     },
     onError: (error) => {
       console.error('Convert error:', error)
-      alert('Failed to convert lead: ' + error.message)
+      toastApolloError(error)
     },
   })
 

@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NotificationsDropdown } from '@/components/notifications-dropdown'
+import { ApprovalsInbox } from '@/components/approvals-inbox'
 
 const ACCENT = '#378ADD'
 
@@ -228,6 +229,7 @@ export default function OrgAdminLayout({ children }: { children: React.ReactNode
                 <Sun className="h-5 w-5 dark:hidden" />
                 <Moon className="hidden h-5 w-5 dark:inline" />
               </button>
+              <ApprovalsInbox triggerClassName="hover:bg-slate-50 text-slate-500" />
               <NotificationsDropdown />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

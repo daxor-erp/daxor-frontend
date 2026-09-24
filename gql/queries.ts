@@ -2184,6 +2184,8 @@ export const GET_SALES_ORDERS = gql`
       orderDate
       organizationId
       cashSale
+      invoicingPolicy
+      deliveredQuantity
       refundedAt
       refundAmount
       createdAt
@@ -3920,6 +3922,9 @@ export const CREATE_GRN = gql`
         orderedQty
         receivedQty
         unitPrice
+        lotNumber
+        serialNumber
+        lotSerialNumbers
       }
     }
   }
@@ -3938,6 +3943,9 @@ export const UPDATE_GRN = gql`
         orderedQty
         receivedQty
         unitPrice
+        lotNumber
+        serialNumber
+        lotSerialNumbers
       }
     }
   }
@@ -5020,6 +5028,12 @@ export const SEND_QUOTATION = gql`
       }
       emailSent
     }
+  }
+`
+
+export const SEND_TEST_EMAIL = gql`
+  mutation SendTestEmail($to: String!, $message: String) {
+    sendTestEmail(to: $to, message: $message)
   }
 `
 
@@ -6346,7 +6360,7 @@ export const CREATE_INVOICE_FROM_SALES_ORDER = gql`
   mutation CreateInvoiceFromSalesOrder($salesOrderId: ID!, $invoiceDate: String!, $dueDate: String) {
     createInvoiceFromSalesOrder(salesOrderId: $salesOrderId, invoiceDate: $invoiceDate, dueDate: $dueDate) {
       id
-      invoiceNumber
+      seqNo
       status
       totalAmount
     }

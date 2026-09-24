@@ -35,6 +35,7 @@ import {
   buildCreateStockAdjustmentInput,
   formatAdjDate,
 } from '@/components/inventory/stock-adjustment-shared'
+import { toastApolloError } from '@/lib/toast-apollo'
 
 const STATUS_MAP: Record<string, string> = {
   draft: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -77,22 +78,22 @@ export function AdjustInventoryQuickSection({ organizationId: orgId, warehouses 
       void refetch()
       closeForm()
     },
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const [confirmAdj] = useMutation(CONFIRM_STOCK_ADJUSTMENT, {
     onCompleted: () => void refetch(),
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const [cancelAdj] = useMutation(CANCEL_STOCK_ADJUSTMENT, {
     onCompleted: () => void refetch(),
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const [deleteAdj] = useMutation(DELETE_STOCK_ADJUSTMENT, {
     onCompleted: () => void refetch(),
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const reset = () => {

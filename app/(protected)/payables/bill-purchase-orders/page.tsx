@@ -10,6 +10,7 @@ import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCel
 import { GET_PURCHASE_ORDERS_FOR_BILLING, BILL_PURCHASE_ORDER } from '@/gql/queries'
 import { FileText, X, Save, AlertCircle, CheckCircle, Package, Clock } from 'lucide-react'
 import { formatMoney } from '@/lib/format-money'
+import { toast } from 'sonner'
 
 export default function BillPurchaseOrdersPage() {
   const { user } = useAuth()
@@ -54,11 +55,11 @@ export default function BillPurchaseOrdersPage() {
 
   const startBilling = (row: any) => {
     if (row.billingStatus === 'billed') {
-      alert('This PO has already been fully billed.')
+      toast.error('This PO has already been fully billed.')
       return
     }
     if (!row.vendorId) {
-      alert('This PO has no vendor assigned. Add a vendor before billing.')
+      toast.error('This PO has no vendor assigned. Add a vendor before billing.')
       return
     }
     setBillingPO(row)

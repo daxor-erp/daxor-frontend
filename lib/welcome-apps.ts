@@ -61,8 +61,15 @@ export function flattenNavLeaves(item: NavItem): AppLeaf[] {
   return out
 }
 
+/** Landing page when an app icon is opened. Sales starts on Sales Orders, not the first nav leaf. */
+const MODULE_HOME_HREF: Record<string, string> = {
+  sales: '/sales-orders',
+}
+
 export function firstAppHref(app: WelcomeApp): string | null {
   if (app.href) return app.href
+  const home = app.moduleKey ? MODULE_HOME_HREF[app.moduleKey] : undefined
+  if (home && app.leaves.some((leaf) => leaf.href === home)) return home
   return app.leaves[0]?.href ?? null
 }
 

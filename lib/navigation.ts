@@ -85,6 +85,7 @@ export const NAVIGATION: NavItem[] = [
     subItems: [
       { name: 'Create Quotations', href: '/quotations' },
       { name: 'Send Quotations', href: '/quotations/send' },
+      { name: 'Test', href: '/quotations/test' },
     ],
   },
   {
@@ -96,9 +97,11 @@ export const NAVIGATION: NavItem[] = [
       { name: 'Delivery Challan', href: '/delivery-challan' },
       { name: 'Delivery Orders', href: '/sales/delivery-orders' },
       { name: 'Create Invoices', href: '/sales/create-invoices' },
+      { name: 'Customer Invoices', href: '/customer-invoices' },
       { name: 'Delivery Order', href: '/sales/delivery-order' },
       { name: 'Enter Cash Sales', href: '/sales/enter-cash-sales' },
       { name: 'Enter Sales Order', href: '/sales/enter-sales-order' },
+      { name: 'Sales Orders', href: '/sales-orders' },
       { name: 'Invoice Sales Order', href: '/sales/invoice-sales-order' },
       { name: 'Issue Credit Memos', href: '/sales/issue-credit-memos' },
       { name: 'Project', href: '/sales/project' },

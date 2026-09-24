@@ -27,6 +27,7 @@ import {
   customerDisplayName,
 } from '@/lib/sales-customer-options'
 import { entityRefLabel } from '@/lib/format-status'
+import { toastApolloError } from '@/lib/toast-apollo'
 
 interface Line { desc: string; qty: string; price: string }
 const emptyLine = (): Line => ({ desc: '', qty: '', price: '' })
@@ -54,7 +55,7 @@ export default function CreateInvoicesPage() {
 
   const [submitInvoiceForApproval, { loading: submittingInv }] = useMutation(SUBMIT_CUSTOMER_INVOICE_FOR_APPROVAL, {
     onCompleted: () => refetch(),
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const [adding, setAdding] = useState(false)

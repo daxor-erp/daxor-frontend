@@ -16,6 +16,8 @@ import {
   RECONCILE_VENDOR_BILL, APPLY_VENDOR_CREDIT,
 } from '@/gql/queries'
 import { FileText, Clock, CheckCircle2, DollarSign, Trash2, Send, CheckCheck, Plus, CreditCard, Minus } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const BLANK_LINE = { description: '', quantity: 1, unitPrice: 0, discount: 0, tax: 0, total: 0 }
 const BLANK_FORM = { vendorId: '', billDate: new Date().toISOString().split('T')[0], dueDate: '', notes: '' }
@@ -51,7 +53,7 @@ export default function EnterBillsPage() {
   })
 
   const done = () => { refetch(); setDrawerOpen(false); setEditRow(null); setDelConfirm(null); setCreditDrawer(null); setCreditAmount('') }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [createBill, { loading: saving }]  = useMutation(CREATE_VENDOR_BILL,               { onCompleted: done, onError: err })
   const [updateBill, { loading: updating }] = useMutation(UPDATE_VENDOR_BILL,              { onCompleted: done, onError: err })
@@ -229,7 +231,7 @@ export default function EnterBillsPage() {
         size="sm"
         submitLabel="Apply Credit"
         onSubmit={() => {
-          if (!creditDrawer || !creditAmount || Number(creditAmount) <= 0) return alert('Enter a positive credit amount')
+          if (!creditDrawer || !creditAmount || Number(creditAmount) <= 0) return toast.error('Enter a positive credit amount')
           applyCredit({ variables: { id: creditDrawer.id, amount: Number(creditAmount) } })
         }}
         submitting={applying}

@@ -12,6 +12,8 @@ import {
   GET_OUTSTANDING_VENDOR_BILLS, CREATE_VENDOR_PAYMENT,
 } from '@/gql/queries'
 import { DollarSign, Clock, AlertCircle, CheckCircle2, CreditCard } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const PAYMENT_METHODS = [
   { value: 'bank_transfer', label: 'Bank Transfer' },
@@ -33,7 +35,7 @@ export default function PayBillsPage() {
   })
 
   const done = () => { refetch(); setPayDrawer(null) }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [createPayment, { loading: paying }] = useMutation(CREATE_VENDOR_PAYMENT, { onCompleted: done, onError: err })
 
@@ -49,7 +51,7 @@ export default function PayBillsPage() {
   const setP = (k: string, v: string) => setPayForm(p => ({ ...p, [k]: v }))
 
   const handlePay = () => {
-    if (!payDrawer || !payForm.amount || !payForm.paymentDate) return alert('Fill in required fields')
+    if (!payDrawer || !payForm.amount || !payForm.paymentDate) return toast.error('Fill in required fields')
     createPayment({
       variables: {
         input: {

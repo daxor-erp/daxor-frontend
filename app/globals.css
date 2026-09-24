@@ -108,7 +108,7 @@
     @apply border-border;
   }
   html, body {
-    @apply bg-background text-foreground antialiased;
+    @apply max-w-full overflow-x-hidden bg-background text-foreground antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1, 'ss01' 1;
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -143,18 +143,22 @@
   }
   .erp-table {
     @apply w-full border-collapse text-sm;
+    background-color: #f3f6f9;
   }
   .erp-table thead tr {
-    @apply border-b border-border bg-muted/70;
+    @apply border-b border-border;
+    background-color: #e6ebf1;
   }
   .erp-table th {
     @apply px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+    background-color: #e6ebf1;
   }
   .erp-table td {
     @apply border-b border-border px-3 py-2 text-sm text-foreground;
+    background-color: #f3f6f9;
   }
-  .erp-table tbody tr:hover {
-    @apply bg-primary/5;
+  .erp-table tbody tr:hover td {
+    background-color: #e7eef6;
   }
 
   /* Elevation */
@@ -228,6 +232,14 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+
+  /* List tables sit on a light grey so rows stay readable on white pages. */
+  table tbody tr {
+    background-color: #f3f6f9;
+  }
+  table tbody tr:hover {
+    background-color: #e7eef6;
+  }
 
   /* 4 jumping dots — used by JumpingDotsLoader (#378ADD) */
   @keyframes jumping-dot {

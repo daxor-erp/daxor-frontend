@@ -96,6 +96,7 @@ export default function SendQuotationsPage() {
   const [previewOpen, setPreviewOpen] = useState(false)
   const [banner, setBanner] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const [sendConfirmId, setSendConfirmId] = useState<string | null>(null)
+  const [sendConfirmEmail, setSendConfirmEmail] = useState('')
 
   const { data, loading, refetch } = useQuery(GET_QUOTATIONS, {
     variables: { organizationId: orgId },
@@ -105,16 +106,21 @@ export default function SendQuotationsPage() {
 
   const [sendQuotation, { loading: sending }] = useMutation(SEND_QUOTATION, {
     onCompleted: () => {
+      const dest = sendConfirmEmail
       refetch()
       setSendConfirmId(null)
+      setSendConfirmEmail('')
       setBanner({
         type: 'ok',
-        text: 'Quotation was emailed to the customer via SMTP and marked as sent.',
+        text: dest
+          ? `Quotation emailed to ${dest} and marked as sent.`
+          : 'Quotation was emailed to the customer via SMTP and marked as sent.',
       })
       setTimeout(() => setBanner(null), 8000)
     },
     onError: (error) => {
       setSendConfirmId(null)
+      setSendConfirmEmail('')
       setBanner({ type: 'err', text: error.message })
       setTimeout(() => setBanner(null), 10000)
     },
@@ -122,6 +128,11 @@ export default function SendQuotationsPage() {
 
   const handleSend = (id: string) => {
     sendQuotation({ variables: { id } })
+  }
+
+  const openSendConfirm = (r: QuotationRow) => {
+    setSendConfirmId(r.id)
+    setSendConfirmEmail(quotationPartyEmail(r))
   }
 
   const handlePreview = (quotation: QuotationRow) => {
@@ -201,7 +212,7 @@ export default function SendQuotationsPage() {
           {
             label: 'Send to Customer',
             icon: <Send className="h-3.5 w-3.5" />,
-            onClick: (r: any) => setSendConfirmId(r.id),
+            onClick: (r: any) => openSendConfirm(r),
             disabled: (r: any) => !quotationPartyEmail(r),
           },
         ]}
@@ -227,20 +238,32 @@ export default function SendQuotationsPage() {
         }]}
       />
 
-      <Dialog open={!!sendConfirmId} onOpenChange={(open) => !open && setSendConfirmId(null)}>
+      <Dialog open={!!sendConfirmId} onOpenChange={(open) => {
+        if (!open) {
+          setSendConfirmId(null)
+          setSendConfirmEmail('')
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Send quotation to customer?</DialogTitle>
           </DialogHeader>
           <p className="erp-page-desc">
-            Sends the full quotation (lines, totals, terms) to the customer using SMTP (Nodemailer). The API must have
-            EMAIL_USER and EMAIL_PASSWORD set. The quotation is only marked sent after the email succeeds.
+            Emails the full quotation (lines, totals, terms) to the customer&apos;s email on file
+            {sendConfirmEmail ? (
+              <>
+                : <strong className="text-foreground">{sendConfirmEmail}</strong>
+              </>
+            ) : (
+              '.'
+            )}
+            {' '}The quotation is marked <strong>sent</strong> only after the email succeeds.
           </p>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setSendConfirmId(null)} disabled={sending}>
+            <Button variant="outline" size="sm" onClick={() => { setSendConfirmId(null); setSendConfirmEmail('') }} disabled={sending}>
               Cancel
             </Button>
-            <Button size="sm" disabled={sending} onClick={() => sendConfirmId && handleSend(sendConfirmId)}>
+            <Button size="sm" disabled={sending || !sendConfirmEmail} onClick={() => sendConfirmId && handleSend(sendConfirmId)}>
               {sending ? 'Sending…' : 'Confirm send'}
             </Button>
           </div>

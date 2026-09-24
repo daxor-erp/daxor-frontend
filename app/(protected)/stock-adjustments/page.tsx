@@ -15,6 +15,8 @@ import {
   UPDATE_STOCK_ADJUSTMENT,
 } from '@/gql/queries'
 import { ClipboardList, FileEdit, BadgeCheck, CalendarDays, Check, X, Trash2, Plus, Pencil } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const ADJ_TYPES = [
   { value: 'recount',   label: 'Recount' },
@@ -40,7 +42,7 @@ export default function StockAdjustmentsPage() {
   const { data: whData }            = useQuery(GET_WAREHOUSES,         { variables: { organizationId: orgId }, skip: !orgId })
 
   const done = () => { refetch(); setDrawerOpen(false); setEditRow(null); setConfirm(null) }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [create, { loading: saving }]   = useMutation(CREATE_STOCK_ADJUSTMENT,  { onCompleted: done, onError: err })
   const [update_, { loading: updating }] = useMutation(UPDATE_STOCK_ADJUSTMENT, { onCompleted: done, onError: err })
@@ -100,8 +102,8 @@ export default function StockAdjustmentsPage() {
   }
 
   const handleSave = () => {
-    if (!form.adjDate) return alert('Adjustment date is required')
-    if (!lines.some(l => l.itemDescription?.trim())) return alert('Add at least one item')
+    if (!form.adjDate) return toast.error('Adjustment date is required')
+    if (!lines.some(l => l.itemDescription?.trim())) return toast.error('Add at least one item')
     const mappedLines = lines.filter(l => l.itemDescription?.trim()).map(l => ({
       itemDescription: l.itemDescription.trim(),
       currentQty:  Number(l.currentQty),

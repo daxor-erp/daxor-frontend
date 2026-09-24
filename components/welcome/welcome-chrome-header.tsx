@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { LayoutGrid, Sparkles } from 'lucide-react'
 import { UserProfileMenu } from '@/components/welcome/user-profile-menu'
 import { NotificationsDropdown } from '@/components/notifications-dropdown'
+import { ApprovalsInbox } from '@/components/approvals-inbox'
 import { useRouteTransition } from '@/contexts/RouteTransitionContext'
 import { cn } from '@/lib/utils'
 
@@ -94,6 +95,7 @@ export function WelcomeChromeHeader({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2">
+        <ApprovalsInbox triggerClassName="hover:bg-slate-100 text-slate-500" />
         <NotificationsDropdown />
         <UserProfileMenu />
       </div>

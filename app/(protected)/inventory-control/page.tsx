@@ -17,6 +17,8 @@ import { Package, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/erp-shared'
 import { CellInput } from '@/components/ui/cell-input'
 import { CellSelect } from '@/components/ui/cell-select'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const STOCK_STATUS_OPTS = [
   { value: '', label: 'All statuses' },
@@ -149,11 +151,11 @@ export default function InventoryControlPage() {
   }, [data?.inventoryControls])
 
   const [createIc] = useMutation(CREATE_INVENTORY_CONTROL, {
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const [updateIc] = useMutation(UPDATE_INVENTORY_CONTROL, {
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const defaultWarehouseId = warehouseFilter || warehouses[0]?.id || ''
@@ -177,7 +179,7 @@ export default function InventoryControlPage() {
   const addBlankRow = () => {
     const wh = defaultWarehouseId
     if (!wh) {
-      alert('Create a warehouse first (Inventory → Warehouses).')
+      toast.error('Create a warehouse first (Inventory → Warehouses).')
       return
     }
     setRows((prev) => [...prev, emptyRow(wh)])

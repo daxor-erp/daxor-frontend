@@ -20,6 +20,8 @@ import {
   Trash2, X, Save, Plus, Minus, CalendarDays, ArrowRightLeft,
 } from 'lucide-react'
 import { PageHeader, StatsRow, StatCard, ErpBadge, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const STATUS_MAP: Record<string, string> = {
   draft: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -97,22 +99,22 @@ export default function IntercompanyTransferPage() {
       void refetch()
       closeForm()
     },
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const [confirmIct] = useMutation(CONFIRM_INTERCOMPANY_TRANSFER, {
     onCompleted: () => void refetch(),
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const [cancelIct] = useMutation(CANCEL_INTERCOMPANY_TRANSFER, {
     onCompleted: () => void refetch(),
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const [deleteIct] = useMutation(DELETE_INTERCOMPANY_TRANSFER, {
     onCompleted: () => void refetch(),
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   useEffect(() => {
@@ -150,7 +152,7 @@ export default function IntercompanyTransferPage() {
 
   const submit = () => {
     if (!orgId) {
-      alert('Organization required')
+      toast.error('Organization required')
       return
     }
     if (!validate()) return

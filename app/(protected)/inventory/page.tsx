@@ -12,6 +12,7 @@ import {
   ArrowRightLeft, Layers, BookOpen,
 } from 'lucide-react'
 import Link from 'next/link'
+import { toastApolloError } from '@/lib/toast-apollo'
 
 export default function InventoryPage() {
   const { user } = useAuth()
@@ -22,7 +23,7 @@ export default function InventoryPage() {
 
   const [runScheduler, { loading: running }] = useMutation(RUN_REORDER_SCHEDULER, {
     onCompleted: (d) => { setResult(d.runReorderScheduler); setShowConfirm(false) },
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const MODULES = [
