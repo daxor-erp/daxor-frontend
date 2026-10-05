@@ -27,6 +27,8 @@ import {
   Package, ReceiptText, Copy, Lock, Ban, FileCheck,
   Send, Plus, Pencil, Unlock, Truck, ThumbsUp,
 } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const BLANK_LINE = { productName: '', quantity: 1, unitPrice: 0, discountPercent: 0 }
 
@@ -84,7 +86,7 @@ export default function PurchaseOrdersPage() {
   })
 
   const done = () => { refetch(); setDrawerOpen(false); setEditRow(null); setConfirm(null); setBillDrawer(null); setReceiveDrawer(null) }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [createPO,    { loading: creating }]  = useMutation(CREATE_PURCHASE_ORDER,    { onCompleted: done, onError: err })
   const [updatePO,    { loading: updating }]  = useMutation(UPDATE_PURCHASE_ORDER,    { onCompleted: done, onError: err })
@@ -159,8 +161,8 @@ export default function PurchaseOrdersPage() {
   }
 
   const handleSave = () => {
-    if (!form.vendorId) return alert('Select a vendor')
-    if (!lines.some(l => l.productName.trim())) return alert('Add at least one item')
+    if (!form.vendorId) return toast.error('Select a vendor')
+    if (!lines.some(l => l.productName.trim())) return toast.error('Add at least one item')
     const mappedLines = lines.filter(l => l.productName.trim()).map(l => ({
       productName: l.productName.trim(),
       quantity: Number(l.quantity),
@@ -188,7 +190,7 @@ export default function PurchaseOrdersPage() {
     const lines = (receiveDrawer.items ?? [])
       .map((item: any) => ({ lineId: item.id, qtyReceived: Number(receiveQtys[item.id] ?? 0) }))
       .filter((l: any) => l.qtyReceived > 0)
-    if (!lines.length) return alert('Enter at least one received quantity')
+    if (!lines.length) return toast.error('Enter at least one received quantity')
     receivePO({ variables: { id: receiveDrawer.id, lines } })
   }
 
@@ -205,7 +207,7 @@ export default function PurchaseOrdersPage() {
   }
 
   const handleBill = () => {
-    if (!billDrawer || !billForm.billDate || !billForm.dueDate) return alert('Enter bill date and due date')
+    if (!billDrawer || !billForm.billDate || !billForm.dueDate) return toast.error('Enter bill date and due date')
     billPO({ variables: { id: billDrawer.id, billDate: billForm.billDate, dueDate: billForm.dueDate } })
   }
 

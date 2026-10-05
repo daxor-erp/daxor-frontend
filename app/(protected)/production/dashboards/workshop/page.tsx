@@ -3,9 +3,12 @@
 import { useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { GET_PRODUCTION_PLANNINGS } from '@/gql/queries'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { SectionCard } from '@/components/dashboard/section-card'
 import { Wrench, Users, Clock, CheckCircle } from 'lucide-react'
 import { formatDate } from '@/lib/format-date'
+
+const ACCENT = '#378ADD'
+const ACCENT_SOFT = 'rgba(55, 138, 221, 0.12)'
 
 export default function WorkshopDashboard() {
   const { user } = useAuth()
@@ -16,7 +19,7 @@ export default function WorkshopDashboard() {
     skip: !orgId,
   })
 
-  const plans = data?.productionplannings || []
+  const plans = data?.productionplannings || data?.productionPlannings || []
   const allTasks = plans.flatMap((p: any) => p.tasks || [])
 
   const stats = {
@@ -26,84 +29,102 @@ export default function WorkshopDashboard() {
     blocked: allTasks.filter((t: any) => t.status === 'blocked').length,
   }
 
+  const kpis = [
+    { label: 'Total Tasks', value: stats.totalTasks, icon: Wrench },
+    { label: 'In Progress', value: stats.inProgress, icon: Clock },
+    { label: 'Completed', value: stats.completed, icon: CheckCircle },
+    { label: 'Blocked', value: stats.blocked, icon: Users },
+  ]
+
   return (
-    <div className="erp-shell">
+    <div className="erp-shell bg-white">
       <div>
         <h1 className="erp-page-title">Workshop Dashboard</h1>
         <p className="erp-page-desc">Workshop operations and task tracking</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: 'Total Tasks', value: stats.totalTasks, icon: Wrench, cls: 'text-primary bg-primary/10' },
-          { label: 'In Progress', value: stats.inProgress, icon: Clock, cls: 'text-orange-600 bg-orange-50' },
-          { label: 'Completed', value: stats.completed, icon: CheckCircle, cls: 'text-green-600 bg-green-50' },
-          { label: 'Blocked', value: stats.blocked, icon: Users, cls: 'text-red-600 bg-red-50' },
-        ].map(({ label, value, icon: Icon, cls }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3 shadow-sm">
-            <div className={`p-2 rounded-md ${cls.split(' ')[1]}`}><Icon className={`h-4 w-4 ${cls.split(' ')[0]}`} /></div>
-            <div><p className="text-xs text-gray-400">{label}</p><p className="text-lg font-bold text-gray-800">{value}</p></div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {kpis.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="rounded-md p-2" style={{ backgroundColor: ACCENT_SOFT, color: ACCENT }}>
+              <Icon className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">{label}</p>
+              <p className="text-lg font-bold text-slate-800">{value}</p>
+            </div>
           </div>
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Task Distribution by Priority</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {['critical', 'high', 'medium', 'low'].map((priority) => {
-              const count = allTasks.filter((t: any) => t.priority === priority).length
-              return (
-                <div key={priority}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="capitalize">{priority}</span>
-                    <span className="font-semibold">{count}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className={`h-2 rounded-full ${priority === 'critical' ? 'bg-red-500' : priority === 'high' ? 'bg-orange-500' : priority === 'medium' ? 'bg-primary/100' : 'bg-gray-400'}`} style={{ width: `${stats.totalTasks > 0 ? (count / stats.totalTasks) * 100 : 0}%` }} />
-                  </div>
+      <SectionCard className="border-slate-200 bg-white" title="Task Distribution by Priority">
+        <div className="space-y-3">
+          {['critical', 'high', 'medium', 'low'].map((priority) => {
+            const count = allTasks.filter((t: any) => t.priority === priority).length
+            const color =
+              priority === 'critical' ? '#E11D48' : priority === 'high' ? '#F59E0B' : priority === 'medium' ? ACCENT : '#94A3B8'
+            return (
+              <div key={priority}>
+                <div className="mb-1 flex justify-between text-xs">
+                  <span className="capitalize">{priority}</span>
+                  <span className="font-semibold">{count}</span>
                 </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                <div className="h-2 w-full rounded-full bg-slate-100">
+                  <div
+                    className="h-2 rounded-full"
+                    style={{
+                      width: `${stats.totalTasks > 0 ? (count / stats.totalTasks) * 100 : 0}%`,
+                      backgroundColor: color,
+                    }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </SectionCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Active Workshop Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {allTasks.length === 0 ? (
-            <p className="text-xs text-gray-500">No tasks available</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Task</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Priority</th>
-                    <th className="text-left p-2">Due Date</th>
+      <SectionCard className="border-slate-200 bg-white" title="Active Workshop Tasks" bodyClassName="p-0">
+        {allTasks.length === 0 ? (
+          <p className="p-4 text-xs text-slate-500">No tasks available</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="erp-table">
+              <thead>
+                <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <th className="px-4 py-3 font-medium">Task</th>
+                  <th className="px-3 py-3 font-medium">Status</th>
+                  <th className="px-3 py-3 font-medium">Priority</th>
+                  <th className="px-4 py-3 font-medium">Due Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allTasks.slice(0, 10).map((task: any, idx: number) => (
+                  <tr key={idx} className="border-b last:border-0 hover:bg-[#378ADD]/5">
+                    <td className="px-4 py-3 text-xs">{task.name}</td>
+                    <td className="px-3 py-3">
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                        style={
+                          task.status === 'completed'
+                            ? { backgroundColor: 'rgba(47,158,106,0.12)', color: '#2F9E6A' }
+                            : task.status === 'in-progress'
+                              ? { backgroundColor: ACCENT_SOFT, color: ACCENT }
+                              : { backgroundColor: 'rgba(245,158,11,0.12)', color: '#B45309' }
+                        }
+                      >
+                        {task.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-xs capitalize">{task.priority}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{task.dueDate ? formatDate(task.dueDate) : '—'}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {allTasks.slice(0, 10).map((task: any, idx: number) => (
-                    <tr key={idx} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{task.name}</td>
-                      <td className="p-2"><span className={`px-2 py-0.5 rounded ${task.status === 'completed' ? 'bg-green-100 text-green-800' : task.status === 'in-progress' ? 'bg-primary/10 text-primary' : 'bg-yellow-100 text-yellow-800'}`}>{task.status}</span></td>
-                      <td className="p-2"><span className="capitalize">{task.priority}</span></td>
-                      <td className="p-2">{task.dueDate ? formatDate(task.dueDate) : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
     </div>
   )
 }

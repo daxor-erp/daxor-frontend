@@ -491,7 +491,10 @@ export default function AdminDashboardPage() {
                 {recent.map((o) => (
                   <li key={o.id} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-8 w-8 rounded-lg bg-grad-violet text-white grid place-items-center font-semibold text-xs uppercase shrink-0">
+                      <div
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-xs font-semibold uppercase text-white"
+                        style={{ backgroundColor: '#378ADD' }}
+                      >
                         {(o.name || '?').slice(0, 2)}
                       </div>
                       <div className="min-w-0">
@@ -591,17 +594,20 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="erp-shell">
+    <div className="erp-shell bg-white">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-grad-admin-hero text-white elev-2">
+      <div
+        className="relative overflow-hidden rounded-2xl text-white shadow-[0_8px_30px_-12px_rgba(55,138,221,0.45)]"
+        style={{ backgroundColor: '#378ADD' }}
+      >
         <div className="absolute inset-0 bg-dotgrid opacity-[0.1]" />
         <div
-          className="absolute -right-32 -top-32 h-80 w-80 rounded-full opacity-45 blur-3xl"
-          style={{ background: 'radial-gradient(closest-side, hsl(290 95% 65%), transparent)' }}
+          className="absolute -right-32 -top-32 h-80 w-80 rounded-full opacity-35 blur-3xl"
+          style={{ background: 'radial-gradient(closest-side, #85b9f3, transparent)' }}
         />
         <div className="relative grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 border border-white/20 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
               <ShieldCheck className="h-3 w-3" />
               Platform Administration
             </div>
@@ -615,7 +621,7 @@ export default function AdminDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <button className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-white/90 transition-colors">
+                <button className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-white/90">
                   <Plus className="h-4 w-4" />
                   New organization
                 </button>

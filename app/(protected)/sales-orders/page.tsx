@@ -24,6 +24,8 @@ import {
   ShoppingBag, FileText, Clock, CheckCircle2, Package,
   Ban, Send, Plus, ThumbsUp, ThumbsDown, ReceiptText,
 } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const BLANK_LINE = { itemDescription: '', quantity: 1, unitPrice: 0, lineTotal: 0 }
 
@@ -66,7 +68,7 @@ export default function SalesOrdersPage() {
   })
 
   const done = () => { refetch(); setDrawerOpen(false); setConfirm(null); setInvoiceDrawer(null) }
-  const err  = (e: any) => alert(e.message)
+  const err = toastApolloError
 
   const [createSO, { loading: creating }]         = useMutation(CREATE_SALES_ORDER,               { onCompleted: done, onError: err })
   const [submitSO]                                 = useMutation(SUBMIT_SALES_ORDER,               { onCompleted: done, onError: err })
@@ -98,8 +100,8 @@ export default function SalesOrdersPage() {
   }))
 
   const handleCreate = () => {
-    if (!form.customerId) return alert('Select a customer')
-    if (!lines.some(l => l.itemDescription?.trim())) return alert('Add at least one item')
+    if (!form.customerId) return toast.error('Select a customer')
+    if (!lines.some(l => l.itemDescription?.trim())) return toast.error('Add at least one item')
     const computed = computeLines(lines.filter(l => l.itemDescription?.trim()))
     const subtotal  = computed.reduce((s, l) => s + Number(l.lineTotal), 0)
     createSO({
@@ -125,7 +127,7 @@ export default function SalesOrdersPage() {
   }
 
   const handleCreateInvoice = () => {
-    if (!invoiceDrawer || !invoiceForm.invoiceDate) return alert('Enter invoice date')
+    if (!invoiceDrawer || !invoiceForm.invoiceDate) return toast.error('Enter invoice date')
     createInvoice({
       variables: {
         salesOrderId: invoiceDrawer.id,
@@ -299,13 +301,24 @@ export default function SalesOrdersPage() {
         open={!!invoiceDrawer}
         onClose={() => setInvoiceDrawer(null)}
         title={`Create Invoice — ${invoiceDrawer?.seqNo ?? ''}`}
-        description="Create a customer invoice from this sales order."
+        description={
+          invoiceDrawer?.invoicingPolicy === 'delivered_quantities' &&
+          Number(invoiceDrawer?.deliveredQuantity ?? 0) <= 0
+            ? 'This order uses Delivered quantities policy. Create a delivery first, or invoicing will be blocked.'
+            : 'Create a customer invoice from this sales order.'
+        }
         size="sm"
         submitLabel="Create Invoice"
         onSubmit={handleCreateInvoice}
         submitting={invoicing}
       >
         <FormSection columns={1}>
+          {invoiceDrawer?.invoicingPolicy === 'delivered_quantities' && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+              Policy: <strong>Delivered quantities</strong>. Delivered so far:{' '}
+              <strong>{Number(invoiceDrawer?.deliveredQuantity ?? 0)}</strong>. Invoice is allowed only after delivery &gt; 0.
+            </div>
+          )}
           <InputFloating label="Invoice Date *" type="date" value={invoiceForm.invoiceDate} onChange={e => setInvoiceForm(p => ({ ...p, invoiceDate: e.target.value }))} />
           <InputFloating label="Due Date"       type="date" value={invoiceForm.dueDate}     onChange={e => setInvoiceForm(p => ({ ...p, dueDate: e.target.value }))} />
         </FormSection>

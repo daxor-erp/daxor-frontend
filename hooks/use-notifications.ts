@@ -4,10 +4,6 @@ import { useMemo } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { useAuth } from '@/contexts/AuthContext'
 import {
-  GET_CUSTOMER_INVOICES,
-  GET_VENDOR_BILLS,
-  GET_LOW_STOCK_ITEMS,
-  GET_LEADS,
   MY_PENDING_APPROVAL_REQUESTS,
   GET_MY_NOTIFICATIONS,
   GET_MY_UNREAD_NOTIFICATION_COUNT,
@@ -23,19 +19,16 @@ import {
 } from '@/lib/notifications'
 
 /**
- * Hybrid notifications:
- *  - persistent backend Notification rows (created by approvals + future workflows)
- *  - smart/derived alerts computed locally from invoices/bills/stock/leads
+ * User-scoped notifications only:
+ *  - backend Notification rows addressed to the current user (approvals, decisions, broadcasts)
+ *  - pending approval requests assigned to the current user (fallback if a backend row is missing)
  *
- * Backend rows are authoritative for read-state. Derived rows have read-state
- * tracked in localStorage (via the existing helpers in `lib/notifications`).
+ * Org-wide operational signals (low stock, overdue bills/invoices, new leads) are NOT
+ * derived here — those were incorrectly shown to every user in the org.
  */
 export function useNotifications() {
   const { user } = useAuth()
-  const orgId = user?.organizationId ?? ''
-  const skip = !orgId
 
-  // Backend notifications
   const backendQ = useQuery(GET_MY_NOTIFICATIONS, {
     variables: { unreadOnly: false, limit: 50, skip: 0 },
     skip: !user?.id,
@@ -50,56 +43,43 @@ export function useNotifications() {
     pollInterval: 60_000,
   })
 
-  // Derived signals
-  const invoicesQ = useQuery(GET_CUSTOMER_INVOICES, {
-    variables: { organizationId: orgId, page: 1, limit: 200 },
-    skip,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
-    pollInterval: 5 * 60_000,
-  })
-  const billsQ = useQuery(GET_VENDOR_BILLS, {
-    variables: { organizationId: orgId, page: 1, limit: 200 },
-    skip,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
-    pollInterval: 5 * 60_000,
-  })
-  const lowStockQ = useQuery(GET_LOW_STOCK_ITEMS, {
-    variables: { organizationId: orgId },
-    skip,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
-    pollInterval: 5 * 60_000,
-  })
-  const leadsQ = useQuery(GET_LEADS, {
-    variables: { organizationId: orgId },
-    skip,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore',
-  })
+  // Assignee-only pending approvals (server filters by current user id).
   const approvalsQ = useQuery(MY_PENDING_APPROVAL_REQUESTS, {
+    skip: !user?.id,
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'ignore',
     pollInterval: 60_000,
   })
 
   const [markReadMutation] = useMutation(MARK_NOTIFICATION_READ, {
-    onCompleted: () => { backendQ.refetch?.(); unreadCountQ.refetch?.() },
+    onCompleted: () => {
+      backendQ.refetch?.()
+      unreadCountQ.refetch?.()
+    },
   })
   const [markAllReadMutation] = useMutation(MARK_ALL_NOTIFICATIONS_READ, {
-    onCompleted: () => { backendQ.refetch?.(); unreadCountQ.refetch?.() },
+    onCompleted: () => {
+      backendQ.refetch?.()
+      unreadCountQ.refetch?.()
+    },
   })
   const [archiveMutation] = useMutation(ARCHIVE_NOTIFICATION, {
-    onCompleted: () => { backendQ.refetch?.(); unreadCountQ.refetch?.() },
+    onCompleted: () => {
+      backendQ.refetch?.()
+      unreadCountQ.refetch?.()
+    },
   })
   const [archiveAllMutation] = useMutation(ARCHIVE_ALL_NOTIFICATIONS, {
-    onCompleted: () => { backendQ.refetch?.(); unreadCountQ.refetch?.() },
+    onCompleted: () => {
+      backendQ.refetch?.()
+      unreadCountQ.refetch?.()
+    },
   })
 
   const items = useMemo<NotificationItem[]>(() => {
-    // 1) Backend rows mapped to UI shape
-    const backendItems: NotificationItem[] = (backendQ.data?.myNotifications ?? []).map((n: any) => ({
+    const backendRows = backendQ.data?.myNotifications ?? []
+
+    const backendItems: NotificationItem[] = backendRows.map((n: any) => ({
       id: `nb:${n.id}`,
       kind: mapBackendKind(n.kind),
       title: n.title,
@@ -110,24 +90,18 @@ export function useNotifications() {
       meta: { backendId: n.id, isRead: n.isRead },
     }))
 
-    // 2) Derived signals (de-duped from backend by avoiding approvals double-up)
-    const derived = buildNotifications({
-      invoices: invoicesQ.data?.customerinvoices ?? [],
-      bills: billsQ.data?.vendorBills ?? [],
-      lowStock: lowStockQ.data?.lowStockItems ?? [],
+    // Only derive approval alerts for the current assignee — never org-wide ops signals.
+    const derivedApprovals = buildNotifications({
       approvals: approvalsQ.data?.myPendingApprovalRequests ?? [],
-      leads: leadsQ.data?.leads ?? [],
     })
 
-    // Backend may already have an APPROVAL_REQUEST row for a given approval-request id.
-    // Drop the derived twin in that case (we keyed derived approvals as `approval:<id>`).
     const backendApprovalRefs = new Set(
-      (backendQ.data?.myNotifications ?? [])
+      backendRows
         .filter((n: any) => n.kind === 'APPROVAL_REQUEST')
         .map((n: any) => String(n.referenceId ?? '')),
     )
-    const filteredDerived = derived.filter((d) => {
-      if (d.kind !== 'approval_request') return true
+    const filteredDerived = derivedApprovals.filter((d) => {
+      if (d.kind !== 'approval_request') return false
       const id = d.id.replace(/^approval:/, '')
       return !backendApprovalRefs.has(id)
     })
@@ -135,28 +109,15 @@ export function useNotifications() {
     return [...backendItems, ...filteredDerived].sort((a, b) =>
       String(b.createdAt).localeCompare(String(a.createdAt)),
     )
-  }, [
-    backendQ.data,
-    invoicesQ.data,
-    billsQ.data,
-    lowStockQ.data,
-    approvalsQ.data,
-    leadsQ.data,
-  ])
+  }, [backendQ.data, approvalsQ.data])
 
-  const isLoading =
-    backendQ.loading ||
-    invoicesQ.loading ||
-    billsQ.loading ||
-    lowStockQ.loading ||
-    approvalsQ.loading ||
-    leadsQ.loading
+  const isLoading = backendQ.loading || approvalsQ.loading
 
   const backendUnread = Number(unreadCountQ.data?.myUnreadNotificationCount ?? 0)
 
   const unread = items.filter((i) => {
     if (i.meta && typeof i.meta.isRead === 'boolean') return !i.meta.isRead
-    return true // derived items are treated as unread until dismissed/hidden
+    return true
   })
 
   return {
@@ -184,9 +145,7 @@ export function useNotifications() {
         await archiveMutation({ variables: { id: backendId } })
       } else {
         hideDerivedClientSide(id)
-        // Force refetch so the derived list rebuilds
-        invoicesQ.refetch?.()
-        lowStockQ.refetch?.()
+        approvalsQ.refetch?.()
       }
     },
     clearAll: async () => {
@@ -195,10 +154,6 @@ export function useNotifications() {
     refetch: () => {
       backendQ.refetch?.()
       unreadCountQ.refetch?.()
-      invoicesQ.refetch?.()
-      billsQ.refetch?.()
-      lowStockQ.refetch?.()
-      leadsQ.refetch?.()
       approvalsQ.refetch?.()
     },
   }
@@ -207,7 +162,6 @@ export function useNotifications() {
 function mapBackendKind(k: string): NotificationItem['kind'] {
   switch (k) {
     case 'APPROVAL_REQUEST':
-      return 'approval_request'
     case 'APPROVAL_APPROVED':
     case 'APPROVAL_REJECTED':
       return 'approval_request'

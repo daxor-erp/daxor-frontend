@@ -19,6 +19,7 @@ import {
   DELETE_GOODS_RECEIPT,
 } from '@/gql/queries'
 import { Package, Clock, CheckCircle2, Plus, Pencil, Trash2, Send } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
 
 const BLANK_LINE = { itemId: '', itemDescription: '', orderedQty: 0, receivedQty: 0, unit: '', unitPrice: 0 }
 const BLANK_FORM = {
@@ -101,11 +102,11 @@ export default function GoodsReceiptsPage() {
   })
   const [postGoodsReceipt] = useMutation(POST_GOODS_RECEIPT, {
     onCompleted: () => void refetch(),
-    onError: (err) => alert(err.message),
+    onError: toastApolloError,
   })
   const [deleteGoodsReceipt] = useMutation(DELETE_GOODS_RECEIPT, {
     onCompleted: done,
-    onError: (err) => alert(err.message),
+    onError: toastApolloError,
   })
 
   const items: GoodsReceiptRow[] = data?.goodsreceipts ?? []

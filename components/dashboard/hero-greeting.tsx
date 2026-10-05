@@ -45,15 +45,18 @@ export function HeroGreeting({
   })
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-grad-hero text-white elev-2">
+    <div
+      className="relative overflow-hidden rounded-2xl text-white elev-2"
+      style={{ backgroundColor: '#378ADD' }}
+    >
       <div className="absolute inset-0 bg-dotgrid opacity-[0.1]" />
       <div
-        className="absolute -right-32 -top-32 h-80 w-80 rounded-full opacity-40 blur-3xl"
-        style={{ background: 'radial-gradient(closest-side, hsl(168 84% 45%), transparent)' }}
+        className="absolute -right-32 -top-32 h-80 w-80 rounded-full opacity-35 blur-3xl"
+        style={{ background: 'radial-gradient(closest-side, #85b9f3, transparent)' }}
       />
       <div
-        className="absolute -bottom-24 right-10 h-72 w-72 rounded-full opacity-30 blur-3xl"
-        style={{ background: 'radial-gradient(closest-side, hsl(38 92% 55%), transparent)' }}
+        className="absolute -bottom-24 right-10 h-72 w-72 rounded-full opacity-25 blur-3xl"
+        style={{ background: 'radial-gradient(closest-side, #1471d8, transparent)' }}
       />
       <div className="relative grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_auto] lg:items-end">
         <div className="min-w-0">

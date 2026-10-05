@@ -15,6 +15,8 @@ import {
   SUBMIT_MATERIAL_RECEIPT_FOR_APPROVAL, CANCEL_MATERIAL_RECEIPT, DELETE_MATERIAL_RECEIPT,
 } from '@/gql/queries'
 import { Package, Clock, CheckCircle2, X, Trash2, Send, Plus } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const BLANK_LINE = { itemDescription: '', orderedQty: 0, receivedQty: 0, rejectedQty: 0, unit: '', unitPrice: 0, lineTotal: 0 }
 const BLANK_FORM = { purchaseOrderId: '', vendorId: '', vendorName: '', receiptDate: new Date().toISOString().split('T')[0], warehouseId: '', warehouseName: '', notes: '' }
@@ -35,7 +37,7 @@ export default function MaterialReceiptPage() {
   const { data: whData }            = useQuery(GET_WAREHOUSES,        { variables: { organizationId: orgId }, skip: !orgId })
 
   const done = () => { refetch(); setDrawerOpen(false); setEditRow(null); setConfirm(null) }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [create, { loading: saving }]  = useMutation(CREATE_MATERIAL_RECEIPT,               { onCompleted: done, onError: err })
   const [update, { loading: updating }] = useMutation(UPDATE_MATERIAL_RECEIPT,              { onCompleted: done, onError: err })
@@ -79,8 +81,8 @@ export default function MaterialReceiptPage() {
   }
 
   const handleSave = () => {
-    if (!form.receiptDate) return alert('Receipt date is required')
-    if (!lines.some(l => l.itemDescription?.trim())) return alert('Add at least one item')
+    if (!form.receiptDate) return toast.error('Receipt date is required')
+    if (!lines.some(l => l.itemDescription?.trim())) return toast.error('Add at least one item')
     const totalAmount = lines.reduce((s, l) => s + Number(l.lineTotal ?? 0), 0)
     const input = {
       receiptDate: form.receiptDate, organizationId: orgId, totalAmount,

@@ -42,7 +42,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   token: string | null
-  login: (token: string, user: User) => void
+  login: (token: string, user: User, opts?: { redirect?: boolean }) => string
   logout: () => void
   mergeUser: (partial: Partial<User>) => void
   isAuthenticated: boolean
@@ -50,16 +50,30 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-function postLoginPath(roles: string[] | undefined): string {
+export function postLoginPath(roles: string[] | undefined): string {
   const r = roles ?? []
-  if (r.includes('SUPER_ADMIN') || r.includes('ERP_ADMIN')) return '/admin/dashboard'
+  if (r.includes('SUPER_ADMIN') || r.includes('ERP_ADMIN')) return '/admin/welcome'
   if (r.includes('ORG_ADMIN')) return '/org-admin/dashboard'
-  return '/dashboard'
+  return '/welcome'
+}
+
+function readStoredAuth(): { token: string | null; user: User | null } {
+  if (typeof window === 'undefined') return { token: null, user: null }
+  try {
+    const storedToken = localStorage.getItem('token')
+    const storedUser = localStorage.getItem('user')
+    if (!storedToken || !storedUser) return { token: storedToken, user: null }
+    return { token: storedToken, user: JSON.parse(storedUser) as User }
+  } catch {
+    return { token: null, user: null }
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
+  // Hydrate from localStorage on the first client render so org-scoped pages
+  // (dashboard KPIs, etc.) do not briefly skip queries and show all zeros.
+  const [user, setUser] = useState<User | null>(() => readStoredAuth().user)
+  const [token, setToken] = useState<string | null>(() => readStoredAuth().token)
 
   const mergeUser = useCallback((partial: Partial<User>) => {
     setUser((prev) => {
@@ -71,20 +85,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
-    if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
+    const stored = readStoredAuth()
+    if (stored.token && stored.user) {
+      setToken(stored.token)
+      setUser(stored.user)
     }
   }, [])
 
-  const login = (newToken: string, newUser: User) => {
+  const login = (newToken: string, newUser: User, opts?: { redirect?: boolean }) => {
     localStorage.setItem('token', newToken)
     localStorage.setItem('user', JSON.stringify(newUser))
     setToken(newToken)
     setUser(newUser)
-    window.location.href = postLoginPath(newUser.roles)
+    const path = postLoginPath(newUser.roles)
+    if (opts?.redirect !== false) {
+      window.location.href = path
+    }
+    return path
   }
 
   const logout = () => {

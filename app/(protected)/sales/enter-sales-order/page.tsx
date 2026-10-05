@@ -17,6 +17,7 @@ import {
 } from '@/lib/sales-customer-options'
 import { DataTable, type Column } from '@/components/DataTable'
 import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
+import { toastApolloError } from '@/lib/toast-apollo'
 
 const GET_QUOTATIONS = gql`
   query GetQuotationsForSalesOrder($organizationId: ID) {
@@ -96,7 +97,7 @@ export default function EnterSalesOrderPage() {
 
   const [submitSalesOrder, { loading: submittingOrder }] = useMutation(SUBMIT_SALES_ORDER, {
     onCompleted: () => refetchOrders(),
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const mapStatus = (status: string) => {

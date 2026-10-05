@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   Clock,
 } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
 
 const ASSET_TYPES = ['EQUIPMENT', 'VEHICLE', 'BUILDING', 'FURNITURE', 'IT', 'OTHER'] as const
 
@@ -105,7 +106,7 @@ export default function EquipmentMastersPage() {
 
   const [deleteAsset] = useMutation(DELETE_ASSET, {
     onCompleted: () => void refetch(),
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const rows: AssetRow[] = data?.assets ?? []

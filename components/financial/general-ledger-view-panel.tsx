@@ -10,6 +10,7 @@ import { downloadDocumentPdf, downloadPdf, escapeHtml, pdfMoney, wrapHtmlForPdf 
 import type { JournalEntryView } from './journal-entry-view-panel'
 import { JournalEntryViewPanel } from './journal-entry-view-panel'
 import { resolveJournalForLedger } from '@/lib/ledger-journal-link'
+import { toast } from 'sonner'
 
 export type GeneralLedgerView = {
   id: string
@@ -128,7 +129,7 @@ function GlTransactionInlinePanel({ row, onClose }: { row: GeneralLedgerView; on
                 body: glTransactionPdfBody(row),
               }),
               filename: `gl-${row.transactionNumber || row.id}`,
-            }).catch(() => alert('Could not download PDF.'))
+            }).catch(() => toast.error('Could not download PDF.'))
           }
         >
           <Download className="h-3.5 w-3.5 mr-1" />
@@ -176,7 +177,7 @@ export function GeneralLedgerViewPanel({
                   body: glTransactionPdfBody(row),
                 }),
                 filename: `gl-${row.transactionNumber || row.id}`,
-              }).catch(() => alert('Could not download transaction PDF.'))
+              }).catch(() => toast.error('Could not download transaction PDF.'))
             }
           >
             <Download className="h-3 w-3 mr-1" />
@@ -205,10 +206,10 @@ export function downloadGeneralLedgerJournalPdf(
 ): void {
   const linked = resolveJournalForLedger(row, journalEntries)
   if (!linked) {
-    alert('No journal entry linked to this transaction.')
+    toast.error('No journal entry linked to this transaction.')
     return
   }
   downloadDocumentPdf('journal-entry', linked.id, linked.entryNumber).catch(() =>
-    alert('Could not download journal PDF.'),
+    toast.error('Could not download journal PDF.'),
   )
 }

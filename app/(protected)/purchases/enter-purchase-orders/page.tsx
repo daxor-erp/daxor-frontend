@@ -26,6 +26,7 @@ import {
   RECEIVE_PURCHASE_ORDER,
   CANCEL_PURCHASE_ORDER,
   LOCK_PURCHASE_ORDER,
+  UNLOCK_PURCHASE_ORDER,
   BILL_PURCHASE_ORDER,
   CLOSE_PURCHASE_ORDER_LINE,
   DUPLICATE_PURCHASE_ORDER,
@@ -64,6 +65,7 @@ import {
   CheckCircle2,
   PackageCheck,
   Lock,
+  Unlock,
   Ban,
   Printer,
   FileText,
@@ -153,7 +155,14 @@ export default function EnterPurchaseOrdersPage() {
     onError: (e) => toast.error(e.message),
   })
   const [cancelPO] = useMutation(CANCEL_PURCHASE_ORDER, { onCompleted: () => refetch(), onError: (e) => toast.error(e.message) })
-  const [lockPO] = useMutation(LOCK_PURCHASE_ORDER, { onCompleted: () => refetch(), onError: (e) => toast.error(e.message) })
+  const [lockPO] = useMutation(LOCK_PURCHASE_ORDER, {
+    onCompleted: () => { refetch(); toast.success('Purchase order locked.') },
+    onError: (e) => toast.error(e.message),
+  })
+  const [unlockPO] = useMutation(UNLOCK_PURCHASE_ORDER, {
+    onCompleted: () => { refetch(); toast.success('Purchase order unlocked.') },
+    onError: (e) => toast.error(e.message),
+  })
   const [markPrinted] = useMutation(MARK_PURCHASE_ORDER_PRINTED, { onError: (e) => toast.error(e.message) })
   const [billPO, { loading: billing }] = useMutation(BILL_PURCHASE_ORDER, {
     onCompleted: (data) => { refetch(); setBillOpen(false); toast.success(`Bill ${data.billPurchaseOrder.billNumber} created.`) },
@@ -636,6 +645,12 @@ export default function EnterPurchaseOrdersPage() {
               ['purchase_order', 'sent', 'received', 'billed', 'partially_received', 'partially_billed'].includes(
                 r.status,
               ),
+          },
+          {
+            label: 'Unlock',
+            icon: <Unlock className="h-3.5 w-3.5" />,
+            onClick: (r: any) => unlockPO({ variables: { id: r.id } }),
+            show: (r: any) => String(r.status) === 'locked',
           },
           {
             label: 'Cancel',

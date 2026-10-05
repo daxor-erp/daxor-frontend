@@ -1,20 +1,9 @@
 'use client'
 
 /**
- * Polished form modal wrapper. Used by "Add / Edit" flows across the ERP so
- * they have consistent header, scroll behavior, sticky footer and keyboard
- * shortcuts (Esc to close, Cmd/Ctrl+S to save).
- *
- * Layout:
- *  ┌──────────────────────────────────────────┐
- *  │ icon  Title                  · subtitle │  <- gradient header
- *  ├──────────────────────────────────────────┤
- *  │                                          │
- *  │     scrollable body                      │
- *  │                                          │
- *  ├──────────────────────────────────────────┤
- *  │  Cancel               Save  ⌘S          │  <- sticky footer
- *  └──────────────────────────────────────────┘
+ * Shared form modal for Add / Edit flows across the ERP.
+ * Clean white card design: title + circular close, scrollable body, sticky footer.
+ * Esc closes · Cmd/Ctrl+S saves.
  */
 
 import { ReactNode, useEffect, useRef } from 'react'
@@ -35,23 +24,17 @@ export interface FormModalProps {
   title: string
   description?: string
   icon?: ReactNode
-  /** Header gradient class. Defaults to brand gradient. */
+  /** @deprecated Kept for call-site compatibility; blue gradient header removed. */
   headerToneClass?: string
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
-  /** Render whole body (no padding). */
   bodyClassName?: string
-  /** Body content. */
   children: ReactNode
-  /** Primary action (defaults to "Save"). */
   onSubmit?: () => void
   submitLabel?: string
   submitting?: boolean
   submitDisabled?: boolean
-  /** Secondary action label (defaults to "Cancel"). */
   cancelLabel?: string
-  /** Hide footer entirely. */
   hideFooter?: boolean
-  /** Extra footer content (e.g. error message). */
   footerStart?: ReactNode
 }
 
@@ -69,7 +52,6 @@ export function FormModal({
   title,
   description,
   icon,
-  headerToneClass = 'bg-grad-brand',
   size = 'md',
   bodyClassName,
   children,
@@ -100,37 +82,39 @@ export function FormModal({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          'p-0 overflow-hidden gap-0 border-0 elev-3',
-          'max-h-[92vh] flex flex-col w-[calc(100vw-2rem)]',
+          'gap-0 overflow-hidden border border-slate-200/90 bg-white p-0 shadow-[0_16px_48px_-12px_rgba(15,23,42,0.18)]',
+          'max-h-[92vh] flex w-[calc(100vw-2rem)] flex-col rounded-2xl sm:rounded-2xl',
           SIZE[size],
         )}
       >
-        {/* Header */}
-        <div className={cn('relative px-6 py-4 text-white', headerToneClass)}>
-          <div className="absolute inset-0 bg-dotgrid opacity-[0.08] pointer-events-none" />
+        {/* Header — white, title left, circular close right */}
+        <div className="relative shrink-0 border-b border-slate-100 px-5 py-4 sm:px-6">
           <DialogClose asChild>
             <button
               type="button"
-              className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md text-white/80 hover:bg-white/15"
+              className="absolute right-4 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
               aria-label="Close"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" strokeWidth={2} />
             </button>
           </DialogClose>
-          <div className="relative flex items-start gap-3 pr-10">
-            {icon && (
-              <div className="h-10 w-10 rounded-xl bg-white/15 border border-white/20 grid place-items-center shrink-0 backdrop-blur-sm">
+
+          <div className="flex items-start gap-3 pr-12">
+            {icon ? (
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                 {icon}
               </div>
-            )}
-            <div className="min-w-0">
-              <DialogTitle className="text-lg font-semibold leading-tight tracking-tight">
+            ) : null}
+            <div className="min-w-0 pt-0.5">
+              <DialogTitle className="text-lg font-semibold leading-tight tracking-tight text-slate-900">
                 {title}
               </DialogTitle>
-              {description && (
-                <DialogDescription className="mt-0.5 text-xs text-white/85">
+              {description ? (
+                <DialogDescription className="mt-1 text-sm text-slate-500">
                   {description}
                 </DialogDescription>
+              ) : (
+                <DialogDescription className="sr-only">{title}</DialogDescription>
               )}
             </div>
           </div>
@@ -143,20 +127,28 @@ export function FormModal({
             e.preventDefault()
             onSubmit?.()
           }}
-          className="flex flex-col min-h-0 flex-1"
+          className="flex min-h-0 flex-1 flex-col"
         >
-          <div className={cn('flex-1 min-h-0 overflow-y-auto', bodyClassName ?? 'px-6 py-5')}>
+          <div
+            className={cn(
+              'min-h-0 flex-1 overflow-y-auto bg-white',
+              bodyClassName ?? 'px-5 py-5 sm:px-6',
+            )}
+          >
             {children}
           </div>
 
           {!hideFooter && (
-            <div className="shrink-0 border-t border-border bg-secondary/40 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0 text-xs text-muted-foreground">
-                {footerStart}
-              </div>
-              <div className="flex items-center gap-2">
+            <div className="flex shrink-0 flex-col gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div className="min-w-0 flex-1 text-xs text-slate-500">{footerStart}</div>
+              <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:items-center">
                 <DialogClose asChild>
-                  <Button type="button" variant="outline" disabled={submitting}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={submitting}
+                    className="h-11 rounded-xl border-slate-200 bg-white px-5 text-slate-700 hover:bg-slate-50 sm:h-10"
+                  >
                     {cancelLabel}
                   </Button>
                 </DialogClose>
@@ -164,7 +156,7 @@ export function FormModal({
                   <Button
                     type="submit"
                     disabled={submitting || submitDisabled}
-                    className="gap-1.5 min-w-[8rem]"
+                    className="h-11 min-w-[9rem] gap-1.5 rounded-xl px-5 font-semibold shadow-md shadow-primary/20 sm:h-10"
                   >
                     {submitting ? (
                       <>
@@ -175,7 +167,7 @@ export function FormModal({
                       <>
                         <Save className="h-4 w-4" />
                         {submitLabel}
-                        <kbd className="hidden sm:inline-flex ml-1 select-none items-center gap-0.5 rounded border border-white/20 bg-white/10 px-1 font-mono text-[9px] font-medium text-white/80">
+                        <kbd className="ml-1 hidden select-none items-center rounded border border-white/25 bg-black/15 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white/90 sm:inline-flex">
                           ⌘S
                         </kbd>
                       </>
@@ -209,8 +201,14 @@ export function FormSection({
     <section className={cn('space-y-3', className)}>
       {(title || description) && (
         <div>
-          {title && <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h4>}
-          {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+          {title && (
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {title}
+            </h4>
+          )}
+          {description && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+          )}
         </div>
       )}
       {children}
@@ -236,5 +234,5 @@ export function FieldGrid({
     3: 'sm:grid-cols-2 lg:grid-cols-3',
     4: 'sm:grid-cols-2 lg:grid-cols-4',
   }[cols]
-  return <div className={cn('grid gap-4 grid-cols-1', colsClass, className)}>{children}</div>
+  return <div className={cn('grid grid-cols-1 gap-4', colsClass, className)}>{children}</div>
 }

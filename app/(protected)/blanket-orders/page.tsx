@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button'
 import {
   FileText, Clock, CheckCircle2, Ban, Plus, CheckCheck, X, ShoppingCart, Package,
 } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const BLANK_LINE = { productName: '', quantity: 1, unitPrice: 0, lineTotal: 0 }
 const BLANK_FORM = {
@@ -56,7 +58,7 @@ export default function BlanketOrdersPage() {
   })
 
   const done = () => { refetch(); setDrawerOpen(false); setConfirm(null); setCallOffDrawer(null) }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [createBO,   { loading: creating }]  = useMutation(CREATE_BLANKET_ORDER,      { onCompleted: done, onError: err })
   const [confirmBO]                           = useMutation(CONFIRM_BLANKET_ORDER,     { onCompleted: done, onError: err })
@@ -79,8 +81,8 @@ export default function BlanketOrdersPage() {
   const setF = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
   const handleCreate = () => {
-    if (!form.vendorId) return alert('Select a vendor')
-    if (!lines.some(l => (l as any).productName?.trim())) return alert('Add at least one line')
+    if (!form.vendorId) return toast.error('Select a vendor')
+    if (!lines.some(l => (l as any).productName?.trim())) return toast.error('Add at least one line')
     const mappedLines = lines.filter((l: any) => l.productName?.trim()).map((l: any) => ({
       productName: l.productName.trim(),
       quantity: Number(l.quantity),
@@ -102,7 +104,7 @@ export default function BlanketOrdersPage() {
   }
 
   const handleCallOff = () => {
-    if (!callOffDrawer || !callOffLine.lineId || !callOffLine.qty) return alert('Select a line and enter quantity')
+    if (!callOffDrawer || !callOffLine.lineId || !callOffLine.qty) return toast.error('Select a line and enter quantity')
     callOff({ variables: { id: callOffDrawer.id, lineId: callOffLine.lineId, qty: Number(callOffLine.qty) } })
   }
 

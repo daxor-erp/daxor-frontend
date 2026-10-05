@@ -76,6 +76,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { toastApolloError } from '@/lib/toast-apollo'
 
 function parseTime(iso: string | undefined | null): number {
   if (!iso) return 0
@@ -328,7 +329,7 @@ export function ModulePastEntriesFab() {
 
   const onApprovalMutErr = (e: unknown) => {
     setApprovalOp(null)
-    alert(e instanceof Error ? e.message : String(e))
+    toastApolloError(e)
   }
 
   const [submitEnquiryApproval] = useMutation(SUBMIT_SALES_ENQUIRY_FOR_APPROVAL, {

@@ -14,6 +14,8 @@ import {
   CREATE_GRN, UPDATE_GRN, DELETE_GRN, SUBMIT_GRN_FOR_APPROVAL,
 } from '@/gql/queries'
 import { PackageCheck, Clock, CheckCircle2, Truck, Send, Trash2, Plus, Pencil } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const BLANK_LINE = { itemDescription: '', orderedQty: 0, receivedQty: 0, unitPrice: 0, lotNumber: '', serialNumber: '' }
 const BLANK_FORM = { purchaseOrderId: '', vendorName: '', receivedDate: new Date().toISOString().split('T')[0], notes: '' }
@@ -32,7 +34,7 @@ export default function GRNPage() {
   const { data: poData }            = useQuery(GET_PURCHASE_ORDERS, { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
 
   const done = () => { refetch(); setDrawerOpen(false); setEditRow(null); setDelConfirm(null) }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [createGRN, { loading: saving }]  = useMutation(CREATE_GRN,                 { onCompleted: done, onError: err })
   const [updateGRN, { loading: updating }] = useMutation(UPDATE_GRN,                { onCompleted: done, onError: err })
@@ -79,8 +81,8 @@ export default function GRNPage() {
   }
 
   const handleSave = () => {
-    if (!form.receivedDate) return alert('Enter received date')
-    if (!lines.some(l => l.itemDescription?.trim() && Number(l.receivedQty) > 0)) return alert('Add at least one received item')
+    if (!form.receivedDate) return toast.error('Enter received date')
+    if (!lines.some(l => l.itemDescription?.trim() && Number(l.receivedQty) > 0)) return toast.error('Add at least one received item')
     const mappedLines = lines.filter(l => l.itemDescription?.trim()).map(l => ({
       itemDescription: l.itemDescription.trim(),
       orderedQty:  Number(l.orderedQty),

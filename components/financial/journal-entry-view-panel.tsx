@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/format-date'
 import { formatMoney } from '@/lib/format-money'
 import { entityRefLabel } from '@/lib/format-status'
 import { downloadDocumentPdf } from '@/lib/pdf-download'
+import { toast } from 'sonner'
 
 export type JournalEntryLine = {
   accountCode?: string | null
@@ -130,7 +131,7 @@ export function JournalEntryViewPanel({
            
             onClick={() =>
               downloadDocumentPdf('journal-entry', entry.id, label).catch(() =>
-                alert('Could not download PDF. Sign in again or try later.'),
+                toast.error('Could not download PDF. Sign in again or try later.'),
               )
             }
           >

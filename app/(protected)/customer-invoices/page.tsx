@@ -19,6 +19,8 @@ import {
   ReceiptText, Clock, CheckCircle2, AlertCircle, DollarSign,
   Send, RefreshCcw, Minus, ThumbsUp, CreditCard, Ban,
 } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const BLANK_LINE = { itemDescription: '', quantity: 1, unitPrice: 0, lineTotal: 0 }
 
@@ -64,7 +66,7 @@ export default function CustomerInvoicesPage() {
   })
 
   const done = () => { refetch(); setCreditDrawer(null); setConfirm(null); setEditDrawer(null) }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [submitInv, { loading: submitting }]    = useMutation(SUBMIT_CUSTOMER_INVOICE_FOR_APPROVAL, { onCompleted: done, onError: err })
   const [syncAcct]                              = useMutation(SYNC_CUSTOMER_INVOICE_ACCOUNTING,     { onCompleted: done, onError: err })
@@ -111,7 +113,7 @@ export default function CustomerInvoicesPage() {
   }
 
   const handleEditSave = () => {
-    if (!editDrawer || !editForm.invoiceDate) return alert('Enter invoice date')
+    if (!editDrawer || !editForm.invoiceDate) return toast.error('Enter invoice date')
     const computedLines = editLines
       .filter(l => l.itemDescription?.trim())
       .map(l => ({
@@ -137,7 +139,7 @@ export default function CustomerInvoicesPage() {
   }
 
   const handleCredit = () => {
-    if (!creditDrawer || !creditForm.creditAmount) return alert('Enter credit amount')
+    if (!creditDrawer || !creditForm.creditAmount) return toast.error('Enter credit amount')
     creditMemo({ variables: { id: creditDrawer.id, creditAmount: Number(creditForm.creditAmount), reason: creditForm.reason || undefined } })
   }
 

@@ -940,8 +940,8 @@ export function AiPane() {
 
       {/* ── Sidebar pane ── */}
       <div className={cn(
-        "absolute inset-y-0 right-0 z-40 flex flex-col h-full w-80 border-l border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-background))] shadow-2xl transition-all duration-300 ease-in-out overflow-hidden",
-        open ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+        "absolute inset-y-0 right-0 z-40 flex h-full w-80 flex-col overflow-hidden border-l border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-background))] shadow-2xl transition-transform duration-300 ease-in-out",
+        open ? "translate-x-0" : "pointer-events-none translate-x-full"
       )}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 shrink-0 shadow-md">

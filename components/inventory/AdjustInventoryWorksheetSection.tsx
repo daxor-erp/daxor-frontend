@@ -15,6 +15,7 @@ import {
   AdjLineState,
   buildCreateStockAdjustmentInput,
 } from '@/components/inventory/stock-adjustment-shared'
+import { toastApolloError } from '@/lib/toast-apollo'
 
 type WarehouseOpt = { id: string; warehouseName?: string; warehouseCode?: string }
 
@@ -49,7 +50,7 @@ export function AdjustInventoryWorksheetSection({ organizationId: orgId, warehou
       setSaveHint('Worksheet saved as a stock adjustment. Confirm it in the Adjust inventory section on this page.')
       window.setTimeout(() => setSaveHint(''), 8000)
     },
-    onError: (e) => alert(e.message),
+    onError: toastApolloError,
   })
 
   const setF = (k: keyof AdjFormState, v: string) => {

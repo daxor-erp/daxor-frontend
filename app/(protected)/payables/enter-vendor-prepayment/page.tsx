@@ -11,6 +11,8 @@ import { ConfirmDialog } from '@/components/ui/form-drawer'
 import { PageHeader, StatsRow, StatCard, ErpBadge, AmountCell, MonoCell, DateCell } from '@/components/ui/erp-shared'
 import { GET_VENDOR_PREPAYMENTS, CREATE_VENDOR_PREPAYMENT, DELETE_VENDOR_PREPAYMENT, GET_VENDORS } from '@/gql/queries'
 import { Banknote, DollarSign, CheckCircle2, Trash2, Plus } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const PAYMENT_METHODS = [
   { value: 'bank_transfer', label: 'Bank Transfer' },
@@ -31,7 +33,7 @@ export default function VendorPrepaymentPage() {
   const { data: vData }            = useQuery(GET_VENDORS,             { variables: { organizationId: orgId, page: 1, limit: 200 }, skip: !orgId })
 
   const done = () => { refetch(); setDrawerOpen(false); setDelConfirm(null) }
-  const err  = (e: any) => alert(e.message)
+  const err  = toastApolloError
 
   const [createPre, { loading: saving }] = useMutation(CREATE_VENDOR_PREPAYMENT, { onCompleted: done, onError: err })
   const [deletePre]                       = useMutation(DELETE_VENDOR_PREPAYMENT, { onCompleted: done, onError: err })
@@ -91,7 +93,7 @@ export default function VendorPrepaymentPage() {
         title="New Vendor Prepayment" size="sm"
         submitLabel="Record Prepayment" submitting={saving}
         onSubmit={() => {
-          if (!form.vendorId || !form.amount) return alert('Select vendor and enter amount')
+          if (!form.vendorId || !form.amount) return toast.error('Select vendor and enter amount')
           createPre({ variables: { input: { ...form, amount: Number(form.amount), organizationId: orgId, referenceNumber: form.referenceNumber || undefined } } })
         }}
       >

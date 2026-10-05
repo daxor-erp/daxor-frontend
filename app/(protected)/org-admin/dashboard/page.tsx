@@ -125,7 +125,10 @@ export default function OrgAdminDashboardPage() {
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : org ? (
               <div className="flex items-start gap-3">
-                <div className="h-14 w-14 rounded-xl bg-grad-accent text-white grid place-items-center font-bold text-lg uppercase shrink-0">
+                <div
+                  className="grid h-14 w-14 shrink-0 place-items-center rounded-xl text-lg font-bold uppercase text-white shadow-sm"
+                  style={{ backgroundColor: '#378ADD' }}
+                >
                   {initials}
                 </div>
                 <div className="min-w-0 space-y-1.5">
@@ -305,17 +308,20 @@ export default function OrgAdminDashboardPage() {
   }
 
   return (
-    <div className="erp-shell">
+    <div className="erp-shell bg-white">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-grad-tenant-hero text-white elev-2">
+      <div
+        className="relative overflow-hidden rounded-2xl text-white shadow-[0_8px_30px_-12px_rgba(55,138,221,0.45)]"
+        style={{ backgroundColor: '#378ADD' }}
+      >
         <div className="absolute inset-0 bg-dotgrid opacity-[0.1]" />
         <div
-          className="absolute -right-32 -top-32 h-80 w-80 rounded-full opacity-45 blur-3xl"
-          style={{ background: 'radial-gradient(closest-side, hsl(168 90% 50%), transparent)' }}
+          className="absolute -right-32 -top-32 h-80 w-80 rounded-full opacity-35 blur-3xl"
+          style={{ background: 'radial-gradient(closest-side, #85b9f3, transparent)' }}
         />
         <div className="relative grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 border border-white/20 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm">
               <Building2 className="h-3 w-3" />
               Tenant administration
             </div>
@@ -327,7 +333,7 @@ export default function OrgAdminDashboardPage() {
             </p>
             {org?.code && (
               <div className="mt-3 inline-flex items-center gap-2 text-xs text-white/80">
-                <span className="rounded bg-white/15 border border-white/20 px-2 py-0.5 font-mono">{org.code}</span>
+                <span className="rounded border border-white/20 bg-white/15 px-2 py-0.5 font-mono">{org.code}</span>
                 <span className="capitalize">{String(org.status || '').toLowerCase()}</span>
               </div>
             )}
@@ -335,7 +341,7 @@ export default function OrgAdminDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               href="/org-admin/users"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-white/90 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-white/90"
             >
               <UserPlus className="h-4 w-4" />
               Manage users
@@ -343,7 +349,7 @@ export default function OrgAdminDashboardPage() {
             {canUseErp && (
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
               >
                 <ExternalLink className="h-4 w-4" />
                 Open ERP

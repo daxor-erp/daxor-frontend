@@ -1,7 +1,9 @@
 /**
- * Smart notifications system — derives in-app alerts from existing ERP data
- * (low stock, overdue invoices, pending approvals, ...) and persists read-state
- * in localStorage. No backend notification model required.
+ * Notification helpers.
+ *
+ * The shared bell only derives assignee-scoped approval alerts. Org-wide
+ * operational builders (stock/bills/invoices/leads) remain available for
+ * module-specific dashboards — do not merge them into the global inbox.
  */
 
 export type NotificationKind =

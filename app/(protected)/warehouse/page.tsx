@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button'
 import { CellInput } from '@/components/ui/cell-input'
 import { CellSelect } from '@/components/ui/cell-select'
 import { Layers, MapPin, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
+import { toastApolloError } from '@/lib/toast-apollo'
+import { toast } from 'sonner'
 
 const WH_TYPES = [
   'main',
@@ -215,10 +217,10 @@ export default function WarehousesPage() {
     })
   }, [binsData?.warehouseBins])
 
-  const [createWh] = useMutation(CREATE_WAREHOUSE, { onError: (e) => alert(e.message) })
-  const [updateWh] = useMutation(UPDATE_WAREHOUSE, { onError: (e) => alert(e.message) })
-  const [createBin] = useMutation(CREATE_WAREHOUSE_BIN, { onError: (e) => alert(e.message) })
-  const [updateBin] = useMutation(UPDATE_WAREHOUSE_BIN, { onError: (e) => alert(e.message) })
+  const [createWh] = useMutation(CREATE_WAREHOUSE, { onError: toastApolloError })
+  const [updateWh] = useMutation(UPDATE_WAREHOUSE, { onError: toastApolloError })
+  const [createBin] = useMutation(CREATE_WAREHOUSE_BIN, { onError: toastApolloError })
+  const [updateBin] = useMutation(UPDATE_WAREHOUSE_BIN, { onError: toastApolloError })
 
   const setWhRow = (index: number, patch: Partial<WhRow>) => {
     setWhRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)))
@@ -305,7 +307,7 @@ export default function WarehousesPage() {
 
   const saveBinRow = async (index: number) => {
     if (!binWarehouseId) {
-      alert('Choose a warehouse for bins.')
+      toast.error('Choose a warehouse for bins.')
       return
     }
     const r = binRows[index]
@@ -341,7 +343,7 @@ export default function WarehousesPage() {
 
   const addBinRow = () => {
     if (!binWarehouseId) {
-      alert('Create a warehouse first, then pick it above.')
+      toast.error('Create a warehouse first, then pick it above.')
       return
     }
     setBinRows((prev) => [...prev, emptyBinRow(binWarehouseId)])
