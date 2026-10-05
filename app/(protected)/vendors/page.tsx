@@ -62,7 +62,7 @@ export default function VendorsPage() {
         label: 'Delete',
         onClick: () => deleteVendor({ variables: { id } }),
       },
-      cancel: { label: 'Keep' },
+      cancel: { label: 'Keep', onClick: () => {} },
     })
   }
 
@@ -168,7 +168,7 @@ export default function VendorsPage() {
                   label: 'Deactivate',
                   onClick: () => deactivateVendor({ variables: { id: r.id } }),
                 },
-                cancel: { label: 'Keep active' },
+                cancel: { label: 'Keep active', onClick: () => {} },
               })
             },
             show: (r: any) => r.status === 'active',
